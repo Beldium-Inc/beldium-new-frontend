@@ -10,33 +10,220 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProcessingRouteImport } from './routes/processing'
+import { Route as ProcessingApplicationsRouteImport } from './routes/processing.applications'
+import { Route as ProcessingAuditRouteImport } from './routes/processing.audit'
+import { Route as ProcessingDashboardRouteImport } from './routes/processing.dashboard'
+import { Route as ProcessingEnvironmentalRouteImport } from './routes/processing.environmental'
+import { Route as ProcessingIncidentsRouteImport } from './routes/processing.incidents'
+import { Route as ProcessingInspectionsRouteImport } from './routes/processing.inspections'
+import { Route as ProcessingMonitoringRouteImport } from './routes/processing.monitoring'
+import { Route as ProcessingNonconformitiesRouteImport } from './routes/processing.nonconformities'
+import { Route as ProcessingOnboardingRouteImport } from './routes/processing.onboarding'
+import { Route as ProcessingProcessorsRouteImport } from './routes/processing.processors'
+import { Route as ProcessingReportsRouteImport } from './routes/processing.reports'
+import { Route as ProcessingTraceabilityRouteImport } from './routes/processing.traceability'
+import { Route as ProcessingApplicationsIdRouteImport } from './routes/processing.applications.$id'
+import { Route as ProcessingProcessorsIdRouteImport } from './routes/processing.processors.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProcessingRoute = ProcessingRouteImport.update({
+  id: '/processing',
+  path: '/processing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProcessingApplicationsRoute = ProcessingApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingAuditRoute = ProcessingAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingDashboardRoute = ProcessingDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingEnvironmentalRoute = ProcessingEnvironmentalRouteImport.update({
+  id: '/environmental',
+  path: '/environmental',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingIncidentsRoute = ProcessingIncidentsRouteImport.update({
+  id: '/incidents',
+  path: '/incidents',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingInspectionsRoute = ProcessingInspectionsRouteImport.update({
+  id: '/inspections',
+  path: '/inspections',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingMonitoringRoute = ProcessingMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingNonconformitiesRoute =
+  ProcessingNonconformitiesRouteImport.update({
+    id: '/nonconformities',
+    path: '/nonconformities',
+    getParentRoute: () => ProcessingRoute,
+  } as any)
+const ProcessingOnboardingRoute = ProcessingOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingProcessorsRoute = ProcessingProcessorsRouteImport.update({
+  id: '/processors',
+  path: '/processors',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingReportsRoute = ProcessingReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingTraceabilityRoute = ProcessingTraceabilityRouteImport.update({
+  id: '/traceability',
+  path: '/traceability',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingApplicationsIdRoute =
+  ProcessingApplicationsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ProcessingApplicationsRoute,
+  } as any)
+const ProcessingProcessorsIdRoute = ProcessingProcessorsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ProcessingProcessorsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/processing': typeof ProcessingRouteWithChildren
+  '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
+  '/processing/audit': typeof ProcessingAuditRoute
+  '/processing/dashboard': typeof ProcessingDashboardRoute
+  '/processing/environmental': typeof ProcessingEnvironmentalRoute
+  '/processing/incidents': typeof ProcessingIncidentsRoute
+  '/processing/inspections': typeof ProcessingInspectionsRoute
+  '/processing/monitoring': typeof ProcessingMonitoringRoute
+  '/processing/nonconformities': typeof ProcessingNonconformitiesRoute
+  '/processing/onboarding': typeof ProcessingOnboardingRoute
+  '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
+  '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/traceability': typeof ProcessingTraceabilityRoute
+  '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
+  '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/processing': typeof ProcessingRouteWithChildren
+  '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
+  '/processing/audit': typeof ProcessingAuditRoute
+  '/processing/dashboard': typeof ProcessingDashboardRoute
+  '/processing/environmental': typeof ProcessingEnvironmentalRoute
+  '/processing/incidents': typeof ProcessingIncidentsRoute
+  '/processing/inspections': typeof ProcessingInspectionsRoute
+  '/processing/monitoring': typeof ProcessingMonitoringRoute
+  '/processing/nonconformities': typeof ProcessingNonconformitiesRoute
+  '/processing/onboarding': typeof ProcessingOnboardingRoute
+  '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
+  '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/traceability': typeof ProcessingTraceabilityRoute
+  '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
+  '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/processing': typeof ProcessingRouteWithChildren
+  '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
+  '/processing/audit': typeof ProcessingAuditRoute
+  '/processing/dashboard': typeof ProcessingDashboardRoute
+  '/processing/environmental': typeof ProcessingEnvironmentalRoute
+  '/processing/incidents': typeof ProcessingIncidentsRoute
+  '/processing/inspections': typeof ProcessingInspectionsRoute
+  '/processing/monitoring': typeof ProcessingMonitoringRoute
+  '/processing/nonconformities': typeof ProcessingNonconformitiesRoute
+  '/processing/onboarding': typeof ProcessingOnboardingRoute
+  '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
+  '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/traceability': typeof ProcessingTraceabilityRoute
+  '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
+  '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/processing'
+    | '/processing/applications'
+    | '/processing/audit'
+    | '/processing/dashboard'
+    | '/processing/environmental'
+    | '/processing/incidents'
+    | '/processing/inspections'
+    | '/processing/monitoring'
+    | '/processing/nonconformities'
+    | '/processing/onboarding'
+    | '/processing/processors'
+    | '/processing/reports'
+    | '/processing/traceability'
+    | '/processing/applications/$id'
+    | '/processing/processors/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/processing'
+    | '/processing/applications'
+    | '/processing/audit'
+    | '/processing/dashboard'
+    | '/processing/environmental'
+    | '/processing/incidents'
+    | '/processing/inspections'
+    | '/processing/monitoring'
+    | '/processing/nonconformities'
+    | '/processing/onboarding'
+    | '/processing/processors'
+    | '/processing/reports'
+    | '/processing/traceability'
+    | '/processing/applications/$id'
+    | '/processing/processors/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/processing'
+    | '/processing/applications'
+    | '/processing/audit'
+    | '/processing/dashboard'
+    | '/processing/environmental'
+    | '/processing/incidents'
+    | '/processing/inspections'
+    | '/processing/monitoring'
+    | '/processing/nonconformities'
+    | '/processing/onboarding'
+    | '/processing/processors'
+    | '/processing/reports'
+    | '/processing/traceability'
+    | '/processing/applications/$id'
+    | '/processing/processors/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProcessingRoute: typeof ProcessingRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +235,176 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/processing': {
+      id: '/processing'
+      path: '/processing'
+      fullPath: '/processing'
+      preLoaderRoute: typeof ProcessingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/processing/applications': {
+      id: '/processing/applications'
+      path: '/applications'
+      fullPath: '/processing/applications'
+      preLoaderRoute: typeof ProcessingApplicationsRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/audit': {
+      id: '/processing/audit'
+      path: '/audit'
+      fullPath: '/processing/audit'
+      preLoaderRoute: typeof ProcessingAuditRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/dashboard': {
+      id: '/processing/dashboard'
+      path: '/dashboard'
+      fullPath: '/processing/dashboard'
+      preLoaderRoute: typeof ProcessingDashboardRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/environmental': {
+      id: '/processing/environmental'
+      path: '/environmental'
+      fullPath: '/processing/environmental'
+      preLoaderRoute: typeof ProcessingEnvironmentalRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/incidents': {
+      id: '/processing/incidents'
+      path: '/incidents'
+      fullPath: '/processing/incidents'
+      preLoaderRoute: typeof ProcessingIncidentsRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/inspections': {
+      id: '/processing/inspections'
+      path: '/inspections'
+      fullPath: '/processing/inspections'
+      preLoaderRoute: typeof ProcessingInspectionsRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/monitoring': {
+      id: '/processing/monitoring'
+      path: '/monitoring'
+      fullPath: '/processing/monitoring'
+      preLoaderRoute: typeof ProcessingMonitoringRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/nonconformities': {
+      id: '/processing/nonconformities'
+      path: '/nonconformities'
+      fullPath: '/processing/nonconformities'
+      preLoaderRoute: typeof ProcessingNonconformitiesRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/onboarding': {
+      id: '/processing/onboarding'
+      path: '/onboarding'
+      fullPath: '/processing/onboarding'
+      preLoaderRoute: typeof ProcessingOnboardingRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/processors': {
+      id: '/processing/processors'
+      path: '/processors'
+      fullPath: '/processing/processors'
+      preLoaderRoute: typeof ProcessingProcessorsRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/reports': {
+      id: '/processing/reports'
+      path: '/reports'
+      fullPath: '/processing/reports'
+      preLoaderRoute: typeof ProcessingReportsRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/traceability': {
+      id: '/processing/traceability'
+      path: '/traceability'
+      fullPath: '/processing/traceability'
+      preLoaderRoute: typeof ProcessingTraceabilityRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/applications/$id': {
+      id: '/processing/applications/$id'
+      path: '/$id'
+      fullPath: '/processing/applications/$id'
+      preLoaderRoute: typeof ProcessingApplicationsIdRouteImport
+      parentRoute: typeof ProcessingApplicationsRoute
+    }
+    '/processing/processors/$id': {
+      id: '/processing/processors/$id'
+      path: '/$id'
+      fullPath: '/processing/processors/$id'
+      preLoaderRoute: typeof ProcessingProcessorsIdRouteImport
+      parentRoute: typeof ProcessingProcessorsRoute
+    }
   }
 }
 
+interface ProcessingApplicationsRouteChildren {
+  ProcessingApplicationsIdRoute: typeof ProcessingApplicationsIdRoute
+}
+
+const ProcessingApplicationsRouteChildren: ProcessingApplicationsRouteChildren =
+  {
+    ProcessingApplicationsIdRoute: ProcessingApplicationsIdRoute,
+  }
+
+const ProcessingApplicationsRouteWithChildren =
+  ProcessingApplicationsRoute._addFileChildren(
+    ProcessingApplicationsRouteChildren,
+  )
+
+interface ProcessingProcessorsRouteChildren {
+  ProcessingProcessorsIdRoute: typeof ProcessingProcessorsIdRoute
+}
+
+const ProcessingProcessorsRouteChildren: ProcessingProcessorsRouteChildren = {
+  ProcessingProcessorsIdRoute: ProcessingProcessorsIdRoute,
+}
+
+const ProcessingProcessorsRouteWithChildren =
+  ProcessingProcessorsRoute._addFileChildren(ProcessingProcessorsRouteChildren)
+
+interface ProcessingRouteChildren {
+  ProcessingApplicationsRoute: typeof ProcessingApplicationsRouteWithChildren
+  ProcessingAuditRoute: typeof ProcessingAuditRoute
+  ProcessingDashboardRoute: typeof ProcessingDashboardRoute
+  ProcessingEnvironmentalRoute: typeof ProcessingEnvironmentalRoute
+  ProcessingIncidentsRoute: typeof ProcessingIncidentsRoute
+  ProcessingInspectionsRoute: typeof ProcessingInspectionsRoute
+  ProcessingMonitoringRoute: typeof ProcessingMonitoringRoute
+  ProcessingNonconformitiesRoute: typeof ProcessingNonconformitiesRoute
+  ProcessingOnboardingRoute: typeof ProcessingOnboardingRoute
+  ProcessingProcessorsRoute: typeof ProcessingProcessorsRouteWithChildren
+  ProcessingReportsRoute: typeof ProcessingReportsRoute
+  ProcessingTraceabilityRoute: typeof ProcessingTraceabilityRoute
+}
+
+const ProcessingRouteChildren: ProcessingRouteChildren = {
+  ProcessingApplicationsRoute: ProcessingApplicationsRouteWithChildren,
+  ProcessingAuditRoute: ProcessingAuditRoute,
+  ProcessingDashboardRoute: ProcessingDashboardRoute,
+  ProcessingEnvironmentalRoute: ProcessingEnvironmentalRoute,
+  ProcessingIncidentsRoute: ProcessingIncidentsRoute,
+  ProcessingInspectionsRoute: ProcessingInspectionsRoute,
+  ProcessingMonitoringRoute: ProcessingMonitoringRoute,
+  ProcessingNonconformitiesRoute: ProcessingNonconformitiesRoute,
+  ProcessingOnboardingRoute: ProcessingOnboardingRoute,
+  ProcessingProcessorsRoute: ProcessingProcessorsRouteWithChildren,
+  ProcessingReportsRoute: ProcessingReportsRoute,
+  ProcessingTraceabilityRoute: ProcessingTraceabilityRoute,
+}
+
+const ProcessingRouteWithChildren = ProcessingRoute._addFileChildren(
+  ProcessingRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProcessingRoute: ProcessingRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

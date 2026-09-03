@@ -40,21 +40,21 @@ export const VERTICALS: Vertical[] = [
         label: "Compliance Partner",
         blurb:
           "Full review workspace: applications, mine reviews, scoring, inspections, non-conformities and reporting.",
-        home: "/app/dashboard",
+        home: "/dashboard",
       },
       {
         id: "miner",
         label: "Miner / Producer",
         blurb:
           "Operator view of your organisation, sites, licences, production and outstanding compliance actions.",
-        home: "/app/dashboard",
+        home: "/dashboard",
       },
       {
         id: "regulator",
         label: "Regulatory Oversight",
         blurb:
           "Read-mostly oversight of the register, licence status, inspections, alerts and audit history.",
-        home: "/app/dashboard",
+        home: "/dashboard",
       },
     ],
   },
@@ -68,13 +68,13 @@ export const VERTICALS: Vertical[] = [
         label: "Compliance Operator",
         blurb:
           "Review processor applications, verify evidence and own the compliance decision record.",
-        home: "/app/dashboard",
+        home: "/dashboard",
       },
       {
         id: "regulator",
         label: "Regulatory Oversight",
         blurb: "Oversight of processor status, incidents, inspections and audit history.",
-        home: "/app/dashboard",
+        home: "/dashboard",
       },
     ],
   },
