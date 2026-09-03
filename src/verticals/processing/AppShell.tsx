@@ -15,7 +15,6 @@ import {
   Menu,
   ScrollText,
   Search,
-  ShieldCheck,
   Siren,
   Factory,
   X,
@@ -24,6 +23,7 @@ import { useAppState } from "@/verticals/processing/store";
 import { NOTIFICATIONS } from "@/verticals/processing/mock-data";
 import { Pill } from "@/verticals/processing/bpc";
 import { cn } from "@/lib/utils";
+import { BeldiumLogo } from "@/components/beldium-logo";
 
 type NavItem = { to: string; label: string; icon: React.ElementType; badge?: string };
 
@@ -95,9 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebar = (
     <div className="flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-3 px-5 py-5">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
-          <ShieldCheck className="size-5" />
-        </span>
+        <BeldiumLogo className="size-10" />
         <div className="leading-tight">
           <p className="text-sm font-semibold">Beldium</p>
           <p className="text-[11px] text-sidebar-foreground/70">Processing Compliance</p>

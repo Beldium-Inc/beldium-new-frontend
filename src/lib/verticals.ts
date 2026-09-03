@@ -4,7 +4,7 @@
 // server and one router, mounted under /<slug>. This file is the single source
 // of truth for what exists, who can sign in to it, and where each role lands.
 //
-// `home` is relative to the vertical prefix — the full URL is `/${slug}${home}`.
+// `home` is relative to the vertical prefix; the full URL is `/${slug}${home}`.
 
 export type VerticalSlug =
   | "export"

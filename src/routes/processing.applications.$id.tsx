@@ -114,7 +114,7 @@ function ApplicationReview() {
   const act = (s: ReviewState, msg: string) => {
     setReview(app.id, tab, s);
     log(msg, `${app.id} · ${sectionLabel(tab)}`, `${sectionLabel(tab)} marked ${REVIEW_LABEL[s]}.`);
-    notify(`${sectionLabel(tab)} — ${REVIEW_LABEL[s]}`);
+    notify(`${sectionLabel(tab)}: ${REVIEW_LABEL[s]}`);
   };
 
   return (
@@ -329,7 +329,7 @@ function ApplicationReview() {
               <p className="text-xs font-semibold">Reviewer actions</p>
               <p className="mt-1 text-[11px] text-muted-foreground">
                 {readOnly
-                  ? "Oversight role — actions are disabled. Compliance decisions are taken by the Beldium compliance partner."
+                  ? "Oversight role: actions are disabled. Compliance decisions are taken by the Beldium compliance partner."
                   : "Actions are recorded to the audit trail against your operator identity."}
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -700,7 +700,7 @@ function InfoRequestModal({
 }) {
   const [text, setText] = React.useState("");
   return (
-    <Modal title={`Request information — ${sectionLabel(section)}`} onClose={onClose}>
+    <Modal title={`Request information: ${sectionLabel(section)}`} onClose={onClose}>
       <p className="text-xs text-muted-foreground">
         The applicant receives a itemised request and the section moves to “Information requested”.
       </p>
@@ -741,7 +741,7 @@ function NCModal({
   const [severity, setSeverity] = React.useState<"Minor" | "Major" | "Critical">("Major");
   const [due, setDue] = React.useState("2026-09-15");
   return (
-    <Modal title={`Raise non-conformity — ${sectionLabel(section)}`} onClose={onClose}>
+    <Modal title={`Raise non-conformity: ${sectionLabel(section)}`} onClose={onClose}>
       <div className="space-y-3">
         <Field label="Finding title">
           <input
@@ -815,7 +815,7 @@ function EvidenceModal({
   onDecide: (accept: boolean) => void;
 }) {
   return (
-    <Modal title={`Corrective-action evidence — ${nc.id}`} onClose={onClose}>
+    <Modal title={`Corrective-action evidence, ${nc.id}`} onClose={onClose}>
       <p className="text-xs font-medium">{nc.title}</p>
       <div className="mt-3 rounded-2xl border border-border p-4">
         <div className="flex items-center gap-3">

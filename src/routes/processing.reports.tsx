@@ -121,7 +121,7 @@ function ReportsPage() {
               <div className="rounded-2xl border border-border bg-success/25 px-4 py-3">
                 <p className="text-xs font-medium">Report ready</p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {kind} · {scope} · {period} — 14 pages, 6 annexes. Demo build: download is
+                  {kind} · {scope} · {period}, 14 pages, 6 annexes. Demo build: download is
                   simulated.
                 </p>
                 <button className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">

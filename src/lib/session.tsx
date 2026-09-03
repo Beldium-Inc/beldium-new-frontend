@@ -7,7 +7,7 @@ import { type VerticalSlug, homeFor, roleIn } from "./verticals";
 // is seeded from this rather than hydrating a role of its own.
 //
 // Previously each dashboard was its own origin (a different localhost port), so
-// their storage keys never met. Under one server they share an origin — hence a
+// their storage keys never met. Under one server they share an origin, hence a
 // single namespaced key here instead of the seven ad-hoc ones.
 const SESSION_KEY = "beldium.session.v1";
 
@@ -55,7 +55,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     try {
       window.localStorage.setItem(SESSION_KEY, JSON.stringify(next));
     } catch {
-      // Storage unavailable (private mode) — session stays in memory only.
+      // Storage unavailable (private mode); session stays in memory only.
     }
   }, []);
 

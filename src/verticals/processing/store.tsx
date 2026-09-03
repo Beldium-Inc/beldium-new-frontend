@@ -68,7 +68,7 @@ export function AppStateProvider({
   onSignOut,
 }: {
   children: React.ReactNode;
-  /** Seeded from the shared session — this dashboard no longer signs anyone in. */
+  /** Seeded from the shared session, this dashboard no longer signs anyone in. */
   role: Role;
   onSignOut: () => void;
 }) {

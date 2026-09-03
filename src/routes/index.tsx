@@ -25,17 +25,18 @@ import {
 } from "@/lib/verticals";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BeldiumLogo } from "@/components/beldium-logo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Beldium Compliance — Sign In" },
+      { title: "Beldium Compliance | Sign In" },
       {
         name: "description",
         content:
-          "Sign in to Beldium Compliance. Choose the compliance partner you are — mining, processing, quality, warehousing, logistics, export or marketplace — to enter your workspace.",
+          "Sign in to Beldium Compliance. Choose the compliance partner you are, mining, processing, quality, warehousing, logistics, export or marketplace, to enter your workspace.",
       },
-      { property: "og:title", content: "Beldium Compliance — Sign In" },
+      { property: "og:title", content: "Beldium Compliance | Sign In" },
       {
         property: "og:description",
         content:
@@ -76,7 +77,7 @@ function SignInPage() {
   const navigate = useNavigate();
   const [picked, setPicked] = React.useState<Vertical | null>(null);
 
-  // Already signed in — go straight back to that workspace.
+  // Already signed in: go straight back to that workspace.
   React.useEffect(() => {
     if (hydrated && session) {
       navigate({ to: homeFor(session.vertical, session.role) });
@@ -93,9 +94,7 @@ function SignInPage() {
       <div className="mx-auto grid min-h-screen w-full max-w-[1400px] gap-10 px-6 py-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:py-16">
         <div className="space-y-8">
           <div className="flex items-center gap-2.5">
-            <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground">
-              <ShieldCheck className="size-5" />
-            </span>
+            <BeldiumLogo className="size-10" />
             <div className="leading-tight">
               <p className="font-display text-base font-semibold">Beldium</p>
               <p className="text-xs text-accent/80">Compliance Platform</p>
@@ -111,7 +110,7 @@ function SignInPage() {
             </h1>
             <p className="max-w-lg text-sm leading-relaxed text-primary-foreground/75">
               Beldium verifies operators, interrogates evidence section by section, and issues an
-              independent compliance verification record at every stage — from pit to port.
+              independent compliance verification record at every stage, from pit to port.
             </p>
           </div>
 

@@ -99,7 +99,7 @@ function InspectionsPage() {
           <div className="space-y-6">
             <Panel>
               <PanelHeader
-                title={`${active.id} — inspection brief`}
+                title={`${active.id}: inspection brief`}
                 subtitle={`${active.facility} · ${active.company}`}
                 icon={<ClipboardCheck className="size-4" />}
               />
@@ -135,7 +135,7 @@ function InspectionsPage() {
                   </>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Oversight role — scheduling actions unavailable.
+                    Oversight role: scheduling actions unavailable.
                   </p>
                 )}
               </div>

@@ -94,7 +94,7 @@
   --color-link-foreground: var(--link-foreground);
 }
 
-/* Shared base — Beldium navy. Also the theme for the sign-in hub at "/". */
+/* Shared base: Beldium navy. Also the theme for the sign-in hub at "/". */
 :root {
   --radius: 0.75rem;
   --background: oklch(0.978 0.007 260.7);
@@ -523,7 +523,7 @@
   --heading-tracking: -0.015em;
 }
 
-/* Dark values are defined but currently unreachable — no dark-mode toggle ships. */
+/* Dark values are defined but currently unreachable, no dark-mode toggle ships. */
 .dark {
   --background: oklch(0.19 0.045 264);
   --foreground: oklch(0.96 0.01 258);

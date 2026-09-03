@@ -1,5 +1,5 @@
 // Static mock data for the Beldium Processing Compliance prototype.
-// No backend, no persistence — everything here is illustrative demo content.
+// No backend, no persistence, everything here is illustrative demo content.
 
 export type ReviewState = "pending" | "verified" | "rejected" | "info_requested" | "flagged";
 
@@ -130,9 +130,9 @@ function baseSections(overrides: Partial<Record<SectionKey, Partial<SectionData>
     corporate: {
       key: "corporate",
       fields: [
-        { label: "Registered name", value: "—" },
-        { label: "CAC RC number", value: "—" },
-        { label: "Tax Identification Number (TIN)", value: "—" },
+        { label: "Registered name", value: "-" },
+        { label: "CAC RC number", value: "-" },
+        { label: "Tax Identification Number (TIN)", value: "-" },
         { label: "Company type", value: "Private Limited (Ltd)" },
         { label: "Directors declared", value: "3" },
         { label: "Beneficial ownership disclosed", value: "Yes", flag: "ok" },
@@ -160,7 +160,7 @@ function baseSections(overrides: Partial<Record<SectionKey, Partial<SectionData>
     facility: {
       key: "facility",
       fields: [
-        { label: "Site address", value: "—" },
+        { label: "Site address", value: "-" },
         { label: "Land title / C of O", value: "Held", flag: "ok" },
         { label: "Site area", value: "4.8 hectares" },
         { label: "Perimeter security", value: "Fenced, 24h manned gate" },
@@ -190,7 +190,7 @@ function baseSections(overrides: Partial<Record<SectionKey, Partial<SectionData>
     health_safety: {
       key: "health_safety",
       fields: [
-        { label: "HSE officer appointed", value: "Yes — full-time" },
+        { label: "HSE officer appointed", value: "Yes: full-time" },
         { label: "PPE issuance register", value: "Maintained" },
         { label: "Lost-time injuries (12 mo)", value: "1", flag: "warn" },
         { label: "Emergency drill frequency", value: "Quarterly" },
@@ -205,8 +205,8 @@ function baseSections(overrides: Partial<Record<SectionKey, Partial<SectionData>
     equipment: {
       key: "equipment",
       fields: [
-        { label: "Primary process line", value: "—" },
-        { label: "Installed capacity", value: "—" },
+        { label: "Primary process line", value: "-" },
+        { label: "Installed capacity", value: "-" },
         { label: "Maintenance regime", value: "Planned preventive, monthly" },
         { label: "Calibration programme", value: "Annual, third-party" },
       ],
@@ -347,7 +347,7 @@ export const APPLICATIONS: Application[] = [
         docs: [
           doc("d10", "Environmental Management Plan", "EMP-2025-118", "Accredited Consultant", "2025-05-20", "2028-05-19", "valid"),
           doc("d11", "Quarterly Effluent Analysis Report", "EFF-Q2-2026", "Independent Lab", "2026-06-25", null, "valid"),
-          doc("d11b", "Reagent Bund Capacity Calculation", "—", "Applicant", "—", null, "missing"),
+          doc("d11b", "Reagent Bund Capacity Calculation", "-", "Applicant", "-", null, "missing"),
         ],
       },
       equipment: {
@@ -688,7 +688,7 @@ export const INSPECTIONS: Inspection[] = [
     inspector: "Mrs. Halima Yusuf",
     type: "Follow-up",
     status: "Completed",
-    outcome: "2 minor findings — dust suppression, signage",
+    outcome: "2 minor findings: dust suppression, signage",
   },
   {
     id: "INS-2026-0399",
@@ -777,7 +777,7 @@ export const PROCESSORS: Processor[] = [
     processingType: "chemical_refining",
     status: "Under Review",
     complianceScore: 58,
-    lastInspection: "—",
+    lastInspection: "-",
     openNCs: 1,
     registered: "2026-07-28",
   },
@@ -935,7 +935,7 @@ export const TRACE_RUNS: TraceRun[] = [
     outputBatch: "BLD-OUT-2026-001860",
     outputMass: "34.7 t",
     yield: "67.6%",
-    qc: { assay: "Cu 96.1%", moisture: "n/a", verdict: "Hold", lab: "Third-party lab — retest requested" },
+    qc: { assay: "Cu 96.1%", moisture: "n/a", verdict: "Hold", lab: "Third-party lab: retest requested" },
     facility: "Trans-Amadi Recovery Works",
   },
 ];

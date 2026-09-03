@@ -40,7 +40,7 @@ function TraceabilityPage() {
       <PageHeader
         eyebrow="Operational context"
         title="Beldium Batch traceability"
-        description="Production traceability is shown here as operational context. It is not part of the compliance assessment itself — the compliance layer draws on it only to confirm that batch records and reconciliation controls are being maintained."
+        description="Production traceability is shown here as operational context. It is not part of the compliance assessment itself, the compliance layer draws on it only to confirm that batch records and reconciliation controls are being maintained."
       />
 
       <div className="flex items-start gap-3 rounded-2xl border border-secondary bg-secondary/40 px-4 py-3">
@@ -74,7 +74,7 @@ function TraceabilityPage() {
 
       <Panel>
         <PanelHeader
-          title={`${run.runId} — chain of custody`}
+          title={`${run.runId}: chain of custody`}
           subtitle={run.facility}
           icon={<Boxes className="size-4" />}
           action={<Pill tone={statusTone(run.qc.verdict)}>QC {run.qc.verdict}</Pill>}

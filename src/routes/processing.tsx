@@ -42,7 +42,7 @@ function ProcessingLayout() {
   }
 
   return (
-    // data-vertical scopes this dashboard's theme tokens — see src/styles.css.
+    // data-vertical scopes this dashboard's theme tokens (see src/styles.css).
     <div data-vertical="processing">
       <AppStateProvider role={role as Role} onSignOut={signOut}>
         <AppShell>

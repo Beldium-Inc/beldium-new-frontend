@@ -225,7 +225,7 @@ function ProcessorDetail() {
 
       <Panel>
         <PanelHeader
-          title="Operational context — Beldium Batch records"
+          title="Operational context: Beldium Batch records"
           subtitle="Production runs referenced during compliance monitoring, not a compliance control in themselves"
         />
         {runs.length === 0 ? (

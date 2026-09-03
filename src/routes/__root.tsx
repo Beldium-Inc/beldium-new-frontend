@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Independent compliance verification across the Nigerian minerals value chain — mining, processing, quality, warehousing, logistics, export and marketplace.",
+          "Independent compliance verification across the Nigerian minerals value chain, mining, processing, quality, warehousing, logistics, export and marketplace.",
       },
       { name: "author", content: "Beldium" },
       { property: "og:title", content: "Beldium Compliance" },
