@@ -67,7 +67,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const handleLogout = () => {
     logout();
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/signin", replace: true });
   };
 
   const sidebar = (

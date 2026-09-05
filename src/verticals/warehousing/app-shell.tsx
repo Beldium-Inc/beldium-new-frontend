@@ -106,7 +106,7 @@ export function AppShell({
   const profile = roleById(role);
 
   useEffect(() => {
-    if (roleId === null) navigate({ to: "/", replace: true });
+    if (roleId === null) navigate({ to: "/signin", replace: true });
     else if (roleId !== role) navigate({ to: roleById(roleId).home, replace: true });
   }, [roleId, role, navigate]);
 
@@ -200,7 +200,7 @@ export function AppShell({
                     className="gap-2 rounded-lg"
                     onSelect={() => {
                       signOut();
-                      navigate({ to: "/" });
+                      navigate({ to: "/signin" });
                     }}
                   >
                     <LogOut className="size-4" />

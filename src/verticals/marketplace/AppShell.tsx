@@ -49,7 +49,7 @@ export function AppShell({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (hydrated && !state.role) navigate({ to: "/", replace: true });
+    if (hydrated && !state.role) navigate({ to: "/signin", replace: true });
   }, [hydrated, state.role, navigate]);
 
   useEffect(() => setOpen(false), [pathname]);
@@ -129,7 +129,7 @@ export function AppShell({
           <button
             onClick={() => {
               logout();
-              navigate({ to: "/", replace: true });
+              navigate({ to: "/signin", replace: true });
             }}
             className="flex w-full items-center justify-center gap-2 rounded-md border border-primary-foreground/20 px-3 py-2 text-sm font-medium hover:bg-primary-foreground/10"
           >

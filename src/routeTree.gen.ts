@@ -14,8 +14,10 @@ import { Route as ExportRouteImport } from './routes/export'
 import { Route as LogisticsRouteImport } from './routes/logistics'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MiningRouteImport } from './routes/mining'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProcessingRouteImport } from './routes/processing'
 import { Route as QualityRouteImport } from './routes/quality'
+import { Route as SigninRouteImport } from './routes/signin'
 import { Route as WarehousingRouteImport } from './routes/warehousing'
 import { Route as ExportIndexRouteImport } from './routes/export.index'
 import { Route as ExportDashboardRouteImport } from './routes/export.dashboard'
@@ -50,6 +52,18 @@ import { Route as MiningReviewsRouteImport } from './routes/mining.reviews'
 import { Route as MiningRiskRouteImport } from './routes/mining.risk'
 import { Route as MiningSamplingRouteImport } from './routes/mining.sampling'
 import { Route as MiningTransactionsRouteImport } from './routes/mining.transactions'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
+import { Route as OnboardingAccountRouteImport } from './routes/onboarding.account'
+import { Route as OnboardingAdminRouteImport } from './routes/onboarding.admin'
+import { Route as OnboardingApplicationRouteImport } from './routes/onboarding.application'
+import { Route as OnboardingDashboardRouteImport } from './routes/onboarding.dashboard'
+import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
+import { Route as OnboardingPathRouteImport } from './routes/onboarding.path'
+import { Route as OnboardingRoleRouteImport } from './routes/onboarding.role'
+import { Route as OnboardingSectorRouteImport } from './routes/onboarding.sector'
+import { Route as OnboardingSubmittedRouteImport } from './routes/onboarding.submitted'
+import { Route as OnboardingVerifyRouteImport } from './routes/onboarding.verify'
+import { Route as OnboardingWelcomeRouteImport } from './routes/onboarding.welcome'
 import { Route as ProcessingIndexRouteImport } from './routes/processing.index'
 import { Route as ProcessingApplicationsRouteImport } from './routes/processing.applications'
 import { Route as ProcessingAuditRouteImport } from './routes/processing.audit'
@@ -161,6 +175,11 @@ const MiningRoute = MiningRouteImport.update({
   path: '/mining',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProcessingRoute = ProcessingRouteImport.update({
   id: '/processing',
   path: '/processing',
@@ -169,6 +188,11 @@ const ProcessingRoute = ProcessingRouteImport.update({
 const QualityRoute = QualityRouteImport.update({
   id: '/quality',
   path: '/quality',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WarehousingRoute = WarehousingRouteImport.update({
@@ -341,6 +365,66 @@ const MiningTransactionsRoute = MiningTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
   getParentRoute: () => MiningRoute,
+} as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingAccountRoute = OnboardingAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingAdminRoute = OnboardingAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingApplicationRoute = OnboardingApplicationRouteImport.update({
+  id: '/application',
+  path: '/application',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingDashboardRoute = OnboardingDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingPathRoute = OnboardingPathRouteImport.update({
+  id: '/path',
+  path: '/path',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingRoleRoute = OnboardingRoleRouteImport.update({
+  id: '/role',
+  path: '/role',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingSectorRoute = OnboardingSectorRouteImport.update({
+  id: '/sector',
+  path: '/sector',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingSubmittedRoute = OnboardingSubmittedRouteImport.update({
+  id: '/submitted',
+  path: '/submitted',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingVerifyRoute = OnboardingVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingWelcomeRoute = OnboardingWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const ProcessingIndexRoute = ProcessingIndexRouteImport.update({
   id: '/',
@@ -816,8 +900,10 @@ export interface FileRoutesByFullPath {
   '/logistics': typeof LogisticsRouteWithChildren
   '/marketplace': typeof MarketplaceRouteWithChildren
   '/mining': typeof MiningRouteWithChildren
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/processing': typeof ProcessingRouteWithChildren
   '/quality': typeof QualityRouteWithChildren
+  '/signin': typeof SigninRoute
   '/warehousing': typeof WarehousingRouteWithChildren
   '/export/dashboard': typeof ExportDashboardRoute
   '/export/documents': typeof ExportDocumentsRoute
@@ -848,6 +934,17 @@ export interface FileRoutesByFullPath {
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
   '/mining/transactions': typeof MiningTransactionsRoute
+  '/onboarding/account': typeof OnboardingAccountRoute
+  '/onboarding/admin': typeof OnboardingAdminRoute
+  '/onboarding/application': typeof OnboardingApplicationRoute
+  '/onboarding/dashboard': typeof OnboardingDashboardRoute
+  '/onboarding/join': typeof OnboardingJoinRoute
+  '/onboarding/path': typeof OnboardingPathRoute
+  '/onboarding/role': typeof OnboardingRoleRoute
+  '/onboarding/sector': typeof OnboardingSectorRoute
+  '/onboarding/submitted': typeof OnboardingSubmittedRoute
+  '/onboarding/verify': typeof OnboardingVerifyRoute
+  '/onboarding/welcome': typeof OnboardingWelcomeRoute
   '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
   '/processing/audit': typeof ProcessingAuditRoute
   '/processing/dashboard': typeof ProcessingDashboardRoute
@@ -867,6 +964,7 @@ export interface FileRoutesByFullPath {
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
   '/mining/': typeof MiningIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/processing/': typeof ProcessingIndexRoute
   '/quality/': typeof QualityIndexRoute
   '/warehousing/': typeof WarehousingIndexRoute
@@ -940,6 +1038,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/signin': typeof SigninRoute
   '/export/dashboard': typeof ExportDashboardRoute
   '/export/documents': typeof ExportDocumentsRoute
   '/export/monitoring': typeof ExportMonitoringRoute
@@ -969,6 +1068,17 @@ export interface FileRoutesByTo {
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
   '/mining/transactions': typeof MiningTransactionsRoute
+  '/onboarding/account': typeof OnboardingAccountRoute
+  '/onboarding/admin': typeof OnboardingAdminRoute
+  '/onboarding/application': typeof OnboardingApplicationRoute
+  '/onboarding/dashboard': typeof OnboardingDashboardRoute
+  '/onboarding/join': typeof OnboardingJoinRoute
+  '/onboarding/path': typeof OnboardingPathRoute
+  '/onboarding/role': typeof OnboardingRoleRoute
+  '/onboarding/sector': typeof OnboardingSectorRoute
+  '/onboarding/submitted': typeof OnboardingSubmittedRoute
+  '/onboarding/verify': typeof OnboardingVerifyRoute
+  '/onboarding/welcome': typeof OnboardingWelcomeRoute
   '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
   '/processing/audit': typeof ProcessingAuditRoute
   '/processing/dashboard': typeof ProcessingDashboardRoute
@@ -988,6 +1098,7 @@ export interface FileRoutesByTo {
   '/logistics': typeof LogisticsIndexRoute
   '/marketplace': typeof MarketplaceIndexRoute
   '/mining': typeof MiningIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
   '/processing': typeof ProcessingIndexRoute
   '/quality': typeof QualityIndexRoute
   '/warehousing': typeof WarehousingIndexRoute
@@ -1066,8 +1177,10 @@ export interface FileRoutesById {
   '/logistics': typeof LogisticsRouteWithChildren
   '/marketplace': typeof MarketplaceRouteWithChildren
   '/mining': typeof MiningRouteWithChildren
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/processing': typeof ProcessingRouteWithChildren
   '/quality': typeof QualityRouteWithChildren
+  '/signin': typeof SigninRoute
   '/warehousing': typeof WarehousingRouteWithChildren
   '/export/dashboard': typeof ExportDashboardRoute
   '/export/documents': typeof ExportDocumentsRoute
@@ -1098,6 +1211,17 @@ export interface FileRoutesById {
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
   '/mining/transactions': typeof MiningTransactionsRoute
+  '/onboarding/account': typeof OnboardingAccountRoute
+  '/onboarding/admin': typeof OnboardingAdminRoute
+  '/onboarding/application': typeof OnboardingApplicationRoute
+  '/onboarding/dashboard': typeof OnboardingDashboardRoute
+  '/onboarding/join': typeof OnboardingJoinRoute
+  '/onboarding/path': typeof OnboardingPathRoute
+  '/onboarding/role': typeof OnboardingRoleRoute
+  '/onboarding/sector': typeof OnboardingSectorRoute
+  '/onboarding/submitted': typeof OnboardingSubmittedRoute
+  '/onboarding/verify': typeof OnboardingVerifyRoute
+  '/onboarding/welcome': typeof OnboardingWelcomeRoute
   '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
   '/processing/audit': typeof ProcessingAuditRoute
   '/processing/dashboard': typeof ProcessingDashboardRoute
@@ -1117,6 +1241,7 @@ export interface FileRoutesById {
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
   '/mining/': typeof MiningIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/processing/': typeof ProcessingIndexRoute
   '/quality/': typeof QualityIndexRoute
   '/warehousing/': typeof WarehousingIndexRoute
@@ -1196,8 +1321,10 @@ export interface FileRouteTypes {
     | '/logistics'
     | '/marketplace'
     | '/mining'
+    | '/onboarding'
     | '/processing'
     | '/quality'
+    | '/signin'
     | '/warehousing'
     | '/export/dashboard'
     | '/export/documents'
@@ -1228,6 +1355,17 @@ export interface FileRouteTypes {
     | '/mining/risk'
     | '/mining/sampling'
     | '/mining/transactions'
+    | '/onboarding/account'
+    | '/onboarding/admin'
+    | '/onboarding/application'
+    | '/onboarding/dashboard'
+    | '/onboarding/join'
+    | '/onboarding/path'
+    | '/onboarding/role'
+    | '/onboarding/sector'
+    | '/onboarding/submitted'
+    | '/onboarding/verify'
+    | '/onboarding/welcome'
     | '/processing/applications'
     | '/processing/audit'
     | '/processing/dashboard'
@@ -1247,6 +1385,7 @@ export interface FileRouteTypes {
     | '/logistics/'
     | '/marketplace/'
     | '/mining/'
+    | '/onboarding/'
     | '/processing/'
     | '/quality/'
     | '/warehousing/'
@@ -1320,6 +1459,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/signin'
     | '/export/dashboard'
     | '/export/documents'
     | '/export/monitoring'
@@ -1349,6 +1489,17 @@ export interface FileRouteTypes {
     | '/mining/risk'
     | '/mining/sampling'
     | '/mining/transactions'
+    | '/onboarding/account'
+    | '/onboarding/admin'
+    | '/onboarding/application'
+    | '/onboarding/dashboard'
+    | '/onboarding/join'
+    | '/onboarding/path'
+    | '/onboarding/role'
+    | '/onboarding/sector'
+    | '/onboarding/submitted'
+    | '/onboarding/verify'
+    | '/onboarding/welcome'
     | '/processing/applications'
     | '/processing/audit'
     | '/processing/dashboard'
@@ -1368,6 +1519,7 @@ export interface FileRouteTypes {
     | '/logistics'
     | '/marketplace'
     | '/mining'
+    | '/onboarding'
     | '/processing'
     | '/quality'
     | '/warehousing'
@@ -1445,8 +1597,10 @@ export interface FileRouteTypes {
     | '/logistics'
     | '/marketplace'
     | '/mining'
+    | '/onboarding'
     | '/processing'
     | '/quality'
+    | '/signin'
     | '/warehousing'
     | '/export/dashboard'
     | '/export/documents'
@@ -1477,6 +1631,17 @@ export interface FileRouteTypes {
     | '/mining/risk'
     | '/mining/sampling'
     | '/mining/transactions'
+    | '/onboarding/account'
+    | '/onboarding/admin'
+    | '/onboarding/application'
+    | '/onboarding/dashboard'
+    | '/onboarding/join'
+    | '/onboarding/path'
+    | '/onboarding/role'
+    | '/onboarding/sector'
+    | '/onboarding/submitted'
+    | '/onboarding/verify'
+    | '/onboarding/welcome'
     | '/processing/applications'
     | '/processing/audit'
     | '/processing/dashboard'
@@ -1496,6 +1661,7 @@ export interface FileRouteTypes {
     | '/logistics/'
     | '/marketplace/'
     | '/mining/'
+    | '/onboarding/'
     | '/processing/'
     | '/quality/'
     | '/warehousing/'
@@ -1574,8 +1740,10 @@ export interface RootRouteChildren {
   LogisticsRoute: typeof LogisticsRouteWithChildren
   MarketplaceRoute: typeof MarketplaceRouteWithChildren
   MiningRoute: typeof MiningRouteWithChildren
+  OnboardingRoute: typeof OnboardingRouteWithChildren
   ProcessingRoute: typeof ProcessingRouteWithChildren
   QualityRoute: typeof QualityRouteWithChildren
+  SigninRoute: typeof SigninRoute
   WarehousingRoute: typeof WarehousingRouteWithChildren
 }
 
@@ -1616,6 +1784,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MiningRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/processing': {
       id: '/processing'
       path: '/processing'
@@ -1628,6 +1803,13 @@ declare module '@tanstack/react-router' {
       path: '/quality'
       fullPath: '/quality'
       preLoaderRoute: typeof QualityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/warehousing': {
@@ -1867,6 +2049,90 @@ declare module '@tanstack/react-router' {
       fullPath: '/mining/transactions'
       preLoaderRoute: typeof MiningTransactionsRouteImport
       parentRoute: typeof MiningRoute
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/account': {
+      id: '/onboarding/account'
+      path: '/account'
+      fullPath: '/onboarding/account'
+      preLoaderRoute: typeof OnboardingAccountRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/admin': {
+      id: '/onboarding/admin'
+      path: '/admin'
+      fullPath: '/onboarding/admin'
+      preLoaderRoute: typeof OnboardingAdminRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/application': {
+      id: '/onboarding/application'
+      path: '/application'
+      fullPath: '/onboarding/application'
+      preLoaderRoute: typeof OnboardingApplicationRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/dashboard': {
+      id: '/onboarding/dashboard'
+      path: '/dashboard'
+      fullPath: '/onboarding/dashboard'
+      preLoaderRoute: typeof OnboardingDashboardRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/join': {
+      id: '/onboarding/join'
+      path: '/join'
+      fullPath: '/onboarding/join'
+      preLoaderRoute: typeof OnboardingJoinRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/path': {
+      id: '/onboarding/path'
+      path: '/path'
+      fullPath: '/onboarding/path'
+      preLoaderRoute: typeof OnboardingPathRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/role': {
+      id: '/onboarding/role'
+      path: '/role'
+      fullPath: '/onboarding/role'
+      preLoaderRoute: typeof OnboardingRoleRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/sector': {
+      id: '/onboarding/sector'
+      path: '/sector'
+      fullPath: '/onboarding/sector'
+      preLoaderRoute: typeof OnboardingSectorRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/submitted': {
+      id: '/onboarding/submitted'
+      path: '/submitted'
+      fullPath: '/onboarding/submitted'
+      preLoaderRoute: typeof OnboardingSubmittedRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/verify': {
+      id: '/onboarding/verify'
+      path: '/verify'
+      fullPath: '/onboarding/verify'
+      preLoaderRoute: typeof OnboardingVerifyRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/welcome': {
+      id: '/onboarding/welcome'
+      path: '/welcome'
+      fullPath: '/onboarding/welcome'
+      preLoaderRoute: typeof OnboardingWelcomeRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/processing/': {
       id: '/processing/'
@@ -2658,6 +2924,40 @@ const MiningRouteChildren: MiningRouteChildren = {
 const MiningRouteWithChildren =
   MiningRoute._addFileChildren(MiningRouteChildren)
 
+interface OnboardingRouteChildren {
+  OnboardingAccountRoute: typeof OnboardingAccountRoute
+  OnboardingAdminRoute: typeof OnboardingAdminRoute
+  OnboardingApplicationRoute: typeof OnboardingApplicationRoute
+  OnboardingDashboardRoute: typeof OnboardingDashboardRoute
+  OnboardingJoinRoute: typeof OnboardingJoinRoute
+  OnboardingPathRoute: typeof OnboardingPathRoute
+  OnboardingRoleRoute: typeof OnboardingRoleRoute
+  OnboardingSectorRoute: typeof OnboardingSectorRoute
+  OnboardingSubmittedRoute: typeof OnboardingSubmittedRoute
+  OnboardingVerifyRoute: typeof OnboardingVerifyRoute
+  OnboardingWelcomeRoute: typeof OnboardingWelcomeRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingAccountRoute: OnboardingAccountRoute,
+  OnboardingAdminRoute: OnboardingAdminRoute,
+  OnboardingApplicationRoute: OnboardingApplicationRoute,
+  OnboardingDashboardRoute: OnboardingDashboardRoute,
+  OnboardingJoinRoute: OnboardingJoinRoute,
+  OnboardingPathRoute: OnboardingPathRoute,
+  OnboardingRoleRoute: OnboardingRoleRoute,
+  OnboardingSectorRoute: OnboardingSectorRoute,
+  OnboardingSubmittedRoute: OnboardingSubmittedRoute,
+  OnboardingVerifyRoute: OnboardingVerifyRoute,
+  OnboardingWelcomeRoute: OnboardingWelcomeRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
+
 interface ProcessingApplicationsRouteChildren {
   ProcessingApplicationsIdRoute: typeof ProcessingApplicationsIdRoute
 }
@@ -2812,8 +3112,10 @@ const rootRouteChildren: RootRouteChildren = {
   LogisticsRoute: LogisticsRouteWithChildren,
   MarketplaceRoute: MarketplaceRouteWithChildren,
   MiningRoute: MiningRouteWithChildren,
+  OnboardingRoute: OnboardingRouteWithChildren,
   ProcessingRoute: ProcessingRouteWithChildren,
   QualityRoute: QualityRouteWithChildren,
+  SigninRoute: SigninRoute,
   WarehousingRoute: WarehousingRouteWithChildren,
 }
 export const routeTree = rootRouteImport

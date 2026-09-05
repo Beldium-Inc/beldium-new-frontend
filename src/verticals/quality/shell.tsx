@@ -69,7 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);
 
   React.useEffect(() => {
-    if (ready && !user) navigate({ to: "/", replace: true });
+    if (ready && !user) navigate({ to: "/signin", replace: true });
   }, [ready, user, navigate]);
 
   React.useEffect(() => {
@@ -130,7 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => {
             logout();
-            navigate({ to: "/" });
+            navigate({ to: "/signin" });
           }}
           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-pale px-3 py-2 text-xs font-semibold text-navy transition hover:bg-white"
         >

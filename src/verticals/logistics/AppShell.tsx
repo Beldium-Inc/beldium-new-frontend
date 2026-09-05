@@ -130,7 +130,7 @@ export function AppShell({
 
   React.useEffect(() => {
     if (hydrated && (!session || session.role !== role)) {
-      navigate({ to: "/" });
+      navigate({ to: "/signin" });
     }
   }, [hydrated, session, role, navigate]);
 
@@ -184,7 +184,7 @@ export function AppShell({
             type="button"
             onClick={() => {
               signOut();
-              navigate({ to: "/" });
+              navigate({ to: "/signin" });
             }}
             className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-white/20 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-white/10"
           >
@@ -271,7 +271,7 @@ export function AppShell({
               type="button"
               onClick={() => {
                 signOut();
-                navigate({ to: "/" });
+                navigate({ to: "/signin" });
               }}
               className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white transition hover:bg-[var(--brand)]/90"
             >

@@ -28,7 +28,7 @@ function LogisticsLayout() {
   const valid = role !== null && roleIn("logistics", role) !== undefined;
 
   useEffect(() => {
-    if (hydrated && !valid) navigate({ to: "/" });
+    if (hydrated && !valid) navigate({ to: "/signin" });
   }, [hydrated, valid, navigate]);
 
   if (!hydrated || !valid) {
