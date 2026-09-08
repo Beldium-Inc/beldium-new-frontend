@@ -116,7 +116,8 @@ function EntryPage() {
         </div>
 
         <p className="mt-8 text-center text-[11px] text-muted-foreground">
-          Prototype build. Verification steps are simulated locally in your browser.
+          Accounts and email verification are live. Compliance review steps are still simulated in
+          your browser.
         </p>
       </div>
     </div>

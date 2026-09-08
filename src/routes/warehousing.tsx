@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { DemoProvider } from "@/verticals/warehousing/store";
 import type { RoleId } from "@/verticals/warehousing/data";
 import { useSession } from "@/lib/session";
+import { useSignOut } from "@/lib/sign-out";
 import { roleIn } from "@/lib/verticals";
 
 export const Route = createFileRoute("/warehousing")({
@@ -21,7 +22,8 @@ export const Route = createFileRoute("/warehousing")({
 });
 
 function WarehousingLayout() {
-  const { session, hydrated, signOut } = useSession();
+  const { session, hydrated } = useSession();
+  const signOut = useSignOut();
   const navigate = useNavigate();
 
   const role = session?.vertical === "warehousing" ? session.role : null;

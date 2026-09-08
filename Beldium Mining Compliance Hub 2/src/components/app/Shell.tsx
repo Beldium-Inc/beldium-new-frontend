@@ -1,0 +1,206 @@
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useState, type ReactNode } from "react";
+import {
+  AlertTriangle,
+  Bell,
+  Boxes,
+  Building2,
+  ChartLine,
+  ClipboardList,
+  Files,
+  FlaskConical,
+  Gauge,
+  HardHat,
+  History,
+  Inbox,
+  Leaf,
+  LogOut,
+  Menu,
+  Mountain,
+  Receipt,
+  RefreshCw,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { BeldiumMark } from "@/components/brand";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/prototype/store";
+import { users } from "@/lib/prototype/data";
+import { navForRole } from "./nav";
+import { Chip } from "./chips";
+
+const icons: Record<string, typeof Gauge> = {
+  gauge: Gauge,
+  inbox: Inbox,
+  building: Building2,
+  mountain: Mountain,
+  clipboard: ClipboardList,
+  files: Files,
+  hardhat: HardHat,
+  flask: FlaskConical,
+  leaf: Leaf,
+  shield: ShieldCheck,
+  alert: AlertTriangle,
+  chart: ChartLine,
+  history: History,
+  boxes: Boxes,
+  receipt: Receipt,
+};
+
+const roleLabel = { partner: "Mining Compliance Partner", miner: "Miner", regulator: "Regulatory Oversight" } as const;
+
+export function Shell({ children }: { children: ReactNode }) {
+  const { role, logout, notifications, markNotificationsRead, resetDemo } = useStore();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  if (!role) return null;
+  const user = users[role];
+  const items = navForRole(role);
+  const groups = [...new Set(items.map((i) => i.group))];
+  const mine = notifications.filter((n) => n.audience.includes(role));
+  const unread = mine.filter((n) => !n.read).length;
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/", replace: true });
+  };
+
+  const sidebar = (
+    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+      <div className="flex items-center gap-2.5 px-5 py-5">
+        <BeldiumMark className="size-9 rounded-md bg-white" />
+        <div className="leading-tight">
+          <p className="font-display text-sm font-semibold text-sidebar-accent-foreground">Beldium</p>
+          <p className="text-[11px] text-sidebar-foreground/70">Mining Compliance</p>
+        </div>
+      </div>
+      <ScrollArea className="flex-1 px-3">
+        <nav className="space-y-5 pb-6">
+          {groups.map((group) => (
+            <div key={group}>
+              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">{group}</p>
+              <ul className="space-y-0.5">
+                {items
+                  .filter((i) => i.group === group)
+                  .map((item) => {
+                    const Icon = icons[item.icon] ?? Gauge;
+                    const active = pathname === item.to || (item.to !== "/app/dashboard" && pathname.startsWith(item.to));
+                    return (
+                      <li key={item.to}>
+                        <Link
+                          to={item.to}
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors",
+                            active
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                              : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          )}
+                        >
+                          <Icon className="size-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+      </ScrollArea>
+      <div className="border-t border-sidebar-border p-3">
+        <button
+          onClick={resetDemo}
+          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[12px] text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <RefreshCw className="size-3.5" /> Reset demo data
+        </button>
+        <p className="px-2.5 pt-2 text-[10px] leading-relaxed text-sidebar-foreground/50">
+          Prototype — seeded demo data, no live systems connected.
+        </p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 lg:block">{sidebar}</aside>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          <div className="w-64 shadow-panel">{sidebar}</div>
+          <button aria-label="Close navigation" className="flex-1 bg-foreground/40" onClick={() => setMobileOpen(false)} />
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-surface px-4 lg:px-6">
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen((v) => !v)} aria-label="Toggle navigation">
+            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </Button>
+          <div className="min-w-0 flex-1">
+            <Chip tone="info" className="hidden sm:inline-flex">
+              Prototype demo · {roleLabel[role]}
+            </Chip>
+          </div>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative" aria-label="Notifications" onClick={() => markNotificationsRead()}>
+                <Bell className="size-5" />
+                {unread > 0 && (
+                  <span className="absolute top-1.5 right-1.5 grid size-4 place-items-center rounded-full bg-danger text-[9px] font-bold text-danger-foreground">
+                    {unread}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-88 p-0">
+              <div className="border-b border-border px-4 py-3">
+                <p className="font-display text-sm font-semibold">Notifications</p>
+              </div>
+              <ScrollArea className="max-h-80">
+                <ul className="divide-y divide-border">
+                  {mine.slice(0, 12).map((n) => (
+                    <li key={n.id} className="px-4 py-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[13px] font-medium">{n.title}</p>
+                        <Chip
+                          tone={n.tone === "positive" ? "success" : n.tone === "negative" ? "danger" : n.tone === "warning" ? "warning" : "neutral"}
+                        >
+                          {n.tone === "positive" ? "Update" : n.tone === "negative" ? "Action" : "Notice"}
+                        </Chip>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{n.body}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground/70">{n.at}</p>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+
+          <div className="flex items-center gap-3 border-l border-border pl-3">
+            <div className="hidden text-right sm:block">
+              <p className="text-[13px] leading-tight font-semibold">{user.name}</p>
+              <p className="text-[11px] leading-tight text-muted-foreground">{user.title}</p>
+            </div>
+            <div className="grid size-9 place-items-center rounded-full bg-brand-soft font-display text-xs font-bold text-brand">
+              {user.initials}
+            </div>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="size-4" /> <span className="hidden sm:inline">Log out</span>
+            </Button>
+          </div>
+        </header>
+
+        <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
+      </div>
+    </div>
+  );
+}

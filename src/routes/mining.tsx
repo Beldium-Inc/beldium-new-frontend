@@ -5,6 +5,7 @@ import { Shell } from "@/verticals/mining/components/Shell";
 import { PrototypeStoreProvider } from "@/verticals/mining/store";
 import type { Role } from "@/verticals/mining/types";
 import { useSession } from "@/lib/session";
+import { useSignOut } from "@/lib/sign-out";
 import { roleIn } from "@/lib/verticals";
 
 export const Route = createFileRoute("/mining")({
@@ -23,7 +24,8 @@ export const Route = createFileRoute("/mining")({
 });
 
 function MiningLayout() {
-  const { session, hydrated, signOut } = useSession();
+  const { session, hydrated } = useSession();
+  const signOut = useSignOut();
   const navigate = useNavigate();
 
   const role = session?.vertical === "mining" ? session.role : null;

@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { AuthProvider } from "../lib/auth";
 import { SessionProvider } from "../lib/session";
 import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -134,14 +135,18 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* One session across all seven dashboards; each vertical layout seeds its
-          own store from it. Vertical-specific providers mount in those layouts,
-          not here, so signing into one dashboard doesn't spin up the other six. */}
-      <SessionProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster position="top-right" />
-      </SessionProvider>
+      {/* AuthProvider is the API identity (JWT pair + /auth/me/); SessionProvider
+          is which of the seven dashboards you are looking at and in what role.
+          Auth wraps it because signing out has to clear both.
+          Vertical-specific providers mount in those layouts, not here, so
+          signing into one dashboard doesn't spin up the other six. */}
+      <AuthProvider>
+        <SessionProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster position="top-right" />
+        </SessionProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
