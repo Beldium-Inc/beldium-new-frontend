@@ -79,9 +79,9 @@ function SubmittedPage() {
     <SubmittedShell
       heading="Organisation application received"
       applicant={application?.organisation_profile?.name ?? organisation?.name ?? ""}
-      // The application itself carries no human-readable reference; the
-      // organisation's Beldium ID is the identifier the backend does issue.
-      reference={organisation?.beldium_id ?? application?.id ?? "APP-PENDING"}
+      // The application now issues its own BLD-APP- reference; the organisation's
+      // BLD-ORG- id is a different thing and is not a substitute for it.
+      reference={application?.reference ?? organisation?.beldium_id ?? "APP-PENDING"}
       status={application ? APPLICATION_STATUS_LABELS[application.status] : "Under review"}
       submitted={submittedAt}
       documentCount={application?.documents.length ?? 0}

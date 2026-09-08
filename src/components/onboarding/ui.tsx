@@ -79,8 +79,9 @@ export function AuthShell({
         {aside && <div className="mt-6">{aside}</div>}
 
         <p className="mt-8 text-center text-[11px] text-muted-foreground">
-          Accounts, email verification and the organisation register are live. Compliance
-          application review is still simulated in your browser.
+          Accounts, the organisation register and the organisation compliance application are live.
+          The independent-professional and regulator applications, and phone verification, are still
+          simulated in your browser.
         </p>
       </div>
     </div>

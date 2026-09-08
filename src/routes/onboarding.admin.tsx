@@ -93,10 +93,8 @@ function AdminReviewPage() {
                 "Your organisation application"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {organisation?.beldium_id
-                ? `Reference ${organisation.beldium_id}`
-                : "Not yet submitted"}{" "}
-              · {application?.progress.documents.submitted ?? 0} of{" "}
+              {application?.reference ? `Reference ${application.reference}` : "Not yet started"} ·{" "}
+              {application?.progress.documents.submitted ?? 0} of{" "}
               {application?.progress.documents.required ?? 0} documents ·{" "}
               {application?.personnel.length ?? 0} personnel
             </p>

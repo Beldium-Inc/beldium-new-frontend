@@ -26,6 +26,7 @@ import {
   getComplianceApplication,
   listComplianceApplications,
   listDocumentRequirements,
+  listActivity,
   listDocuments,
   listMessages,
   listPersonnel,
@@ -63,6 +64,7 @@ export const queryKeys = {
   documentRequirements: (id: UUID) => ["compliance", id, "document-requirements"] as const,
   messages: (id: UUID) => ["compliance", id, "messages"] as const,
   dashboard: ["compliance", "dashboard"] as const,
+  activity: (id: UUID) => ["compliance", id, "activity"] as const,
 };
 
 /**
@@ -404,5 +406,14 @@ function invalidateApplication(
   void queryClient.invalidateQueries({ queryKey: queryKeys.application(id) });
   void queryClient.invalidateQueries({ queryKey: queryKeys.personnel(id) });
   void queryClient.invalidateQueries({ queryKey: queryKeys.documents(id) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.activity(id) });
   void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
+}
+
+export function useApplicationActivity(id: UUID | null) {
+  return useQuery({
+    queryKey: queryKeys.activity(id ?? "none"),
+    queryFn: () => listActivity(id as UUID),
+    enabled: Boolean(id),
+  });
 }

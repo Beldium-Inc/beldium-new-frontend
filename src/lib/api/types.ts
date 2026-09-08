@@ -305,6 +305,8 @@ export interface ApplicationProgress {
 
 export interface ComplianceApplication {
   id: UUID;
+  /** Human-readable identifier, `BLD-APP-<year>-<hex>`. Null on rows predating it. */
+  reference: string | null;
   organisation: UUID;
   status: ApplicationStatus;
   /** Empty object until the matching section has been saved. */
@@ -329,6 +331,7 @@ export interface ComplianceApplication {
 /** One row of `GET /dashboard/`. Assembled in the view, not by a serializer. */
 export interface DashboardApplication {
   application_id: UUID;
+  reference: string | null;
   organisation_id: UUID;
   organisation_name: string;
   status: ApplicationStatus;
@@ -340,6 +343,16 @@ export interface DashboardApplication {
   unread_messages: number;
   review_notes: string;
   conditional_requirements: string;
+}
+
+/** One entry in an application's activity feed. */
+export interface ApplicationActivity {
+  id: UUID;
+  event_type: string;
+  /** A colleague's name, or "Beldium review team" for a reviewer. */
+  actor: string;
+  description: string;
+  created_at: Timestamp;
 }
 
 export interface DashboardResponse {
