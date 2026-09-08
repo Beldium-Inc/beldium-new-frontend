@@ -79,7 +79,8 @@ export function AuthShell({
         {aside && <div className="mt-6">{aside}</div>}
 
         <p className="mt-8 text-center text-[11px] text-muted-foreground">
-          Prototype / demo build: no backend. All verification steps are simulated locally in your browser.
+          Accounts, email verification and the organisation register are live. Compliance
+          application review is still simulated in your browser.
         </p>
       </div>
     </div>

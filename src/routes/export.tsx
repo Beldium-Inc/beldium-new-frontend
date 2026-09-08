@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { StoreProvider } from "@/verticals/export/store";
 import type { Role } from "@/verticals/export/mock-data";
 import { useSession } from "@/lib/session";
+import { useSignOut } from "@/lib/sign-out";
 import { roleIn } from "@/lib/verticals";
 
 export const Route = createFileRoute("/export")({
@@ -21,7 +22,8 @@ export const Route = createFileRoute("/export")({
 });
 
 function ExportLayout() {
-  const { session, hydrated, signOut } = useSession();
+  const { session, hydrated } = useSession();
+  const signOut = useSignOut();
   const navigate = useNavigate();
 
   const role = session?.vertical === "export" ? session.role : null;

@@ -320,7 +320,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      // Registration posts this to the API, so it is a real credential now:
+      // it stays in memory for the length of the form and never reaches disk.
+      const { password: _password, ...account } = state.account;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, account }));
     } catch {
       /* ignore */
     }

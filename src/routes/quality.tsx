@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { BeldiumProvider } from "@/verticals/quality/store";
 import type { Role } from "@/verticals/quality/types";
 import { useSession } from "@/lib/session";
+import { useSignOut } from "@/lib/sign-out";
 import { roleIn } from "@/lib/verticals";
 
 export const Route = createFileRoute("/quality")({
@@ -21,7 +22,8 @@ export const Route = createFileRoute("/quality")({
 });
 
 function QualityLayout() {
-  const { session, hydrated, signOut } = useSession();
+  const { session, hydrated } = useSession();
+  const signOut = useSignOut();
   const navigate = useNavigate();
 
   const role = session?.vertical === "quality" ? session.role : null;

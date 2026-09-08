@@ -51,13 +51,6 @@ export const roleCatalogue: {
   },
 ];
 
-export const registeredOrganisations = [
-  { id: "org-1", name: "Nasarawa Lithium Minerals Ltd", rcNumber: "RC-1428871", state: "Nasarawa", admin: "A. Bello", sites: 3 },
-  { id: "org-2", name: "Kogi Mineral Resources Plc", rcNumber: "RC-1039442", state: "Kogi", admin: "F. Adeyemi", sites: 2 },
-  { id: "org-3", name: "Sunrise Minerals Holding Ltd", rcNumber: "RC-1655230", state: "Kwara", admin: "O. Ibrahim", sites: 2 },
-  { id: "org-4", name: "Plateau Spodumene Ventures Ltd", rcNumber: "RC-1811204", state: "Plateau", admin: "J. Danladi", sites: 1 },
-];
-
 export const documentCatalogue = [
   "CAC Certificate of Incorporation",
   "CAC Status Report (Form CO7)",

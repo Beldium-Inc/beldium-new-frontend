@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { VERTICALS, homeFor, type Vertical, type VerticalSlug } from "@/lib/verticals";
 import { Button } from "@/components/ui/button";
@@ -72,14 +74,18 @@ const ROLE_ICON: Record<string, React.ElementType> = {
 };
 
 function SignInPage() {
-  const { session, hydrated, signIn } = useSession();
+  // Two things happen on submit: the API authenticates the person, and the
+  // local session records which dashboard and role they chose to work in.
+  const { session, hydrated, signIn: startSession } = useSession();
+  const { signIn: authenticate } = useAuth();
   const navigate = useNavigate();
 
   const [picked, setPicked] = React.useState<Vertical | null>(null);
   const [roleId, setRoleId] = React.useState<string | null>(null);
   const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("demo-prototype");
+  const [password, setPassword] = React.useState("");
   const [remember, setRemember] = React.useState(true);
+  const [submitting, setSubmitting] = React.useState(false);
 
   // Already signed in: go straight back to that workspace.
   React.useEffect(() => {
@@ -90,24 +96,38 @@ function SignInPage() {
 
   const openSector = (vertical: Vertical) => {
     setPicked(vertical);
-    const first = vertical.roles[0]!;
-    setRoleId(first.id);
-    setEmail(`${first.id}@${vertical.slug}.beldium.demo`);
+    setRoleId(vertical.roles[0]!.id);
   };
 
-  const selectRole = (vertical: Vertical, id: string) => {
+  const selectRole = (_vertical: Vertical, id: string) => {
     setRoleId(id);
-    setEmail(`${id}@${vertical.slug}.beldium.demo`);
   };
 
-  const submit = () => {
-    if (!picked || !roleId) return;
-    if (!email.includes("@") || password.length < 4) {
+  const submit = async () => {
+    if (!picked || !roleId || submitting) return;
+    const address = email.trim();
+    if (!address.includes("@") || password.length === 0) {
       toast.error("Enter your email address and password.");
       return;
     }
-    signIn(picked.slug, roleId);
-    navigate({ to: homeFor(picked.slug, roleId) });
+
+    setSubmitting(true);
+    try {
+      await authenticate({ email: address, password });
+      startSession(picked.slug, roleId);
+      navigate({ to: homeFor(picked.slug, roleId) });
+    } catch (error) {
+      // An unverified account is not a failed password: send them to finish
+      // the signup code rather than making them guess at their credentials.
+      if (error instanceof ApiError && error.code === "email_not_verified") {
+        toast.error("Verify your email address to finish setting up this account.");
+        navigate({ to: "/onboarding/verify", search: { email: address } });
+        return;
+      }
+      toast.error(error instanceof ApiError ? error.message : "Sign-in failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -281,18 +301,23 @@ function SignInPage() {
                 </label>
                 <button
                   className="text-xs font-medium text-brand underline"
-                  onClick={() => toast.info("Password reset email sent (simulated).")}
+                  onClick={() => toast.info("Password reset is not available yet.")}
                 >
                   Forgot password?
                 </button>
               </div>
 
-              <Button className="mt-6 w-full" size="lg" onClick={submit}>
-                Sign in to {picked.name}
+              <Button
+                className="mt-6 w-full"
+                size="lg"
+                onClick={() => void submit()}
+                disabled={submitting}
+              >
+                {submitting ? "Signing in…" : `Sign in to ${picked.name}`}
               </Button>
 
               <p className="mt-5 text-center text-xs text-muted-foreground">
-                This prototype does not validate passwords. New to Beldium?{" "}
+                New to Beldium?{" "}
                 <Link to="/onboarding/sector" className="font-medium text-brand underline">
                   Create an account
                 </Link>
