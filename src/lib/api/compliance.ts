@@ -1,5 +1,6 @@
 import { apiFetch } from "./client";
 import type {
+  ApplicationActivity,
   ApplicationMessage,
   ComplianceApplication,
   ComplianceDocument,
@@ -215,6 +216,19 @@ export function postMessage(id: UUID, body: string): Promise<ApplicationMessage>
 export function markMessagesRead(id: UUID): Promise<{ marked_read: number }> {
   return apiFetch<{ marked_read: number }>(`/compliance-applications/${id}/messages/mark-read/`, {
     method: "POST",
+  });
+}
+
+// --- activity ---------------------------------------------------------------
+
+/**
+ * What has happened to this application. Paginated, newest first, and readable
+ * by any member: reviewer entries are attributed to the team rather than to a
+ * named person, and carry none of the audit row's network detail.
+ */
+export function listActivity(id: UUID, page?: number): Promise<Paginated<ApplicationActivity>> {
+  return apiFetch<Paginated<ApplicationActivity>>(`/compliance-applications/${id}/activity/`, {
+    query: page ? { page } : {},
   });
 }
 

@@ -21,8 +21,16 @@ import { useOnboarding } from "@/lib/onboarding/store";
 
 export const Route = createFileRoute("/onboarding/join")({ component: JoinPage });
 
-// Ownership is never requested: the owner is whoever created the organisation.
-const REQUESTABLE_ROLES: MembershipRole[] = ["admin", "reviewer", "inspector", "member"];
+// The API rejects both owner and administrator on a join request
+// (`validate_requested_role`), so neither is offered here.
+const REQUESTABLE_ROLES: MembershipRole[] = [
+  "reviewer",
+  "inspector",
+  "member",
+  "compliance_manager",
+  "analyst",
+  "read_only",
+];
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",

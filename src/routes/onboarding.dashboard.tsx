@@ -22,6 +22,7 @@ import {
   APPLICATION_STATUS_LABELS,
   ApiError,
   DOCUMENT_STATUS_LABELS,
+  useApplicationActivity,
   useApplicationMessages,
   useCurrentUser,
   useDashboard,
@@ -97,6 +98,7 @@ function OnboardingDashboard() {
   const messages = useApplicationMessages(applicationId);
   const postMessage = usePostMessage(applicationId);
   const markRead = useMarkMessagesRead(applicationId);
+  const activity = useApplicationActivity(applicationId);
 
   const [reply, setReply] = useState("");
   const roleEntry = roleCatalogue.find((r) => r.role === role);
@@ -183,8 +185,10 @@ function OnboardingDashboard() {
             {APPLICATION_STATUS_LABELS[status]}
           </span>
         </div>
-        {organisation?.beldium_id && (
-          <p className="mt-4 text-xs text-muted-foreground">Reference {organisation.beldium_id}</p>
+        {(row?.reference ?? application?.reference) && (
+          <p className="mt-4 text-xs text-muted-foreground">
+            Reference {row?.reference ?? application?.reference}
+          </p>
         )}
         {status === "verified" && (
           <Button className="mt-4" onClick={() => navigate({ to: "/onboarding/welcome" })}>
@@ -333,6 +337,33 @@ function OnboardingDashboard() {
               Role permissions are a local catalogue; the API does not publish a per-role permission
               list.
             </p>
+          </div>
+
+          <div className="rounded-[20px] border border-border p-5">
+            <p className="font-display text-sm font-semibold">Activity</p>
+            {activity.isLoading && (
+              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="size-3.5 animate-spin" /> Loading…
+              </p>
+            )}
+            <ol className="mt-3 space-y-3">
+              {(activity.data?.results ?? []).slice(0, 8).map((entry) => (
+                <li key={entry.id} className="border-l-2 border-border pl-3">
+                  <p className="text-sm">{entry.description}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {entry.actor} · {new Date(entry.created_at).toLocaleString()}
+                  </p>
+                </li>
+              ))}
+              {(activity.data?.results ?? []).length === 0 && !activity.isLoading && (
+                <li className="text-xs text-muted-foreground">No activity recorded yet.</li>
+              )}
+            </ol>
+            {(activity.data?.count ?? 0) > 8 && (
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Showing the 8 most recent of {activity.data?.count}.
+              </p>
+            )}
           </div>
 
           <div className="rounded-[20px] border border-border p-5">
