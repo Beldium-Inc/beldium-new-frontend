@@ -29,6 +29,7 @@ import {
   setAlertStatus,
   submitNonConformityEvidence,
   submitProcessingApplication,
+  updateInspection,
   uploadApplicationDocument,
   type ApplicationDecisionValue,
   type Inspection,
@@ -38,6 +39,7 @@ import {
   type ProcessingSectionKey,
   type ProcessingTypeKey,
   type NewApplicationInput,
+  type Inspection as InspectionRow,
   type SectionField,
 } from "./processing";
 import { useHasTokens } from "./queries";
@@ -397,6 +399,17 @@ export function useReviewProcessingDocument() {
       note?: string | undefined;
     }) =>
       reviewProcessingDocument(input.id, { review_state: input.review_state, note: input.note }),
+    onSuccess: () => invalidateProcessing(queryClient),
+  });
+}
+
+export function useUpdateInspection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; patch: Partial<InspectionRow> }) =>
+      updateInspection(input.id, input.patch),
+    // Completing one stamps the processor's last-inspection date, so the
+    // register is stale too.
     onSuccess: () => invalidateProcessing(queryClient),
   });
 }

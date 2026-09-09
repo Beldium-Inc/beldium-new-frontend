@@ -17,6 +17,8 @@ import {
   useProcessingInspections,
   useProcessingNonConformities,
   useProcessors,
+  useRemoveRiskCause,
+  useAddRiskCause,
   useRequestInspection,
   useReviewProcessingDocument,
   useReviewApplicationSection,
@@ -24,9 +26,11 @@ import {
   useSubmitNonConformityEvidence,
   useSubmitProcessingApplication,
   useTraceabilityRuns,
+  useUpdateInspection,
   useUploadApplicationDocument,
   useSaveApplicationSection,
 } from "@/lib/api/processing-queries";
+import type * as Api from "@/lib/api/processing";
 import type {
   NewApplicationInput,
   ProcessingCapabilities,
@@ -155,6 +159,22 @@ type Ctx = {
   ) => Promise<void>;
 
   inspections: Inspection[];
+  /** Assign an inspector and confirm a date. Desk only. */
+  updateInspection: (
+    reference: string,
+    patch: {
+      scheduled_for?: string | null;
+      inspector_name?: string;
+      status?: Inspection["status"];
+      outcome?: string;
+    },
+  ) => Promise<void>;
+  /** Add or withdraw a weighted contributor to an application's risk score. */
+  addRiskCause: (
+    applicationReference: string,
+    input: { cause: string; weight: number; detail?: string },
+  ) => Promise<void>;
+  removeRiskCause: (applicationReference: string, causeId: string) => Promise<void>;
   processors: Processor[];
   envAlerts: EnvAlert[];
   setAlertStatus: (
@@ -219,6 +239,9 @@ export function AppStateProvider({
   const closeNonConformityFor = useCloseNonConformity();
   const setAlertStatusFor = useSetAlertStatus();
   const reviewDocumentFor = useReviewProcessingDocument();
+  const updateInspectionFor = useUpdateInspection();
+  const addRiskCauseFor = useAddRiskCause();
+  const removeRiskCauseFor = useRemoveRiskCause();
   const createApplication = useCreateProcessingApplication();
   const saveSectionFor = useSaveApplicationSection();
   const uploadDocumentFor = useUploadApplicationDocument();
@@ -405,6 +428,21 @@ export function AppStateProvider({
     },
 
     inspections: inspectionRows,
+    updateInspection: async (reference, patch) => {
+      const row = (inspections.data ?? EMPTY_LIST).results.find((i) => i.reference === reference);
+      if (!row) return;
+      await updateInspectionFor.mutateAsync({ id: row.id, patch: toInspectionPatch(patch) });
+    },
+    addRiskCause: async (applicationReference, input) => {
+      const id = applicationIdFor(applicationReference);
+      if (!id) return;
+      await addRiskCauseFor.mutateAsync({ id, ...input });
+    },
+    removeRiskCause: async (applicationReference, causeId) => {
+      const id = applicationIdFor(applicationReference);
+      if (!id) return;
+      await removeRiskCauseFor.mutateAsync({ id, causeId });
+    },
     processors: (processors.data ?? EMPTY_LIST).results.map(toProcessor),
     envAlerts: (alerts.data ?? EMPTY_LIST).results.map(toEnvAlert),
     setAlertStatus: async (reference, status, note) => {
@@ -429,6 +467,27 @@ export function AppStateProvider({
   };
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+}
+
+const INSPECTION_STATUS_VALUE: Record<Inspection["status"], Api.Inspection["status"]> = {
+  Requested: "requested",
+  Scheduled: "scheduled",
+  "In Progress": "in_progress",
+  Completed: "completed",
+};
+
+function toInspectionPatch(patch: {
+  scheduled_for?: string | null;
+  inspector_name?: string;
+  status?: Inspection["status"];
+  outcome?: string;
+}): Partial<Api.Inspection> {
+  const out: Partial<Api.Inspection> = {};
+  if (patch.scheduled_for !== undefined) out.scheduled_for = patch.scheduled_for;
+  if (patch.inspector_name !== undefined) out.inspector_name = patch.inspector_name;
+  if (patch.outcome !== undefined) out.outcome = patch.outcome;
+  if (patch.status !== undefined) out.status = INSPECTION_STATUS_VALUE[patch.status];
+  return out;
 }
 
 export function useAppState() {

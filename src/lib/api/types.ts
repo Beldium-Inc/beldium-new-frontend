@@ -35,7 +35,13 @@ export interface User {
   first_name: string;
   last_name: string;
   phone_number: string;
+  country: string;
+  onboarding_role: string;
+  /** Null until the signup code is consumed. The API is the authority on this. */
   email_verified_at: Timestamp | null;
+  /** Null until a phone OTP is confirmed. Separate from email verification. */
+  phone_verified_at: Timestamp | null;
+  is_staff: boolean;
   created_at: Timestamp;
 }
 

@@ -42,13 +42,7 @@ function ReportsPage() {
   const [scope, setScope] = React.useState("All regions");
   const [kind, setKind] = React.useState(KINDS[0]);
   const [period, setPeriod] = React.useState("Q3 2026");
-  const [state, setState] = React.useState<"idle" | "running" | "done">("idle");
   const [preview, setPreview] = React.useState<ReportItem | null>(null);
-
-  function generate() {
-    setState("running");
-    window.setTimeout(() => setState("done"), 1400);
-  }
 
   return (
     <>
@@ -65,10 +59,7 @@ function ReportsPage() {
             <Field label="Report type">
               <select
                 value={kind}
-                onChange={(e) => {
-                  setKind(e.target.value);
-                  setState("idle");
-                }}
+                onChange={(e) => setKind(e.target.value)}
                 className="w-full rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm outline-none focus:border-ring"
               >
                 {KINDS.map((k) => (
@@ -81,10 +72,7 @@ function ReportsPage() {
                 {scopes.map((s) => (
                   <button
                     key={s}
-                    onClick={() => {
-                      setScope(s);
-                      setState("idle");
-                    }}
+                    onClick={() => setScope(s)}
                     className={cn(
                       "rounded-full border px-3 py-1.5 text-xs font-medium",
                       scope === s
@@ -102,10 +90,7 @@ function ReportsPage() {
                 {["Q1 2026", "Q2 2026", "Q3 2026", "YTD 2026"].map((p) => (
                   <button
                     key={p}
-                    onClick={() => {
-                      setPeriod(p);
-                      setState("idle");
-                    }}
+                    onClick={() => setPeriod(p)}
                     className={cn(
                       "rounded-full border px-3 py-1.5 text-xs font-medium",
                       period === p
@@ -120,30 +105,19 @@ function ReportsPage() {
             </Field>
 
             <button
-              onClick={generate}
-              disabled={state === "running"}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-70"
+              disabled
+              title="Report generation is not built yet; published reports are in the library."
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-40"
             >
-              {state === "running" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <FileText className="size-4" />
-              )}
-              {state === "running" ? "Compiling…" : "Generate report"}
+              <FileText className="size-4" />
+              Generate report
             </button>
 
-            {state === "done" ? (
-              <div className="rounded-2xl border border-border bg-success/25 px-4 py-3">
-                <p className="text-xs font-medium">Report ready</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {kind} · {scope} · {period}, 14 pages, 6 annexes. Demo build: download is
-                  simulated.
-                </p>
-                <button className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
-                  <Download className="size-3.5" /> Download PDF
-                </button>
-              </div>
-            ) : null}
+            <p className="rounded-2xl border border-border bg-muted/50 px-4 py-3 text-[11px] text-muted-foreground">
+              Generation is not connected yet: nothing on the platform compiles a report document.
+              The composer above records what would be requested. Reports that have already been
+              published are listed in the library and download from the API.
+            </p>
           </div>
         </Panel>
 
@@ -237,9 +211,23 @@ function ReportsPage() {
               >
                 Close
               </button>
-              <button className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground">
-                <Download className="size-3.5" /> Download
-              </button>
+              {preview.fileUrl ? (
+                <a
+                  href={preview.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
+                >
+                  <Download className="size-3.5" /> Download
+                </a>
+              ) : (
+                <span
+                  title="No document was stored for this report."
+                  className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground opacity-40"
+                >
+                  <Download className="size-3.5" /> No file stored
+                </span>
+              )}
             </div>
           </div>
         </div>

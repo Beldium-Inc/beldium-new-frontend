@@ -129,7 +129,7 @@ export type ApplicationSummary = {
   stage: "New" | "In Review" | "Awaiting Info" | "Inspection" | "Decided";
   decision?: "Approved" | "Conditional Approval" | "More Info Required" | "Rejected";
   completeness: number;
-  riskCauses: { cause: string; weight: number; detail: string }[];
+  riskCauses: { id: string; cause: string; weight: number; detail: string }[];
 };
 
 /** One application in full: the ten evidence sections and the review tally. */
@@ -294,6 +294,8 @@ export type ReportItem = {
   generated: string;
   pages: number;
   scope: string;
+  /** Authenticated download route, or null when no file was ever stored. */
+  fileUrl: string | null;
 };
 
 export type Totals = Api.ProcessingDashboard["totals"];
@@ -452,6 +454,7 @@ export function toApplicationSummary(row: Api.ProcessingApplication): Applicatio
     ...(row.decision ? { decision: DECISION_LABEL[row.decision] } : {}),
     completeness: row.completeness,
     riskCauses: row.risk_causes.map((cause) => ({
+      id: cause.id,
       cause: cause.cause,
       weight: cause.weight,
       detail: cause.detail,
@@ -685,6 +688,7 @@ export function toReportItem(row: Api.ComplianceReport): ReportItem {
     generated: row.generated_on,
     pages: row.pages,
     scope: row.scope,
+    fileUrl: row.file_url,
   };
 }
 

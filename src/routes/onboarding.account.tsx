@@ -10,6 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOnboarding } from "@/lib/onboarding/store";
 
+/** Strip the spaces and dashes people type; the API wants bare E.164. */
+function normalisePhone(value: string): string {
+  return value.replace(/[\s-]/g, "").trim();
+}
+
 export const Route = createFileRoute("/onboarding/account")({ component: AccountPage });
 
 // The API names its fields differently; map its validation errors back onto the
@@ -40,8 +45,11 @@ function AccountPage() {
     if (account.fullName.trim().length < 3) e["fullName"] = "Enter your full name.";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(account.email.trim()))
       e["email"] = "Enter a valid work email address.";
-    if (!/^[0-9+][0-9\s-]{8,17}$/.test(account.phone.trim()))
-      e["phone"] = "Enter a valid phone number, e.g. +234 803 000 0000.";
+    // The verification endpoint requires E.164, so anything else captured here
+    // could never be confirmed. Spaces and dashes are stripped before the check.
+    if (!/^\+[1-9]\d{7,14}$/.test(normalisePhone(account.phone)))
+      e["phone"] =
+        "Enter the number in international format, including the country code, e.g. +234 803 000 0000.";
     if (account.password.length < 8) e["password"] = "Use at least 8 characters.";
     if (confirmPassword !== account.password) e["confirmPassword"] = "Both passwords must match.";
     if (!account.acceptedTerms) e["terms"] = "You must accept the platform terms.";
@@ -62,7 +70,7 @@ function AccountPage() {
         agreed_terms: account.acceptedTerms,
         first_name: parts[0] ?? "",
         last_name: parts.slice(1).join(" "),
-        phone_number: account.phone.trim(),
+        phone_number: normalisePhone(account.phone),
       });
       updateAccount({ emailVerified: false });
       toast.success("Account created. We emailed you a six-digit code.");

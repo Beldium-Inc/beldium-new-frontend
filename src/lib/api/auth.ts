@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { clearTokens, writeTokens, type TokenPair } from "./tokens";
+import { clearTokens, readTokens, writeTokens, type TokenPair } from "./tokens";
 import type { User } from "./types";
 
 export interface RegisterInput {
@@ -88,9 +88,43 @@ export function updateCurrentUser(patch: CurrentUserPatch): Promise<User> {
 }
 
 /**
- * Drop the local token pair. The API is stateless, so there is nothing to call:
- * the access token stays valid until it expires (30 minutes).
+ * Verify the account's phone number. Both calls need a signed-in account, so
+ * this is only reachable after the email code has been consumed — that is what
+ * issues the token pair.
  */
-export function logout(): void {
-  clearTokens();
+export function requestPhoneVerification(phoneNumber: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/verify-phone/request/", {
+    method: "POST",
+    body: { phone_number: phoneNumber },
+  });
+}
+
+export function confirmPhoneVerification(input: {
+  phone_number: string;
+  code: string;
+}): Promise<{ message: string; phone_number: string }> {
+  return apiFetch<{ message: string; phone_number: string }>("/auth/verify-phone/confirm/", {
+    method: "POST",
+    body: input,
+  });
+}
+
+/**
+ * End the session. The refresh token is blacklisted server-side so it cannot be
+ * replayed — dropping it locally alone would leave it usable for its full seven
+ * days by anyone who had copied it. The local pair is cleared either way: a
+ * failed call must not strand someone signed in.
+ */
+export async function logout(): Promise<void> {
+  const tokens = readTokens();
+  try {
+    if (tokens) {
+      await apiFetch<void>("/auth/logout/", { method: "POST", body: { refresh: tokens.refresh } });
+    }
+  } catch {
+    // Already expired, already blacklisted, or the API is unreachable. None of
+    // those should keep the user signed in on this device.
+  } finally {
+    clearTokens();
+  }
 }

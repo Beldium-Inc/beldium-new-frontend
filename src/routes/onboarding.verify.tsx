@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Mail, Smartphone } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { AuthShell, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ApiError } from "@/lib/api";
+import { confirmPhoneVerification, requestPhoneVerification } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth";
 import { useOnboarding } from "@/lib/onboarding/store";
 
@@ -18,9 +19,6 @@ export const Route = createFileRoute("/onboarding/verify")({
   },
   component: VerifyPage,
 });
-
-/** The phone channel has no backend yet; this stands in until it does. */
-const DEMO_PHONE_CODE = "224466";
 
 const RESEND_COOLDOWN_SECONDS = 45;
 
@@ -75,6 +73,10 @@ function EmailChannel({
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
   const [seconds, setSeconds] = useState(RESEND_COOLDOWN_SECONDS);
+  // A code can fail because the address was already verified — in another tab,
+  // or on an earlier visit. The API cannot say which without letting anyone
+  // enumerate accounts, so after a failure we offer the way out.
+  const [offerSignIn, setOfferSignIn] = useState(false);
 
   useEffect(() => {
     if (verified || seconds === 0) return;
@@ -89,6 +91,7 @@ function EmailChannel({
       // A correct code also returns a token pair, so this signs the account in.
       await confirmEmail({ email, code: value });
       setError(null);
+      setOfferSignIn(false);
       onVerified();
       toast.success("Email address confirmed.");
     } catch (cause) {
@@ -98,6 +101,9 @@ function EmailChannel({
           ? cause.message
           : "That code could not be checked. Please try again.",
       );
+      if (cause instanceof ApiError && cause.code === "invalid_verification_code") {
+        setOfferSignIn(true);
+      }
     } finally {
       setChecking(false);
     }
@@ -148,6 +154,15 @@ function EmailChannel({
         </InputOTP>
         {checking && <p className="text-xs text-muted-foreground">Checking your code…</p>}
         {error && <p className="text-xs text-danger">{error}</p>}
+        {offerSignIn && (
+          <p className="text-xs text-muted-foreground">
+            Already verified this address?{" "}
+            <Link to="/signin" className="font-medium text-brand underline">
+              Sign in instead
+            </Link>
+            .
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span>The code expires 10 minutes after it is sent.</span>
           <Button
@@ -165,27 +180,58 @@ function EmailChannel({
   );
 }
 
+/**
+ * The phone channel is a real OTP, but both of its endpoints need a signed-in
+ * account — and the token pair only arrives when the email code is consumed.
+ * So this stays locked until the email is verified, rather than pretending the
+ * two are independent.
+ */
 function PhoneChannel({
   phone,
   verified,
+  emailVerified,
   onVerified,
 }: {
   phone: string;
   verified: boolean;
+  emailVerified: boolean;
   onVerified: () => void;
 }) {
   const [code, setCode] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const check = (value: string) => {
+  const send = async () => {
+    if (sending) return;
+    setSending(true);
+    setError(null);
+    try {
+      const { message } = await requestPhoneVerification(phone);
+      setSent(true);
+      toast.info(message);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "Could not send a code to that number.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const check = async (value: string) => {
     setCode(value);
-    if (value.length < 6) return;
-    if (value === DEMO_PHONE_CODE) {
-      setError(false);
+    if (value.length < 6 || checking) return;
+    setChecking(true);
+    try {
+      await confirmPhoneVerification({ phone_number: phone, code: value });
+      setError(null);
       onVerified();
-      toast.success("Mobile number confirmed");
-    } else {
-      setError(true);
+      toast.success("Mobile number confirmed.");
+    } catch (cause) {
+      setCode("");
+      setError(cause instanceof ApiError ? cause.message : "That code could not be checked.");
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -197,18 +243,46 @@ function PhoneChannel({
       verified={verified}
     >
       <div className="mt-4 space-y-3">
-        <InputOTP maxLength={6} value={code} onChange={check} containerClassName="justify-start">
-          <InputOTPGroup>
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <InputOTPSlot key={i} index={i} />
-            ))}
-          </InputOTPGroup>
-        </InputOTP>
-        {error && <p className="text-xs text-danger">That code is not correct.</p>}
-        <p className="text-xs text-muted-foreground">
-          SMS verification is not connected yet, so this step is simulated. Demo code:{" "}
-          <span className="font-medium text-foreground">{DEMO_PHONE_CODE}</span>
-        </p>
+        {!emailVerified ? (
+          <p className="text-xs text-muted-foreground">
+            Confirm your email address first — verifying your number needs a signed-in account.
+          </p>
+        ) : !sent ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="sm" variant="secondary" disabled={sending} onClick={() => void send()}>
+              {sending ? "Sending…" : "Send code by SMS"}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Optional. You can confirm your number later from your profile.
+            </span>
+          </div>
+        ) : (
+          <>
+            <InputOTP
+              maxLength={6}
+              value={code}
+              onChange={(value) => void check(value)}
+              disabled={checking}
+              containerClassName="justify-start"
+            >
+              <InputOTPGroup>
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <InputOTPSlot key={i} index={i} />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              disabled={sending}
+              onClick={() => void send()}
+            >
+              Send another code
+            </Button>
+          </>
+        )}
+        {error && <p className="text-xs text-danger">{error}</p>}
       </div>
     </ChannelShell>
   );
@@ -216,10 +290,24 @@ function PhoneChannel({
 
 function VerifyPage() {
   const { account, updateAccount, verifyChannel, role, orgPath } = useOnboarding();
+  const { user, refetchUser } = useAuth();
   const navigate = useNavigate();
   const search = Route.useSearch();
 
   const email = (search.email ?? account.email).trim();
+
+  // The API is the authority on what has been verified; the onboarding store is
+  // a local draft and can disagree with it after a reload, a second tab, or a
+  // visit from a different device.
+  const emailVerified = user ? Boolean(user.email_verified_at) : account.emailVerified;
+  const phoneVerified = user ? Boolean(user.phone_verified_at) : account.phoneVerified;
+  const phone = user?.phone_number || account.phone;
+
+  // Keep the local draft in step, so the rest of the flow reads one answer.
+  useEffect(() => {
+    if (emailVerified && !account.emailVerified) verifyChannel("email");
+    if (phoneVerified && !account.phoneVerified) verifyChannel("phone");
+  }, [emailVerified, phoneVerified, account.emailVerified, account.phoneVerified, verifyChannel]);
 
   // Arriving from sign-in carries the address in the URL; adopt it so the rest
   // of the flow reads the same value.
@@ -256,19 +344,27 @@ function VerifyPage() {
       <div className="space-y-4">
         <EmailChannel
           email={email}
-          verified={account.emailVerified}
-          onVerified={() => verifyChannel("email")}
+          verified={emailVerified}
+          onVerified={() => {
+            verifyChannel("email");
+            // The token pair has just arrived; pick up the verified account.
+            void refetchUser();
+          }}
         />
         <PhoneChannel
-          phone={account.phone}
-          verified={account.phoneVerified}
-          onVerified={() => verifyChannel("phone")}
+          phone={phone}
+          verified={phoneVerified}
+          emailVerified={emailVerified}
+          onVerified={() => {
+            verifyChannel("phone");
+            void refetchUser();
+          }}
         />
       </div>
 
       <div className="mt-7 flex flex-wrap gap-3">
-        <Button size="lg" disabled={!account.emailVerified} onClick={next}>
-          {account.emailVerified ? "Continue" : "Verify your email to continue"}
+        <Button size="lg" disabled={!emailVerified} onClick={next}>
+          {emailVerified ? "Continue" : "Verify your email to continue"}
         </Button>
         <Button size="lg" variant="ghost" onClick={() => navigate({ to: "/onboarding/account" })}>
           Change details
