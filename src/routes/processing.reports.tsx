@@ -2,7 +2,8 @@ import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, FileText, Loader2, X } from "lucide-react";
 import { Panel, PanelHeader, PageHeader, Pill } from "@/verticals/processing/bpc";
-import { REGIONAL_COMPLIANCE, REPORTS, KPI_TREND } from "@/verticals/processing/mock-data";
+import { useAppState } from "@/verticals/processing/store";
+import { type ReportItem } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/reports")({
@@ -24,15 +25,25 @@ export const Route = createFileRoute("/processing/reports")({
   component: ReportsPage,
 });
 
-const SCOPES = ["All regions", ...REGIONAL_COMPLIANCE.map((r) => r.region)];
-const KINDS = ["National compliance summary", "Environmental exceedances", "Inspection programme", "Non-conformity register"];
+const KINDS = [
+  "National compliance summary",
+  "Environmental exceedances",
+  "Inspection programme",
+  "Non-conformity register",
+];
 
 function ReportsPage() {
-  const [scope, setScope] = React.useState(SCOPES[0]);
+  const { reports, regionalCompliance, kpiTrend } = useAppState();
+  // The scope list is the regions actually on the register, so it grows with it.
+  const scopes = React.useMemo(
+    () => ["All regions", ...regionalCompliance.map((r) => r.region)],
+    [regionalCompliance],
+  );
+  const [scope, setScope] = React.useState("All regions");
   const [kind, setKind] = React.useState(KINDS[0]);
   const [period, setPeriod] = React.useState("Q3 2026");
   const [state, setState] = React.useState<"idle" | "running" | "done">("idle");
-  const [preview, setPreview] = React.useState<(typeof REPORTS)[number] | null>(null);
+  const [preview, setPreview] = React.useState<ReportItem | null>(null);
 
   function generate() {
     setState("running");
@@ -67,7 +78,7 @@ function ReportsPage() {
             </Field>
             <Field label="Scope">
               <div className="flex flex-wrap gap-1.5">
-                {SCOPES.map((s) => (
+                {scopes.map((s) => (
                   <button
                     key={s}
                     onClick={() => {
@@ -113,7 +124,11 @@ function ReportsPage() {
               disabled={state === "running"}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-70"
             >
-              {state === "running" ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
+              {state === "running" ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <FileText className="size-4" />
+              )}
               {state === "running" ? "Compiling…" : "Generate report"}
             </button>
 
@@ -136,7 +151,7 @@ function ReportsPage() {
           <Panel>
             <PanelHeader title="Report library" subtitle="Previously published packs" />
             <div className="divide-y divide-border">
-              {REPORTS.map((r) => (
+              {reports.map((r) => (
                 <button
                   key={r.id}
                   onClick={() => setPreview(r)}
@@ -160,11 +175,17 @@ function ReportsPage() {
           <Panel>
             <PanelHeader title="Trend snapshot" subtitle="Approvals vs non-conformities by month" />
             <div className="flex items-end gap-4 px-5 py-6">
-              {KPI_TREND.map((k) => (
+              {kpiTrend.map((k) => (
                 <div key={k.month} className="flex flex-1 flex-col items-center gap-2">
                   <div className="flex h-28 w-full items-end justify-center gap-1">
-                    <div className="w-4 rounded-t-md bg-primary" style={{ height: `${(k.approvals / 20) * 100}%` }} />
-                    <div className="w-4 rounded-t-md bg-warning" style={{ height: `${(k.nonconformities / 20) * 100}%` }} />
+                    <div
+                      className="w-4 rounded-t-md bg-primary"
+                      style={{ height: `${(k.approvals / 20) * 100}%` }}
+                    />
+                    <div
+                      className="w-4 rounded-t-md bg-warning"
+                      style={{ height: `${(k.nonconformities / 20) * 100}%` }}
+                    />
                   </div>
                   <span className="text-[11px] text-muted-foreground">{k.month}</span>
                 </div>
@@ -184,7 +205,10 @@ function ReportsPage() {
 
       {preview ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-primary/45 backdrop-blur-sm" onClick={() => setPreview(null)} />
+          <div
+            className="absolute inset-0 bg-primary/45 backdrop-blur-sm"
+            onClick={() => setPreview(null)}
+          />
           <div className="relative w-full max-w-lg rounded-3xl border border-border bg-card p-6 shadow-[0_30px_80px_-30px_rgba(16,30,61,0.7)]">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>

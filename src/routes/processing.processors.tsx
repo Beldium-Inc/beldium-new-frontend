@@ -1,8 +1,16 @@
 import * as React from "react";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Factory, Search } from "lucide-react";
-import { Panel, PageHeader, Pill, ScoreBar, statusTone } from "@/verticals/processing/bpc";
-import { PROCESSORS, processingTypeLabel } from "@/verticals/processing/mock-data";
+import {
+  Panel,
+  PageHeader,
+  Pill,
+  RegisterState,
+  ScoreBar,
+  statusTone,
+} from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/processors")({
@@ -33,10 +41,11 @@ function ProcessorsLayout() {
 const STATUSES = ["All", "Approved", "Conditional", "Under Review", "Suspended"] as const;
 
 function ProcessorsList() {
+  const { processors, isLoading, error } = useAppState();
   const [status, setStatus] = React.useState<(typeof STATUSES)[number]>("All");
   const [q, setQ] = React.useState("");
 
-  const rows = PROCESSORS.filter(
+  const rows = processors.filter(
     (p) =>
       (status === "All" || p.status === status) &&
       `${p.name} ${p.rcNumber} ${p.state}`.toLowerCase().includes(q.toLowerCase()),
@@ -137,6 +146,16 @@ function ProcessorsList() {
               ))}
             </tbody>
           </table>
+          {rows.length === 0 ? (
+            <RegisterState
+              isLoading={isLoading}
+              error={error}
+              empty={{
+                title: "No processors on the register",
+                body: "A processor joins the register once its application has been decided.",
+              }}
+            />
+          ) : null}
         </div>
       </Panel>
     </>

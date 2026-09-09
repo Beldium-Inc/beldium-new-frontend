@@ -17,8 +17,15 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { Panel, PanelHeader, Pill, ScoreBar, statusTone } from "@/verticals/processing/bpc";
-import { useAppState } from "@/verticals/processing/store";
+import {
+  Panel,
+  PanelHeader,
+  Pill,
+  RegisterState,
+  ScoreBar,
+  statusTone,
+} from "@/verticals/processing/bpc";
+import { useAppState, useApplicationDetail } from "@/verticals/processing/store";
 import {
   PROCESSING_TYPES,
   SECTIONS,
@@ -27,7 +34,7 @@ import {
   type DocItem,
   type ReviewState,
   type SectionKey,
-} from "@/verticals/processing/mock-data";
+} from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/applications/$id")({
@@ -69,20 +76,19 @@ const REVIEW_LABEL: Record<ReviewState, string> = {
 function ApplicationReview() {
   const { id } = useParams({ from: "/processing/applications/$id" });
   const {
-    applications,
-    reviews,
     setReview,
     nonConformities,
     addNonConformity,
     closeNonConformity,
     requestInspection,
+    reviewDocument,
     decide,
     audit,
-    log,
-    user,
+    capabilities,
   } = useAppState();
 
-  const app = applications.find((a) => a.id === id);
+  // The queue's rows carry no evidence sections; only the detail read does.
+  const { application: app, isLoading, error } = useApplicationDetail(id);
   const [tab, setTab] = React.useState<SectionKey>("corporate");
   const [modal, setModal] = React.useState<Modal>(null);
   const [toast, setToast] = React.useState<string | null>(null);
@@ -95,26 +101,37 @@ function ApplicationReview() {
   if (!app) {
     return (
       <Panel className="p-10 text-center">
-        <p className="text-sm font-medium">Application not found</p>
-        <Link to="/processing/applications" className="mt-2 inline-block text-xs text-primary hover:underline">
+        <RegisterState
+          isLoading={isLoading}
+          error={error}
+          empty={{
+            title: "Application not found",
+            body: "This reference is not in the queue, or you do not have access to it.",
+          }}
+        />
+        <Link
+          to="/processing/applications"
+          className="mt-2 inline-block text-xs text-primary hover:underline"
+        >
           Back to queue
         </Link>
       </Panel>
     );
   }
 
-  const readOnly = user?.role !== "operator";
-  const appReviews = reviews[app.id] ?? {};
-  const verifiedCount = SECTIONS.filter((s) => appReviews[s.key] === "verified").length;
+  // The API decides what this caller may do; the dashboard role is only a view
+  // preference and must not be what unlocks the review controls.
+  const readOnly = !capabilities?.can_decide;
+  const verifiedCount = app.review.sectionsVerified;
   const appNCs = nonConformities.filter((n) => n.applicationId === app.id);
   const typeMeta = PROCESSING_TYPES.find((p) => p.key === app.processingType)!;
   const section = app.sections[tab];
-  const state: ReviewState = appReviews[tab] ?? "pending";
+  const state: ReviewState = section.reviewState;
 
-  const act = (s: ReviewState, msg: string) => {
-    setReview(app.id, tab, s);
-    log(msg, `${app.id} · ${sectionLabel(tab)}`, `${sectionLabel(tab)} marked ${REVIEW_LABEL[s]}.`);
-    notify(`${sectionLabel(tab)}: ${REVIEW_LABEL[s]}`);
+  const act = (s: ReviewState) => {
+    void setReview(app.id, tab, s)
+      .then(() => notify(`${sectionLabel(tab)}: ${REVIEW_LABEL[s]}`))
+      .catch((cause: Error) => notify(cause.message));
   };
 
   return (
@@ -161,7 +178,9 @@ function ApplicationReview() {
           <div className="w-full max-w-xs space-y-3 rounded-2xl border border-border bg-card p-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground">Composite risk score</p>
-              <Pill tone={app.riskScore >= 55 ? "danger" : app.riskScore >= 30 ? "warning" : "success"}>
+              <Pill
+                tone={app.riskScore >= 55 ? "danger" : app.riskScore >= 30 ? "warning" : "success"}
+              >
                 {app.riskBand.toUpperCase()}
               </Pill>
             </div>
@@ -184,7 +203,9 @@ function ApplicationReview() {
                 <p className="text-[10px] text-muted-foreground">Sections verified</p>
               </div>
               <div className="rounded-xl bg-muted px-2 py-2">
-                <p className="text-sm font-semibold">{appNCs.filter((n) => n.status !== "Closed").length}</p>
+                <p className="text-sm font-semibold">
+                  {appNCs.filter((n) => n.status !== "Closed").length}
+                </p>
                 <p className="text-[10px] text-muted-foreground">Open NCs</p>
               </div>
             </div>
@@ -211,7 +232,7 @@ function ApplicationReview() {
         {/* Section tabs */}
         <div className="flex gap-1 overflow-x-auto border-b border-border px-3 py-2">
           {SECTIONS.map((s) => {
-            const st = appReviews[s.key] ?? "pending";
+            const st = app.sections[s.key].reviewState;
             return (
               <button
                 key={s.key}
@@ -292,7 +313,11 @@ function ApplicationReview() {
 
           <div className="space-y-4">
             <Panel>
-              <PanelHeader title="Supporting documents" subtitle="Click to preview" icon={<FileText className="size-4" />} />
+              <PanelHeader
+                title="Supporting documents"
+                subtitle="Click to preview"
+                icon={<FileText className="size-4" />}
+              />
               <div className="divide-y divide-border">
                 {section.docs.map((d) => (
                   <button
@@ -338,14 +363,14 @@ function ApplicationReview() {
                   tone="success"
                   icon={<CheckCircle2 className="size-3.5" />}
                   label="Verify section"
-                  onClick={() => act("verified", "Section verified")}
+                  onClick={() => act("verified")}
                 />
                 <ActionBtn
                   disabled={readOnly}
                   tone="danger"
                   icon={<XCircle className="size-3.5" />}
                   label="Reject section"
-                  onClick={() => act("rejected", "Section rejected")}
+                  onClick={() => act("rejected")}
                 />
                 <ActionBtn
                   disabled={readOnly}
@@ -360,8 +385,10 @@ function ApplicationReview() {
                   icon={<Flag className="size-3.5" />}
                   label="Flag for inspection"
                   onClick={() => {
-                    act("flagged", "Flagged for inspection");
-                    requestInspection(app.id);
+                    act("flagged");
+                    void requestInspection(app.id)
+                      .then(() => notify("Inspection requested"))
+                      .catch((cause: Error) => notify(cause.message));
                   }}
                 />
                 <ActionBtn
@@ -527,10 +554,12 @@ function ApplicationReview() {
                 </Pill>
               </div>
               <button
-                disabled={readOnly}
+                disabled={readOnly || !modal.doc.url}
                 onClick={() => {
-                  log("Document verified", `${app.id} · ${modal.doc.ref}`, `${modal.doc.name} accepted.`);
-                  notify(`${modal.doc.name} marked verified`);
+                  const doc = modal.doc;
+                  void reviewDocument(doc.id, true)
+                    .then(() => notify(`${doc.name} marked verified`))
+                    .catch((cause: Error) => notify(cause.message));
                   setModal(null);
                 }}
                 className="mt-2 w-full rounded-xl bg-primary px-3 py-2 text-[11px] font-medium text-primary-foreground disabled:opacity-40"
@@ -547,9 +576,9 @@ function ApplicationReview() {
           section={modal.section}
           onClose={() => setModal(null)}
           onSubmit={(text) => {
-            setReview(app.id, modal.section, "info_requested");
-            log("Information requested", `${app.id} · ${sectionLabel(modal.section)}`, text);
-            notify("Information request sent to applicant");
+            void setReview(app.id, modal.section, "info_requested", text)
+              .then(() => notify("Information request sent to applicant"))
+              .catch((cause: Error) => notify(cause.message));
             setModal(null);
           }}
         />
@@ -560,7 +589,7 @@ function ApplicationReview() {
           section={modal.section}
           onClose={() => setModal(null)}
           onSubmit={(title, detail, severity, due) => {
-            const id = addNonConformity({
+            void addNonConformity({
               applicationId: app.id,
               company: app.company,
               section: modal.section,
@@ -568,9 +597,9 @@ function ApplicationReview() {
               title,
               detail,
               due,
-            });
-            log("Non-conformity raised", `${id}`, `${severity} NC on ${sectionLabel(modal.section)}.`);
-            notify(`${id} raised`);
+            })
+              .then((reference) => notify(`${reference} raised`))
+              .catch((cause: Error) => notify(cause.message));
             setModal(null);
           }}
         />
@@ -581,13 +610,16 @@ function ApplicationReview() {
           nc={nonConformities.find((n) => n.id === modal.ncId)!}
           onClose={() => setModal(null)}
           onDecide={(accept) => {
-            closeNonConformity(modal.ncId, accept);
-            log(
-              accept ? "Corrective action accepted" : "Corrective action rejected",
-              modal.ncId,
-              accept ? "Evidence accepted; non-conformity closed." : "Evidence insufficient; NC remains open.",
-            );
-            notify(accept ? `${modal.ncId} closed` : `${modal.ncId} kept open`);
+            const reference = modal.ncId;
+            void closeNonConformity(
+              reference,
+              accept,
+              accept
+                ? "Evidence accepted; non-conformity closed."
+                : "Evidence insufficient; the finding stays open.",
+            )
+              .then(() => notify(accept ? `${reference} closed` : `${reference} kept open`))
+              .catch((cause: Error) => notify(cause.message));
             setModal(null);
           }}
         />
@@ -597,9 +629,11 @@ function ApplicationReview() {
         <DecisionModal
           onClose={() => setModal(null)}
           onSubmit={(d, note) => {
-            decide(app.id, d, note);
-            log("Decision issued", app.id, `${d}. ${note}`);
-            notify(`Decision recorded: ${d}`);
+            void decide(app.id, d, note)
+              .then(() => notify(`Decision recorded: ${d}`))
+              // The API refuses approval while a section is unverified or a
+              // finding is open; surface that reason rather than a bare failure.
+              .catch((cause: Error) => notify(cause.message));
             setModal(null);
           }}
         />
@@ -880,7 +914,8 @@ function DecisionModal({
   onClose: () => void;
   onSubmit: (d: (typeof DECISIONS)[number]["key"], note: string) => void;
 }) {
-  const [choice, setChoice] = React.useState<(typeof DECISIONS)[number]["key"]>("Conditional Approval");
+  const [choice, setChoice] =
+    React.useState<(typeof DECISIONS)[number]["key"]>("Conditional Approval");
   const [note, setNote] = React.useState("");
   return (
     <Modal title="Reach a compliance decision" onClose={onClose}>
@@ -949,11 +984,41 @@ function Field({
 }
 
 const EQUIPMENT = [
-  { tag: "LT-01", item: "Leach tank train (3 × 25 m³)", serial: "LT-NG-22841", cert: "Integrity test 2025-08", status: "Verified" },
-  { tag: "SX-02", item: "Solvent extraction mixer-settler", serial: "SX-4471", cert: "OEM commissioning report", status: "Verified" },
-  { tag: "PV-03", item: "Pressure vessel, reagent dosing", serial: "PV-9920", cert: "PVI-2025-08 (expiring)", status: "Attention" },
-  { tag: "WB-04", item: "Weighbridge 60t", serial: "WB-2201", cert: "WB-CAL-2026-19", status: "Verified" },
-  { tag: "XRF-05", item: "Benchtop XRF analyser", serial: "XRF-7781", cert: "XRF-CAL-2026-2", status: "Verified" },
+  {
+    tag: "LT-01",
+    item: "Leach tank train (3 × 25 m³)",
+    serial: "LT-NG-22841",
+    cert: "Integrity test 2025-08",
+    status: "Verified",
+  },
+  {
+    tag: "SX-02",
+    item: "Solvent extraction mixer-settler",
+    serial: "SX-4471",
+    cert: "OEM commissioning report",
+    status: "Verified",
+  },
+  {
+    tag: "PV-03",
+    item: "Pressure vessel, reagent dosing",
+    serial: "PV-9920",
+    cert: "PVI-2025-08 (expiring)",
+    status: "Attention",
+  },
+  {
+    tag: "WB-04",
+    item: "Weighbridge 60t",
+    serial: "WB-2201",
+    cert: "WB-CAL-2026-19",
+    status: "Verified",
+  },
+  {
+    tag: "XRF-05",
+    item: "Benchtop XRF analyser",
+    serial: "XRF-7781",
+    cert: "XRF-CAL-2026-2",
+    status: "Verified",
+  },
 ];
 
 function EquipmentVerification() {
@@ -969,7 +1034,10 @@ function EquipmentVerification() {
       />
       <div className="divide-y divide-border">
         {EQUIPMENT.map((e) => (
-          <label key={e.tag} className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-accent/50">
+          <label
+            key={e.tag}
+            className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-accent/50"
+          >
             <input
               type="checkbox"
               checked={checked.includes(e.tag)}

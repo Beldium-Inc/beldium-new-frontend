@@ -23,15 +23,7 @@ import {
   statusTone,
 } from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
-import {
-  ENV_ALERTS,
-  EXPIRING_DOCS,
-  INCIDENTS,
-  KPI_TREND,
-  PROCESSORS,
-  REGIONAL_COMPLIANCE,
-  processingTypeLabel,
-} from "@/verticals/processing/mock-data";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 
 export const Route = createFileRoute("/processing/dashboard")({
   head: () => ({
@@ -45,7 +37,8 @@ export const Route = createFileRoute("/processing/dashboard")({
       { property: "og:title", content: "Dashboard · Beldium Processing Compliance" },
       {
         property: "og:description",
-        content: "Role-specific compliance and oversight dashboard for mineral processing facilities.",
+        content:
+          "Role-specific compliance and oversight dashboard for mineral processing facilities.",
       },
     ],
   }),
@@ -58,10 +51,12 @@ function DashboardPage() {
 }
 
 function TrendBars() {
-  const max = Math.max(...KPI_TREND.map((k) => k.inspections));
+  const { kpiTrend } = useAppState();
+  // Math.max() of an empty list is -Infinity, which renders every bar wrong.
+  const max = Math.max(1, ...kpiTrend.map((k) => k.inspections));
   return (
     <div className="flex items-end gap-4 px-5 py-5">
-      {KPI_TREND.map((k) => (
+      {kpiTrend.map((k) => (
         <div key={k.month} className="flex flex-1 flex-col items-center gap-2">
           <div className="flex h-32 w-full items-end justify-center gap-1">
             <div
@@ -104,13 +99,22 @@ function Legend() {
 }
 
 function OperatorDashboard() {
-  const { applications, nonConformities, inspections, user } = useAppState();
+  const {
+    applications,
+    nonConformities,
+    inspections,
+    user,
+    processors,
+    envAlerts,
+    incidents,
+    expiringDocs,
+  } = useAppState();
   const pending = applications.filter((a) => a.stage !== "Decided");
   const openNCs = nonConformities.filter((n) => n.status !== "Closed");
   const openInspections = inspections.filter((i) => i.status !== "Completed");
-  const avgRisk = Math.round(
-    applications.reduce((s, a) => s + a.riskScore, 0) / applications.length,
-  );
+  const avgRisk = applications.length
+    ? Math.round(applications.reduce((s, a) => s + a.riskScore, 0) / applications.length)
+    : 0;
 
   return (
     <>
@@ -173,7 +177,10 @@ function OperatorDashboard() {
             subtitle="Applications requiring operator action"
             icon={<FileStack className="size-4" />}
             action={
-              <Link to="/processing/applications" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/applications"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 View all
               </Link>
             }
@@ -199,7 +206,10 @@ function OperatorDashboard() {
                   <p className="mb-1 text-[10px] text-muted-foreground">
                     Completeness {a.completeness}%
                   </p>
-                  <ScoreBar value={a.completeness} tone={a.completeness > 85 ? "success" : "warning"} />
+                  <ScoreBar
+                    value={a.completeness}
+                    tone={a.completeness > 85 ? "success" : "warning"}
+                  />
                 </div>
                 <RiskBadge score={a.riskScore} />
                 <ArrowUpRight className="size-4 text-muted-foreground" />
@@ -216,7 +226,7 @@ function OperatorDashboard() {
               icon={<CalendarClock className="size-4" />}
             />
             <div className="divide-y divide-border">
-              {EXPIRING_DOCS.map((d) => (
+              {expiringDocs.map((d) => (
                 <div key={d.ref} className="px-5 py-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-xs font-medium">{d.doc}</p>
@@ -238,7 +248,10 @@ function OperatorDashboard() {
               subtitle="Flagged and scheduled site visits"
               icon={<ClipboardCheck className="size-4" />}
               action={
-                <Link to="/processing/inspections" className="text-xs font-medium text-primary hover:underline">
+                <Link
+                  to="/processing/inspections"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
                   Open
                 </Link>
               }
@@ -277,7 +290,10 @@ function OperatorDashboard() {
             subtitle="Corrective actions in flight"
             icon={<ShieldAlert className="size-4" />}
             action={
-              <Link to="/processing/nonconformities" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/nonconformities"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 Manage
               </Link>
             }
@@ -303,8 +319,17 @@ function OperatorDashboard() {
 }
 
 function RegulatorDashboard() {
-  const { nonConformities, inspections } = useAppState();
-  const openAlerts = ENV_ALERTS.filter((a) => a.status !== "Resolved");
+  const {
+    nonConformities,
+    inspections,
+    processors,
+    envAlerts,
+    incidents,
+    regionalCompliance,
+    totals,
+  } = useAppState();
+  const openAlerts = envAlerts.filter((a) => a.status !== "Resolved");
+  const facilities = processors.reduce((sum, p) => sum + p.facilities, 0);
 
   return (
     <>
@@ -322,27 +347,27 @@ function RegulatorDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Registered processors"
-          value={122}
-          hint={`${PROCESSORS.filter((p) => p.status === "Approved").length * 20} facilities nationally`}
+          value={totals?.processors ?? processors.length}
+          hint={`${facilities} ${facilities === 1 ? "facility" : "facilities"} nationally`}
           icon={<Factory className="size-4" />}
         />
         <StatCard
           label="National compliance"
-          value="76%"
-          hint="Weighted mean across 6 regions"
+          value={`${totals?.average_compliance_score ?? 0}%`}
+          hint={`Mean across ${regionalCompliance.length} ${regionalCompliance.length === 1 ? "region" : "regions"}`}
           tone="success"
           icon={<Gauge className="size-4" />}
         />
         <StatCard
           label="Open environmental alerts"
           value={openAlerts.length}
-          hint={`${ENV_ALERTS.filter((a) => a.severity === "Critical").length} critical exceedance`}
+          hint={`${envAlerts.filter((a) => a.severity === "Critical").length} critical exceedance`}
           tone="warning"
           icon={<Leaf className="size-4" />}
         />
         <StatCard
           label="Incidents under investigation"
-          value={INCIDENTS.filter((i) => i.status === "Under Investigation").length}
+          value={incidents.filter((i) => i.status === "Under Investigation").length}
           hint="Reported in the last 30 days"
           tone="danger"
           icon={<Siren className="size-4" />}
@@ -356,13 +381,16 @@ function RegulatorDashboard() {
             subtitle="Processor standing by geopolitical zone"
             icon={<Factory className="size-4" />}
             action={
-              <Link to="/processing/monitoring" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/monitoring"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 Compliance monitoring
               </Link>
             }
           />
           <div className="divide-y divide-border">
-            {REGIONAL_COMPLIANCE.map((r) => (
+            {regionalCompliance.map((r) => (
               <div key={r.region} className="px-5 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-medium">{r.region}</p>
@@ -399,13 +427,16 @@ function RegulatorDashboard() {
               subtitle="Threshold exceedances"
               icon={<Leaf className="size-4" />}
               action={
-                <Link to="/processing/environmental" className="text-xs font-medium text-primary hover:underline">
+                <Link
+                  to="/processing/environmental"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
                   Open
                 </Link>
               }
             />
             <div className="divide-y divide-border">
-              {ENV_ALERTS.slice(0, 3).map((a) => (
+              {envAlerts.slice(0, 3).map((a) => (
                 <div key={a.id} className="px-5 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium">{a.parameter}</p>
@@ -425,7 +456,10 @@ function RegulatorDashboard() {
               subtitle="Scheduled and requested"
               icon={<ClipboardCheck className="size-4" />}
               action={
-                <Link to="/processing/inspections" className="text-xs font-medium text-primary hover:underline">
+                <Link
+                  to="/processing/inspections"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
                   Open
                 </Link>
               }
@@ -464,7 +498,10 @@ function RegulatorDashboard() {
             subtitle="Across all registered processors"
             icon={<AlertTriangle className="size-4" />}
             action={
-              <Link to="/processing/nonconformities" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/nonconformities"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 Open
               </Link>
             }

@@ -1,8 +1,16 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Siren, X } from "lucide-react";
-import { Panel, PageHeader, Pill, StatCard, statusTone } from "@/verticals/processing/bpc";
-import { INCIDENTS, type Incident } from "@/verticals/processing/mock-data";
+import {
+  Panel,
+  PageHeader,
+  Pill,
+  StatCard,
+  statusTone,
+  RegisterState,
+} from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
+import { type Incident } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/incidents")({
@@ -27,9 +35,10 @@ export const Route = createFileRoute("/processing/incidents")({
 const FILTERS = ["All", "Reported", "Under Investigation", "Closed"] as const;
 
 function IncidentsPage() {
+  const { incidents, isLoading, error } = useAppState();
   const [filter, setFilter] = React.useState<(typeof FILTERS)[number]>("All");
   const [open, setOpen] = React.useState<Incident | null>(null);
-  const rows = INCIDENTS.filter((i) => filter === "All" || i.status === filter);
+  const rows = incidents.filter((i) => filter === "All" || i.status === filter);
 
   return (
     <>
@@ -40,9 +49,22 @@ function IncidentsPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Open investigations" value={INCIDENTS.filter((i) => i.status === "Under Investigation").length} tone="warning" icon={<Siren className="size-4" />} />
-        <StatCard label="Severe incidents (YTD)" value={INCIDENTS.filter((i) => i.severity === "Severe").length} tone="danger" />
-        <StatCard label="Closed with actions" value={INCIDENTS.filter((i) => i.status === "Closed").length} tone="success" />
+        <StatCard
+          label="Open investigations"
+          value={incidents.filter((i) => i.status === "Under Investigation").length}
+          tone="warning"
+          icon={<Siren className="size-4" />}
+        />
+        <StatCard
+          label="Severe incidents (YTD)"
+          value={incidents.filter((i) => i.severity === "Severe").length}
+          tone="danger"
+        />
+        <StatCard
+          label="Closed with actions"
+          value={incidents.filter((i) => i.status === "Closed").length}
+          tone="success"
+        />
       </div>
 
       <Panel>
@@ -86,7 +108,10 @@ function IncidentsPage() {
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-primary/45 backdrop-blur-sm" onClick={() => setOpen(null)} />
+          <div
+            className="absolute inset-0 bg-primary/45 backdrop-blur-sm"
+            onClick={() => setOpen(null)}
+          />
           <div className="relative w-full max-w-xl rounded-3xl border border-border bg-card p-6 shadow-[0_30px_80px_-30px_rgba(16,30,61,0.7)]">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -136,6 +161,16 @@ function IncidentsPage() {
                 Close
               </button>
             </div>
+            {rows.length === 0 ? (
+              <RegisterState
+                isLoading={isLoading}
+                error={error}
+                empty={{
+                  title: "No incidents reported",
+                  body: "Reportable events at registered facilities appear here.",
+                }}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

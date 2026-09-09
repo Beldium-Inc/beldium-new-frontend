@@ -1,9 +1,9 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, Eye, FileText, X } from "lucide-react";
-import { Panel, PageHeader, Pill, statusTone } from "@/verticals/processing/bpc";
+import { Panel, PageHeader, Pill, statusTone, RegisterState } from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
-import { sectionLabel } from "@/verticals/processing/mock-data";
+import { sectionLabel } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/nonconformities")({
@@ -26,9 +26,13 @@ export const Route = createFileRoute("/processing/nonconformities")({
 });
 
 function NCPage() {
-  const { nonConformities, closeNonConformity, user, log } = useAppState();
-  const readOnly = user?.role !== "operator";
-  const [filter, setFilter] = React.useState<"All" | "Open" | "Evidence Submitted" | "Closed">("All");
+  const { nonConformities, closeNonConformity, capabilities, isLoading, error } = useAppState();
+  // The API is the authority on who may close a finding; the dashboard role
+  // stored in the browser is only a view preference.
+  const readOnly = !capabilities?.can_decide;
+  const [filter, setFilter] = React.useState<"All" | "Open" | "Evidence Submitted" | "Closed">(
+    "All",
+  );
   const [open, setOpen] = React.useState<string | null>(null);
 
   const rows = nonConformities.filter((n) => filter === "All" || n.status === filter);
@@ -83,13 +87,17 @@ function NCPage() {
                 <span>·</span>
                 <span>{sectionLabel(n.section)}</span>
                 <span>·</span>
-                <Link
-                  to="/processing/applications/$id"
-                  params={{ id: n.applicationId }}
-                  className="text-primary hover:underline"
-                >
-                  {n.applicationId}
-                </Link>
+                {n.applicationId ? (
+                  <Link
+                    to="/processing/applications/$id"
+                    params={{ id: n.applicationId }}
+                    className="text-primary hover:underline"
+                  >
+                    {n.applicationId}
+                  </Link>
+                ) : (
+                  <span>Raised against the register</span>
+                )}
                 {n.evidence ? (
                   <button
                     onClick={() => setOpen(n.id)}
@@ -106,7 +114,10 @@ function NCPage() {
 
       {active ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-primary/45 backdrop-blur-sm" onClick={() => setOpen(null)} />
+          <div
+            className="absolute inset-0 bg-primary/45 backdrop-blur-sm"
+            onClick={() => setOpen(null)}
+          />
           <div className="relative w-full max-w-xl rounded-3xl border border-border bg-card p-6 shadow-[0_30px_80px_-30px_rgba(16,30,61,0.7)]">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -135,15 +146,14 @@ function NCPage() {
             </div>
             {readOnly ? (
               <p className="mt-4 rounded-xl bg-secondary/50 px-3 py-2 text-[11px] text-secondary-foreground">
-                Oversight role: evidence is visible for monitoring purposes. Acceptance decisions rest
-                with the Beldium compliance partner.
+                Oversight role: evidence is visible for monitoring purposes. Acceptance decisions
+                rest with the Beldium compliance partner.
               </p>
             ) : (
               <div className="mt-4 flex justify-end gap-2">
                 <button
                   onClick={() => {
-                    closeNonConformity(active.id, false);
-                    log("Corrective action rejected", active.id, "Evidence deemed insufficient.");
+                    void closeNonConformity(active.id, false, "Evidence deemed insufficient.");
                     setOpen(null);
                   }}
                   className="rounded-xl border border-destructive/50 bg-destructive/15 px-4 py-2 text-xs font-medium text-destructive-foreground"
@@ -152,8 +162,7 @@ function NCPage() {
                 </button>
                 <button
                   onClick={() => {
-                    closeNonConformity(active.id, true);
-                    log("Corrective action accepted", active.id, "Non-conformity closed.");
+                    void closeNonConformity(active.id, true, "Corrective action accepted.");
                     setOpen(null);
                   }}
                   className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
@@ -162,6 +171,16 @@ function NCPage() {
                 </button>
               </div>
             )}
+            {rows.length === 0 ? (
+              <RegisterState
+                isLoading={isLoading}
+                error={error}
+                empty={{
+                  title: "No findings on the register",
+                  body: "Non-conformities raised during review or inspection appear here.",
+                }}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

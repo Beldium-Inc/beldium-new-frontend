@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { History, Search } from "lucide-react";
-import { Panel, PageHeader, Pill } from "@/verticals/processing/bpc";
+import { Panel, PageHeader, Pill, RegisterState } from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
 
 export const Route = createFileRoute("/processing/audit")({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/processing/audit")({
 });
 
 function AuditPage() {
-  const { audit, user } = useAppState();
+  const { audit, user, isLoading, error } = useAppState();
   const [q, setQ] = React.useState("");
   const rows = audit.filter((e) =>
     `${e.action} ${e.target} ${e.actor} ${e.detail}`.toLowerCase().includes(q.toLowerCase()),
@@ -73,6 +73,16 @@ function AuditPage() {
               </div>
             </div>
           ))}
+          {rows.length === 0 ? (
+            <RegisterState
+              isLoading={isLoading}
+              error={error}
+              empty={{
+                title: "Nothing recorded yet",
+                body: "Review actions, decisions and inspections are written here as they happen.",
+              }}
+            />
+          ) : null}
         </div>
       </Panel>
     </>
