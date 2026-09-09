@@ -65,6 +65,7 @@ import { Route as OnboardingSubmittedRouteImport } from './routes/onboarding.sub
 import { Route as OnboardingVerifyRouteImport } from './routes/onboarding.verify'
 import { Route as OnboardingWelcomeRouteImport } from './routes/onboarding.welcome'
 import { Route as ProcessingIndexRouteImport } from './routes/processing.index'
+import { Route as ProcessingApplicationRouteImport } from './routes/processing.application'
 import { Route as ProcessingApplicationsRouteImport } from './routes/processing.applications'
 import { Route as ProcessingAuditRouteImport } from './routes/processing.audit'
 import { Route as ProcessingDashboardRouteImport } from './routes/processing.dashboard'
@@ -429,6 +430,11 @@ const OnboardingWelcomeRoute = OnboardingWelcomeRouteImport.update({
 const ProcessingIndexRoute = ProcessingIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ProcessingRoute,
+} as any)
+const ProcessingApplicationRoute = ProcessingApplicationRouteImport.update({
+  id: '/application',
+  path: '/application',
   getParentRoute: () => ProcessingRoute,
 } as any)
 const ProcessingApplicationsRoute = ProcessingApplicationsRouteImport.update({
@@ -945,6 +951,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/submitted': typeof OnboardingSubmittedRoute
   '/onboarding/verify': typeof OnboardingVerifyRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
+  '/processing/application': typeof ProcessingApplicationRoute
   '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
   '/processing/audit': typeof ProcessingAuditRoute
   '/processing/dashboard': typeof ProcessingDashboardRoute
@@ -1079,6 +1086,7 @@ export interface FileRoutesByTo {
   '/onboarding/submitted': typeof OnboardingSubmittedRoute
   '/onboarding/verify': typeof OnboardingVerifyRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
+  '/processing/application': typeof ProcessingApplicationRoute
   '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
   '/processing/audit': typeof ProcessingAuditRoute
   '/processing/dashboard': typeof ProcessingDashboardRoute
@@ -1222,6 +1230,7 @@ export interface FileRoutesById {
   '/onboarding/submitted': typeof OnboardingSubmittedRoute
   '/onboarding/verify': typeof OnboardingVerifyRoute
   '/onboarding/welcome': typeof OnboardingWelcomeRoute
+  '/processing/application': typeof ProcessingApplicationRoute
   '/processing/applications': typeof ProcessingApplicationsRouteWithChildren
   '/processing/audit': typeof ProcessingAuditRoute
   '/processing/dashboard': typeof ProcessingDashboardRoute
@@ -1366,6 +1375,7 @@ export interface FileRouteTypes {
     | '/onboarding/submitted'
     | '/onboarding/verify'
     | '/onboarding/welcome'
+    | '/processing/application'
     | '/processing/applications'
     | '/processing/audit'
     | '/processing/dashboard'
@@ -1500,6 +1510,7 @@ export interface FileRouteTypes {
     | '/onboarding/submitted'
     | '/onboarding/verify'
     | '/onboarding/welcome'
+    | '/processing/application'
     | '/processing/applications'
     | '/processing/audit'
     | '/processing/dashboard'
@@ -1642,6 +1653,7 @@ export interface FileRouteTypes {
     | '/onboarding/submitted'
     | '/onboarding/verify'
     | '/onboarding/welcome'
+    | '/processing/application'
     | '/processing/applications'
     | '/processing/audit'
     | '/processing/dashboard'
@@ -2139,6 +2151,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/processing/'
       preLoaderRoute: typeof ProcessingIndexRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
+    '/processing/application': {
+      id: '/processing/application'
+      path: '/application'
+      fullPath: '/processing/application'
+      preLoaderRoute: typeof ProcessingApplicationRouteImport
       parentRoute: typeof ProcessingRoute
     }
     '/processing/applications': {
@@ -2984,6 +3003,7 @@ const ProcessingProcessorsRouteWithChildren =
   ProcessingProcessorsRoute._addFileChildren(ProcessingProcessorsRouteChildren)
 
 interface ProcessingRouteChildren {
+  ProcessingApplicationRoute: typeof ProcessingApplicationRoute
   ProcessingApplicationsRoute: typeof ProcessingApplicationsRouteWithChildren
   ProcessingAuditRoute: typeof ProcessingAuditRoute
   ProcessingDashboardRoute: typeof ProcessingDashboardRoute
@@ -3000,6 +3020,7 @@ interface ProcessingRouteChildren {
 }
 
 const ProcessingRouteChildren: ProcessingRouteChildren = {
+  ProcessingApplicationRoute: ProcessingApplicationRoute,
   ProcessingApplicationsRoute: ProcessingApplicationsRouteWithChildren,
   ProcessingAuditRoute: ProcessingAuditRoute,
   ProcessingDashboardRoute: ProcessingDashboardRoute,

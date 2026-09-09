@@ -4,8 +4,10 @@ import {
   addRiskCause,
   closeNonConformity,
   createNonConformity,
+  createProcessingApplication,
   decideProcessingApplication,
   fetchCapabilities,
+  fetchChecklist,
   fetchProcessingDashboard,
   getProcessingApplication,
   getProcessor,
@@ -27,12 +29,15 @@ import {
   setAlertStatus,
   submitNonConformityEvidence,
   submitProcessingApplication,
+  uploadApplicationDocument,
   type ApplicationDecisionValue,
   type Inspection,
   type ListQuery,
   type NonConformity,
   type ProcessingReviewState,
   type ProcessingSectionKey,
+  type ProcessingTypeKey,
+  type NewApplicationInput,
   type SectionField,
 } from "./processing";
 import { useHasTokens } from "./queries";
@@ -48,6 +53,7 @@ export const processingKeys = {
   root: ["processing"] as const,
   capabilities: ["processing", "capabilities"] as const,
   dashboard: ["processing", "dashboard"] as const,
+  checklist: (processingType: string) => ["processing", "checklist", processingType] as const,
   processors: (query: ListQuery = {}) => ["processing", "processors", query] as const,
   processor: (id: UUID) => ["processing", "processor", id] as const,
   applications: (query: ListQuery = {}) => ["processing", "applications", query] as const,
@@ -82,6 +88,16 @@ export function useProcessingCapabilities() {
     enabled: hasTokens,
     staleTime: 5 * 60_000,
     retry: false,
+  });
+}
+
+/** The checklist rarely changes; hold it for the length of a session. */
+export function useProcessingChecklist(processingType: ProcessingTypeKey | null) {
+  return useQuery({
+    queryKey: processingKeys.checklist(processingType ?? "none"),
+    queryFn: ({ signal }) => fetchChecklist(processingType as ProcessingTypeKey, signal),
+    enabled: Boolean(processingType),
+    staleTime: 30 * 60_000,
   });
 }
 
@@ -241,6 +257,35 @@ export function useReviewApplicationSection() {
         note: input.note,
       }),
     // A verdict can move the application's stage, so the queue is stale too.
+    onSuccess: () => invalidateProcessing(queryClient),
+  });
+}
+
+export function useCreateProcessingApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NewApplicationInput) => createProcessingApplication(input),
+    onSuccess: () => invalidateProcessing(queryClient),
+  });
+}
+
+export function useUploadApplicationDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: UUID;
+      section: ProcessingSectionKey;
+      name: string;
+      file: File;
+      reference?: string | undefined;
+      issuer?: string | undefined;
+      issued_on?: string | null | undefined;
+      expires_on?: string | null | undefined;
+    }) => {
+      const { id, ...rest } = input;
+      return uploadApplicationDocument(id, rest);
+    },
+    // An upload moves completeness, which the queue and dashboard both show.
     onSuccess: () => invalidateProcessing(queryClient),
   });
 }

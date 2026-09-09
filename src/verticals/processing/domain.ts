@@ -141,6 +141,8 @@ export type Application = ApplicationSummary & {
     sectionsRejected: number;
     sectionsFlagged: number;
   };
+  /** Empty exactly when the application is submittable. */
+  outstanding: SectionGap[];
 };
 
 export type NonConformity = {
@@ -295,6 +297,14 @@ export type ReportItem = {
 };
 
 export type Totals = Api.ProcessingDashboard["totals"];
+
+/** One section's remaining gaps, as the API computes them. */
+export type SectionGap = {
+  section: SectionKey;
+  label: string;
+  missingPrompts: string[];
+  missingDocuments: string[];
+};
 
 // --- adapters ----------------------------------------------------------------
 
@@ -486,7 +496,28 @@ export function toApplication(row: Api.ProcessingApplicationDetail): Application
       sectionsRejected: row.review.sections_rejected,
       sectionsFlagged: row.review.sections_flagged,
     },
+    outstanding: (row.outstanding ?? []).map(toSectionGap),
   };
+}
+
+export function toSectionGap(row: Api.SectionGap): SectionGap {
+  return {
+    section: row.section as SectionKey,
+    label: row.label,
+    missingPrompts: row.missing_prompts,
+    missingDocuments: row.missing_documents,
+  };
+}
+
+/**
+ * The gaps an incomplete submission came back with. The API returns them in
+ * `error.details.outstanding`; a failure with no such payload yields none.
+ */
+export function outstandingFromError(error: unknown): SectionGap[] {
+  const details = (error as { details?: unknown })?.details;
+  if (!details || typeof details !== "object") return [];
+  const rows = (details as { outstanding?: unknown }).outstanding;
+  return Array.isArray(rows) ? (rows as Api.SectionGap[]).map(toSectionGap) : [];
 }
 
 export function toNonConformity(

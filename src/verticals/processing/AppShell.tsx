@@ -51,6 +51,25 @@ const OPERATOR_NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
+const APPLICANT_NAV: { group: string; items: NavItem[] }[] = [
+  {
+    group: "My application",
+    items: [
+      { to: "/processing/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/processing/application", label: "Application", icon: ScrollText },
+      { to: "/processing/nonconformities", label: "Findings", icon: AlertTriangle },
+      { to: "/processing/inspections", label: "Inspections", icon: ClipboardCheck },
+    ],
+  },
+  {
+    group: "My operation",
+    items: [
+      { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
+      { to: "/processing/incidents", label: "Incidents", icon: Siren },
+    ],
+  },
+];
+
 const REGULATOR_NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Oversight",
@@ -94,7 +113,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   if (!user) return null;
-  const nav = user.role === "operator" ? OPERATOR_NAV : REGULATOR_NAV;
+  const nav =
+    user.role === "operator"
+      ? OPERATOR_NAV
+      : user.role === "processor"
+        ? APPLICANT_NAV
+        : REGULATOR_NAV;
 
   const sidebar = (
     <div className="flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground">
@@ -202,8 +226,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <Pill tone={user.role === "operator" ? "primary" : "info"}>
-              {user.role === "operator" ? "Compliance Operator" : "Oversight · read-only"}
+            <Pill
+              tone={
+                user.role === "operator"
+                  ? "primary"
+                  : user.role === "processor"
+                    ? "warning"
+                    : "info"
+              }
+            >
+              {user.role === "operator"
+                ? "Compliance Operator"
+                : user.role === "processor"
+                  ? "Applicant"
+                  : "Oversight · read-only"}
             </Pill>
 
             <div className="relative">

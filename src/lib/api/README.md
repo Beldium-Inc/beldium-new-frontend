@@ -65,9 +65,16 @@ Origin only — no trailing slash and no `/api/v1`. The backend must list this a
 Sign-in, registration, the six-digit email code and its resend, the current user, the
 organisation register and join requests.
 
-**Processing Compliance is fully wired.** Every screen under `/processing` reads this API and
-every review action writes to it; `verticals/processing` holds no fixture data any more. The
-other six dashboards still run on their own local prototype stores.
+**Processing Compliance is fully wired, on both sides of the desk.** Every screen under
+`/processing` reads this API and every action writes to it; `verticals/processing` holds no
+fixture data any more. The other six dashboards still run on their own local prototype
+stores.
+
+The vertical has three roles. `operator` reviews and decides, `regulator` reads, and
+`processor` is the applicant: it starts an application, answers each section, uploads
+evidence, submits, and responds to findings. The applicant's form is built from the server's
+checklist (`/processing/checklist/`), so it asks for exactly what the server will judge, and
+the gap list it shows is the one the API computes.
 
 Seed the backend before opening the processing dashboard, or it renders empty states:
 

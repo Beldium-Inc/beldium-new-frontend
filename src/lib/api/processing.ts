@@ -143,6 +143,14 @@ export interface ProcessingApplication {
   updated_at: string;
 }
 
+/** One section's remaining gaps, as the API computes them. */
+export interface SectionGap {
+  section: ProcessingSectionKey;
+  label: string;
+  missing_prompts: string[];
+  missing_documents: string[];
+}
+
 export interface ProcessingApplicationDetail extends ProcessingApplication {
   sections: ApplicationSection[];
   review: {
@@ -152,6 +160,23 @@ export interface ProcessingApplicationDetail extends ProcessingApplication {
     sections_rejected: number;
     sections_flagged: number;
   };
+  /** Empty exactly when the application is submittable. */
+  outstanding: SectionGap[];
+}
+
+/** The compliance checklist for one process class. */
+export interface ChecklistSection {
+  key: ProcessingSectionKey;
+  label: string;
+  prompts: { label: string; required: boolean }[];
+  documents: { name: string; issuer: string; expires: boolean }[];
+  required_prompts: string[];
+  required_documents: string[];
+}
+
+export interface Checklist {
+  processing_type: ProcessingTypeKey | "";
+  sections: ChecklistSection[];
 }
 
 export interface Facility {
@@ -387,6 +412,21 @@ export function fetchCapabilities(signal?: AbortSignal): Promise<ProcessingCapab
   return apiFetch<ProcessingCapabilities>(`${BASE}/me/`, { signal });
 }
 
+/**
+ * What an application of this process class must answer and evidence. Served
+ * rather than duplicated here: completeness is computed from it server-side,
+ * so the definition of "complete" is not the client's to hold.
+ */
+export function fetchChecklist(
+  processingType: ProcessingTypeKey,
+  signal?: AbortSignal,
+): Promise<Checklist> {
+  return apiFetch<Checklist>(`${BASE}/checklist/`, {
+    query: { processing_type: processingType },
+    signal,
+  });
+}
+
 export function fetchProcessingDashboard(signal?: AbortSignal): Promise<ProcessingDashboard> {
   return apiFetch<ProcessingDashboard>(`${BASE}/dashboard/`, { signal });
 }
@@ -414,6 +454,29 @@ export function listFacilities(id: UUID): Promise<Facility[]> {
 }
 
 // --- applications -----------------------------------------------------------
+
+export interface NewApplicationInput {
+  company: string;
+  processing_type: ProcessingTypeKey;
+  organisation?: UUID | null | undefined;
+  processor?: UUID | null | undefined;
+  rc_number?: string | undefined;
+  tin?: string | undefined;
+  state?: string | undefined;
+  lga?: string | undefined;
+  facility_name?: string | undefined;
+  capacity?: string | undefined;
+  workforce?: number | undefined;
+  contact_name?: string | undefined;
+  contact_email?: string | undefined;
+  contact_phone?: string | undefined;
+}
+
+export function createProcessingApplication(
+  input: NewApplicationInput,
+): Promise<ProcessingApplication> {
+  return apiFetch<ProcessingApplication>(`${BASE}/applications/`, { method: "POST", body: input });
+}
 
 export function listProcessingApplications(
   query: ListQuery = {},
@@ -491,6 +554,38 @@ export function requestApplicationInspection(
   return apiFetch<Inspection>(`${BASE}/applications/${id}/request-inspection/`, {
     method: "POST",
     body: input,
+  });
+}
+
+/**
+ * Upload or replace one document. Keyed on section + name, so re-uploading the
+ * same evidence replaces it and returns 200 rather than creating a second row;
+ * a replacement also clears whatever verdict the desk had reached on the old
+ * file.
+ */
+export function uploadApplicationDocument(
+  id: UUID,
+  input: {
+    section: ProcessingSectionKey;
+    name: string;
+    file: File;
+    reference?: string | undefined;
+    issuer?: string | undefined;
+    issued_on?: string | null | undefined;
+    expires_on?: string | null | undefined;
+  },
+): Promise<ProcessingDocument> {
+  const form = new FormData();
+  form.append("section", input.section);
+  form.append("name", input.name);
+  form.append("file", input.file);
+  for (const key of ["reference", "issuer", "issued_on", "expires_on"] as const) {
+    const value = input[key];
+    if (value) form.append(key, value);
+  }
+  return apiFetch<ProcessingDocument>(`${BASE}/applications/${id}/documents/`, {
+    method: "POST",
+    body: form,
   });
 }
 

@@ -1,7 +1,16 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, ChevronRight, FileStack, Info, ShieldCheck } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  FileStack,
+  Info,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { Panel, PanelHeader, PageHeader, Pill } from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
 import { PROCESSING_TYPES, SECTIONS, type ProcessingType } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +47,11 @@ const BASE_REQUIREMENTS = [
 ];
 
 function OnboardingPage() {
+  const { startApplication } = useAppState();
   const [step, setStep] = React.useState(0);
+  const [creating, setCreating] = React.useState(false);
+  const [created, setCreated] = React.useState<string | null>(null);
+  const [failure, setFailure] = React.useState<string | null>(null);
   const [type, setType] = React.useState<ProcessingType | null>(null);
   const [form, setForm] = React.useState({
     company: "",
@@ -249,40 +262,69 @@ function OnboardingPage() {
                 Back
               </button>
               <button
-                onClick={() => setStep(3)}
-                className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
+                onClick={() => {
+                  if (!type) return;
+                  setCreating(true);
+                  setFailure(null);
+                  void startApplication({
+                    company: form.company.trim(),
+                    processing_type: type,
+                    rc_number: form.rc.trim(),
+                    tin: form.tin.trim(),
+                    state: form.state.trim(),
+                    lga: form.lga.trim(),
+                    facility_name: form.facility.trim(),
+                    capacity: form.capacity.trim(),
+                  })
+                    .then((reference) => {
+                      setCreated(reference);
+                      setStep(3);
+                    })
+                    .catch((cause: Error) => setFailure(cause.message))
+                    .finally(() => setCreating(false));
+                }}
+                disabled={creating || !type || form.company.trim() === ""}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-40"
               >
-                Review & submit
+                {creating ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                Create application
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
-      {step === 3 ? (
+      {failure ? (
+        <Panel className="mt-4 border-destructive/50">
+          <p className="flex items-center gap-2 px-5 py-4 text-xs text-destructive-foreground">
+            <AlertTriangle className="size-4" /> {failure}
+          </p>
+        </Panel>
+      ) : null}
+
+      {step === 3 && created ? (
         <Panel className="p-8 text-center">
           <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-success/50 text-success-foreground">
             <ShieldCheck className="size-7" />
           </span>
-          <h2 className="mt-4 text-lg font-semibold">Application draft prepared</h2>
+          <h2 className="mt-4 text-lg font-semibold">Application created</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {form.company || "The applicant"} · {meta?.label ?? "processing"} · {form.lga || "LGA"},{" "}
-            {form.state || "State"}. In the live system the pack would be submitted to the Beldium
-            compliance desk and assigned a{" "}
-            <span className="font-medium text-foreground">BPC-APP</span> reference.
+            {form.company} · {meta?.label ?? "processing"} · {form.lga || "LGA"},{" "}
+            {form.state || "State"}. The ten evidence sections are laid down and waiting for your
+            answers; nothing reaches the compliance desk until you submit.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <Pill tone="info">Draft reference BPC-APP-2026-0158</Pill>
+            <Pill tone="info">{created}</Pill>
             <Pill tone="warning">
-              {(meta?.extra.length ?? 0) + BASE_REQUIREMENTS.length} evidence items
+              {(meta?.extra.length ?? 0) + BASE_REQUIREMENTS.length} evidence items to supply
             </Pill>
           </div>
-          <button
-            onClick={() => setStep(0)}
-            className="mt-6 rounded-xl border border-border px-4 py-2 text-xs font-medium hover:bg-accent"
+          <Link
+            to="/processing/application"
+            className="mt-6 inline-block rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
           >
-            Start another application
-          </button>
+            Start filling it in
+          </Link>
         </Panel>
       ) : null}
     </>
