@@ -2,7 +2,7 @@ import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, ChevronRight, FileStack, Info, ShieldCheck } from "lucide-react";
 import { Panel, PanelHeader, PageHeader, Pill } from "@/verticals/processing/bpc";
-import { PROCESSING_TYPES, SECTIONS, type ProcessingType } from "@/verticals/processing/mock-data";
+import { PROCESSING_TYPES, SECTIONS, type ProcessingType } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/onboarding")({
@@ -125,18 +125,59 @@ function OnboardingPage() {
 
       {step === 1 ? (
         <Panel>
-          <PanelHeader title="Corporate identity and site" subtitle="CAC, FIRS and location details" />
+          <PanelHeader
+            title="Corporate identity and site"
+            subtitle="CAC, FIRS and location details"
+          />
           <div className="grid gap-4 p-5 sm:grid-cols-2">
-            <Input label="Registered company name" v={form.company} set={(v) => setForm({ ...form, company: v })} ph="e.g. Ilesa Mineral Processing Ltd" />
-            <Input label="CAC RC number" v={form.rc} set={(v) => setForm({ ...form, rc: v })} ph="RC 1428907" />
-            <Input label="Tax Identification Number (TIN)" v={form.tin} set={(v) => setForm({ ...form, tin: v })} ph="20418833-0001" />
-            <Input label="Facility name" v={form.facility} set={(v) => setForm({ ...form, facility: v })} ph="Ilesa Refining Plant A" />
-            <Input label="State" v={form.state} set={(v) => setForm({ ...form, state: v })} ph="Osun" />
-            <Input label="Local Government Area (LGA)" v={form.lga} set={(v) => setForm({ ...form, lga: v })} ph="Ilesa East" />
-            <Input label="Installed capacity" v={form.capacity} set={(v) => setForm({ ...form, capacity: v })} ph="180 t/month" />
+            <Input
+              label="Registered company name"
+              v={form.company}
+              set={(v) => setForm({ ...form, company: v })}
+              ph="e.g. Ilesa Mineral Processing Ltd"
+            />
+            <Input
+              label="CAC RC number"
+              v={form.rc}
+              set={(v) => setForm({ ...form, rc: v })}
+              ph="RC 1428907"
+            />
+            <Input
+              label="Tax Identification Number (TIN)"
+              v={form.tin}
+              set={(v) => setForm({ ...form, tin: v })}
+              ph="20418833-0001"
+            />
+            <Input
+              label="Facility name"
+              v={form.facility}
+              set={(v) => setForm({ ...form, facility: v })}
+              ph="Ilesa Refining Plant A"
+            />
+            <Input
+              label="State"
+              v={form.state}
+              set={(v) => setForm({ ...form, state: v })}
+              ph="Osun"
+            />
+            <Input
+              label="Local Government Area (LGA)"
+              v={form.lga}
+              set={(v) => setForm({ ...form, lga: v })}
+              ph="Ilesa East"
+            />
+            <Input
+              label="Installed capacity"
+              v={form.capacity}
+              set={(v) => setForm({ ...form, capacity: v })}
+              ph="180 t/month"
+            />
           </div>
           <div className="flex justify-between border-t border-border px-5 py-4">
-            <button onClick={() => setStep(0)} className="rounded-xl border border-border px-4 py-2 text-xs">
+            <button
+              onClick={() => setStep(0)}
+              className="rounded-xl border border-border px-4 py-2 text-xs"
+            >
               Back
             </button>
             <button
@@ -183,8 +224,8 @@ function OnboardingPage() {
               </ul>
               {type === "chemical_refining" ? (
                 <p className="mx-5 mb-4 rounded-xl bg-warning/20 px-3 py-2 text-[11px] text-warning-foreground">
-                  Chemical processing and refining attracts an elevated inherent risk weighting and a
-                  mandatory pre-approval physical inspection.
+                  Chemical processing and refining attracts an elevated inherent risk weighting and
+                  a mandatory pre-approval physical inspection.
                 </p>
               ) : null}
             </Panel>
@@ -201,7 +242,10 @@ function OnboardingPage() {
             </Panel>
 
             <div className="flex justify-between">
-              <button onClick={() => setStep(1)} className="rounded-xl border border-border px-4 py-2 text-xs">
+              <button
+                onClick={() => setStep(1)}
+                className="rounded-xl border border-border px-4 py-2 text-xs"
+              >
                 Back
               </button>
               <button
@@ -222,14 +266,16 @@ function OnboardingPage() {
           </span>
           <h2 className="mt-4 text-lg font-semibold">Application draft prepared</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {form.company || "The applicant"} · {meta?.label ?? "processing"} ·{" "}
-            {form.lga || "LGA"}, {form.state || "State"}. In the live system the pack would be
-            submitted to the Beldium compliance desk and assigned a{" "}
+            {form.company || "The applicant"} · {meta?.label ?? "processing"} · {form.lga || "LGA"},{" "}
+            {form.state || "State"}. In the live system the pack would be submitted to the Beldium
+            compliance desk and assigned a{" "}
             <span className="font-medium text-foreground">BPC-APP</span> reference.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <Pill tone="info">Draft reference BPC-APP-2026-0158</Pill>
-            <Pill tone="warning">{(meta?.extra.length ?? 0) + BASE_REQUIREMENTS.length} evidence items</Pill>
+            <Pill tone="warning">
+              {(meta?.extra.length ?? 0) + BASE_REQUIREMENTS.length} evidence items
+            </Pill>
           </div>
           <button
             onClick={() => setStep(0)}

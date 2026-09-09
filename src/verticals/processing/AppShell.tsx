@@ -20,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 import { useAppState } from "@/verticals/processing/store";
-import { NOTIFICATIONS } from "@/verticals/processing/mock-data";
 import { Pill } from "@/verticals/processing/bpc";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
@@ -33,7 +32,12 @@ const OPERATOR_NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { to: "/processing/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/processing/applications", label: "Applications", icon: FileStack, badge: "5" },
-      { to: "/processing/nonconformities", label: "Non-conformities", icon: AlertTriangle, badge: "3" },
+      {
+        to: "/processing/nonconformities",
+        label: "Non-conformities",
+        icon: AlertTriangle,
+        badge: "3",
+      },
       { to: "/processing/inspections", label: "Inspections", icon: ClipboardCheck },
       { to: "/processing/onboarding", label: "New Application", icon: ScrollText },
     ],
@@ -76,7 +80,7 @@ const REGULATOR_NAV: { group: string; items: NavItem[] }[] = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, signOut } = useAppState();
+  const { user, signOut, notifications } = useAppState();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -127,7 +131,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const active =
-                  pathname === item.to || (item.to !== "/processing/dashboard" && pathname.startsWith(item.to));
+                  pathname === item.to ||
+                  (item.to !== "/processing/dashboard" && pathname.startsWith(item.to));
                 return (
                   <Link
                     key={item.to}
@@ -162,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       <div className="border-t border-sidebar-border px-4 py-4 text-[11px] text-sidebar-foreground/60">
-        Prototype · static demo data · no live records
+        Live register · Beldium Processing Compliance API
       </div>
     </div>
   );
@@ -218,7 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
                     Notifications
                   </p>
-                  {NOTIFICATIONS.map((n) => (
+                  {notifications.map((n) => (
                     <div key={n.id} className="rounded-xl px-3 py-2 hover:bg-accent">
                       <div className="flex items-center gap-2">
                         <span

@@ -1,7 +1,14 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarClock, ClipboardCheck, MapPin, UserCheck } from "lucide-react";
-import { Panel, PanelHeader, PageHeader, Pill, statusTone } from "@/verticals/processing/bpc";
+import {
+  Panel,
+  PanelHeader,
+  PageHeader,
+  Pill,
+  statusTone,
+  RegisterState,
+} from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
 import { cn } from "@/lib/utils";
 
@@ -35,8 +42,8 @@ const CHECKLIST = [
 ];
 
 function InspectionsPage() {
-  const { inspections, user } = useAppState();
-  const readOnly = user?.role !== "operator";
+  const { inspections, capabilities, isLoading, error } = useAppState();
+  const readOnly = !capabilities?.can_decide;
   const [selected, setSelected] = React.useState(inspections[0]?.id ?? "");
   const active = inspections.find((i) => i.id === selected) ?? inspections[0];
 
@@ -60,6 +67,16 @@ function InspectionsPage() {
             icon={<ClipboardCheck className="size-4" />}
           />
           <div className="divide-y divide-border">
+            {inspections.length === 0 ? (
+              <RegisterState
+                isLoading={isLoading}
+                error={error}
+                empty={{
+                  title: "No inspections scheduled",
+                  body: "Inspections appear here once the desk requests or schedules a site visit.",
+                }}
+              />
+            ) : null}
             {inspections.map((i) => (
               <button
                 key={i.id}
@@ -109,7 +126,7 @@ function InspectionsPage() {
                 <Info k="Scheduled" v={active.scheduled} />
                 <Info k="Assigned inspector" v={active.inspector} />
                 <Info k="State" v={`${active.state} State`} />
-                <Info k="Linked application" v={active.applicationId} />
+                <Info k="Linked application" v={active.applicationId || "Not linked"} />
               </div>
               {active.outcome ? (
                 <p className="mx-5 mb-4 rounded-xl border border-success bg-success/40 px-3 py-2 text-xs text-success-foreground">
@@ -117,13 +134,15 @@ function InspectionsPage() {
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2 border-t border-border px-5 py-4">
-                <Link
-                  to="/processing/applications/$id"
-                  params={{ id: active.applicationId }}
-                  className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent"
-                >
-                  Open application
-                </Link>
+                {active.applicationId ? (
+                  <Link
+                    to="/processing/applications/$id"
+                    params={{ id: active.applicationId }}
+                    className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent"
+                  >
+                    Open application
+                  </Link>
+                ) : null}
                 {!readOnly ? (
                   <>
                     <button className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent">
@@ -142,7 +161,10 @@ function InspectionsPage() {
             </Panel>
 
             <Panel>
-              <PanelHeader title="Site inspection checklist" subtitle="Standard processing protocol" />
+              <PanelHeader
+                title="Site inspection checklist"
+                subtitle="Standard processing protocol"
+              />
               <ul className="divide-y divide-border">
                 {CHECKLIST.map((c) => (
                   <li key={c} className="flex items-start gap-3 px-5 py-3 text-xs">

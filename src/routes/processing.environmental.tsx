@@ -1,8 +1,17 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Leaf, X } from "lucide-react";
-import { Panel, PanelHeader, PageHeader, Pill, StatCard, statusTone } from "@/verticals/processing/bpc";
-import { ENV_ALERTS, type EnvAlert } from "@/verticals/processing/mock-data";
+import {
+  Panel,
+  PanelHeader,
+  PageHeader,
+  Pill,
+  StatCard,
+  statusTone,
+  RegisterState,
+} from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
+import { type EnvAlert } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/environmental")({
@@ -25,9 +34,10 @@ export const Route = createFileRoute("/processing/environmental")({
 });
 
 function EnvironmentalPage() {
+  const { envAlerts, isLoading, error } = useAppState();
   const [filter, setFilter] = React.useState<"All" | "Open" | "Acknowledged" | "Resolved">("All");
   const [detail, setDetail] = React.useState<EnvAlert | null>(null);
-  const rows = ENV_ALERTS.filter((a) => filter === "All" || a.status === filter);
+  const rows = envAlerts.filter((a) => filter === "All" || a.status === filter);
 
   return (
     <>
@@ -38,9 +48,22 @@ function EnvironmentalPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Open exceedances" value={ENV_ALERTS.filter((a) => a.status === "Open").length} tone="danger" icon={<Leaf className="size-4" />} />
-        <StatCard label="Critical severity" value={ENV_ALERTS.filter((a) => a.severity === "Critical").length} tone="warning" />
-        <StatCard label="Resolved this quarter" value={ENV_ALERTS.filter((a) => a.status === "Resolved").length} tone="success" />
+        <StatCard
+          label="Open exceedances"
+          value={envAlerts.filter((a) => a.status === "Open").length}
+          tone="danger"
+          icon={<Leaf className="size-4" />}
+        />
+        <StatCard
+          label="Critical severity"
+          value={envAlerts.filter((a) => a.severity === "Critical").length}
+          tone="warning"
+        />
+        <StatCard
+          label="Resolved this quarter"
+          value={envAlerts.filter((a) => a.status === "Resolved").length}
+          tone="success"
+        />
       </div>
 
       <Panel>
@@ -88,7 +111,10 @@ function EnvironmentalPage() {
 
       {detail ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-primary/45 backdrop-blur-sm" onClick={() => setDetail(null)} />
+          <div
+            className="absolute inset-0 bg-primary/45 backdrop-blur-sm"
+            onClick={() => setDetail(null)}
+          />
           <div className="relative w-full max-w-lg rounded-3xl border border-border bg-card p-6 shadow-[0_30px_80px_-30px_rgba(16,30,61,0.7)]">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -126,6 +152,16 @@ function EnvironmentalPage() {
                 Request follow-up
               </button>
             </div>
+            {rows.length === 0 ? (
+              <RegisterState
+                isLoading={isLoading}
+                error={error}
+                empty={{
+                  title: "No environmental exceedances",
+                  body: "Alerts appear here when a monitored parameter crosses its permitted threshold.",
+                }}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

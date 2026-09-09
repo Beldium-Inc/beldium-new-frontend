@@ -156,6 +156,38 @@ export function ScoreBar({ value, tone }: { value: number; tone?: Tone }) {
   );
 }
 
+/**
+ * What a screen shows while the register is still arriving, when the API
+ * refused or failed, and when the query simply matched nothing. Every list
+ * page reads live data now, so all three states are real.
+ */
+export function RegisterState({
+  isLoading,
+  error,
+  empty,
+}: {
+  isLoading: boolean;
+  error: { message: string } | null;
+  empty: { title: string; body: string };
+}) {
+  if (isLoading) {
+    return (
+      <div className="px-5 py-10 text-center">
+        <p className="text-sm text-muted-foreground">Loading the register…</p>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="px-5 py-10 text-center">
+        <p className="text-sm font-medium text-destructive">The register could not be loaded</p>
+        <p className="mt-1 text-xs text-muted-foreground">{error.message}</p>
+      </div>
+    );
+  }
+  return <EmptyState title={empty.title} body={empty.body} />;
+}
+
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="px-5 py-10 text-center">

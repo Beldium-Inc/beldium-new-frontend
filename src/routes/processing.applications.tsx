@@ -1,9 +1,17 @@
 import * as React from "react";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { Panel, PageHeader, Pill, RiskBadge, ScoreBar, statusTone } from "@/verticals/processing/bpc";
+import {
+  Panel,
+  PageHeader,
+  Pill,
+  RegisterState,
+  RiskBadge,
+  ScoreBar,
+  statusTone,
+} from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
-import { processingTypeLabel } from "@/verticals/processing/mock-data";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/applications")({
@@ -34,7 +42,7 @@ function ApplicationsLayout() {
 }
 
 function ApplicationsList() {
-  const { applications } = useAppState();
+  const { applications, isLoading, error } = useAppState();
   const [stage, setStage] = React.useState<(typeof STAGES)[number]>("All");
   const [q, setQ] = React.useState("");
 
@@ -131,15 +139,23 @@ function ApplicationsList() {
                   <td className="px-5 py-4">
                     <div className="flex flex-col items-start gap-1">
                       <Pill tone={statusTone(a.stage)}>{a.stage}</Pill>
-                      {a.decision ? (
-                        <Pill tone={statusTone(a.decision)}>{a.decision}</Pill>
-                      ) : null}
+                      {a.decision ? <Pill tone={statusTone(a.decision)}>{a.decision}</Pill> : null}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {rows.length === 0 ? (
+            <RegisterState
+              isLoading={isLoading}
+              error={error}
+              empty={{
+                title: "No applications in the queue",
+                body: "Processor submissions appear here as they are lodged for review.",
+              }}
+            />
+          ) : null}
         </div>
       </Panel>
     </>

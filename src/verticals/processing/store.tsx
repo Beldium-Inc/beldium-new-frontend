@@ -1,16 +1,63 @@
 import * as React from "react";
+
+import { ApiError } from "@/lib/api/errors";
 import {
-  APPLICATIONS,
-  NON_CONFORMITIES,
-  INSPECTIONS,
-  AUDIT_LOG,
+  useCloseNonConformity,
+  useComplianceReports,
+  useCreateNonConformity,
+  useDecideProcessingApplication,
+  useEnvironmentalAlerts,
+  useProcessingApplication,
+  useProcessingApplications,
+  useProcessingAudit,
+  useProcessingCapabilities,
+  useProcessingDashboard,
+  useProcessingIncidents,
+  useProcessingInspections,
+  useProcessingNonConformities,
+  useProcessors,
+  useRequestInspection,
+  useReviewProcessingDocument,
+  useReviewApplicationSection,
+  useSetAlertStatus,
+  useTraceabilityRuns,
+} from "@/lib/api/processing-queries";
+import type { ProcessingCapabilities } from "@/lib/api/processing";
+import { useCurrentUser } from "@/lib/api/queries";
+import {
+  DECISION_VALUE,
+  SEVERITY_VALUE,
+  toApplication,
+  toApplicationSummary,
+  toAuditEvent,
+  toEnvAlert,
+  toExpiringDoc,
+  toIncident,
+  toInspection,
+  toNonConformity,
+  toNotification,
+  toProcessor,
+  toRegionalRow,
+  toReportItem,
+  toTraceRun,
   type Application,
+  type ApplicationSummary,
   type AuditEvent,
+  type EnvAlert,
+  type ExpiringDoc,
+  type Incident,
   type Inspection,
+  type KpiPoint,
   type NonConformity,
+  type Notification,
+  type Processor,
+  type RegionalRow,
+  type ReportItem,
   type ReviewState,
   type SectionKey,
-} from "./mock-data";
+  type Totals,
+  type TraceRun,
+} from "./domain";
 
 export type Role = "operator" | "regulator";
 
@@ -22,45 +69,81 @@ export type SessionUser = {
   initials: string;
 };
 
-export const DEMO_USERS: Record<Role, SessionUser> = {
-  operator: {
-    role: "operator",
-    name: "Olumide Adeyemi",
-    title: "Compliance Operator",
-    org: "Beldium Processing Compliance Partner",
-    initials: "OA",
-  },
-  regulator: {
-    role: "regulator",
-    name: "Dr. Amina Sule",
-    title: "Regulatory Oversight Officer",
-    org: "National Minerals Oversight Directorate",
-    initials: "AS",
-  },
+const ROLE_TITLE: Record<Role, string> = {
+  operator: "Compliance Operator",
+  regulator: "Regulatory Oversight Officer",
 };
 
-type ReviewMap = Record<string, Partial<Record<SectionKey, ReviewState>>>;
+function initialsOf(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "??";
+  return (parts[0]![0]! + (parts[1]?.[0] ?? "")).toUpperCase();
+}
 
 type Ctx = {
   user: SessionUser | null;
   signOut: () => void;
-  applications: Application[];
-  reviews: ReviewMap;
-  setReview: (appId: string, section: SectionKey, state: ReviewState) => void;
+  /** What the API says this caller may do, regardless of the chosen dashboard role. */
+  capabilities: ProcessingCapabilities | null;
+
+  applications: ApplicationSummary[];
+  /** Reference → API id, so a screen holding a reference can address a write. */
+  applicationIdFor: (reference: string) => string | null;
+  setReview: (
+    reference: string,
+    section: SectionKey,
+    state: ReviewState,
+    note?: string,
+  ) => Promise<void>;
+  decide: (
+    reference: string,
+    decision: NonNullable<ApplicationSummary["decision"]>,
+    note: string,
+  ) => Promise<void>;
+  requestInspection: (reference: string) => Promise<void>;
+
   nonConformities: NonConformity[];
-  addNonConformity: (nc: Omit<NonConformity, "id" | "raised" | "status">) => string;
-  closeNonConformity: (id: string, accept: boolean) => void;
+  addNonConformity: (
+    nc: Omit<NonConformity, "id" | "uuid" | "applicationUuid" | "raised" | "status">,
+  ) => Promise<string>;
+  closeNonConformity: (reference: string, accept: boolean, note?: string) => Promise<void>;
+
+  reviewDocument: (documentId: string, accept: boolean, note?: string) => Promise<void>;
+
   inspections: Inspection[];
-  requestInspection: (appId: string) => void;
-  decide: (appId: string, decision: NonNullable<Application["decision"]>, note: string) => void;
+  processors: Processor[];
+  envAlerts: EnvAlert[];
+  setAlertStatus: (
+    reference: string,
+    status: "acknowledged" | "resolved",
+    note?: string,
+  ) => Promise<void>;
+  incidents: Incident[];
+  traceRuns: TraceRun[];
+  reports: ReportItem[];
   audit: AuditEvent[];
+
+  totals: Totals | null;
+  kpiTrend: KpiPoint[];
+  regionalCompliance: RegionalRow[];
+  expiringDocs: ExpiringDoc[];
+  notifications: Notification[];
+
+  /** True until the first read of every list has settled. */
+  isLoading: boolean;
+  /** The first failure across the loaded queries, or null. */
+  error: ApiError | null;
+  /**
+   * Retained so the screens' call sites still compile. The API writes the audit
+   * trail itself from the mutation that caused the entry, so there is nothing
+   * for the client to append — a client-written trail would be unverifiable.
+   */
   log: (action: string, target: string, detail: string) => void;
 };
 
 const AppStateContext = React.createContext<Ctx | null>(null);
 
-let seq = 100;
-const nextId = (p: string) => `${p}-${++seq}`;
+const EMPTY_LIST = { results: [] };
 
 export function AppStateProvider({
   children,
@@ -72,82 +155,187 @@ export function AppStateProvider({
   role: Role;
   onSignOut: () => void;
 }) {
-  const user = DEMO_USERS[role];
-  const [applications, setApplications] = React.useState<Application[]>(APPLICATIONS);
-  const [reviews, setReviews] = React.useState<ReviewMap>({});
-  const [nonConformities, setNonConformities] = React.useState<NonConformity[]>(NON_CONFORMITIES);
-  const [inspections, setInspections] = React.useState<Inspection[]>(INSPECTIONS);
-  const [audit, setAudit] = React.useState<AuditEvent[]>(AUDIT_LOG);
+  const currentUser = useCurrentUser();
+  const capabilities = useProcessingCapabilities();
+  const dashboard = useProcessingDashboard();
+  const applications = useProcessingApplications();
+  const processors = useProcessors();
+  const nonConformities = useProcessingNonConformities();
+  const inspections = useProcessingInspections();
+  const alerts = useEnvironmentalAlerts();
+  const incidents = useProcessingIncidents();
+  const runs = useTraceabilityRuns();
+  const reports = useComplianceReports();
+  const audit = useProcessingAudit();
 
-  const log = React.useCallback(
-    (action: string, target: string, detail: string) => {
-      setAudit((prev) => [
-        {
-          id: nextId("A"),
-          at: new Date().toISOString().slice(0, 16).replace("T", " "),
-          actor: user?.name ?? "System",
-          role: user?.title ?? "Platform",
-          action,
-          target,
-          detail,
-        },
-        ...prev,
-      ]);
-    },
-    [user],
+  const reviewSection = useReviewApplicationSection();
+  const decideApplication = useDecideProcessingApplication();
+  const requestInspectionFor = useRequestInspection();
+  const createNonConformity = useCreateNonConformity();
+  const closeNonConformityFor = useCloseNonConformity();
+  const setAlertStatusFor = useSetAlertStatus();
+  const reviewDocumentFor = useReviewProcessingDocument();
+
+  // The browser stores which dashboard the user picked at sign-in, but an
+  // account the API only grants oversight to must not be shown the operator's
+  // chrome: every control would be disabled and every write refused. Choosing
+  // the lighter view stays allowed; claiming the heavier one does not.
+  const effectiveRole: Role = capabilities.data?.audience === "regulator" ? "regulator" : role;
+
+  const user = React.useMemo<SessionUser | null>(() => {
+    const account = currentUser.data;
+    if (!account) return null;
+    const name = [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
+    return {
+      role: effectiveRole,
+      name,
+      title: ROLE_TITLE[effectiveRole],
+      org:
+        capabilities.data?.audience === "regulator"
+          ? "Regulatory oversight"
+          : "Beldium Processing Compliance",
+      initials: initialsOf(name),
+    };
+  }, [currentUser.data, capabilities.data?.audience, effectiveRole]);
+
+  const applicationRows = React.useMemo(
+    () => (applications.data ?? EMPTY_LIST).results.map(toApplicationSummary),
+    [applications.data],
   );
+
+  // Findings, inspections and their screens address applications by reference,
+  // while the API returns the id; this is the one place that bridge is built.
+  const referenceById = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of applicationRows) map.set(row.uuid, row.id);
+    return map;
+  }, [applicationRows]);
+
+  const idByReference = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of applicationRows) map.set(row.id, row.uuid);
+    return map;
+  }, [applicationRows]);
+
+  const nonConformityRows = React.useMemo(
+    () =>
+      (nonConformities.data ?? EMPTY_LIST).results.map((row) =>
+        toNonConformity(row, (row.application && referenceById.get(row.application)) ?? ""),
+      ),
+    [nonConformities.data, referenceById],
+  );
+
+  const inspectionRows = React.useMemo(
+    () =>
+      (inspections.data ?? EMPTY_LIST).results.map((row) =>
+        toInspection(row, (row.application && referenceById.get(row.application)) ?? ""),
+      ),
+    [inspections.data, referenceById],
+  );
+
+  const nonConformityIdFor = React.useCallback(
+    (reference: string) => nonConformityRows.find((row) => row.id === reference)?.uuid ?? null,
+    [nonConformityRows],
+  );
+
+  const applicationIdFor = React.useCallback(
+    (reference: string) => idByReference.get(reference) ?? null,
+    [idByReference],
+  );
+
+  const queries = [
+    currentUser,
+    capabilities,
+    dashboard,
+    applications,
+    processors,
+    nonConformities,
+    inspections,
+    alerts,
+    incidents,
+    runs,
+    reports,
+    audit,
+  ];
+  const isLoading = queries.some((query) => query.isPending);
+  const firstError = queries.map((query) => query.error).find(Boolean) ?? null;
 
   const value: Ctx = {
     user,
     signOut: onSignOut,
-    applications,
-    reviews,
-    setReview: (appId, section, state) => {
-      setReviews((prev) => ({ ...prev, [appId]: { ...prev[appId], [section]: state } }));
+    capabilities: capabilities.data ?? null,
+
+    applications: applicationRows,
+    applicationIdFor,
+    setReview: async (reference, section, state, note) => {
+      const id = applicationIdFor(reference);
+      if (!id) return;
+      await reviewSection.mutateAsync({
+        id,
+        key: section,
+        review_state: state,
+        ...(note ? { note } : {}),
+      });
     },
-    nonConformities,
-    addNonConformity: (nc) => {
-      const id = nextId("NC-2026");
-      setNonConformities((prev) => [
-        { ...nc, id, raised: new Date().toISOString().slice(0, 10), status: "Open" },
-        ...prev,
-      ]);
-      return id;
+    decide: async (reference, decision, note) => {
+      const id = applicationIdFor(reference);
+      if (!id) return;
+      await decideApplication.mutateAsync({ id, decision: DECISION_VALUE[decision], note });
     },
-    closeNonConformity: (id, accept) => {
-      setNonConformities((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, status: accept ? "Closed" : "Open" } : n)),
-      );
+    requestInspection: async (reference) => {
+      const id = applicationIdFor(reference);
+      if (!id) return;
+      await requestInspectionFor.mutateAsync({ id });
     },
-    inspections,
-    requestInspection: (appId) => {
-      const app = applications.find((a) => a.id === appId);
-      if (!app) return;
-      setInspections((prev) => [
-        {
-          id: nextId("INS-2026"),
-          applicationId: app.id,
-          company: app.company,
-          facility: app.facility,
-          state: app.state,
-          scheduled: "To be confirmed",
-          inspector: "Unassigned",
-          type: "Pre-approval",
-          status: "Requested",
-        },
-        ...prev,
-      ]);
-      setApplications((prev) =>
-        prev.map((a) => (a.id === appId ? { ...a, stage: "Inspection" } : a)),
-      );
+
+    nonConformities: nonConformityRows,
+    addNonConformity: async (nc) => {
+      const created = await createNonConformity.mutateAsync({
+        application: applicationIdFor(nc.applicationId),
+        section: nc.section,
+        severity: SEVERITY_VALUE[nc.severity],
+        title: nc.title,
+        detail: nc.detail,
+        due_on: nc.due,
+      });
+      return created.reference;
     },
-    decide: (appId, decision) => {
-      setApplications((prev) =>
-        prev.map((a) => (a.id === appId ? { ...a, stage: "Decided", decision } : a)),
-      );
+    closeNonConformity: async (reference, accept, note) => {
+      const id = nonConformityIdFor(reference);
+      if (!id) return;
+      await closeNonConformityFor.mutateAsync({ id, accept, ...(note ? { note } : {}) });
     },
-    audit,
-    log,
+
+    reviewDocument: async (documentId, accept, note) => {
+      await reviewDocumentFor.mutateAsync({
+        id: documentId,
+        review_state: accept ? "verified" : "rejected",
+        ...(note ? { note } : {}),
+      });
+    },
+
+    inspections: inspectionRows,
+    processors: (processors.data ?? EMPTY_LIST).results.map(toProcessor),
+    envAlerts: (alerts.data ?? EMPTY_LIST).results.map(toEnvAlert),
+    setAlertStatus: async (reference, status, note) => {
+      const alert = (alerts.data ?? EMPTY_LIST).results.find((row) => row.reference === reference);
+      if (!alert) return;
+      await setAlertStatusFor.mutateAsync({ id: alert.id, status, ...(note ? { note } : {}) });
+    },
+    incidents: (incidents.data ?? EMPTY_LIST).results.map(toIncident),
+    traceRuns: (runs.data ?? EMPTY_LIST).results.map(toTraceRun),
+    reports: (reports.data ?? EMPTY_LIST).results.map(toReportItem),
+    audit: (audit.data ?? EMPTY_LIST).results.map(toAuditEvent),
+
+    totals: dashboard.data?.totals ?? null,
+    kpiTrend: dashboard.data?.kpi_trend ?? [],
+    regionalCompliance: (dashboard.data?.regional_compliance ?? []).map(toRegionalRow),
+    expiringDocs: (dashboard.data?.expiring_documents ?? []).map(toExpiringDoc),
+    notifications: (dashboard.data?.notifications ?? []).map(toNotification),
+
+    isLoading,
+    error: firstError instanceof ApiError ? firstError : null,
+    log: () => {},
   };
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
@@ -157,4 +345,26 @@ export function useAppState() {
   const ctx = React.useContext(AppStateContext);
   if (!ctx) throw new Error("useAppState must be used inside AppStateProvider");
   return ctx;
+}
+
+/**
+ * One application in full, addressed by the reference the URL carries.
+ *
+ * Only the detail endpoint returns the ten evidence sections, so the review
+ * screen reads through this rather than picking its row out of the queue.
+ */
+export function useApplicationDetail(reference: string): {
+  application: Application | null;
+  isLoading: boolean;
+  error: ApiError | null;
+} {
+  const { applicationIdFor, isLoading: listLoading } = useAppState();
+  const id = applicationIdFor(reference);
+  const query = useProcessingApplication(id);
+  return {
+    application: query.data ? toApplication(query.data) : null,
+    // The reference cannot be resolved until the queue itself has loaded.
+    isLoading: listLoading || (Boolean(id) && query.isPending),
+    error: query.error instanceof ApiError ? query.error : null,
+  };
 }
