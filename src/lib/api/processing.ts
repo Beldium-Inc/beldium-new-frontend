@@ -339,9 +339,19 @@ export interface TraceabilityRun {
   updated_at: string;
 }
 
+export type ReportKind =
+  | "national_compliance"
+  | "environmental_exceedances"
+  | "inspection_programme"
+  | "non_conformity_register";
+
+export type ReportPeriod = "last_month" | "last_quarter" | "year_to_date" | "all_time";
+
 export interface ComplianceReport {
   id: UUID;
   reference: string;
+  kind: ReportKind | "";
+  kind_label: string;
   title: string;
   period_label: string;
   scope: string;
@@ -728,6 +738,20 @@ export function reviewProcessingDocument(
 
 export function listComplianceReports(query: ListQuery = {}): Promise<Paginated<ComplianceReport>> {
   return apiFetch<Paginated<ComplianceReport>>(`${BASE}/reports/`, { query });
+}
+
+/**
+ * Compile a report from the register and store the PDF. A report is a
+ * point-in-time extract: its figures are those held at compilation and are
+ * never restated, so generating twice gives two documents rather than
+ * updating one. Desk and regulator only — it spans companies.
+ */
+export function generateReport(input: {
+  kind: ReportKind;
+  scope?: string | undefined;
+  period?: ReportPeriod | undefined;
+}): Promise<ComplianceReport> {
+  return apiFetch<ComplianceReport>(`${BASE}/reports/generate/`, { method: "POST", body: input });
 }
 
 /** The register-wide trail. Empty for a single processor: it spans companies. */

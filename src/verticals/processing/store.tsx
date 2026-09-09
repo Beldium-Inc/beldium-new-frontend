@@ -8,6 +8,7 @@ import {
   useCreateNonConformity,
   useDecideProcessingApplication,
   useEnvironmentalAlerts,
+  useGenerateReport,
   useProcessingApplication,
   useProcessingApplications,
   useProcessingAudit,
@@ -185,6 +186,12 @@ type Ctx = {
   incidents: Incident[];
   traceRuns: TraceRun[];
   reports: ReportItem[];
+  /** Compile a new report. Returns the stored item, including its download URL. */
+  generateReport: (input: {
+    kind: Api.ReportKind;
+    scope?: string;
+    period?: Api.ReportPeriod;
+  }) => Promise<ReportItem>;
   audit: AuditEvent[];
 
   totals: Totals | null;
@@ -242,6 +249,7 @@ export function AppStateProvider({
   const updateInspectionFor = useUpdateInspection();
   const addRiskCauseFor = useAddRiskCause();
   const removeRiskCauseFor = useRemoveRiskCause();
+  const generateReportFor = useGenerateReport();
   const createApplication = useCreateProcessingApplication();
   const saveSectionFor = useSaveApplicationSection();
   const uploadDocumentFor = useUploadApplicationDocument();
@@ -453,6 +461,7 @@ export function AppStateProvider({
     incidents: (incidents.data ?? EMPTY_LIST).results.map(toIncident),
     traceRuns: (runs.data ?? EMPTY_LIST).results.map(toTraceRun),
     reports: (reports.data ?? EMPTY_LIST).results.map(toReportItem),
+    generateReport: async (input) => toReportItem(await generateReportFor.mutateAsync(input)),
     audit: (audit.data ?? EMPTY_LIST).results.map(toAuditEvent),
 
     totals: dashboard.data?.totals ?? null,

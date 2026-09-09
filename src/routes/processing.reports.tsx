@@ -4,6 +4,7 @@ import { Download, FileText, Loader2, X } from "lucide-react";
 import { Panel, PanelHeader, PageHeader, Pill } from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
 import { type ReportItem } from "@/verticals/processing/domain";
+import type { ReportKind, ReportPeriod } from "@/lib/api/processing";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/reports")({
@@ -25,24 +26,44 @@ export const Route = createFileRoute("/processing/reports")({
   component: ReportsPage,
 });
 
-const KINDS = [
-  "National compliance summary",
-  "Environmental exceedances",
-  "Inspection programme",
-  "Non-conformity register",
+const KINDS: { value: ReportKind; label: string }[] = [
+  { value: "national_compliance", label: "National compliance summary" },
+  { value: "environmental_exceedances", label: "Environmental exceedance summary" },
+  { value: "inspection_programme", label: "Inspection programme review" },
+  { value: "non_conformity_register", label: "Non-conformity register" },
+];
+
+const PERIODS: { value: ReportPeriod; label: string }[] = [
+  { value: "last_month", label: "Last month" },
+  { value: "last_quarter", label: "Last quarter" },
+  { value: "year_to_date", label: "Year to date" },
+  { value: "all_time", label: "All time" },
 ];
 
 function ReportsPage() {
-  const { reports, regionalCompliance, kpiTrend } = useAppState();
+  const { reports, regionalCompliance, kpiTrend, generateReport, capabilities } = useAppState();
   // The scope list is the regions actually on the register, so it grows with it.
   const scopes = React.useMemo(
     () => ["All regions", ...regionalCompliance.map((r) => r.region)],
     [regionalCompliance],
   );
   const [scope, setScope] = React.useState("All regions");
-  const [kind, setKind] = React.useState(KINDS[0]);
-  const [period, setPeriod] = React.useState("Q3 2026");
+  const [kind, setKind] = React.useState<ReportKind>(KINDS[0]!.value);
+  const [period, setPeriod] = React.useState<ReportPeriod>("last_quarter");
   const [preview, setPreview] = React.useState<ReportItem | null>(null);
+  const [compiling, setCompiling] = React.useState(false);
+  const [compiled, setCompiled] = React.useState<ReportItem | null>(null);
+  const [failure, setFailure] = React.useState<string | null>(null);
+
+  const compile = () => {
+    setCompiling(true);
+    setFailure(null);
+    setCompiled(null);
+    void generateReport({ kind, scope, period })
+      .then(setCompiled)
+      .catch((cause: Error) => setFailure(cause.message))
+      .finally(() => setCompiling(false));
+  };
 
   return (
     <>
@@ -59,11 +80,13 @@ function ReportsPage() {
             <Field label="Report type">
               <select
                 value={kind}
-                onChange={(e) => setKind(e.target.value)}
+                onChange={(e) => setKind(e.target.value as ReportKind)}
                 className="w-full rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm outline-none focus:border-ring"
               >
                 {KINDS.map((k) => (
-                  <option key={k}>{k}</option>
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -87,37 +110,72 @@ function ReportsPage() {
             </Field>
             <Field label="Period">
               <div className="flex flex-wrap gap-1.5">
-                {["Q1 2026", "Q2 2026", "Q3 2026", "YTD 2026"].map((p) => (
+                {PERIODS.map((p) => (
                   <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
+                    key={p.value}
+                    onClick={() => setPeriod(p.value)}
                     className={cn(
                       "rounded-full border px-3 py-1.5 text-xs font-medium",
-                      period === p
+                      period === p.value
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border hover:bg-accent",
                     )}
                   >
-                    {p}
+                    {p.label}
                   </button>
                 ))}
               </div>
             </Field>
 
             <button
-              disabled
-              title="Report generation is not built yet; published reports are in the library."
+              onClick={compile}
+              disabled={compiling || !capabilities?.can_read_register}
+              title={
+                capabilities?.can_read_register
+                  ? "Compile this report from the register"
+                  : "Only the compliance desk and regulators can compile reports."
+              }
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-40"
             >
-              <FileText className="size-4" />
-              Generate report
+              {compiling ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <FileText className="size-4" />
+              )}
+              {compiling ? "Compiling…" : "Generate report"}
             </button>
 
-            <p className="rounded-2xl border border-border bg-muted/50 px-4 py-3 text-[11px] text-muted-foreground">
-              Generation is not connected yet: nothing on the platform compiles a report document.
-              The composer above records what would be requested. Reports that have already been
-              published are listed in the library and download from the API.
-            </p>
+            {failure ? (
+              <p className="rounded-2xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-[11px] text-destructive-foreground">
+                {failure}
+              </p>
+            ) : null}
+
+            {compiled ? (
+              <div className="rounded-2xl border border-border bg-success/25 px-4 py-3">
+                <p className="text-xs font-medium">Report ready</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {compiled.id} · {compiled.title} · {compiled.period} · {compiled.pages}{" "}
+                  {compiled.pages === 1 ? "page" : "pages"}
+                </p>
+                {compiled.fileUrl ? (
+                  <a
+                    href={compiled.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                  >
+                    <Download className="size-3.5" /> Download PDF
+                  </a>
+                ) : null}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-border bg-muted/50 px-4 py-3 text-[11px] text-muted-foreground">
+                A report is a point-in-time extract: its figures are those held when it is compiled,
+                and are not restated afterwards. Generating again produces a new document rather
+                than updating this one.
+              </p>
+            )}
           </div>
         </Panel>
 
@@ -200,7 +258,10 @@ function ReportsPage() {
                 <FileText className="mx-auto size-8 text-muted-foreground" />
                 <p className="mt-2 text-xs font-medium">Document preview</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {preview.pages} pages · {preview.period} · rendering disabled in demo build
+                  {preview.pages} {preview.pages === 1 ? "page" : "pages"} · {preview.period}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {preview.fileUrl ? "Download to open the document." : "No document was stored."}
                 </p>
               </div>
             </div>

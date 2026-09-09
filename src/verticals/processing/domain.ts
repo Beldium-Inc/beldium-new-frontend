@@ -289,6 +289,9 @@ export type Notification = {
 
 export type ReportItem = {
   id: string;
+  /** The API's key, for downloads. */
+  uuid: string;
+  kind: string;
   title: string;
   period: string;
   generated: string;
@@ -683,6 +686,8 @@ export function toNotification(
 export function toReportItem(row: Api.ComplianceReport): ReportItem {
   return {
     id: row.reference,
+    uuid: row.id,
+    kind: row.kind,
     title: row.title,
     period: row.period_label,
     generated: row.generated_on,

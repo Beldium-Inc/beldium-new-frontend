@@ -70,6 +70,10 @@ organisation register and join requests.
 fixture data any more. The other six dashboards still run on their own local prototype
 stores.
 
+Oversight reports are compiled server-side and downloaded as PDFs; the composer on the
+reports page posts to `/processing/reports/generate/` and the library lists what has been
+published.
+
 The vertical has three roles. `operator` reviews and decides, `regulator` reads, and
 `processor` is the applicant: it starts an application, answers each section, uploads
 evidence, submits, and responds to findings. The applicant's form is built from the server's

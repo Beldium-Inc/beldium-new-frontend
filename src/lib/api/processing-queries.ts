@@ -9,6 +9,7 @@ import {
   fetchCapabilities,
   fetchChecklist,
   fetchProcessingDashboard,
+  generateReport,
   getProcessingApplication,
   getProcessor,
   listComplianceReports,
@@ -39,6 +40,8 @@ import {
   type ProcessingSectionKey,
   type ProcessingTypeKey,
   type NewApplicationInput,
+  type ReportKind,
+  type ReportPeriod,
   type Inspection as InspectionRow,
   type SectionField,
 } from "./processing";
@@ -410,6 +413,18 @@ export function useUpdateInspection() {
       updateInspection(input.id, input.patch),
     // Completing one stamps the processor's last-inspection date, so the
     // register is stale too.
+    onSuccess: () => invalidateProcessing(queryClient),
+  });
+}
+
+export function useGenerateReport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      kind: ReportKind;
+      scope?: string | undefined;
+      period?: ReportPeriod | undefined;
+    }) => generateReport(input),
     onSuccess: () => invalidateProcessing(queryClient),
   });
 }
