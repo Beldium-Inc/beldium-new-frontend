@@ -129,7 +129,7 @@ export type ApplicationSummary = {
   stage: "New" | "In Review" | "Awaiting Info" | "Inspection" | "Decided";
   decision?: "Approved" | "Conditional Approval" | "More Info Required" | "Rejected";
   completeness: number;
-  riskCauses: { cause: string; weight: number; detail: string }[];
+  riskCauses: { id: string; cause: string; weight: number; detail: string }[];
 };
 
 /** One application in full: the ten evidence sections and the review tally. */
@@ -141,6 +141,8 @@ export type Application = ApplicationSummary & {
     sectionsRejected: number;
     sectionsFlagged: number;
   };
+  /** Empty exactly when the application is submittable. */
+  outstanding: SectionGap[];
 };
 
 export type NonConformity = {
@@ -283,18 +285,65 @@ export type Notification = {
   body: string;
   at: string;
   kind: "info" | "warn" | "error";
+  /**
+   * Where to read the whole record, as the router wants it — path and search
+   * separately, since a `?ref=` folded into the path is not parsed as search.
+   * Null when the target cannot be resolved.
+   */
+  target: { to: string; search?: Record<string, string> } | null;
 };
+
+/**
+ * The screen that holds each kind of record.
+ *
+ * Findings, alerts and inspections all live in a list with a detail panel, so
+ * the reference travels as a search param and the page opens that row. A
+ * document is read inside the application that supplied it, which has a route
+ * of its own.
+ */
+function notificationTarget(
+  entity: Api.ProcessingDashboard["notifications"][number]["entity"],
+  reference: string,
+): Notification["target"] {
+  if (!reference) return null;
+  switch (entity) {
+    case "non_conformity":
+      return { to: "/processing/nonconformities", search: { ref: reference } };
+    case "environmental_alert":
+      return { to: "/processing/environmental", search: { ref: reference } };
+    case "inspection":
+      return { to: "/processing/inspections", search: { ref: reference } };
+    case "document":
+      // A document is read inside the application that supplied it.
+      return { to: `/processing/applications/${reference}` };
+    default:
+      return null;
+  }
+}
 
 export type ReportItem = {
   id: string;
+  /** The API's key, for downloads. */
+  uuid: string;
+  kind: string;
   title: string;
   period: string;
   generated: string;
   pages: number;
   scope: string;
+  /** Authenticated download route, or null when no file was ever stored. */
+  fileUrl: string | null;
 };
 
 export type Totals = Api.ProcessingDashboard["totals"];
+
+/** One section's remaining gaps, as the API computes them. */
+export type SectionGap = {
+  section: SectionKey;
+  label: string;
+  missingPrompts: string[];
+  missingDocuments: string[];
+};
 
 // --- adapters ----------------------------------------------------------------
 
@@ -442,6 +491,7 @@ export function toApplicationSummary(row: Api.ProcessingApplication): Applicatio
     ...(row.decision ? { decision: DECISION_LABEL[row.decision] } : {}),
     completeness: row.completeness,
     riskCauses: row.risk_causes.map((cause) => ({
+      id: cause.id,
       cause: cause.cause,
       weight: cause.weight,
       detail: cause.detail,
@@ -486,7 +536,28 @@ export function toApplication(row: Api.ProcessingApplicationDetail): Application
       sectionsRejected: row.review.sections_rejected,
       sectionsFlagged: row.review.sections_flagged,
     },
+    outstanding: (row.outstanding ?? []).map(toSectionGap),
   };
+}
+
+export function toSectionGap(row: Api.SectionGap): SectionGap {
+  return {
+    section: row.section as SectionKey,
+    label: row.label,
+    missingPrompts: row.missing_prompts,
+    missingDocuments: row.missing_documents,
+  };
+}
+
+/**
+ * The gaps an incomplete submission came back with. The API returns them in
+ * `error.details.outstanding`; a failure with no such payload yields none.
+ */
+export function outstandingFromError(error: unknown): SectionGap[] {
+  const details = (error as { details?: unknown })?.details;
+  if (!details || typeof details !== "object") return [];
+  const rows = (details as { outstanding?: unknown }).outstanding;
+  return Array.isArray(rows) ? (rows as Api.SectionGap[]).map(toSectionGap) : [];
 }
 
 export function toNonConformity(
@@ -643,17 +714,27 @@ export function toExpiringDoc(row: Api.ExpiringDocument): ExpiringDoc {
 export function toNotification(
   row: Api.ProcessingDashboard["notifications"][number],
 ): Notification {
-  return { id: row.id, title: row.title, body: row.body, at: relativeTime(row.at), kind: row.kind };
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    at: relativeTime(row.at),
+    kind: row.kind,
+    target: notificationTarget(row.entity, row.reference),
+  };
 }
 
 export function toReportItem(row: Api.ComplianceReport): ReportItem {
   return {
     id: row.reference,
+    uuid: row.id,
+    kind: row.kind,
     title: row.title,
     period: row.period_label,
     generated: row.generated_on,
     pages: row.pages,
     scope: row.scope,
+    fileUrl: row.file_url,
   };
 }
 

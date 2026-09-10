@@ -3,10 +3,12 @@ import * as React from "react";
 import { ApiError } from "@/lib/api/errors";
 import {
   useCloseNonConformity,
+  useCreateProcessingApplication,
   useComplianceReports,
   useCreateNonConformity,
   useDecideProcessingApplication,
   useEnvironmentalAlerts,
+  useGenerateReport,
   useProcessingApplication,
   useProcessingApplications,
   useProcessingAudit,
@@ -16,13 +18,26 @@ import {
   useProcessingInspections,
   useProcessingNonConformities,
   useProcessors,
+  useRemoveRiskCause,
+  useAddRiskCause,
   useRequestInspection,
   useReviewProcessingDocument,
   useReviewApplicationSection,
   useSetAlertStatus,
+  useSubmitNonConformityEvidence,
+  useSubmitProcessingApplication,
   useTraceabilityRuns,
+  useUpdateInspection,
+  useUploadApplicationDocument,
+  useSaveApplicationSection,
 } from "@/lib/api/processing-queries";
-import type { ProcessingCapabilities } from "@/lib/api/processing";
+import type * as Api from "@/lib/api/processing";
+import type {
+  NewApplicationInput,
+  ProcessingCapabilities,
+  ProcessingSectionKey,
+  SectionField,
+} from "@/lib/api/processing";
 import { useCurrentUser } from "@/lib/api/queries";
 import {
   DECISION_VALUE,
@@ -59,7 +74,7 @@ import {
   type TraceRun,
 } from "./domain";
 
-export type Role = "operator" | "regulator";
+export type Role = "operator" | "processor" | "regulator";
 
 export type SessionUser = {
   role: Role;
@@ -71,6 +86,7 @@ export type SessionUser = {
 
 const ROLE_TITLE: Record<Role, string> = {
   operator: "Compliance Operator",
+  processor: "Processor / Applicant",
   regulator: "Regulatory Oversight Officer",
 };
 
@@ -87,6 +103,13 @@ type Ctx = {
   capabilities: ProcessingCapabilities | null;
 
   applications: ApplicationSummary[];
+  /**
+   * The application an applicant lands on. Reads are already scoped to the
+   * caller, so these are all their own; this picks the one they can actually
+   * act on — a draft or one the desk has sent back — before falling back to
+   * whatever is still open, then to the most recent.
+   */
+  myApplication: ApplicationSummary | null;
   /** Reference → API id, so a screen holding a reference can address a write. */
   applicationIdFor: (reference: string) => string | null;
   setReview: (
@@ -110,7 +133,49 @@ type Ctx = {
 
   reviewDocument: (documentId: string, accept: boolean, note?: string) => Promise<void>;
 
+  // --- applicant side -------------------------------------------------------
+  /** Start an application. Returns the new reference. */
+  startApplication: (input: NewApplicationInput) => Promise<string>;
+  /** Save one section's answers. Returns it to the review queue. */
+  saveSection: (reference: string, section: SectionKey, fields: SectionField[]) => Promise<void>;
+  /** Upload or replace one document; re-uploading the same name replaces it. */
+  uploadDocument: (
+    reference: string,
+    input: {
+      section: ProcessingSectionKey;
+      name: string;
+      file: File;
+      reference?: string;
+      issuer?: string;
+      issued_on?: string | null;
+      expires_on?: string | null;
+    },
+  ) => Promise<void>;
+  /** Hand the application to the desk. Rejects with the outstanding gaps. */
+  submitApplication: (reference: string) => Promise<void>;
+  /** Answer a finding with corrective-action evidence. */
+  submitEvidence: (
+    reference: string,
+    input: { name: string; note?: string; file?: File | null },
+  ) => Promise<void>;
+
   inspections: Inspection[];
+  /** Assign an inspector and confirm a date. Desk only. */
+  updateInspection: (
+    reference: string,
+    patch: {
+      scheduled_for?: string | null;
+      inspector_name?: string;
+      status?: Inspection["status"];
+      outcome?: string;
+    },
+  ) => Promise<void>;
+  /** Add or withdraw a weighted contributor to an application's risk score. */
+  addRiskCause: (
+    applicationReference: string,
+    input: { cause: string; weight: number; detail?: string },
+  ) => Promise<void>;
+  removeRiskCause: (applicationReference: string, causeId: string) => Promise<void>;
   processors: Processor[];
   envAlerts: EnvAlert[];
   setAlertStatus: (
@@ -121,6 +186,12 @@ type Ctx = {
   incidents: Incident[];
   traceRuns: TraceRun[];
   reports: ReportItem[];
+  /** Compile a new report. Returns the stored item, including its download URL. */
+  generateReport: (input: {
+    kind: Api.ReportKind;
+    scope?: string;
+    period?: Api.ReportPeriod;
+  }) => Promise<ReportItem>;
   audit: AuditEvent[];
 
   totals: Totals | null;
@@ -175,12 +246,23 @@ export function AppStateProvider({
   const closeNonConformityFor = useCloseNonConformity();
   const setAlertStatusFor = useSetAlertStatus();
   const reviewDocumentFor = useReviewProcessingDocument();
+  const updateInspectionFor = useUpdateInspection();
+  const addRiskCauseFor = useAddRiskCause();
+  const removeRiskCauseFor = useRemoveRiskCause();
+  const generateReportFor = useGenerateReport();
+  const createApplication = useCreateProcessingApplication();
+  const saveSectionFor = useSaveApplicationSection();
+  const uploadDocumentFor = useUploadApplicationDocument();
+  const submitApplicationFor = useSubmitProcessingApplication();
+  const submitEvidenceFor = useSubmitNonConformityEvidence();
 
   // The browser stores which dashboard the user picked at sign-in, but an
   // account the API only grants oversight to must not be shown the operator's
   // chrome: every control would be disabled and every write refused. Choosing
   // the lighter view stays allowed; claiming the heavier one does not.
-  const effectiveRole: Role = capabilities.data?.audience === "regulator" ? "regulator" : role;
+  const audience = capabilities.data?.audience;
+  const effectiveRole: Role =
+    audience === "regulator" ? "regulator" : audience === "processor" ? "processor" : role;
 
   const user = React.useMemo<SessionUser | null>(() => {
     const account = currentUser.data;
@@ -191,12 +273,14 @@ export function AppStateProvider({
       name,
       title: ROLE_TITLE[effectiveRole],
       org:
-        capabilities.data?.audience === "regulator"
+        audience === "regulator"
           ? "Regulatory oversight"
-          : "Beldium Processing Compliance",
+          : audience === "processor"
+            ? "Registered processor"
+            : "Beldium Processing Compliance",
       initials: initialsOf(name),
     };
-  }, [currentUser.data, capabilities.data?.audience, effectiveRole]);
+  }, [currentUser.data, audience, effectiveRole]);
 
   const applicationRows = React.useMemo(
     () => (applications.data ?? EMPTY_LIST).results.map(toApplicationSummary),
@@ -243,6 +327,17 @@ export function AppStateProvider({
     [idByReference],
   );
 
+  // An applicant usually has one application, but a company registering a
+  // second facility has two — so "mine" is the one still needing work rather
+  // than whatever the queue ordering happens to put first.
+  const currentApplication = React.useMemo(() => {
+    const actionable = applicationRows.find(
+      (row) => row.stage === "New" || row.stage === "Awaiting Info",
+    );
+    const open = applicationRows.find((row) => row.stage !== "Decided");
+    return actionable ?? open ?? applicationRows[0] ?? null;
+  }, [applicationRows]);
+
   const queries = [
     currentUser,
     capabilities,
@@ -266,6 +361,7 @@ export function AppStateProvider({
     capabilities: capabilities.data ?? null,
 
     applications: applicationRows,
+    myApplication: currentApplication,
     applicationIdFor,
     setReview: async (reference, section, state, note) => {
       const id = applicationIdFor(reference);
@@ -314,7 +410,47 @@ export function AppStateProvider({
       });
     },
 
+    startApplication: async (input) => {
+      const created = await createApplication.mutateAsync(input);
+      return created.reference;
+    },
+    saveSection: async (reference, section, fields) => {
+      const id = applicationIdFor(reference);
+      if (!id) return;
+      await saveSectionFor.mutateAsync({ id, key: section, fields });
+    },
+    uploadDocument: async (reference, input) => {
+      const id = applicationIdFor(reference);
+      if (!id) return;
+      await uploadDocumentFor.mutateAsync({ id, ...input });
+    },
+    submitApplication: async (reference) => {
+      const id = applicationIdFor(reference);
+      if (!id) return;
+      await submitApplicationFor.mutateAsync(id);
+    },
+    submitEvidence: async (reference, input) => {
+      const id = nonConformityIdFor(reference);
+      if (!id) return;
+      await submitEvidenceFor.mutateAsync({ id, ...input });
+    },
+
     inspections: inspectionRows,
+    updateInspection: async (reference, patch) => {
+      const row = (inspections.data ?? EMPTY_LIST).results.find((i) => i.reference === reference);
+      if (!row) return;
+      await updateInspectionFor.mutateAsync({ id: row.id, patch: toInspectionPatch(patch) });
+    },
+    addRiskCause: async (applicationReference, input) => {
+      const id = applicationIdFor(applicationReference);
+      if (!id) return;
+      await addRiskCauseFor.mutateAsync({ id, ...input });
+    },
+    removeRiskCause: async (applicationReference, causeId) => {
+      const id = applicationIdFor(applicationReference);
+      if (!id) return;
+      await removeRiskCauseFor.mutateAsync({ id, causeId });
+    },
     processors: (processors.data ?? EMPTY_LIST).results.map(toProcessor),
     envAlerts: (alerts.data ?? EMPTY_LIST).results.map(toEnvAlert),
     setAlertStatus: async (reference, status, note) => {
@@ -325,6 +461,7 @@ export function AppStateProvider({
     incidents: (incidents.data ?? EMPTY_LIST).results.map(toIncident),
     traceRuns: (runs.data ?? EMPTY_LIST).results.map(toTraceRun),
     reports: (reports.data ?? EMPTY_LIST).results.map(toReportItem),
+    generateReport: async (input) => toReportItem(await generateReportFor.mutateAsync(input)),
     audit: (audit.data ?? EMPTY_LIST).results.map(toAuditEvent),
 
     totals: dashboard.data?.totals ?? null,
@@ -339,6 +476,27 @@ export function AppStateProvider({
   };
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+}
+
+const INSPECTION_STATUS_VALUE: Record<Inspection["status"], Api.Inspection["status"]> = {
+  Requested: "requested",
+  Scheduled: "scheduled",
+  "In Progress": "in_progress",
+  Completed: "completed",
+};
+
+function toInspectionPatch(patch: {
+  scheduled_for?: string | null;
+  inspector_name?: string;
+  status?: Inspection["status"];
+  outcome?: string;
+}): Partial<Api.Inspection> {
+  const out: Partial<Api.Inspection> = {};
+  if (patch.scheduled_for !== undefined) out.scheduled_for = patch.scheduled_for;
+  if (patch.inspector_name !== undefined) out.inspector_name = patch.inspector_name;
+  if (patch.outcome !== undefined) out.outcome = patch.outcome;
+  if (patch.status !== undefined) out.status = INSPECTION_STATUS_VALUE[patch.status];
+  return out;
 }
 
 export function useAppState() {

@@ -33,12 +33,14 @@ export function ProgressHeader({
         </span>
       </div>
       <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(step / total) * 100}%` }} />
+        <div
+          className="h-full rounded-full bg-brand transition-all"
+          style={{ width: `${(step / total) * 100}%` }}
+        />
       </div>
     </div>
   );
 }
-
 
 export function AuthShell({
   eyebrow,
@@ -69,19 +71,27 @@ export function AuthShell({
 
         <div className="rounded-[24px] border border-border bg-surface p-6 shadow-panel sm:p-9">
           {eyebrow && (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">{eyebrow}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
+              {eyebrow}
+            </p>
           )}
-          <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-[28px]">{title}</h1>
-          {description && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
+          <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-[28px]">
+            {title}
+          </h1>
+          {description && (
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {description}
+            </p>
+          )}
           <div className="mt-7">{children}</div>
         </div>
 
         {aside && <div className="mt-6">{aside}</div>}
 
         <p className="mt-8 text-center text-[11px] text-muted-foreground">
-          Accounts, the organisation register and the organisation compliance application are live.
-          The independent-professional and regulator applications, and phone verification, are still
-          simulated in your browser.
+          Accounts, email and phone verification, the organisation register and the organisation
+          compliance application are live. The independent-professional and regulator applications
+          are still simulated in your browser.
         </p>
       </div>
     </div>
@@ -147,7 +157,9 @@ export function OptionCard({
     >
       <span className="min-w-0 flex-1">
         <span className="block font-display text-base font-semibold text-brand">{title}</span>
-        <span className="mt-1.5 block text-sm leading-relaxed text-muted-foreground">{description}</span>
+        <span className="mt-1.5 block text-sm leading-relaxed text-muted-foreground">
+          {description}
+        </span>
         {meta && <span className="mt-2 block">{meta}</span>}
       </span>
       <span
@@ -173,7 +185,12 @@ const stateStyles: Record<VerificationState, string> = {
 
 export function StateChip({ state }: { state: VerificationState }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium", stateStyles[state])}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+        stateStyles[state],
+      )}
+    >
       <span className="size-1.5 rounded-full bg-current" />
       {state}
     </span>
@@ -184,7 +201,9 @@ export function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-2 last:border-0">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium">{value || <span className="text-muted-foreground">-</span>}</span>
+      <span className="text-sm font-medium">
+        {value || <span className="text-muted-foreground">-</span>}
+      </span>
     </div>
   );
 }

@@ -15,6 +15,11 @@ import { type EnvAlert } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/environmental")({
+  /** `?ref=` deep-links a single record, so the notification bell can open it. */
+  validateSearch: (search: Record<string, unknown>): { ref?: string } => {
+    const ref = search["ref"];
+    return typeof ref === "string" && ref.trim() ? { ref: ref.trim() } : {};
+  },
   head: () => ({
     meta: [
       { title: "Environmental alerts · Beldium Processing Compliance" },
@@ -34,9 +39,19 @@ export const Route = createFileRoute("/processing/environmental")({
 });
 
 function EnvironmentalPage() {
-  const { envAlerts, isLoading, error } = useAppState();
+  const { envAlerts, setAlertStatus, capabilities, isLoading, error } = useAppState();
+  const [busy, setBusy] = React.useState(false);
+  // Oversight acknowledges and escalates; only the desk resolves.
+  const canAct = capabilities?.audience === "operator" || capabilities?.audience === "regulator";
   const [filter, setFilter] = React.useState<"All" | "Open" | "Acknowledged" | "Resolved">("All");
+  const { ref } = Route.useSearch();
   const [detail, setDetail] = React.useState<EnvAlert | null>(null);
+  // The alerts arrive after the first render, so this resolves once they land.
+  React.useEffect(() => {
+    if (!ref) return;
+    const match = envAlerts.find((a) => a.id === ref);
+    if (match) setDetail(match);
+  }, [ref, envAlerts]);
   const rows = envAlerts.filter((a) => filter === "All" || a.status === filter);
 
   return (
@@ -47,7 +62,7 @@ function EnvironmentalPage() {
         description="Automated exceedance detection from facility monitoring submissions and third-party sampling. Oversight can acknowledge and escalate; remediation is directed through the compliance partner."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard
           label="Open exceedances"
           value={envAlerts.filter((a) => a.status === "Open").length}
@@ -138,20 +153,40 @@ function EnvironmentalPage() {
               include in regional brief. Enforcement and facility-level directives are outside this
               role.
             </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setDetail(null)}
-                className="rounded-xl border border-border px-4 py-2 text-xs font-medium"
-              >
-                Acknowledge
-              </button>
-              <button
-                onClick={() => setDetail(null)}
-                className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
-              >
-                Request follow-up
-              </button>
-            </div>
+            {canAct ? (
+              <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <button
+                  disabled={busy || detail.status !== "Open"}
+                  onClick={() => {
+                    setBusy(true);
+                    void setAlertStatus(detail.id, "acknowledged")
+                      .then(() => setDetail(null))
+                      .catch((cause: Error) => window.alert(cause.message))
+                      .finally(() => setBusy(false));
+                  }}
+                  className="rounded-xl border border-border px-4 py-2 text-xs font-medium hover:bg-accent disabled:opacity-40"
+                >
+                  {detail.status === "Open" ? "Acknowledge" : "Acknowledged"}
+                </button>
+                <button
+                  disabled={busy || detail.status === "Resolved"}
+                  onClick={() => {
+                    setBusy(true);
+                    void setAlertStatus(
+                      detail.id,
+                      "resolved",
+                      "Exceedance closed out by the oversight desk.",
+                    )
+                      .then(() => setDetail(null))
+                      .catch((cause: Error) => window.alert(cause.message))
+                      .finally(() => setBusy(false));
+                  }}
+                  className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-40"
+                >
+                  {detail.status === "Resolved" ? "Resolved" : "Mark resolved"}
+                </button>
+              </div>
+            ) : null}
             {rows.length === 0 ? (
               <RegisterState
                 isLoading={isLoading}

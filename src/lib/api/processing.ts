@@ -143,6 +143,14 @@ export interface ProcessingApplication {
   updated_at: string;
 }
 
+/** One section's remaining gaps, as the API computes them. */
+export interface SectionGap {
+  section: ProcessingSectionKey;
+  label: string;
+  missing_prompts: string[];
+  missing_documents: string[];
+}
+
 export interface ProcessingApplicationDetail extends ProcessingApplication {
   sections: ApplicationSection[];
   review: {
@@ -152,6 +160,23 @@ export interface ProcessingApplicationDetail extends ProcessingApplication {
     sections_rejected: number;
     sections_flagged: number;
   };
+  /** Empty exactly when the application is submittable. */
+  outstanding: SectionGap[];
+}
+
+/** The compliance checklist for one process class. */
+export interface ChecklistSection {
+  key: ProcessingSectionKey;
+  label: string;
+  prompts: { label: string; required: boolean }[];
+  documents: { name: string; issuer: string; expires: boolean }[];
+  required_prompts: string[];
+  required_documents: string[];
+}
+
+export interface Checklist {
+  processing_type: ProcessingTypeKey | "";
+  sections: ChecklistSection[];
 }
 
 export interface Facility {
@@ -314,9 +339,19 @@ export interface TraceabilityRun {
   updated_at: string;
 }
 
+export type ReportKind =
+  | "national_compliance"
+  | "environmental_exceedances"
+  | "inspection_programme"
+  | "non_conformity_register";
+
+export type ReportPeriod = "last_month" | "last_quarter" | "year_to_date" | "all_time";
+
 export interface ComplianceReport {
   id: UUID;
   reference: string;
+  kind: ReportKind | "";
+  kind_label: string;
   title: string;
   period_label: string;
   scope: string;
@@ -370,6 +405,11 @@ export interface ProcessingDashboard {
     body: string;
     at: string;
     kind: "info" | "warn" | "error";
+    /** What the item is about, so the bell can link through to the record. */
+    entity: "non_conformity" | "environmental_alert" | "document" | "inspection";
+    entity_id: string;
+    /** The reference the register's screens address that record by. */
+    reference: string;
   }[];
   recent_applications: ProcessingApplication[];
   open_alerts: EnvironmentalAlert[];
@@ -385,6 +425,21 @@ export interface ProcessingDashboard {
  */
 export function fetchCapabilities(signal?: AbortSignal): Promise<ProcessingCapabilities> {
   return apiFetch<ProcessingCapabilities>(`${BASE}/me/`, { signal });
+}
+
+/**
+ * What an application of this process class must answer and evidence. Served
+ * rather than duplicated here: completeness is computed from it server-side,
+ * so the definition of "complete" is not the client's to hold.
+ */
+export function fetchChecklist(
+  processingType: ProcessingTypeKey,
+  signal?: AbortSignal,
+): Promise<Checklist> {
+  return apiFetch<Checklist>(`${BASE}/checklist/`, {
+    query: { processing_type: processingType },
+    signal,
+  });
 }
 
 export function fetchProcessingDashboard(signal?: AbortSignal): Promise<ProcessingDashboard> {
@@ -414,6 +469,29 @@ export function listFacilities(id: UUID): Promise<Facility[]> {
 }
 
 // --- applications -----------------------------------------------------------
+
+export interface NewApplicationInput {
+  company: string;
+  processing_type: ProcessingTypeKey;
+  organisation?: UUID | null | undefined;
+  processor?: UUID | null | undefined;
+  rc_number?: string | undefined;
+  tin?: string | undefined;
+  state?: string | undefined;
+  lga?: string | undefined;
+  facility_name?: string | undefined;
+  capacity?: string | undefined;
+  workforce?: number | undefined;
+  contact_name?: string | undefined;
+  contact_email?: string | undefined;
+  contact_phone?: string | undefined;
+}
+
+export function createProcessingApplication(
+  input: NewApplicationInput,
+): Promise<ProcessingApplication> {
+  return apiFetch<ProcessingApplication>(`${BASE}/applications/`, { method: "POST", body: input });
+}
 
 export function listProcessingApplications(
   query: ListQuery = {},
@@ -491,6 +569,38 @@ export function requestApplicationInspection(
   return apiFetch<Inspection>(`${BASE}/applications/${id}/request-inspection/`, {
     method: "POST",
     body: input,
+  });
+}
+
+/**
+ * Upload or replace one document. Keyed on section + name, so re-uploading the
+ * same evidence replaces it and returns 200 rather than creating a second row;
+ * a replacement also clears whatever verdict the desk had reached on the old
+ * file.
+ */
+export function uploadApplicationDocument(
+  id: UUID,
+  input: {
+    section: ProcessingSectionKey;
+    name: string;
+    file: File;
+    reference?: string | undefined;
+    issuer?: string | undefined;
+    issued_on?: string | null | undefined;
+    expires_on?: string | null | undefined;
+  },
+): Promise<ProcessingDocument> {
+  const form = new FormData();
+  form.append("section", input.section);
+  form.append("name", input.name);
+  form.append("file", input.file);
+  for (const key of ["reference", "issuer", "issued_on", "expires_on"] as const) {
+    const value = input[key];
+    if (value) form.append(key, value);
+  }
+  return apiFetch<ProcessingDocument>(`${BASE}/applications/${id}/documents/`, {
+    method: "POST",
+    body: form,
   });
 }
 
@@ -633,6 +743,20 @@ export function reviewProcessingDocument(
 
 export function listComplianceReports(query: ListQuery = {}): Promise<Paginated<ComplianceReport>> {
   return apiFetch<Paginated<ComplianceReport>>(`${BASE}/reports/`, { query });
+}
+
+/**
+ * Compile a report from the register and store the PDF. A report is a
+ * point-in-time extract: its figures are those held at compilation and are
+ * never restated, so generating twice gives two documents rather than
+ * updating one. Desk and regulator only — it spans companies.
+ */
+export function generateReport(input: {
+  kind: ReportKind;
+  scope?: string | undefined;
+  period?: ReportPeriod | undefined;
+}): Promise<ComplianceReport> {
+  return apiFetch<ComplianceReport>(`${BASE}/reports/generate/`, { method: "POST", body: input });
 }
 
 /** The register-wide trail. Empty for a single processor: it spans companies. */

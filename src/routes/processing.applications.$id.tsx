@@ -82,6 +82,8 @@ function ApplicationReview() {
     closeNonConformity,
     requestInspection,
     reviewDocument,
+    addRiskCause,
+    removeRiskCause,
     decide,
     audit,
     capabilities,
@@ -503,12 +505,27 @@ function ApplicationReview() {
           </p>
           <div className="mt-4 space-y-3">
             {app.riskCauses.map((c) => (
-              <div key={c.cause} className="rounded-xl border border-border p-3">
+              <div key={c.id} className="rounded-xl border border-border p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium">{c.cause}</p>
-                  <Pill tone={c.weight < 0 ? "success" : c.weight >= 15 ? "danger" : "warning"}>
-                    {c.weight > 0 ? `+${c.weight}` : c.weight}
-                  </Pill>
+                  <div className="flex items-center gap-2">
+                    <Pill tone={c.weight < 0 ? "success" : c.weight >= 15 ? "danger" : "warning"}>
+                      {c.weight > 0 ? `+${c.weight}` : c.weight}
+                    </Pill>
+                    {!readOnly ? (
+                      <button
+                        title="Withdraw this cause"
+                        onClick={() =>
+                          void removeRiskCause(app.id, c.id).catch((cause: Error) =>
+                            notify(cause.message),
+                          )
+                        }
+                        className="rounded-lg p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">{c.detail}</p>
                 <div className="mt-2">
@@ -519,7 +536,23 @@ function ApplicationReview() {
                 </div>
               </div>
             ))}
+            {app.riskCauses.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">
+                No causes recorded, so the score is zero. Add what drives the risk on this
+                application.
+              </p>
+            ) : null}
           </div>
+          {!readOnly ? (
+            <RiskCauseForm
+              onAdd={(input) =>
+                addRiskCause(app.id, input).catch((cause: Error) => {
+                  notify(cause.message);
+                  throw cause;
+                })
+              }
+            />
+          ) : null}
         </Modal>
       ) : null}
 
@@ -1092,5 +1125,74 @@ function InspectionPanel({ appId }: { appId: string }) {
         </div>
       )}
     </Panel>
+  );
+}
+
+/**
+ * Adding a weighted cause to an application's risk score. The score is the sum
+ * of its causes, so the desk can always see what a number is made of rather
+ * than being handed an opaque total.
+ */
+function RiskCauseForm({
+  onAdd,
+}: {
+  onAdd: (input: { cause: string; weight: number; detail?: string }) => Promise<unknown>;
+}) {
+  const [cause, setCause] = React.useState("");
+  const [weight, setWeight] = React.useState("10");
+  const [detail, setDetail] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+
+  const parsed = Number.parseInt(weight, 10);
+  const valid = cause.trim() !== "" && Number.isInteger(parsed) && parsed >= 1 && parsed <= 100;
+
+  const add = () => {
+    setBusy(true);
+    void onAdd({ cause: cause.trim(), weight: parsed, detail: detail.trim() })
+      .then(() => {
+        setCause("");
+        setDetail("");
+        setWeight("10");
+      })
+      .catch(() => {
+        /* surfaced by the caller */
+      })
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <div className="mt-4 space-y-2 rounded-xl border border-dashed border-border p-3">
+      <p className="text-[11px] font-medium text-muted-foreground">Add a cause</p>
+      <div className="flex gap-2">
+        <input
+          value={cause}
+          onChange={(event) => setCause(event.target.value)}
+          placeholder="Expiring NESREA registration"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-ring"
+        />
+        <input
+          value={weight}
+          onChange={(event) => setWeight(event.target.value)}
+          inputMode="numeric"
+          title="Weight, 1 to 100"
+          className="w-16 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-ring"
+        />
+      </div>
+      <input
+        value={detail}
+        onChange={(event) => setDetail(event.target.value)}
+        placeholder="Why this raises the score"
+        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-ring"
+      />
+      <div className="flex justify-end">
+        <button
+          onClick={add}
+          disabled={busy || !valid}
+          className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-medium text-primary-foreground disabled:opacity-40"
+        >
+          {busy ? "Adding…" : "Add cause"}
+        </button>
+      </div>
+    </div>
   );
 }

@@ -51,6 +51,25 @@ const OPERATOR_NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
+const APPLICANT_NAV: { group: string; items: NavItem[] }[] = [
+  {
+    group: "My application",
+    items: [
+      { to: "/processing/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/processing/application", label: "Application", icon: ScrollText },
+      { to: "/processing/nonconformities", label: "Findings", icon: AlertTriangle },
+      { to: "/processing/inspections", label: "Inspections", icon: ClipboardCheck },
+    ],
+  },
+  {
+    group: "My operation",
+    items: [
+      { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
+      { to: "/processing/incidents", label: "Incidents", icon: Siren },
+    ],
+  },
+];
+
 const REGULATOR_NAV: { group: string; items: NavItem[] }[] = [
   {
     group: "Oversight",
@@ -79,6 +98,39 @@ const REGULATOR_NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
+/**
+ * Closes a popover when a press lands outside it, or on Escape.
+ *
+ * Listens for `pointerdown` rather than `click` so the menu is gone by the time
+ * whatever was underneath reacts — a click handler would leave it hanging open
+ * over the page for the rest of the gesture. The toggle button lives inside the
+ * returned ref, so pressing it is not "outside": its own handler does the
+ * toggling and this one leaves it alone.
+ */
+function useDismissOnOutside<T extends HTMLElement>(open: boolean, close: () => void) {
+  const ref = React.useRef<T>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) close();
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, close]);
+
+  return ref;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut, notifications } = useAppState();
   const navigate = useNavigate();
@@ -87,6 +139,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
 
+  const closeNotif = React.useCallback(() => setNotifOpen(false), []);
+  const closeProfile = React.useCallback(() => setProfileOpen(false), []);
+  const notifRef = useDismissOnOutside<HTMLDivElement>(notifOpen, closeNotif);
+  const profileRef = useDismissOnOutside<HTMLDivElement>(profileOpen, closeProfile);
+
   React.useEffect(() => {
     setMobileOpen(false);
     setNotifOpen(false);
@@ -94,7 +151,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   if (!user) return null;
-  const nav = user.role === "operator" ? OPERATOR_NAV : REGULATOR_NAV;
+  const nav =
+    user.role === "operator"
+      ? OPERATOR_NAV
+      : user.role === "processor"
+        ? APPLICANT_NAV
+        : REGULATOR_NAV;
 
   const sidebar = (
     <div className="flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground">
@@ -202,11 +264,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <Pill tone={user.role === "operator" ? "primary" : "info"}>
-              {user.role === "operator" ? "Compliance Operator" : "Oversight · read-only"}
+            <Pill
+              tone={
+                user.role === "operator"
+                  ? "primary"
+                  : user.role === "processor"
+                    ? "warning"
+                    : "info"
+              }
+            >
+              {user.role === "operator"
+                ? "Compliance Operator"
+                : user.role === "processor"
+                  ? "Applicant"
+                  : "Oversight · read-only"}
             </Pill>
 
-            <div className="relative">
+            <div className="relative" ref={notifRef}>
               <button
                 onClick={() => {
                   setNotifOpen((v) => !v);
@@ -214,6 +288,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 }}
                 className="relative rounded-xl border border-border p-2 hover:bg-accent"
                 aria-label="Notifications"
+                aria-expanded={notifOpen}
+                aria-haspopup="menu"
               >
                 <Bell className="size-4" />
                 <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" />
@@ -223,36 +299,92 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
                     Notifications
                   </p>
-                  {notifications.map((n) => (
-                    <div key={n.id} className="rounded-xl px-3 py-2 hover:bg-accent">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "size-2 rounded-full",
-                            n.kind === "error"
-                              ? "bg-destructive"
-                              : n.kind === "warn"
-                                ? "bg-warning"
-                                : "bg-primary",
-                          )}
-                        />
-                        <p className="text-xs font-medium">{n.title}</p>
-                        <span className="ml-auto text-[10px] text-muted-foreground">{n.at}</span>
+                  {notifications.length === 0 ? (
+                    <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">
+                      Nothing needs your attention.
+                    </p>
+                  ) : null}
+                  {notifications.map((n) => {
+                    const body = (
+                      <>
+                        <div className="flex items-start gap-2">
+                          <span
+                            className={cn(
+                              "mt-1 size-2 shrink-0 rounded-full",
+                              n.kind === "error"
+                                ? "bg-destructive"
+                                : n.kind === "warn"
+                                  ? "bg-warning"
+                                  : "bg-primary",
+                            )}
+                          />
+                          <p className="text-xs font-medium">{n.title}</p>
+                          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                            {n.at}
+                          </span>
+                        </div>
+                        <p className="mt-1 pl-4 text-[11px] text-muted-foreground">{n.body}</p>
+                        {n.target ? (
+                          <p className="mt-1 pl-4 text-[11px] font-medium text-primary">
+                            View record →
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                    // Only a row that leads somewhere is a link; the rest keep
+                    // the same shape without pretending to be clickable.
+                    return n.target ? (
+                      <Link
+                        key={n.id}
+                        to={n.target.to}
+                        search={n.target.search ?? {}}
+                        onClick={() => setNotifOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-left hover:bg-accent"
+                      >
+                        {body}
+                      </Link>
+                    ) : (
+                      <div key={n.id} className="rounded-xl px-3 py-2">
+                        {body}
                       </div>
-                      <p className="mt-1 pl-4 text-[11px] text-muted-foreground">{n.body}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
+                  <div className="mt-1 flex gap-1 border-t border-border pt-1">
+                    <Link
+                      to="/processing/nonconformities"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex-1 rounded-lg px-3 py-2 text-center text-[11px] font-medium hover:bg-accent"
+                    >
+                      All findings
+                    </Link>
+                    <Link
+                      to="/processing/environmental"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex-1 rounded-lg px-3 py-2 text-center text-[11px] font-medium hover:bg-accent"
+                    >
+                      All alerts
+                    </Link>
+                    <Link
+                      to="/processing/inspections"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex-1 rounded-lg px-3 py-2 text-center text-[11px] font-medium hover:bg-accent"
+                    >
+                      Inspections
+                    </Link>
+                  </div>
                 </div>
               ) : null}
             </div>
 
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               <button
                 onClick={() => {
                   setProfileOpen((v) => !v);
                   setNotifOpen(false);
                 }}
                 className="flex items-center gap-2 rounded-xl border border-border py-1.5 pr-3 pl-1.5 hover:bg-accent"
+                aria-expanded={profileOpen}
+                aria-haspopup="menu"
               >
                 <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-[11px] font-semibold text-primary-foreground">
                   {user.initials}

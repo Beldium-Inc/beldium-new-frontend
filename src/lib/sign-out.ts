@@ -9,11 +9,13 @@ import { useSession } from "./session";
  * vertical layouts hand this to their own store as `onSignOut`.
  */
 export function useSignOut(): () => void {
-  const { signOut: clearTokens } = useAuth();
+  const { signOut: endSession } = useAuth();
   const { signOut: clearWorkspace } = useSession();
 
   return useCallback(() => {
-    clearTokens();
+    // The workspace choice goes immediately so the UI redirects at once; the
+    // token blacklisting runs behind it and clears the pair either way.
     clearWorkspace();
-  }, [clearTokens, clearWorkspace]);
+    void endSession();
+  }, [endSession, clearWorkspace]);
 }

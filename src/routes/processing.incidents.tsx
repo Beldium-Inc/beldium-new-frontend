@@ -48,7 +48,7 @@ function IncidentsPage() {
         description="Health, safety and environmental incidents self-reported by operators or raised by inspectors. Oversight reviews investigation quality; corrective actions are tracked as non-conformities."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard
           label="Open investigations"
           value={incidents.filter((i) => i.status === "Under Investigation").length}
