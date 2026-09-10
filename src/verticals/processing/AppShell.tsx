@@ -98,6 +98,39 @@ const REGULATOR_NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
+/**
+ * Closes a popover when a press lands outside it, or on Escape.
+ *
+ * Listens for `pointerdown` rather than `click` so the menu is gone by the time
+ * whatever was underneath reacts — a click handler would leave it hanging open
+ * over the page for the rest of the gesture. The toggle button lives inside the
+ * returned ref, so pressing it is not "outside": its own handler does the
+ * toggling and this one leaves it alone.
+ */
+function useDismissOnOutside<T extends HTMLElement>(open: boolean, close: () => void) {
+  const ref = React.useRef<T>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) close();
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, close]);
+
+  return ref;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut, notifications } = useAppState();
   const navigate = useNavigate();
@@ -105,6 +138,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
+
+  const closeNotif = React.useCallback(() => setNotifOpen(false), []);
+  const closeProfile = React.useCallback(() => setProfileOpen(false), []);
+  const notifRef = useDismissOnOutside<HTMLDivElement>(notifOpen, closeNotif);
+  const profileRef = useDismissOnOutside<HTMLDivElement>(profileOpen, closeProfile);
 
   React.useEffect(() => {
     setMobileOpen(false);
@@ -242,7 +280,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   : "Oversight · read-only"}
             </Pill>
 
-            <div className="relative">
+            <div className="relative" ref={notifRef}>
               <button
                 onClick={() => {
                   setNotifOpen((v) => !v);
@@ -250,6 +288,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 }}
                 className="relative rounded-xl border border-border p-2 hover:bg-accent"
                 aria-label="Notifications"
+                aria-expanded={notifOpen}
+                aria-haspopup="menu"
               >
                 <Bell className="size-4" />
                 <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" />
@@ -282,13 +322,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ) : null}
             </div>
 
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               <button
                 onClick={() => {
                   setProfileOpen((v) => !v);
                   setNotifOpen(false);
                 }}
                 className="flex items-center gap-2 rounded-xl border border-border py-1.5 pr-3 pl-1.5 hover:bg-accent"
+                aria-expanded={profileOpen}
+                aria-haspopup="menu"
               >
                 <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-[11px] font-semibold text-primary-foreground">
                   {user.initials}
