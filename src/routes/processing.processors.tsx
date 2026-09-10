@@ -1,8 +1,16 @@
 import * as React from "react";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Factory, Search } from "lucide-react";
-import { Panel, PageHeader, Pill, ScoreBar, statusTone } from "@/verticals/processing/bpc";
-import { PROCESSORS, processingTypeLabel } from "@/verticals/processing/mock-data";
+import {
+  Panel,
+  PageHeader,
+  Pill,
+  RegisterState,
+  ScoreBar,
+  statusTone,
+} from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/processors")({
@@ -33,10 +41,11 @@ function ProcessorsLayout() {
 const STATUSES = ["All", "Approved", "Conditional", "Under Review", "Suspended"] as const;
 
 function ProcessorsList() {
+  const { processors, isLoading, error } = useAppState();
   const [status, setStatus] = React.useState<(typeof STATUSES)[number]>("All");
   const [q, setQ] = React.useState("");
 
-  const rows = PROCESSORS.filter(
+  const rows = processors.filter(
     (p) =>
       (status === "All" || p.status === status) &&
       `${p.name} ${p.rcNumber} ${p.state}`.toLowerCase().includes(q.toLowerCase()),
@@ -79,7 +88,50 @@ function ProcessorsList() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Below `md` the register stacks as cards rather than scrolling
+            sideways through seven columns. */}
+        <div className="divide-y divide-border md:hidden">
+          {rows.map((p) => (
+            <Link
+              key={p.id}
+              to="/processing/processors/$id"
+              params={{ id: p.id }}
+              className="block px-4 py-4 hover:bg-accent/50"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <Factory className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{p.name}</span>
+                  </p>
+                  <p className="pl-5 text-[11px] text-muted-foreground">{p.rcNumber}</p>
+                </div>
+                <Pill tone={statusTone(p.status)}>{p.status}</Pill>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {processingTypeLabel(p.processingType)} · {p.lga} LGA, {p.state} State
+              </p>
+              <div className="mt-3">
+                <p className="mb-1 text-[10px] text-muted-foreground">
+                  {p.complianceScore}% compliance · {p.facilities}{" "}
+                  {p.facilities === 1 ? "facility" : "facilities"} · {p.openNCs} open
+                </p>
+                <ScoreBar
+                  value={p.complianceScore}
+                  tone={
+                    p.complianceScore >= 80
+                      ? "success"
+                      : p.complianceScore >= 60
+                        ? "warning"
+                        : "danger"
+                  }
+                />
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[940px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -138,6 +190,18 @@ function ProcessorsList() {
             </tbody>
           </table>
         </div>
+
+        {/* Outside both layouts, so an empty register explains itself at any width. */}
+        {rows.length === 0 ? (
+          <RegisterState
+            isLoading={isLoading}
+            error={error}
+            empty={{
+              title: "No processors on the register",
+              body: "A processor joins the register once its application has been decided.",
+            }}
+          />
+        ) : null}
       </Panel>
     </>
   );

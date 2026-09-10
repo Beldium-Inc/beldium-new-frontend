@@ -32,7 +32,7 @@ type AuthContextValue = {
   signUp: (input: RegisterInput) => Promise<RegisterResponse>;
   confirmEmail: (input: { email: string; code: string }) => Promise<User>;
   resendCode: (email: string) => Promise<{ message: string }>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   refetchUser: () => Promise<User | null>;
 };
 
@@ -82,8 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       resendCode: (email) => resendVerification(email),
 
-      signOut: () => {
-        logout();
+      signOut: async () => {
+        // Blacklists the refresh token server-side, then clears the local pair
+        // whether or not that succeeded.
+        await logout();
         // Nothing cached was fetched anonymously, so drop all of it.
         queryClient.clear();
       },

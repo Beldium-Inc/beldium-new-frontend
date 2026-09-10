@@ -1,8 +1,17 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, ChevronRight, FileStack, Info, ShieldCheck } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  FileStack,
+  Info,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { Panel, PanelHeader, PageHeader, Pill } from "@/verticals/processing/bpc";
-import { PROCESSING_TYPES, SECTIONS, type ProcessingType } from "@/verticals/processing/mock-data";
+import { useAppState } from "@/verticals/processing/store";
+import { PROCESSING_TYPES, SECTIONS, type ProcessingType } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/onboarding")({
@@ -38,7 +47,11 @@ const BASE_REQUIREMENTS = [
 ];
 
 function OnboardingPage() {
+  const { startApplication } = useAppState();
   const [step, setStep] = React.useState(0);
+  const [creating, setCreating] = React.useState(false);
+  const [created, setCreated] = React.useState<string | null>(null);
+  const [failure, setFailure] = React.useState<string | null>(null);
   const [type, setType] = React.useState<ProcessingType | null>(null);
   const [form, setForm] = React.useState({
     company: "",
@@ -125,18 +138,59 @@ function OnboardingPage() {
 
       {step === 1 ? (
         <Panel>
-          <PanelHeader title="Corporate identity and site" subtitle="CAC, FIRS and location details" />
+          <PanelHeader
+            title="Corporate identity and site"
+            subtitle="CAC, FIRS and location details"
+          />
           <div className="grid gap-4 p-5 sm:grid-cols-2">
-            <Input label="Registered company name" v={form.company} set={(v) => setForm({ ...form, company: v })} ph="e.g. Ilesa Mineral Processing Ltd" />
-            <Input label="CAC RC number" v={form.rc} set={(v) => setForm({ ...form, rc: v })} ph="RC 1428907" />
-            <Input label="Tax Identification Number (TIN)" v={form.tin} set={(v) => setForm({ ...form, tin: v })} ph="20418833-0001" />
-            <Input label="Facility name" v={form.facility} set={(v) => setForm({ ...form, facility: v })} ph="Ilesa Refining Plant A" />
-            <Input label="State" v={form.state} set={(v) => setForm({ ...form, state: v })} ph="Osun" />
-            <Input label="Local Government Area (LGA)" v={form.lga} set={(v) => setForm({ ...form, lga: v })} ph="Ilesa East" />
-            <Input label="Installed capacity" v={form.capacity} set={(v) => setForm({ ...form, capacity: v })} ph="180 t/month" />
+            <Input
+              label="Registered company name"
+              v={form.company}
+              set={(v) => setForm({ ...form, company: v })}
+              ph="e.g. Ilesa Mineral Processing Ltd"
+            />
+            <Input
+              label="CAC RC number"
+              v={form.rc}
+              set={(v) => setForm({ ...form, rc: v })}
+              ph="RC 1428907"
+            />
+            <Input
+              label="Tax Identification Number (TIN)"
+              v={form.tin}
+              set={(v) => setForm({ ...form, tin: v })}
+              ph="20418833-0001"
+            />
+            <Input
+              label="Facility name"
+              v={form.facility}
+              set={(v) => setForm({ ...form, facility: v })}
+              ph="Ilesa Refining Plant A"
+            />
+            <Input
+              label="State"
+              v={form.state}
+              set={(v) => setForm({ ...form, state: v })}
+              ph="Osun"
+            />
+            <Input
+              label="Local Government Area (LGA)"
+              v={form.lga}
+              set={(v) => setForm({ ...form, lga: v })}
+              ph="Ilesa East"
+            />
+            <Input
+              label="Installed capacity"
+              v={form.capacity}
+              set={(v) => setForm({ ...form, capacity: v })}
+              ph="180 t/month"
+            />
           </div>
           <div className="flex justify-between border-t border-border px-5 py-4">
-            <button onClick={() => setStep(0)} className="rounded-xl border border-border px-4 py-2 text-xs">
+            <button
+              onClick={() => setStep(0)}
+              className="rounded-xl border border-border px-4 py-2 text-xs"
+            >
               Back
             </button>
             <button
@@ -183,8 +237,8 @@ function OnboardingPage() {
               </ul>
               {type === "chemical_refining" ? (
                 <p className="mx-5 mb-4 rounded-xl bg-warning/20 px-3 py-2 text-[11px] text-warning-foreground">
-                  Chemical processing and refining attracts an elevated inherent risk weighting and a
-                  mandatory pre-approval physical inspection.
+                  Chemical processing and refining attracts an elevated inherent risk weighting and
+                  a mandatory pre-approval physical inspection.
                 </p>
               ) : null}
             </Panel>
@@ -201,42 +255,76 @@ function OnboardingPage() {
             </Panel>
 
             <div className="flex justify-between">
-              <button onClick={() => setStep(1)} className="rounded-xl border border-border px-4 py-2 text-xs">
+              <button
+                onClick={() => setStep(1)}
+                className="rounded-xl border border-border px-4 py-2 text-xs"
+              >
                 Back
               </button>
               <button
-                onClick={() => setStep(3)}
-                className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
+                onClick={() => {
+                  if (!type) return;
+                  setCreating(true);
+                  setFailure(null);
+                  void startApplication({
+                    company: form.company.trim(),
+                    processing_type: type,
+                    rc_number: form.rc.trim(),
+                    tin: form.tin.trim(),
+                    state: form.state.trim(),
+                    lga: form.lga.trim(),
+                    facility_name: form.facility.trim(),
+                    capacity: form.capacity.trim(),
+                  })
+                    .then((reference) => {
+                      setCreated(reference);
+                      setStep(3);
+                    })
+                    .catch((cause: Error) => setFailure(cause.message))
+                    .finally(() => setCreating(false));
+                }}
+                disabled={creating || !type || form.company.trim() === ""}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-40"
               >
-                Review & submit
+                {creating ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                Create application
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
-      {step === 3 ? (
+      {failure ? (
+        <Panel className="mt-4 border-destructive/50">
+          <p className="flex items-center gap-2 px-5 py-4 text-xs text-destructive-foreground">
+            <AlertTriangle className="size-4" /> {failure}
+          </p>
+        </Panel>
+      ) : null}
+
+      {step === 3 && created ? (
         <Panel className="p-8 text-center">
           <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-success/50 text-success-foreground">
             <ShieldCheck className="size-7" />
           </span>
-          <h2 className="mt-4 text-lg font-semibold">Application draft prepared</h2>
+          <h2 className="mt-4 text-lg font-semibold">Application created</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {form.company || "The applicant"} · {meta?.label ?? "processing"} ·{" "}
-            {form.lga || "LGA"}, {form.state || "State"}. In the live system the pack would be
-            submitted to the Beldium compliance desk and assigned a{" "}
-            <span className="font-medium text-foreground">BPC-APP</span> reference.
+            {form.company} · {meta?.label ?? "processing"} · {form.lga || "LGA"},{" "}
+            {form.state || "State"}. The ten evidence sections are laid down and waiting for your
+            answers; nothing reaches the compliance desk until you submit.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <Pill tone="info">Draft reference BPC-APP-2026-0158</Pill>
-            <Pill tone="warning">{(meta?.extra.length ?? 0) + BASE_REQUIREMENTS.length} evidence items</Pill>
+            <Pill tone="info">{created}</Pill>
+            <Pill tone="warning">
+              {(meta?.extra.length ?? 0) + BASE_REQUIREMENTS.length} evidence items to supply
+            </Pill>
           </div>
-          <button
-            onClick={() => setStep(0)}
-            className="mt-6 rounded-xl border border-border px-4 py-2 text-xs font-medium hover:bg-accent"
+          <Link
+            to="/processing/application"
+            className="mt-6 inline-block rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
           >
-            Start another application
-          </button>
+            Start filling it in
+          </Link>
         </Panel>
       ) : null}
     </>

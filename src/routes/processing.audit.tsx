@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { History, Search } from "lucide-react";
-import { Panel, PageHeader, Pill } from "@/verticals/processing/bpc";
+import { Panel, PageHeader, Pill, RegisterState } from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
 
 export const Route = createFileRoute("/processing/audit")({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/processing/audit")({
 });
 
 function AuditPage() {
-  const { audit, user } = useAppState();
+  const { audit, user, isLoading, error } = useAppState();
   const [q, setQ] = React.useState("");
   const rows = audit.filter((e) =>
     `${e.action} ${e.target} ${e.actor} ${e.detail}`.toLowerCase().includes(q.toLowerCase()),
@@ -63,16 +63,31 @@ function AuditPage() {
               <div className="min-w-0 flex-1 rounded-2xl border border-border px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-medium">{e.action}</p>
-                  <Pill tone="info">{e.target}</Pill>
+                  {/* A target is a reference plus a section name, far longer
+                      than a status chip, so this one wraps rather than running
+                      off a narrow screen. */}
+                  <Pill tone="info" className="break-words whitespace-normal">
+                    {e.target}
+                  </Pill>
                   <span className="ml-auto text-[11px] text-muted-foreground">{e.at}</span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{e.detail}</p>
-                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                <p className="mt-1.5 text-[11px] break-all text-muted-foreground">
                   {e.actor} · {e.role} · event {e.id}
                 </p>
               </div>
             </div>
           ))}
+          {rows.length === 0 ? (
+            <RegisterState
+              isLoading={isLoading}
+              error={error}
+              empty={{
+                title: "Nothing recorded yet",
+                body: "Review actions, decisions and inspections are written here as they happen.",
+              }}
+            />
+          ) : null}
         </div>
       </Panel>
     </>

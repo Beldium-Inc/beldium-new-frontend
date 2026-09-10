@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Check, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, InfoRow, ProgressHeader, StepBar } from "@/components/onboarding/ui";
 import {
   ChipToggleGroup,
+  FieldErrorProvider,
   SectionCard,
   SelectField,
   TextField,
@@ -106,18 +107,30 @@ function numeric(value: string): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
-/** Turns a DRF 400 into something a person can act on, field names included. */
-function reportError(error: unknown, fallback: string): void {
+/**
+ * Turns a DRF 400 into something a person can act on.
+ *
+ * The per-field messages are returned so the caller can put them on the
+ * offending inputs; the toast carries only what has nowhere else to go — a
+ * non-field error, or a failure with no field detail at all. Repeating every
+ * field message in a toast as well would say the same thing twice.
+ */
+function reportError(error: unknown, fallback: string): Record<string, string> {
   if (!(error instanceof ApiError)) {
     toast.error(fallback);
-    return;
+    return {};
   }
-  const messages = Object.entries(error.fieldErrors()).map(([field, message]) =>
-    field.endsWith("non_field_errors")
-      ? message
-      : `${field.split(".").pop()?.replaceAll("_", " ")}: ${message}`,
-  );
-  toast.error(messages.length ? messages.join(" · ") : error.message);
+  const fields = error.fieldErrors();
+  const loose = Object.entries(fields)
+    .filter(([field]) => field.endsWith("non_field_errors"))
+    .map(([, message]) => message);
+
+  const anchored = Object.keys(fields).some((field) => !field.endsWith("non_field_errors"));
+  if (loose.length) toast.error(loose.join(" · "));
+  else if (!anchored) toast.error(error.message || fallback);
+  else toast.error("Some entries need attention — see the highlighted fields.");
+
+  return fields;
 }
 
 export function OrgApplicationFlow() {
@@ -125,6 +138,8 @@ export function OrgApplicationFlow() {
   const sectorName = sector ? VERTICAL_BY_SLUG[sector].name : "your sector";
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  /** Per-field validation messages from the last rejected save, by API field name. */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const { organisation, application, applicationId, loading } = useApplicationContext();
 
@@ -472,7 +487,7 @@ export function OrgApplicationFlow() {
           return true;
       }
     } catch (error) {
-      reportError(error, "That section could not be saved.");
+      setFieldErrors(reportError(error, "That section could not be saved."));
       return false;
     }
   };
@@ -481,22 +496,48 @@ export function OrgApplicationFlow() {
     if (await saveStep()) setStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
+  /** Drop a field's message once the person starts fixing it. */
+  const clearFieldError = useCallback((name: string) => {
+    setFieldErrors((current) => {
+      if (!(`data.${name}` in current) && !(name in current)) return current;
+      const next = { ...current };
+      delete next[`data.${name}`];
+      delete next[name];
+      return next;
+    });
+  }, []);
+
   const onSubmit = async () => {
     try {
       const result = await submit.mutateAsync();
       navigate({ to: "/onboarding/submitted", search: { id: result.id } });
     } catch (error) {
-      if (error instanceof ApiError && error.code === "application_incomplete") {
-        toast.error(
-          "Every section, at least one person and all required documents must be complete before submitting.",
-        );
+      // Both blocking cases already say exactly what to do, so the API message
+      // is better than anything restated here.
+      if (
+        error instanceof ApiError &&
+        (error.code === "applicant_not_verified" || error.code === "documents_rejected")
+      ) {
+        toast.error(error.message);
         return;
       }
-      reportError(error, "The application could not be submitted.");
+      setFieldErrors(reportError(error, "The application could not be submitted."));
     }
   };
 
   const progress = application?.progress;
+
+  /**
+   * Why the API would refuse this submission, or null when it would take it.
+   * An incomplete application is not a reason — only an unverified applicant,
+   * or evidence the desk rejected and is still waiting on.
+   */
+  const rejectedDocuments = progress?.documents.rejected ?? [];
+  const blockedReason = progress?.blocking.includes("account")
+    ? "Verify your email address before submitting."
+    : rejectedDocuments.length
+      ? `Replace the rejected ${rejectedDocuments.length > 1 ? "documents" : "document"} first.`
+      : null;
   const documentsByType = useMemo(
     () => new Map((application?.documents ?? []).map((d) => [d.document_type, d])),
     [application?.documents],
@@ -526,711 +567,770 @@ export function OrgApplicationFlow() {
       description={`Register your organisation as an approved Beldium compliance partner in ${sectorName}. Operating sites and licences are not registered here.`}
       width="lg"
     >
-      <ProgressHeader
-        step={step + 1}
-        total={steps.length}
-        onBack={() => (step === 0 ? navigate({ to: "/onboarding/verify" }) : setStep(step - 1))}
-      />
-      <StepBar steps={steps} current={step} />
+      <FieldErrorProvider errors={fieldErrors} clear={clearFieldError}>
+        <ProgressHeader
+          step={step + 1}
+          total={steps.length}
+          onBack={() => (step === 0 ? navigate({ to: "/onboarding/verify" }) : setStep(step - 1))}
+        />
+        <StepBar steps={steps} current={step} />
 
-      {progress && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Saved progress: {progress.percent}% · {progress.completed} of {progress.total} sections ·{" "}
-          {progress.documents.submitted} of {progress.documents.required} required documents
-        </p>
-      )}
-
-      <div className="mt-7 space-y-5">
-        {step === 0 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label="Registered Legal Name"
-              value={org.name}
-              onChange={(v) => setOrg({ ...org, name: v })}
-            />
-            <SelectField
-              label="Organisation Type"
-              value={org.organisation_type}
-              onChange={(v) => setOrg({ ...org, organisation_type: v })}
-              options={ORG_TYPE_LABELS}
-            />
-            <TextField
-              label="RC / CAC Number"
-              value={org.registration_number}
-              onChange={(v) => setOrg({ ...org, registration_number: v })}
-            />
-            <TextField
-              label="TIN"
-              value={org.tax_identifier}
-              onChange={(v) => setOrg({ ...org, tax_identifier: v })}
-            />
-            <TextField
-              label="Year Established"
-              type="number"
-              placeholder="e.g. 2015"
-              value={org.year_established}
-              onChange={(v) => setOrg({ ...org, year_established: v })}
-            />
-            <TextField
-              label="Website"
-              placeholder="https://example.com"
-              value={org.website}
-              onChange={(v) => setOrg({ ...org, website: v })}
-            />
-            <TextField
-              label="Registered Address"
-              value={org.registered_address}
-              onChange={(v) => setOrg({ ...org, registered_address: v })}
-              className="sm:col-span-2"
-            />
-            <TextField
-              label="Operating Address"
-              value={org.operating_address}
-              onChange={(v) => setOrg({ ...org, operating_address: v })}
-              className="sm:col-span-2"
-            />
-            <TextField
-              label="Country"
-              value={org.country}
-              onChange={(v) => setOrg({ ...org, country: v })}
-            />
-            <SelectField
-              label="State"
-              value={org.state}
-              onChange={(v) => setOrg({ ...org, state: v })}
-              options={nigerianStates}
-            />
-            <TextField label="LGA" value={org.lga} onChange={(v) => setOrg({ ...org, lga: v })} />
-          </div>
+        {progress && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Saved progress: {progress.percent}% · {progress.completed} of {progress.total} sections
+            · {progress.documents.submitted} of {progress.documents.required} required documents
+          </p>
         )}
 
-        {step === 1 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label="Full Name"
-              value={rep.full_name}
-              onChange={(v) => setRep({ ...rep, full_name: v })}
-            />
-            <TextField
-              label="Position"
-              value={rep.position}
-              onChange={(v) => setRep({ ...rep, position: v })}
-            />
-            <TextField
-              label="Official Email"
-              type="email"
-              value={rep.official_email}
-              onChange={(v) => setRep({ ...rep, official_email: v })}
-            />
-            <TextField
-              label="Official Phone"
-              placeholder="+2348030000000"
-              value={rep.official_phone}
-              onChange={(v) => setRep({ ...rep, official_phone: v })}
-            />
-            <label className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3 sm:col-span-2">
-              <Checkbox
-                className="mt-0.5"
-                checked={rep.authorised}
-                onCheckedChange={(c) => setRep({ ...rep, authorised: Boolean(c) })}
-              />
-              <span className="text-sm">
-                I am authorised to represent this organisation in its dealings with Beldium.
-              </span>
-            </label>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-6">
-            <ChipToggleGroup
-              label="Compliance Services Offered"
-              hint="Select every service your organisation is able to deliver."
-              options={complianceServiceOptions}
-              selected={services.selected_services}
-              onToggle={(v) =>
-                setServices({
-                  ...services,
-                  selected_services: toggle(services.selected_services, v),
-                })
-              }
-            />
-            <SelectField
-              label="Coverage"
-              value={services.coverage}
-              onChange={(v) => setServices({ ...services, coverage: v })}
-              options={["Nationwide", "Selected States"]}
-            />
-            {services.coverage === "Selected States" && (
-              <ChipToggleGroup
-                label="States Covered"
-                options={nigerianStates}
-                selected={services.states_covered}
-                onToggle={(v) =>
-                  setServices({ ...services, states_covered: toggle(services.states_covered, v) })
-                }
-              />
-            )}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label="Years of Mining Experience"
-              type="number"
-              value={professional.years_mining_experience}
-              onChange={(v) => setProfessional({ ...professional, years_mining_experience: v })}
-            />
-            <TextField
-              label="Compliance Professionals"
-              type="number"
-              value={professional.compliance_professionals}
-              onChange={(v) => setProfessional({ ...professional, compliance_professionals: v })}
-            />
-            <TextField
-              label="Mining Engineers"
-              type="number"
-              value={professional.mining_engineers}
-              onChange={(v) => setProfessional({ ...professional, mining_engineers: v })}
-            />
-            <TextField
-              label="Geologists"
-              type="number"
-              value={professional.geologists}
-              onChange={(v) => setProfessional({ ...professional, geologists: v })}
-            />
-            <TextField
-              label="Environmental Specialists"
-              type="number"
-              value={professional.environmental_specialists}
-              onChange={(v) => setProfessional({ ...professional, environmental_specialists: v })}
-            />
-            <TextField
-              label="HSE Specialists"
-              type="number"
-              value={professional.hse_specialists}
-              onChange={(v) => setProfessional({ ...professional, hse_specialists: v })}
-            />
-            <TextField
-              label="Legal / Regulatory Specialists"
-              type="number"
-              value={professional.legal_regulatory_specialists}
-              onChange={(v) =>
-                setProfessional({ ...professional, legal_regulatory_specialists: v })
-              }
-            />
-            <TextField
-              label="Field Inspectors"
-              type="number"
-              value={professional.field_inspectors}
-              onChange={(v) => setProfessional({ ...professional, field_inspectors: v })}
-            />
-            <TextField
-              label="Other Technical Personnel"
-              type="number"
-              value={professional.other_technical_personnel}
-              onChange={(v) => setProfessional({ ...professional, other_technical_personnel: v })}
-            />
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="space-y-6">
-            <YesNoField
-              label="Conducts physical site inspections"
-              value={inspection.conducts_physical_inspections}
-              onChange={(v) => setInspection({ ...inspection, conducts_physical_inspections: v })}
-            />
+        <div className="mt-7 space-y-5">
+          {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
-                label="Active Inspectors"
+                name="name"
+                label="Registered Legal Name"
+                value={org.name}
+                onChange={(v) => setOrg({ ...org, name: v })}
+              />
+              <SelectField
+                name="organisation_type"
+                label="Organisation Type"
+                value={org.organisation_type}
+                onChange={(v) => setOrg({ ...org, organisation_type: v })}
+                options={ORG_TYPE_LABELS}
+              />
+              <TextField
+                name="registration_number"
+                label="RC / CAC Number"
+                value={org.registration_number}
+                onChange={(v) => setOrg({ ...org, registration_number: v })}
+              />
+              <TextField
+                name="tax_identifier"
+                label="TIN"
+                value={org.tax_identifier}
+                onChange={(v) => setOrg({ ...org, tax_identifier: v })}
+              />
+              <TextField
+                name="year_established"
+                label="Year Established"
                 type="number"
-                value={inspection.active_inspectors}
-                onChange={(v) => setInspection({ ...inspection, active_inspectors: v })}
+                placeholder="e.g. 2015"
+                value={org.year_established}
+                onChange={(v) => setOrg({ ...org, year_established: v })}
               />
               <TextField
-                label="Maximum Inspections per Month"
-                type="number"
-                value={inspection.maximum_inspections_per_month}
-                onChange={(v) => setInspection({ ...inspection, maximum_inspections_per_month: v })}
+                name="website"
+                label="Website"
+                placeholder="https://example.com"
+                value={org.website}
+                onChange={(v) => setOrg({ ...org, website: v })}
               />
               <TextField
-                label="Average Turnaround Time"
-                placeholder="e.g. 7 days"
-                value={inspection.average_turnaround_time}
-                onChange={(v) => setInspection({ ...inspection, average_turnaround_time: v })}
+                name="registered_address"
+                label="Registered Address"
+                value={org.registered_address}
+                onChange={(v) => setOrg({ ...org, registered_address: v })}
+                className="sm:col-span-2"
               />
               <TextField
-                label="Typical Mobilisation Time"
-                placeholder="e.g. 5 working days"
-                value={inspection.typical_mobilisation_time}
-                onChange={(v) => setInspection({ ...inspection, typical_mobilisation_time: v })}
+                name="operating_address"
+                label="Operating Address"
+                value={org.operating_address}
+                onChange={(v) => setOrg({ ...org, operating_address: v })}
+                className="sm:col-span-2"
+              />
+              <TextField
+                name="country"
+                label="Country"
+                value={org.country}
+                onChange={(v) => setOrg({ ...org, country: v })}
+              />
+              <SelectField
+                name="state"
+                label="State"
+                value={org.state}
+                onChange={(v) => setOrg({ ...org, state: v })}
+                options={nigerianStates}
+              />
+              <TextField
+                name="lga"
+                label="LGA"
+                value={org.lga}
+                onChange={(v) => setOrg({ ...org, lga: v })}
               />
             </div>
-            <ChipToggleGroup
-              label="Inspection Evidence Standards"
-              options={EVIDENCE_STANDARDS}
-              selected={inspection.evidence}
-              onToggle={(v) =>
-                setInspection({ ...inspection, evidence: toggle(inspection.evidence, v) })
-              }
-            />
-          </div>
-        )}
+          )}
 
-        {step === 5 && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Every document below is required before the application can be submitted. PDF, Word,
-              JPEG or PNG, up to 10 MB each.
-            </p>
-            {requirements.isLoading && (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" /> Loading the checklist…
-              </p>
-            )}
-            {!applicationId && (
-              <p className="text-sm text-muted-foreground">
-                Save the organisation step first to open the checklist.
-              </p>
-            )}
-            {(requirements.data ?? []).map((requirement) => {
-              const uploaded = documentsByType.get(requirement.document_type);
-              return (
-                <div
-                  key={requirement.document_type}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{requirement.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {DOCUMENT_STATUS_LABELS[requirement.status]}
-                      {uploaded?.original_name ? ` · ${uploaded.original_name}` : ""}
-                      {uploaded?.review_notes ? ` · ${uploaded.review_notes}` : ""}
-                    </p>
-                  </div>
-                  <label className="shrink-0">
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      onChange={async (event) => {
-                        const file = event.target.files?.[0];
-                        event.target.value = "";
-                        if (!file) return;
-                        setUploadingType(requirement.document_type);
-                        try {
-                          await uploadDocument.mutateAsync({
-                            document_type: requirement.document_type,
-                            file,
-                            title: requirement.title,
-                          });
-                          toast.success(`${requirement.title} uploaded.`);
-                        } catch (error) {
-                          reportError(error, "That file could not be uploaded.");
-                        } finally {
-                          setUploadingType(null);
-                        }
-                      }}
-                    />
-                    <span className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">
-                      {uploadingType === requirement.document_type ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Upload className="size-3.5" />
-                      )}
-                      {requirement.status === "not_submitted" ? "Upload" : "Replace"}
-                    </span>
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        )}
+          {step === 1 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                name="full_name"
+                label="Full Name"
+                value={rep.full_name}
+                onChange={(v) => setRep({ ...rep, full_name: v })}
+              />
+              <TextField
+                name="position"
+                label="Position"
+                value={rep.position}
+                onChange={(v) => setRep({ ...rep, position: v })}
+              />
+              <TextField
+                name="official_email"
+                label="Official Email"
+                type="email"
+                value={rep.official_email}
+                onChange={(v) => setRep({ ...rep, official_email: v })}
+              />
+              <TextField
+                name="official_phone"
+                label="Official Phone"
+                placeholder="+2348030000000"
+                value={rep.official_phone}
+                onChange={(v) => setRep({ ...rep, official_phone: v })}
+              />
+              <label className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3 sm:col-span-2">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={rep.authorised}
+                  onCheckedChange={(c) => setRep({ ...rep, authorised: Boolean(c) })}
+                />
+                <span className="text-sm">
+                  I am authorised to represent this organisation in its dealings with Beldium.
+                </span>
+              </label>
+            </div>
+          )}
 
-        {step === 6 && (
-          <div className="space-y-5">
-            <SectionCard title="Register a key professional">
+          {step === 2 && (
+            <div className="space-y-6">
+              <ChipToggleGroup
+                label="Compliance Services Offered"
+                hint="Select every service your organisation is able to deliver."
+                options={complianceServiceOptions}
+                selected={services.selected_services}
+                onToggle={(v) =>
+                  setServices({
+                    ...services,
+                    selected_services: toggle(services.selected_services, v),
+                  })
+                }
+              />
+              <SelectField
+                name="coverage"
+                label="Coverage"
+                value={services.coverage}
+                onChange={(v) => setServices({ ...services, coverage: v })}
+                options={["Nationwide", "Selected States"]}
+              />
+              {services.coverage === "Selected States" && (
+                <ChipToggleGroup
+                  label="States Covered"
+                  options={nigerianStates}
+                  selected={services.states_covered}
+                  onToggle={(v) =>
+                    setServices({ ...services, states_covered: toggle(services.states_covered, v) })
+                  }
+                />
+              )}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                name="years_mining_experience"
+                label="Years of Mining Experience"
+                type="number"
+                value={professional.years_mining_experience}
+                onChange={(v) => setProfessional({ ...professional, years_mining_experience: v })}
+              />
+              <TextField
+                name="compliance_professionals"
+                label="Compliance Professionals"
+                type="number"
+                value={professional.compliance_professionals}
+                onChange={(v) => setProfessional({ ...professional, compliance_professionals: v })}
+              />
+              <TextField
+                name="mining_engineers"
+                label="Mining Engineers"
+                type="number"
+                value={professional.mining_engineers}
+                onChange={(v) => setProfessional({ ...professional, mining_engineers: v })}
+              />
+              <TextField
+                name="geologists"
+                label="Geologists"
+                type="number"
+                value={professional.geologists}
+                onChange={(v) => setProfessional({ ...professional, geologists: v })}
+              />
+              <TextField
+                name="environmental_specialists"
+                label="Environmental Specialists"
+                type="number"
+                value={professional.environmental_specialists}
+                onChange={(v) => setProfessional({ ...professional, environmental_specialists: v })}
+              />
+              <TextField
+                name="hse_specialists"
+                label="HSE Specialists"
+                type="number"
+                value={professional.hse_specialists}
+                onChange={(v) => setProfessional({ ...professional, hse_specialists: v })}
+              />
+              <TextField
+                name="legal_regulatory_specialists"
+                label="Legal / Regulatory Specialists"
+                type="number"
+                value={professional.legal_regulatory_specialists}
+                onChange={(v) =>
+                  setProfessional({ ...professional, legal_regulatory_specialists: v })
+                }
+              />
+              <TextField
+                name="field_inspectors"
+                label="Field Inspectors"
+                type="number"
+                value={professional.field_inspectors}
+                onChange={(v) => setProfessional({ ...professional, field_inspectors: v })}
+              />
+              <TextField
+                name="other_technical_personnel"
+                label="Other Technical Personnel"
+                type="number"
+                value={professional.other_technical_personnel}
+                onChange={(v) => setProfessional({ ...professional, other_technical_personnel: v })}
+              />
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-6">
+              <YesNoField
+                label="Conducts physical site inspections"
+                value={inspection.conducts_physical_inspections}
+                onChange={(v) => setInspection({ ...inspection, conducts_physical_inspections: v })}
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  label="Full Name"
-                  value={person.full_name}
-                  onChange={(v) => setPerson({ ...person, full_name: v })}
-                />
-                <SelectField
-                  label="Role"
-                  value={person.role}
-                  onChange={(v) => setPerson({ ...person, role: v })}
-                  options={personnelRoleOptions}
-                />
-                <TextField
-                  label="Discipline"
-                  value={person.discipline}
-                  onChange={(v) => setPerson({ ...person, discipline: v })}
-                />
-                <TextField
-                  label="Qualification"
-                  value={person.qualification}
-                  onChange={(v) => setPerson({ ...person, qualification: v })}
-                />
-                <TextField
-                  label="Professional Registration"
-                  value={person.registration_number}
-                  onChange={(v) => setPerson({ ...person, registration_number: v })}
-                />
-                <TextField
-                  label="Years Experience"
+                  name="active_inspectors"
+                  label="Active Inspectors"
                   type="number"
-                  value={person.years_experience}
-                  onChange={(v) => setPerson({ ...person, years_experience: v })}
+                  value={inspection.active_inspectors}
+                  onChange={(v) => setInspection({ ...inspection, active_inspectors: v })}
+                />
+                <TextField
+                  name="maximum_inspections_per_month"
+                  label="Maximum Inspections per Month"
+                  type="number"
+                  value={inspection.maximum_inspections_per_month}
+                  onChange={(v) =>
+                    setInspection({ ...inspection, maximum_inspections_per_month: v })
+                  }
+                />
+                <TextField
+                  name="average_turnaround_time"
+                  label="Average Turnaround Time"
+                  placeholder="e.g. 7 days"
+                  value={inspection.average_turnaround_time}
+                  onChange={(v) => setInspection({ ...inspection, average_turnaround_time: v })}
+                />
+                <TextField
+                  name="typical_mobilisation_time"
+                  label="Typical Mobilisation Time"
+                  placeholder="e.g. 5 working days"
+                  value={inspection.typical_mobilisation_time}
+                  onChange={(v) => setInspection({ ...inspection, typical_mobilisation_time: v })}
                 />
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <label className="text-sm">
-                  <span className="mb-1.5 block font-medium">CV (PDF or Word)</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    className="block w-full text-xs"
-                    onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
-                  />
-                </label>
-                <label className="text-sm">
-                  <span className="mb-1.5 block font-medium">Certificate (PDF or image)</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="block w-full text-xs"
-                    onChange={(e) => setCertificateFile(e.target.files?.[0] ?? null)}
-                  />
-                </label>
-              </div>
-              <Button
-                className="mt-4"
-                disabled={
-                  !person.full_name.trim() || !person.role.trim() || createPersonnel.isPending
+              <ChipToggleGroup
+                label="Inspection Evidence Standards"
+                options={EVIDENCE_STANDARDS}
+                selected={inspection.evidence}
+                onToggle={(v) =>
+                  setInspection({ ...inspection, evidence: toggle(inspection.evidence, v) })
                 }
-                onClick={async () => {
-                  try {
-                    await createPersonnel.mutateAsync({
-                      full_name: person.full_name.trim(),
-                      role: person.role.trim(),
-                      discipline: person.discipline.trim(),
-                      qualification: person.qualification.trim(),
-                      registration_number: person.registration_number.trim(),
-                      years_experience: numeric(person.years_experience),
-                      cv: cvFile,
-                      certificate: certificateFile,
-                    });
-                    setPerson({
-                      full_name: "",
-                      role: personnelRoleOptions[0] ?? "",
-                      discipline: "",
-                      qualification: "",
-                      registration_number: "",
-                      years_experience: "",
-                    });
-                    setCvFile(null);
-                    setCertificateFile(null);
-                    toast.success("Personnel added.");
-                  } catch (error) {
-                    reportError(error, "That person could not be added.");
-                  }
-                }}
-              >
-                {createPersonnel.isPending ? "Adding…" : "Add personnel"}
-              </Button>
-            </SectionCard>
+              />
+            </div>
+          )}
 
-            <div className="space-y-2">
-              {(application?.personnel ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground">No personnel registered yet.</p>
-              )}
-              {(application?.personnel ?? []).length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Personnel cannot be removed yet: the API rejects DELETE on this route.
+          {step === 5 && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Every document below is required before the application can be submitted. PDF, Word,
+                JPEG or PNG, up to 10 MB each.
+              </p>
+              {requirements.isLoading && (
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /> Loading the checklist…
                 </p>
               )}
-              {(application?.personnel ?? []).map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{p.full_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.role}
-                      {p.years_experience ? ` · ${p.years_experience} yrs` : ""}
-                      {p.qualification ? ` · ${p.qualification}` : ""}
-                      {p.cv_url ? " · CV attached" : ""}
-                    </p>
+              {!applicationId && (
+                <p className="text-sm text-muted-foreground">
+                  Save the organisation step first to open the checklist.
+                </p>
+              )}
+              {(requirements.data ?? []).map((requirement) => {
+                const uploaded = documentsByType.get(requirement.document_type);
+                return (
+                  <div
+                    key={requirement.document_type}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{requirement.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {DOCUMENT_STATUS_LABELS[requirement.status]}
+                        {uploaded?.original_name ? ` · ${uploaded.original_name}` : ""}
+                        {uploaded?.review_notes ? ` · ${uploaded.review_notes}` : ""}
+                      </p>
+                    </div>
+                    <label className="shrink-0">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={async (event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (!file) return;
+                          setUploadingType(requirement.document_type);
+                          try {
+                            await uploadDocument.mutateAsync({
+                              document_type: requirement.document_type,
+                              file,
+                              title: requirement.title,
+                            });
+                            toast.success(`${requirement.title} uploaded.`);
+                          } catch (error) {
+                            setFieldErrors(reportError(error, "That file could not be uploaded."));
+                          } finally {
+                            setUploadingType(null);
+                          }
+                        }}
+                      />
+                      <span className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">
+                        {uploadingType === requirement.document_type ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="size-3.5" />
+                        )}
+                        {requirement.status === "not_submitted" ? "Upload" : "Replace"}
+                      </span>
+                    </label>
                   </div>
-                  {/*
+                );
+              })}
+            </div>
+          )}
+
+          {step === 6 && (
+            <div className="space-y-5">
+              <SectionCard title="Register a key professional">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <TextField
+                    name="full_name"
+                    label="Full Name"
+                    value={person.full_name}
+                    onChange={(v) => setPerson({ ...person, full_name: v })}
+                  />
+                  <SelectField
+                    name="role"
+                    label="Role"
+                    value={person.role}
+                    onChange={(v) => setPerson({ ...person, role: v })}
+                    options={personnelRoleOptions}
+                  />
+                  <TextField
+                    name="discipline"
+                    label="Discipline"
+                    value={person.discipline}
+                    onChange={(v) => setPerson({ ...person, discipline: v })}
+                  />
+                  <TextField
+                    name="qualification"
+                    label="Qualification"
+                    value={person.qualification}
+                    onChange={(v) => setPerson({ ...person, qualification: v })}
+                  />
+                  <TextField
+                    name="registration_number"
+                    label="Professional Registration"
+                    value={person.registration_number}
+                    onChange={(v) => setPerson({ ...person, registration_number: v })}
+                  />
+                  <TextField
+                    name="years_experience"
+                    label="Years Experience"
+                    type="number"
+                    value={person.years_experience}
+                    onChange={(v) => setPerson({ ...person, years_experience: v })}
+                  />
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="text-sm">
+                    <span className="mb-1.5 block font-medium">CV (PDF or Word)</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="block w-full text-xs"
+                      onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  <label className="text-sm">
+                    <span className="mb-1.5 block font-medium">Certificate (PDF or image)</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="block w-full text-xs"
+                      onChange={(e) => setCertificateFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </div>
+                <Button
+                  className="mt-4"
+                  disabled={
+                    !person.full_name.trim() || !person.role.trim() || createPersonnel.isPending
+                  }
+                  onClick={async () => {
+                    try {
+                      await createPersonnel.mutateAsync({
+                        full_name: person.full_name.trim(),
+                        role: person.role.trim(),
+                        discipline: person.discipline.trim(),
+                        qualification: person.qualification.trim(),
+                        registration_number: person.registration_number.trim(),
+                        years_experience: numeric(person.years_experience),
+                        cv: cvFile,
+                        certificate: certificateFile,
+                      });
+                      setPerson({
+                        full_name: "",
+                        role: personnelRoleOptions[0] ?? "",
+                        discipline: "",
+                        qualification: "",
+                        registration_number: "",
+                        years_experience: "",
+                      });
+                      setCvFile(null);
+                      setCertificateFile(null);
+                      toast.success("Personnel added.");
+                    } catch (error) {
+                      setFieldErrors(reportError(error, "That person could not be added."));
+                    }
+                  }}
+                >
+                  {createPersonnel.isPending ? "Adding…" : "Add personnel"}
+                </Button>
+              </SectionCard>
+
+              <div className="space-y-2">
+                {(application?.personnel ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No personnel registered yet.</p>
+                )}
+                {(application?.personnel ?? []).length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Personnel cannot be removed yet: the API rejects DELETE on this route.
+                  </p>
+                )}
+                {(application?.personnel ?? []).map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{p.full_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.role}
+                        {p.years_experience ? ` · ${p.years_experience} yrs` : ""}
+                        {p.qualification ? ` · ${p.qualification}` : ""}
+                        {p.cv_url ? " · CV attached" : ""}
+                      </p>
+                    </div>
+                    {/*
                     Removal is wired to DELETE personnel/{id}, but the viewset's
                     http_method_names omits "delete", so the route answers 405.
                     The control stays visible and disabled rather than shipping a
                     button that always fails.
                   */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Remove ${p.full_name}`}
-                    disabled
-                    title="Removing personnel is not available: the API rejects DELETE on this route."
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              ))}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove ${p.full_name}`}
+                      disabled
+                      title="Removing personnel is not available: the API rejects DELETE on this route."
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {step === 7 && (
-          <div className="space-y-5">
-            <YesNoField
-              label="Does your organisation own mining assets or titles?"
-              value={conflict.owns_assets}
-              onChange={(v) => setConflict({ ...conflict, owns_assets: v })}
-            />
-            <YesNoField
-              label="Do you provide services to mining companies?"
-              value={conflict.serves_mining_companies}
-              onChange={(v) => setConflict({ ...conflict, serves_mining_companies: v })}
-            />
-            <YesNoField
-              label="Do you trade in minerals?"
-              value={conflict.trades_minerals}
-              onChange={(v) => setConflict({ ...conflict, trades_minerals: v })}
-            />
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Relationships to disclose</label>
-              <Textarea
-                rows={4}
-                placeholder="Describe any relationship that could affect independence, or state that there are none."
-                value={conflict.relationships}
-                onChange={(e) => setConflict({ ...conflict, relationships: e.target.value })}
+          {step === 7 && (
+            <div className="space-y-5">
+              <YesNoField
+                label="Does your organisation own mining assets or titles?"
+                value={conflict.owns_assets}
+                onChange={(v) => setConflict({ ...conflict, owns_assets: v })}
               />
-            </div>
-            <label className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3">
-              <Checkbox
-                className="mt-0.5"
-                checked={conflict.agreed}
-                onCheckedChange={(c) => setConflict({ ...conflict, agreed: Boolean(c) })}
+              <YesNoField
+                label="Do you provide services to mining companies?"
+                value={conflict.serves_mining_companies}
+                onChange={(v) => setConflict({ ...conflict, serves_mining_companies: v })}
               />
-              <span className="text-sm">
-                I agree to disclose any conflict of interest to Beldium without delay.
-              </span>
-            </label>
-          </div>
-        )}
-
-        {step === 8 && (
-          <div className="space-y-3">
-            {DECLARATION_ITEMS.map((d) => (
-              <label
-                key={d.key}
-                className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3"
-              >
+              <YesNoField
+                label="Do you trade in minerals?"
+                value={conflict.trades_minerals}
+                onChange={(v) => setConflict({ ...conflict, trades_minerals: v })}
+              />
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">
+                  Relationships to disclose
+                </label>
+                <Textarea
+                  rows={4}
+                  placeholder="Describe any relationship that could affect independence, or state that there are none."
+                  value={conflict.relationships}
+                  onChange={(e) => setConflict({ ...conflict, relationships: e.target.value })}
+                />
+              </div>
+              <label className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3">
                 <Checkbox
                   className="mt-0.5"
-                  checked={declarations[d.key]}
-                  onCheckedChange={(c) => setDeclarations({ ...declarations, [d.key]: Boolean(c) })}
+                  checked={conflict.agreed}
+                  onCheckedChange={(c) => setConflict({ ...conflict, agreed: Boolean(c) })}
                 />
-                <span>
-                  <span className="block text-sm font-medium">{d.label}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">{d.detail}</span>
+                <span className="text-sm">
+                  I agree to disclose any conflict of interest to Beldium without delay.
                 </span>
               </label>
-            ))}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField
-                label="Signatory Name"
-                value={signatory.signatory_name}
-                onChange={(v) => setSignatory({ ...signatory, signatory_name: v })}
-              />
-              <TextField
-                label="Signatory Position"
-                value={signatory.signatory_position}
-                onChange={(v) => setSignatory({ ...signatory, signatory_position: v })}
-              />
             </div>
-          </div>
-        )}
+          )}
 
-        {step === 9 && (
-          <div className="space-y-4">
-            <SectionCard
-              title="Organisation"
-              action={
-                <Button variant="ghost" size="sm" onClick={() => setStep(0)}>
-                  Edit section
-                </Button>
-              }
-            >
-              <div className="space-y-1">
-                <InfoRow
-                  label="Legal name"
-                  value={application?.organisation_profile?.name || "-"}
-                />
-                <InfoRow
-                  label="RC / CAC"
-                  value={application?.organisation_profile?.registration_number || "-"}
-                />
-                <InfoRow
-                  label="TIN"
-                  value={application?.organisation_profile?.tax_identifier || "-"}
-                />
-                <InfoRow
-                  label="Year established"
-                  value={application?.organisation_profile?.year_established ?? "-"}
-                />
-                <InfoRow
-                  label="Registered address"
-                  value={application?.organisation_profile?.registered_address || "-"}
-                />
-                <InfoRow
-                  label="State / LGA"
-                  value={`${application?.organisation_profile?.state ?? "-"} · ${application?.organisation_profile?.lga ?? "-"}`}
-                />
-              </div>
-            </SectionCard>
-
-            <SectionCard
-              title="Representative"
-              action={
-                <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
-                  Edit section
-                </Button>
-              }
-            >
-              <div className="space-y-1">
-                <InfoRow label="Name" value={application?.representative?.full_name || "-"} />
-                <InfoRow label="Position" value={application?.representative?.position || "-"} />
-                <InfoRow label="Email" value={application?.representative?.official_email || "-"} />
-                <InfoRow label="Phone" value={application?.representative?.official_phone || "-"} />
-              </div>
-            </SectionCard>
-
-            <SectionCard
-              title="Compliance services"
-              action={
-                <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
-                  Edit section
-                </Button>
-              }
-            >
-              <div className="space-y-1">
-                <InfoRow
-                  label="Services"
-                  value={application?.services?.selected_services?.join(", ") || "-"}
-                />
-                <InfoRow
-                  label="Coverage"
-                  value={
-                    application?.services?.geographic_coverage === "selected_states"
-                      ? application.services.states_covered?.join(", ") || "-"
-                      : "Nationwide"
-                  }
-                />
-              </div>
-            </SectionCard>
-
-            <SectionCard
-              title={`Documents (${progress?.documents.submitted ?? 0}/${progress?.documents.required ?? 0})`}
-              action={
-                <Button variant="ghost" size="sm" onClick={() => setStep(5)}>
-                  Edit section
-                </Button>
-              }
-            >
-              <div className="space-y-1">
-                {outstandingDocuments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">All required documents uploaded.</p>
-                ) : (
-                  outstandingDocuments.map((r) => (
-                    <InfoRow
-                      key={r.document_type}
-                      label={r.title}
-                      value={DOCUMENT_STATUS_LABELS[r.status]}
-                    />
-                  ))
-                )}
-              </div>
-            </SectionCard>
-
-            <SectionCard
-              title={`Personnel (${application?.personnel.length ?? 0})`}
-              action={
-                <Button variant="ghost" size="sm" onClick={() => setStep(6)}>
-                  Edit section
-                </Button>
-              }
-            >
-              <div className="space-y-1">
-                {(application?.personnel ?? []).length === 0 && (
-                  <p className="text-sm text-muted-foreground">No personnel registered.</p>
-                )}
-                {(application?.personnel ?? []).map((p) => (
-                  <InfoRow key={p.id} label={p.full_name} value={p.role} />
-                ))}
-              </div>
-            </SectionCard>
-
-            <SectionCard
-              title="Declarations"
-              action={
-                <Button variant="ghost" size="sm" onClick={() => setStep(8)}>
-                  Edit section
-                </Button>
-              }
-            >
-              <div className="space-y-1">
-                {DECLARATION_ITEMS.map((d) => (
-                  <InfoRow
-                    key={d.key}
-                    label={d.label}
-                    value={declarations[d.key] ? "Accepted" : "Outstanding"}
+          {step === 8 && (
+            <div className="space-y-3">
+              {DECLARATION_ITEMS.map((d) => (
+                <label
+                  key={d.key}
+                  className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3"
+                >
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={declarations[d.key]}
+                    onCheckedChange={(c) =>
+                      setDeclarations({ ...declarations, [d.key]: Boolean(c) })
+                    }
                   />
-                ))}
+                  <span>
+                    <span className="block text-sm font-medium">{d.label}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{d.detail}</span>
+                  </span>
+                </label>
+              ))}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  name="signatory_name"
+                  label="Signatory Name"
+                  value={signatory.signatory_name}
+                  onChange={(v) => setSignatory({ ...signatory, signatory_name: v })}
+                />
+                <TextField
+                  name="signatory_position"
+                  label="Signatory Position"
+                  value={signatory.signatory_position}
+                  onChange={(v) => setSignatory({ ...signatory, signatory_position: v })}
+                />
               </div>
-            </SectionCard>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
 
-      <div className="mt-7 flex flex-wrap gap-3">
-        {step < steps.length - 1 ? (
-          <Button size="lg" disabled={saving} onClick={() => void advance()}>
-            {saving ? "Saving…" : "Save and continue"}
-          </Button>
-        ) : (
-          <Button
-            size="lg"
-            disabled={submit.isPending || progress?.percent !== 100}
-            onClick={() => void onSubmit()}
-          >
-            <Check className="mr-1 size-4" />{" "}
-            {submit.isPending ? "Submitting…" : "Submit application"}
-          </Button>
+          {step === 9 && (
+            <div className="space-y-4">
+              <SectionCard
+                title="Organisation"
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => setStep(0)}>
+                    Edit section
+                  </Button>
+                }
+              >
+                <div className="space-y-1">
+                  <InfoRow
+                    label="Legal name"
+                    value={application?.organisation_profile?.name || "-"}
+                  />
+                  <InfoRow
+                    label="RC / CAC"
+                    value={application?.organisation_profile?.registration_number || "-"}
+                  />
+                  <InfoRow
+                    label="TIN"
+                    value={application?.organisation_profile?.tax_identifier || "-"}
+                  />
+                  <InfoRow
+                    label="Year established"
+                    value={application?.organisation_profile?.year_established ?? "-"}
+                  />
+                  <InfoRow
+                    label="Registered address"
+                    value={application?.organisation_profile?.registered_address || "-"}
+                  />
+                  <InfoRow
+                    label="State / LGA"
+                    value={`${application?.organisation_profile?.state ?? "-"} · ${application?.organisation_profile?.lga ?? "-"}`}
+                  />
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title="Representative"
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
+                    Edit section
+                  </Button>
+                }
+              >
+                <div className="space-y-1">
+                  <InfoRow label="Name" value={application?.representative?.full_name || "-"} />
+                  <InfoRow label="Position" value={application?.representative?.position || "-"} />
+                  <InfoRow
+                    label="Email"
+                    value={application?.representative?.official_email || "-"}
+                  />
+                  <InfoRow
+                    label="Phone"
+                    value={application?.representative?.official_phone || "-"}
+                  />
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title="Compliance services"
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
+                    Edit section
+                  </Button>
+                }
+              >
+                <div className="space-y-1">
+                  <InfoRow
+                    label="Services"
+                    value={application?.services?.selected_services?.join(", ") || "-"}
+                  />
+                  <InfoRow
+                    label="Coverage"
+                    value={
+                      application?.services?.geographic_coverage === "selected_states"
+                        ? application.services.states_covered?.join(", ") || "-"
+                        : "Nationwide"
+                    }
+                  />
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title={`Documents (${progress?.documents.submitted ?? 0}/${progress?.documents.required ?? 0})`}
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => setStep(5)}>
+                    Edit section
+                  </Button>
+                }
+              >
+                <div className="space-y-1">
+                  {outstandingDocuments.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      All required documents uploaded.
+                    </p>
+                  ) : (
+                    outstandingDocuments.map((r) => (
+                      <InfoRow
+                        key={r.document_type}
+                        label={r.title}
+                        value={DOCUMENT_STATUS_LABELS[r.status]}
+                      />
+                    ))
+                  )}
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title={`Personnel (${application?.personnel.length ?? 0})`}
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => setStep(6)}>
+                    Edit section
+                  </Button>
+                }
+              >
+                <div className="space-y-1">
+                  {(application?.personnel ?? []).length === 0 && (
+                    <p className="text-sm text-muted-foreground">No personnel registered.</p>
+                  )}
+                  {(application?.personnel ?? []).map((p) => (
+                    <InfoRow key={p.id} label={p.full_name} value={p.role} />
+                  ))}
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title="Declarations"
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => setStep(8)}>
+                    Edit section
+                  </Button>
+                }
+              >
+                <div className="space-y-1">
+                  {DECLARATION_ITEMS.map((d) => (
+                    <InfoRow
+                      key={d.key}
+                      label={d.label}
+                      value={declarations[d.key] ? "Accepted" : "Outstanding"}
+                    />
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-7 flex flex-wrap gap-3">
+          {step < steps.length - 1 ? (
+            <Button size="lg" disabled={saving} onClick={() => void advance()}>
+              {saving ? "Saving…" : "Save and continue"}
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              disabled={submit.isPending || blockedReason !== null}
+              title={blockedReason ?? undefined}
+              onClick={() => void onSubmit()}
+            >
+              <Check className="mr-1 size-4" />{" "}
+              {submit.isPending ? "Submitting…" : "Submit application"}
+            </Button>
+          )}
+          {step > 0 && (
+            <Button size="lg" variant="ghost" onClick={() => setStep(step - 1)}>
+              Back
+            </Button>
+          )}
+        </div>
+        {step === steps.length - 1 && progress && progress.percent !== 100 && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            You can submit now with{" "}
+            {Object.entries(progress.sections)
+              .filter(([, done]) => !done)
+              .map(([name]) => name.replaceAll("_", " "))
+              .join(", ")}{" "}
+            still outstanding. The reviewer will see what is missing and can request it. Approval
+            needs a complete application, so anything left now will be asked for later.
+          </p>
         )}
-        {step > 0 && (
-          <Button size="lg" variant="ghost" onClick={() => setStep(step - 1)}>
-            Back
-          </Button>
-        )}
-      </div>
-      {step === steps.length - 1 && progress?.percent !== 100 && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          The API accepts a submission only at 100%. Still outstanding:{" "}
-          {Object.entries(progress?.sections ?? {})
-            .filter(([, done]) => !done)
-            .map(([name]) => name.replaceAll("_", " "))
-            .join(", ") || "nothing"}
-          .
-        </p>
-      )}
+      </FieldErrorProvider>
     </AuthShell>
   );
 }

@@ -1,8 +1,17 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Gauge, TrendingDown, TrendingUp } from "lucide-react";
-import { Panel, PanelHeader, PageHeader, Pill, ScoreBar, StatCard, statusTone } from "@/verticals/processing/bpc";
-import { PROCESSORS, REGIONAL_COMPLIANCE, KPI_TREND, processingTypeLabel } from "@/verticals/processing/mock-data";
+import {
+  Panel,
+  PanelHeader,
+  PageHeader,
+  Pill,
+  ScoreBar,
+  StatCard,
+  statusTone,
+} from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/monitoring")({
@@ -31,15 +40,24 @@ const BANDS = [
 ];
 
 function MonitoringPage() {
+  const { processors, regionalCompliance, kpiTrend, totals } = useAppState();
+
+  // Bands mirror the register's own thresholds: 80+ is healthy, 60-79 warrants
+  // watching, below 60 is at risk.
+  const onWatch = processors.filter(
+    (p) => p.complianceScore >= 60 && p.complianceScore < 80,
+  ).length;
+  const atRisk = processors.filter((p) => p.complianceScore < 60).length;
+  // Coverage is the share of the register that has actually been inspected.
+  const inspected = processors.filter((p) => p.lastInspection !== "-").length;
+  const coverage = processors.length ? Math.round((inspected / processors.length) * 100) : 0;
   const [region, setRegion] = React.useState<string>("All regions");
-  const regions = ["All regions", ...REGIONAL_COMPLIANCE.map((r) => r.region)];
+  const regions = ["All regions", ...regionalCompliance.map((r) => r.region)];
 
   const banded = BANDS.map((b, i) => ({
     ...b,
-    items: PROCESSORS.filter(
-      (p) =>
-        p.complianceScore >= b.min &&
-        (i === 0 || p.complianceScore < BANDS[i - 1]!.min),
+    items: processors.filter(
+      (p) => p.complianceScore >= b.min && (i === 0 || p.complianceScore < BANDS[i - 1]!.min),
     ),
   }));
 
@@ -69,11 +87,34 @@ function MonitoringPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Mean national score" value="76" hint="+3 vs previous quarter" tone="success" icon={<TrendingUp className="size-4" />} />
-        <StatCard label="Facilities on watch" value={12} hint="Score 60–79" tone="warning" icon={<Gauge className="size-4" />} />
-        <StatCard label="At-risk processors" value={4} hint="Score below 60" tone="danger" icon={<TrendingDown className="size-4" />} />
-        <StatCard label="Monitoring coverage" value="94%" hint="Facilities reporting on schedule" icon={<Gauge className="size-4" />} />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard
+          label="Mean national score"
+          value={totals?.average_compliance_score ?? 0}
+          hint={`Across ${processors.length} registered processors`}
+          tone="success"
+          icon={<TrendingUp className="size-4" />}
+        />
+        <StatCard
+          label="Facilities on watch"
+          value={onWatch}
+          hint="Score 60–79"
+          tone="warning"
+          icon={<Gauge className="size-4" />}
+        />
+        <StatCard
+          label="At-risk processors"
+          value={atRisk}
+          hint="Score below 60"
+          tone="danger"
+          icon={<TrendingDown className="size-4" />}
+        />
+        <StatCard
+          label="Inspection coverage"
+          value={`${coverage}%`}
+          hint="Processors with a recorded site visit"
+          icon={<Gauge className="size-4" />}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
@@ -109,10 +150,7 @@ function MonitoringPage() {
       </div>
 
       <Panel>
-        <PanelHeader
-          title="Regional detail"
-          subtitle="Standing distribution and monitoring load"
-        />
+        <PanelHeader title="Regional detail" subtitle="Standing distribution and monitoring load" />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
@@ -126,20 +164,30 @@ function MonitoringPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {REGIONAL_COMPLIANCE.filter((r) => region === "All regions" || r.region === region).map((r) => (
-                <tr key={r.region} className="hover:bg-accent/50">
-                  <td className="px-5 py-3 text-xs font-medium">{r.region}</td>
-                  <td className="px-5 py-3 text-xs">{r.processors}</td>
-                  <td className="px-5 py-3 text-xs">{r.compliant}</td>
-                  <td className="px-5 py-3 text-xs">{r.conditional}</td>
-                  <td className="px-5 py-3 text-xs">{r.suspended}</td>
-                  <td className="px-5 py-3">
-                    <Pill tone={statusTone(r.avgScore >= 78 ? "Approved" : r.avgScore >= 70 ? "Conditional" : "Suspended")}>
-                      {r.avgScore}
-                    </Pill>
-                  </td>
-                </tr>
-              ))}
+              {regionalCompliance
+                .filter((r) => region === "All regions" || r.region === region)
+                .map((r) => (
+                  <tr key={r.region} className="hover:bg-accent/50">
+                    <td className="px-5 py-3 text-xs font-medium">{r.region}</td>
+                    <td className="px-5 py-3 text-xs">{r.processors}</td>
+                    <td className="px-5 py-3 text-xs">{r.compliant}</td>
+                    <td className="px-5 py-3 text-xs">{r.conditional}</td>
+                    <td className="px-5 py-3 text-xs">{r.suspended}</td>
+                    <td className="px-5 py-3">
+                      <Pill
+                        tone={statusTone(
+                          r.avgScore >= 78
+                            ? "Approved"
+                            : r.avgScore >= 70
+                              ? "Conditional"
+                              : "Suspended",
+                        )}
+                      >
+                        {r.avgScore}
+                      </Pill>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -148,7 +196,7 @@ function MonitoringPage() {
       <Panel>
         <PanelHeader title="Monitoring workload" subtitle="Inspections completed per month" />
         <div className="flex items-end gap-4 px-5 py-6">
-          {KPI_TREND.map((k) => (
+          {kpiTrend.map((k) => (
             <div key={k.month} className="flex flex-1 flex-col items-center gap-2">
               <div className="flex h-28 w-full items-end justify-center">
                 <div

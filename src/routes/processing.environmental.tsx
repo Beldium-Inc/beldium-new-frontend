@@ -1,11 +1,25 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Leaf, X } from "lucide-react";
-import { Panel, PanelHeader, PageHeader, Pill, StatCard, statusTone } from "@/verticals/processing/bpc";
-import { ENV_ALERTS, type EnvAlert } from "@/verticals/processing/mock-data";
+import {
+  Panel,
+  PanelHeader,
+  PageHeader,
+  Pill,
+  StatCard,
+  statusTone,
+  RegisterState,
+} from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
+import { type EnvAlert } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/environmental")({
+  /** `?ref=` deep-links a single record, so the notification bell can open it. */
+  validateSearch: (search: Record<string, unknown>): { ref?: string } => {
+    const ref = search["ref"];
+    return typeof ref === "string" && ref.trim() ? { ref: ref.trim() } : {};
+  },
   head: () => ({
     meta: [
       { title: "Environmental alerts · Beldium Processing Compliance" },
@@ -25,9 +39,20 @@ export const Route = createFileRoute("/processing/environmental")({
 });
 
 function EnvironmentalPage() {
+  const { envAlerts, setAlertStatus, capabilities, isLoading, error } = useAppState();
+  const [busy, setBusy] = React.useState(false);
+  // Oversight acknowledges and escalates; only the desk resolves.
+  const canAct = capabilities?.audience === "operator" || capabilities?.audience === "regulator";
   const [filter, setFilter] = React.useState<"All" | "Open" | "Acknowledged" | "Resolved">("All");
+  const { ref } = Route.useSearch();
   const [detail, setDetail] = React.useState<EnvAlert | null>(null);
-  const rows = ENV_ALERTS.filter((a) => filter === "All" || a.status === filter);
+  // The alerts arrive after the first render, so this resolves once they land.
+  React.useEffect(() => {
+    if (!ref) return;
+    const match = envAlerts.find((a) => a.id === ref);
+    if (match) setDetail(match);
+  }, [ref, envAlerts]);
+  const rows = envAlerts.filter((a) => filter === "All" || a.status === filter);
 
   return (
     <>
@@ -37,10 +62,23 @@ function EnvironmentalPage() {
         description="Automated exceedance detection from facility monitoring submissions and third-party sampling. Oversight can acknowledge and escalate; remediation is directed through the compliance partner."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Open exceedances" value={ENV_ALERTS.filter((a) => a.status === "Open").length} tone="danger" icon={<Leaf className="size-4" />} />
-        <StatCard label="Critical severity" value={ENV_ALERTS.filter((a) => a.severity === "Critical").length} tone="warning" />
-        <StatCard label="Resolved this quarter" value={ENV_ALERTS.filter((a) => a.status === "Resolved").length} tone="success" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+        <StatCard
+          label="Open exceedances"
+          value={envAlerts.filter((a) => a.status === "Open").length}
+          tone="danger"
+          icon={<Leaf className="size-4" />}
+        />
+        <StatCard
+          label="Critical severity"
+          value={envAlerts.filter((a) => a.severity === "Critical").length}
+          tone="warning"
+        />
+        <StatCard
+          label="Resolved this quarter"
+          value={envAlerts.filter((a) => a.status === "Resolved").length}
+          tone="success"
+        />
       </div>
 
       <Panel>
@@ -88,7 +126,10 @@ function EnvironmentalPage() {
 
       {detail ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-primary/45 backdrop-blur-sm" onClick={() => setDetail(null)} />
+          <div
+            className="absolute inset-0 bg-primary/45 backdrop-blur-sm"
+            onClick={() => setDetail(null)}
+          />
           <div className="relative w-full max-w-lg rounded-3xl border border-border bg-card p-6 shadow-[0_30px_80px_-30px_rgba(16,30,61,0.7)]">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -112,20 +153,50 @@ function EnvironmentalPage() {
               include in regional brief. Enforcement and facility-level directives are outside this
               role.
             </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setDetail(null)}
-                className="rounded-xl border border-border px-4 py-2 text-xs font-medium"
-              >
-                Acknowledge
-              </button>
-              <button
-                onClick={() => setDetail(null)}
-                className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
-              >
-                Request follow-up
-              </button>
-            </div>
+            {canAct ? (
+              <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <button
+                  disabled={busy || detail.status !== "Open"}
+                  onClick={() => {
+                    setBusy(true);
+                    void setAlertStatus(detail.id, "acknowledged")
+                      .then(() => setDetail(null))
+                      .catch((cause: Error) => window.alert(cause.message))
+                      .finally(() => setBusy(false));
+                  }}
+                  className="rounded-xl border border-border px-4 py-2 text-xs font-medium hover:bg-accent disabled:opacity-40"
+                >
+                  {detail.status === "Open" ? "Acknowledge" : "Acknowledged"}
+                </button>
+                <button
+                  disabled={busy || detail.status === "Resolved"}
+                  onClick={() => {
+                    setBusy(true);
+                    void setAlertStatus(
+                      detail.id,
+                      "resolved",
+                      "Exceedance closed out by the oversight desk.",
+                    )
+                      .then(() => setDetail(null))
+                      .catch((cause: Error) => window.alert(cause.message))
+                      .finally(() => setBusy(false));
+                  }}
+                  className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-40"
+                >
+                  {detail.status === "Resolved" ? "Resolved" : "Mark resolved"}
+                </button>
+              </div>
+            ) : null}
+            {rows.length === 0 ? (
+              <RegisterState
+                isLoading={isLoading}
+                error={error}
+                empty={{
+                  title: "No environmental exceedances",
+                  body: "Alerts appear here when a monitored parameter crosses its permitted threshold.",
+                }}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

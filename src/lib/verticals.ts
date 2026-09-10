@@ -7,13 +7,7 @@
 // `home` is relative to the vertical prefix; the full URL is `/${slug}${home}`.
 
 export type VerticalSlug =
-  | "export"
-  | "logistics"
-  | "marketplace"
-  | "mining"
-  | "processing"
-  | "quality"
-  | "warehousing";
+  "export" | "logistics" | "marketplace" | "mining" | "processing" | "quality" | "warehousing";
 
 export type VerticalRole = {
   id: string;
@@ -68,6 +62,13 @@ export const VERTICALS: Vertical[] = [
         label: "Compliance Operator",
         blurb:
           "Review processor applications, verify evidence and own the compliance decision record.",
+        home: "/dashboard",
+      },
+      {
+        id: "processor",
+        label: "Processor / Applicant",
+        blurb:
+          "Complete your application section by section, upload evidence, answer information requests and close findings.",
         home: "/dashboard",
       },
       {
@@ -175,8 +176,7 @@ export const VERTICALS: Vertical[] = [
       {
         id: "operator",
         label: "Compliance Operator",
-        blurb:
-          "Full review workspace: applications, documents, risk, requests and reporting.",
+        blurb: "Full review workspace: applications, documents, risk, requests and reporting.",
         home: "/operator",
       },
       {

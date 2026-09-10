@@ -1,22 +1,15 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { AlertTriangle, ArrowLeft, ClipboardCheck, Factory, Leaf, Lock, Siren } from "lucide-react";
 import {
-  AlertTriangle,
-  ArrowLeft,
-  ClipboardCheck,
-  Factory,
-  Leaf,
-  Lock,
-  Siren,
-} from "lucide-react";
-import { Panel, PanelHeader, Pill, ScoreBar, statusTone } from "@/verticals/processing/bpc";
+  Panel,
+  PanelHeader,
+  Pill,
+  RegisterState,
+  ScoreBar,
+  statusTone,
+} from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
-import {
-  ENV_ALERTS,
-  INCIDENTS,
-  PROCESSORS,
-  TRACE_RUNS,
-  processingTypeLabel,
-} from "@/verticals/processing/mock-data";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 
 export const Route = createFileRoute("/processing/processors/$id")({
   head: () => ({
@@ -39,14 +32,33 @@ export const Route = createFileRoute("/processing/processors/$id")({
 
 function ProcessorDetail() {
   const { id } = useParams({ from: "/processing/processors/$id" });
-  const { inspections, nonConformities } = useAppState();
-  const p = PROCESSORS.find((x) => x.id === id);
+  const {
+    inspections,
+    nonConformities,
+    processors,
+    envAlerts,
+    incidents,
+    traceRuns,
+    isLoading,
+    error,
+  } = useAppState();
+  const p = processors.find((x) => x.id === id);
 
   if (!p) {
     return (
       <Panel className="p-10 text-center">
-        <p className="text-sm font-medium">Processor not found</p>
-        <Link to="/processing/processors" className="mt-2 inline-block text-xs text-primary hover:underline">
+        <RegisterState
+          isLoading={isLoading}
+          error={error}
+          empty={{
+            title: "Processor not found",
+            body: "This reference is not on the register, or you do not have access to it.",
+          }}
+        />
+        <Link
+          to="/processing/processors"
+          className="mt-2 inline-block text-xs text-primary hover:underline"
+        >
           Back to register
         </Link>
       </Panel>
@@ -55,9 +67,11 @@ function ProcessorDetail() {
 
   const insp = inspections.filter((i) => i.company === p.name);
   const ncs = nonConformities.filter((n) => n.company === p.name);
-  const alerts = ENV_ALERTS.filter((a) => a.state === p.state);
-  const incidents = INCIDENTS.filter((i) => i.state === p.state);
-  const runs = TRACE_RUNS.filter((r) => r.facility.toLowerCase().includes((p.lga.split(" ")[0] ?? p.lga).toLowerCase()));
+  const alerts = envAlerts.filter((a) => a.state === p.state);
+  const facilityIncidents = incidents.filter((i) => i.state === p.state);
+  const runs = traceRuns.filter((r) =>
+    r.facility.toLowerCase().includes((p.lga.split(" ")[0] ?? p.lga).toLowerCase()),
+  );
 
   return (
     <>
@@ -94,10 +108,18 @@ function ProcessorDetail() {
             <div className="mt-2">
               <ScoreBar
                 value={p.complianceScore}
-                tone={p.complianceScore >= 80 ? "success" : p.complianceScore >= 60 ? "warning" : "danger"}
+                tone={
+                  p.complianceScore >= 80
+                    ? "success"
+                    : p.complianceScore >= 60
+                      ? "warning"
+                      : "danger"
+                }
               />
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">{p.openNCs} open non-conformity(ies)</p>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              {p.openNCs} open non-conformity(ies)
+            </p>
           </div>
         </div>
 
@@ -202,9 +224,13 @@ function ProcessorDetail() {
         </Panel>
 
         <Panel>
-          <PanelHeader title="Incidents" subtitle="Reported events" icon={<Siren className="size-4" />} />
+          <PanelHeader
+            title="Incidents"
+            subtitle="Reported events"
+            icon={<Siren className="size-4" />}
+          />
           <div className="divide-y divide-border">
-            {incidents.map((i) => (
+            {facilityIncidents.map((i) => (
               <div key={i.id} className="px-5 py-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs font-medium">{i.type}</p>
@@ -214,7 +240,7 @@ function ProcessorDetail() {
                 <p className="mt-0.5 text-[11px] text-muted-foreground">{i.summary}</p>
               </div>
             ))}
-            {incidents.length === 0 ? (
+            {facilityIncidents.length === 0 ? (
               <p className="px-5 py-8 text-center text-xs text-muted-foreground">
                 No incidents reported.
               </p>
@@ -246,7 +272,10 @@ function ProcessorDetail() {
           </div>
         )}
         <div className="border-t border-border px-5 py-3">
-          <Link to="/processing/traceability" className="text-xs font-medium text-primary hover:underline">
+          <Link
+            to="/processing/traceability"
+            className="text-xs font-medium text-primary hover:underline"
+          >
             Open traceability view
           </Link>
         </div>

@@ -4,6 +4,8 @@ export * from "./client";
 export * from "./compliance";
 export * from "./errors";
 export * from "./organisations";
+export * from "./processing";
+export * from "./processing-queries";
 export * from "./queries";
 export * from "./tokens";
 export * from "./types";

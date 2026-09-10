@@ -1,11 +1,24 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarClock, ClipboardCheck, MapPin, UserCheck } from "lucide-react";
-import { Panel, PanelHeader, PageHeader, Pill, statusTone } from "@/verticals/processing/bpc";
+import {
+  ActionDialog,
+  Panel,
+  PanelHeader,
+  PageHeader,
+  Pill,
+  RegisterState,
+  statusTone,
+} from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/inspections")({
+  /** `?ref=` deep-links a single record, so the notification bell can open it. */
+  validateSearch: (search: Record<string, unknown>): { ref?: string } => {
+    const ref = search["ref"];
+    return typeof ref === "string" && ref.trim() ? { ref: ref.trim() } : {};
+  },
   head: () => ({
     meta: [
       { title: "Inspections · Beldium Processing Compliance" },
@@ -35,9 +48,14 @@ const CHECKLIST = [
 ];
 
 function InspectionsPage() {
-  const { inspections, user } = useAppState();
-  const readOnly = user?.role !== "operator";
-  const [selected, setSelected] = React.useState(inspections[0]?.id ?? "");
+  const { inspections, updateInspection, capabilities, isLoading, error } = useAppState();
+  const [dialog, setDialog] = React.useState<"inspector" | "schedule" | "outcome" | null>(null);
+  const readOnly = !capabilities?.can_decide;
+  const { ref } = Route.useSearch();
+  const [selected, setSelected] = React.useState(ref ?? "");
+  React.useEffect(() => {
+    if (ref) setSelected(ref);
+  }, [ref]);
   const active = inspections.find((i) => i.id === selected) ?? inspections[0];
 
   return (
@@ -60,6 +78,16 @@ function InspectionsPage() {
             icon={<ClipboardCheck className="size-4" />}
           />
           <div className="divide-y divide-border">
+            {inspections.length === 0 ? (
+              <RegisterState
+                isLoading={isLoading}
+                error={error}
+                empty={{
+                  title: "No inspections scheduled",
+                  body: "Inspections appear here once the desk requests or schedules a site visit.",
+                }}
+              />
+            ) : null}
             {inspections.map((i) => (
               <button
                 key={i.id}
@@ -109,7 +137,7 @@ function InspectionsPage() {
                 <Info k="Scheduled" v={active.scheduled} />
                 <Info k="Assigned inspector" v={active.inspector} />
                 <Info k="State" v={`${active.state} State`} />
-                <Info k="Linked application" v={active.applicationId} />
+                <Info k="Linked application" v={active.applicationId || "Not linked"} />
               </div>
               {active.outcome ? (
                 <p className="mx-5 mb-4 rounded-xl border border-success bg-success/40 px-3 py-2 text-xs text-success-foreground">
@@ -117,21 +145,39 @@ function InspectionsPage() {
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2 border-t border-border px-5 py-4">
-                <Link
-                  to="/processing/applications/$id"
-                  params={{ id: active.applicationId }}
-                  className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent"
-                >
-                  Open application
-                </Link>
+                {active.applicationId ? (
+                  <Link
+                    to="/processing/applications/$id"
+                    params={{ id: active.applicationId }}
+                    className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent"
+                  >
+                    Open application
+                  </Link>
+                ) : null}
                 {!readOnly ? (
                   <>
-                    <button className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent">
+                    <button
+                      disabled={active.status === "Completed"}
+                      onClick={() => setDialog("inspector")}
+                      className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent disabled:opacity-40"
+                    >
                       Assign inspector
                     </button>
-                    <button className="rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground">
+                    <button
+                      disabled={active.status === "Completed"}
+                      onClick={() => setDialog("schedule")}
+                      className="rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-40"
+                    >
                       Confirm schedule
                     </button>
+                    {active.status !== "Completed" ? (
+                      <button
+                        onClick={() => setDialog("outcome")}
+                        className="rounded-xl border border-border px-3 py-2 text-xs font-medium hover:bg-accent"
+                      >
+                        Mark completed
+                      </button>
+                    ) : null}
                   </>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
@@ -142,7 +188,10 @@ function InspectionsPage() {
             </Panel>
 
             <Panel>
-              <PanelHeader title="Site inspection checklist" subtitle="Standard processing protocol" />
+              <PanelHeader
+                title="Site inspection checklist"
+                subtitle="Standard processing protocol"
+              />
               <ul className="divide-y divide-border">
                 {CHECKLIST.map((c) => (
                   <li key={c} className="flex items-start gap-3 px-5 py-3 text-xs">
@@ -155,6 +204,50 @@ function InspectionsPage() {
           </div>
         ) : null}
       </div>
+
+      {dialog === "inspector" && active ? (
+        <ActionDialog
+          title="Assign inspector"
+          description={`${active.id} · ${active.facility}`}
+          label="Inspector"
+          placeholder="Eng. Musa Ibrahim"
+          initial={active.inspector === "Unassigned" ? "" : active.inspector}
+          onConfirm={(value) => updateInspection(active.id, { inspector_name: value })}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+
+      {dialog === "schedule" && active ? (
+        <ActionDialog
+          title="Confirm the inspection date"
+          description="Naming a date turns a request into a booking."
+          label="Scheduled for"
+          type="date"
+          initial={active.scheduled === "To be confirmed" ? "" : active.scheduled}
+          confirmLabel="Confirm"
+          onConfirm={(value) =>
+            updateInspection(active.id, {
+              scheduled_for: value || null,
+              status: value ? "Scheduled" : "Requested",
+            })
+          }
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+
+      {dialog === "outcome" && active ? (
+        <ActionDialog
+          title="Record the outcome"
+          description={`${active.id} · ${active.facility}`}
+          label="What did the visit find?"
+          placeholder="2 minor findings: dust suppression, signage"
+          confirmLabel="Mark completed"
+          onConfirm={(value) =>
+            updateInspection(active.id, { status: "Completed", outcome: value })
+          }
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
     </>
   );
 }

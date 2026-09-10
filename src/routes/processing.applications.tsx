@@ -1,9 +1,17 @@
 import * as React from "react";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { Panel, PageHeader, Pill, RiskBadge, ScoreBar, statusTone } from "@/verticals/processing/bpc";
+import {
+  Panel,
+  PageHeader,
+  Pill,
+  RegisterState,
+  RiskBadge,
+  ScoreBar,
+  statusTone,
+} from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
-import { processingTypeLabel } from "@/verticals/processing/mock-data";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/applications")({
@@ -34,7 +42,7 @@ function ApplicationsLayout() {
 }
 
 function ApplicationsList() {
-  const { applications } = useAppState();
+  const { applications, isLoading, error } = useAppState();
   const [stage, setStage] = React.useState<(typeof STAGES)[number]>("All");
   const [q, setQ] = React.useState("");
 
@@ -82,7 +90,49 @@ function ApplicationsList() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* A seven-column register does not survive a phone, so below `md` the
+            same rows are stacked as cards instead of scrolled sideways. */}
+        <div className="divide-y divide-border md:hidden">
+          {rows.map((a) => (
+            <Link
+              key={a.id}
+              to="/processing/applications/$id"
+              params={{ id: a.id }}
+              className="block px-4 py-4 hover:bg-accent/50"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{a.company}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {a.id} · {a.rcNumber}
+                  </p>
+                </div>
+                <RiskBadge score={a.riskScore} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {processingTypeLabel(a.processingType)} · {a.lga} LGA, {a.state} State
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="mb-1 text-[10px] text-muted-foreground">
+                    {a.completeness}% complete
+                    {a.submitted ? ` · submitted ${a.submitted}` : ""}
+                  </p>
+                  <ScoreBar
+                    value={a.completeness}
+                    tone={a.completeness > 85 ? "success" : "warning"}
+                  />
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <Pill tone={statusTone(a.stage)}>{a.stage}</Pill>
+                  {a.decision ? <Pill tone={statusTone(a.decision)}>{a.decision}</Pill> : null}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -131,9 +181,7 @@ function ApplicationsList() {
                   <td className="px-5 py-4">
                     <div className="flex flex-col items-start gap-1">
                       <Pill tone={statusTone(a.stage)}>{a.stage}</Pill>
-                      {a.decision ? (
-                        <Pill tone={statusTone(a.decision)}>{a.decision}</Pill>
-                      ) : null}
+                      {a.decision ? <Pill tone={statusTone(a.decision)}>{a.decision}</Pill> : null}
                     </div>
                   </td>
                 </tr>
@@ -141,6 +189,18 @@ function ApplicationsList() {
             </tbody>
           </table>
         </div>
+
+        {/* Outside both layouts, so an empty register explains itself at any width. */}
+        {rows.length === 0 ? (
+          <RegisterState
+            isLoading={isLoading}
+            error={error}
+            empty={{
+              title: "No applications in the queue",
+              body: "Processor submissions appear here as they are lodged for review.",
+            }}
+          />
+        ) : null}
       </Panel>
     </>
   );

@@ -17,21 +17,14 @@ import {
   PanelHeader,
   PageHeader,
   Pill,
+  RegisterState,
   StatCard,
   ScoreBar,
   RiskBadge,
   statusTone,
 } from "@/verticals/processing/bpc";
 import { useAppState } from "@/verticals/processing/store";
-import {
-  ENV_ALERTS,
-  EXPIRING_DOCS,
-  INCIDENTS,
-  KPI_TREND,
-  PROCESSORS,
-  REGIONAL_COMPLIANCE,
-  processingTypeLabel,
-} from "@/verticals/processing/mock-data";
+import { processingTypeLabel } from "@/verticals/processing/domain";
 
 export const Route = createFileRoute("/processing/dashboard")({
   head: () => ({
@@ -45,7 +38,8 @@ export const Route = createFileRoute("/processing/dashboard")({
       { property: "og:title", content: "Dashboard · Beldium Processing Compliance" },
       {
         property: "og:description",
-        content: "Role-specific compliance and oversight dashboard for mineral processing facilities.",
+        content:
+          "Role-specific compliance and oversight dashboard for mineral processing facilities.",
       },
     ],
   }),
@@ -54,14 +48,161 @@ export const Route = createFileRoute("/processing/dashboard")({
 
 function DashboardPage() {
   const { user } = useAppState();
+  if (user?.role === "processor") return <ApplicantDashboard />;
   return user?.role === "operator" ? <OperatorDashboard /> : <RegulatorDashboard />;
 }
 
+/**
+ * The applicant's own position: how far their submission has got, what is
+ * still outstanding, and what the desk has asked of them.
+ */
+function ApplicantDashboard() {
+  const { myApplication, nonConformities, inspections, isLoading, error } = useAppState();
+  const openFindings = nonConformities.filter((n) => n.status !== "Closed");
+  const upcoming = inspections.filter((i) => i.status !== "Completed");
+
+  if (!myApplication) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Applicant"
+          title="Your processing compliance application"
+          description="Register your facility with the Beldium compliance desk: ten evidence sections, reviewed one at a time."
+        />
+        <Panel>
+          <RegisterState
+            isLoading={isLoading}
+            error={error}
+            empty={{
+              title: "You have not started an application",
+              body: "Starting one lays down the ten evidence sections and shows exactly what to supply.",
+            }}
+          />
+          <div className="border-t border-border px-5 py-4 text-center">
+            <Link
+              to="/processing/onboarding"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              Start an application
+            </Link>
+          </div>
+        </Panel>
+      </>
+    );
+  }
+
+  const submittable = myApplication.completeness === 100;
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Applicant"
+        title={myApplication.company}
+        description={`${myApplication.id} · ${myApplication.facility || "Facility not named"}`}
+        actions={
+          <Link
+            to="/processing/application"
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Open my application
+          </Link>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard
+          label="Completeness"
+          value={`${myApplication.completeness}%`}
+          hint={submittable ? "Ready to submit" : "Evidence still outstanding"}
+          tone={submittable ? "success" : "warning"}
+          icon={<Gauge className="size-4" />}
+        />
+        <StatCard
+          label="Stage"
+          value={myApplication.stage}
+          hint={myApplication.decision ?? "No decision yet"}
+          icon={<ClipboardCheck className="size-4" />}
+        />
+        <StatCard
+          label="Open findings"
+          value={openFindings.length}
+          hint="Awaiting corrective action"
+          tone={openFindings.length ? "danger" : "success"}
+          icon={<ShieldAlert className="size-4" />}
+        />
+        <StatCard
+          label="Inspections"
+          value={upcoming.length}
+          hint="Requested or scheduled"
+          icon={<CalendarClock className="size-4" />}
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Panel>
+          <PanelHeader
+            title="What the desk is waiting for"
+            subtitle="Findings raised against your application"
+            icon={<AlertTriangle className="size-4" />}
+          />
+          {openFindings.length === 0 ? (
+            <p className="px-5 py-6 text-center text-xs text-muted-foreground">
+              Nothing outstanding. Any finding raised during review will appear here.
+            </p>
+          ) : (
+            <div className="divide-y divide-border">
+              {openFindings.map((finding) => (
+                <Link
+                  key={finding.id}
+                  to="/processing/nonconformities"
+                  className="block px-5 py-3 hover:bg-accent/60"
+                >
+                  <div className="flex items-center gap-2">
+                    <Pill tone={statusTone(finding.severity)}>{finding.severity}</Pill>
+                    <span className="text-[11px] text-muted-foreground">due {finding.due}</span>
+                  </div>
+                  <p className="mt-1 text-xs font-medium">{finding.title}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel>
+          <PanelHeader
+            title="Inspection record"
+            subtitle="Site visits linked to your facility"
+            icon={<ClipboardCheck className="size-4" />}
+          />
+          {upcoming.length === 0 ? (
+            <p className="px-5 py-6 text-center text-xs text-muted-foreground">
+              No inspection is currently scheduled.
+            </p>
+          ) : (
+            <div className="divide-y divide-border">
+              {upcoming.map((inspection) => (
+                <div key={inspection.id} className="px-5 py-3">
+                  <p className="text-xs font-medium">{inspection.facility}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {inspection.type} · {inspection.scheduled} · {inspection.inspector}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+    </>
+  );
+}
+
 function TrendBars() {
-  const max = Math.max(...KPI_TREND.map((k) => k.inspections));
+  const { kpiTrend } = useAppState();
+  // Math.max() of an empty list is -Infinity, which renders every bar wrong.
+  const max = Math.max(1, ...kpiTrend.map((k) => k.inspections));
   return (
     <div className="flex items-end gap-4 px-5 py-5">
-      {KPI_TREND.map((k) => (
+      {kpiTrend.map((k) => (
         <div key={k.month} className="flex flex-1 flex-col items-center gap-2">
           <div className="flex h-32 w-full items-end justify-center gap-1">
             <div
@@ -104,13 +245,22 @@ function Legend() {
 }
 
 function OperatorDashboard() {
-  const { applications, nonConformities, inspections, user } = useAppState();
+  const {
+    applications,
+    nonConformities,
+    inspections,
+    user,
+    processors,
+    envAlerts,
+    incidents,
+    expiringDocs,
+  } = useAppState();
   const pending = applications.filter((a) => a.stage !== "Decided");
   const openNCs = nonConformities.filter((n) => n.status !== "Closed");
   const openInspections = inspections.filter((i) => i.status !== "Completed");
-  const avgRisk = Math.round(
-    applications.reduce((s, a) => s + a.riskScore, 0) / applications.length,
-  );
+  const avgRisk = applications.length
+    ? Math.round(applications.reduce((s, a) => s + a.riskScore, 0) / applications.length)
+    : 0;
 
   return (
     <>
@@ -136,7 +286,7 @@ function OperatorDashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Applications"
           value={applications.length}
@@ -173,7 +323,10 @@ function OperatorDashboard() {
             subtitle="Applications requiring operator action"
             icon={<FileStack className="size-4" />}
             action={
-              <Link to="/processing/applications" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/applications"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 View all
               </Link>
             }
@@ -186,7 +339,11 @@ function OperatorDashboard() {
                 params={{ id: a.id }}
                 className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-accent/60"
               >
-                <div className="min-w-0 flex-1">
+                {/* `flex-wrap` keeps the fixed-width meter and badge on this
+                    line, which squeezed this column to nothing on a phone and
+                    broke the reference one character per line. Taking the full
+                    row below `sm` pushes them onto their own line instead. */}
+                <div className="min-w-0 basis-full sm:flex-1 sm:basis-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-sm font-medium">{a.company}</p>
                     <Pill tone={statusTone(a.stage)}>{a.stage}</Pill>
@@ -195,11 +352,14 @@ function OperatorDashboard() {
                     {a.id} · {processingTypeLabel(a.processingType)} · {a.lga} LGA, {a.state} State
                   </p>
                 </div>
-                <div className="w-32">
+                <div className="min-w-32 flex-1 sm:w-32 sm:flex-none">
                   <p className="mb-1 text-[10px] text-muted-foreground">
                     Completeness {a.completeness}%
                   </p>
-                  <ScoreBar value={a.completeness} tone={a.completeness > 85 ? "success" : "warning"} />
+                  <ScoreBar
+                    value={a.completeness}
+                    tone={a.completeness > 85 ? "success" : "warning"}
+                  />
                 </div>
                 <RiskBadge score={a.riskScore} />
                 <ArrowUpRight className="size-4 text-muted-foreground" />
@@ -216,7 +376,7 @@ function OperatorDashboard() {
               icon={<CalendarClock className="size-4" />}
             />
             <div className="divide-y divide-border">
-              {EXPIRING_DOCS.map((d) => (
+              {expiringDocs.map((d) => (
                 <div key={d.ref} className="px-5 py-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-xs font-medium">{d.doc}</p>
@@ -238,7 +398,10 @@ function OperatorDashboard() {
               subtitle="Flagged and scheduled site visits"
               icon={<ClipboardCheck className="size-4" />}
               action={
-                <Link to="/processing/inspections" className="text-xs font-medium text-primary hover:underline">
+                <Link
+                  to="/processing/inspections"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
                   Open
                 </Link>
               }
@@ -277,7 +440,10 @@ function OperatorDashboard() {
             subtitle="Corrective actions in flight"
             icon={<ShieldAlert className="size-4" />}
             action={
-              <Link to="/processing/nonconformities" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/nonconformities"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 Manage
               </Link>
             }
@@ -303,8 +469,17 @@ function OperatorDashboard() {
 }
 
 function RegulatorDashboard() {
-  const { nonConformities, inspections } = useAppState();
-  const openAlerts = ENV_ALERTS.filter((a) => a.status !== "Resolved");
+  const {
+    nonConformities,
+    inspections,
+    processors,
+    envAlerts,
+    incidents,
+    regionalCompliance,
+    totals,
+  } = useAppState();
+  const openAlerts = envAlerts.filter((a) => a.status !== "Resolved");
+  const facilities = processors.reduce((sum, p) => sum + p.facilities, 0);
 
   return (
     <>
@@ -319,30 +494,30 @@ function RegulatorDashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Registered processors"
-          value={122}
-          hint={`${PROCESSORS.filter((p) => p.status === "Approved").length * 20} facilities nationally`}
+          value={totals?.processors ?? processors.length}
+          hint={`${facilities} ${facilities === 1 ? "facility" : "facilities"} nationally`}
           icon={<Factory className="size-4" />}
         />
         <StatCard
           label="National compliance"
-          value="76%"
-          hint="Weighted mean across 6 regions"
+          value={`${totals?.average_compliance_score ?? 0}%`}
+          hint={`Mean across ${regionalCompliance.length} ${regionalCompliance.length === 1 ? "region" : "regions"}`}
           tone="success"
           icon={<Gauge className="size-4" />}
         />
         <StatCard
           label="Open environmental alerts"
           value={openAlerts.length}
-          hint={`${ENV_ALERTS.filter((a) => a.severity === "Critical").length} critical exceedance`}
+          hint={`${envAlerts.filter((a) => a.severity === "Critical").length} critical exceedance`}
           tone="warning"
           icon={<Leaf className="size-4" />}
         />
         <StatCard
           label="Incidents under investigation"
-          value={INCIDENTS.filter((i) => i.status === "Under Investigation").length}
+          value={incidents.filter((i) => i.status === "Under Investigation").length}
           hint="Reported in the last 30 days"
           tone="danger"
           icon={<Siren className="size-4" />}
@@ -356,13 +531,16 @@ function RegulatorDashboard() {
             subtitle="Processor standing by geopolitical zone"
             icon={<Factory className="size-4" />}
             action={
-              <Link to="/processing/monitoring" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/monitoring"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 Compliance monitoring
               </Link>
             }
           />
           <div className="divide-y divide-border">
-            {REGIONAL_COMPLIANCE.map((r) => (
+            {regionalCompliance.map((r) => (
               <div key={r.region} className="px-5 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-medium">{r.region}</p>
@@ -399,13 +577,16 @@ function RegulatorDashboard() {
               subtitle="Threshold exceedances"
               icon={<Leaf className="size-4" />}
               action={
-                <Link to="/processing/environmental" className="text-xs font-medium text-primary hover:underline">
+                <Link
+                  to="/processing/environmental"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
                   Open
                 </Link>
               }
             />
             <div className="divide-y divide-border">
-              {ENV_ALERTS.slice(0, 3).map((a) => (
+              {envAlerts.slice(0, 3).map((a) => (
                 <div key={a.id} className="px-5 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium">{a.parameter}</p>
@@ -425,7 +606,10 @@ function RegulatorDashboard() {
               subtitle="Scheduled and requested"
               icon={<ClipboardCheck className="size-4" />}
               action={
-                <Link to="/processing/inspections" className="text-xs font-medium text-primary hover:underline">
+                <Link
+                  to="/processing/inspections"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
                   Open
                 </Link>
               }
@@ -464,7 +648,10 @@ function RegulatorDashboard() {
             subtitle="Across all registered processors"
             icon={<AlertTriangle className="size-4" />}
             action={
-              <Link to="/processing/nonconformities" className="text-xs font-medium text-primary hover:underline">
+              <Link
+                to="/processing/nonconformities"
+                className="text-xs font-medium text-primary hover:underline"
+              >
                 Open
               </Link>
             }

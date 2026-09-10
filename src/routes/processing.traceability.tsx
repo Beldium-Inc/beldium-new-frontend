@@ -1,8 +1,15 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Boxes, FlaskConical, Info, PackageCheck, Truck } from "lucide-react";
-import { Panel, PanelHeader, PageHeader, Pill, statusTone } from "@/verticals/processing/bpc";
-import { TRACE_RUNS } from "@/verticals/processing/mock-data";
+import {
+  Panel,
+  PanelHeader,
+  PageHeader,
+  Pill,
+  RegisterState,
+  statusTone,
+} from "@/verticals/processing/bpc";
+import { useAppState } from "@/verticals/processing/store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/traceability")({
@@ -25,14 +32,51 @@ export const Route = createFileRoute("/processing/traceability")({
 });
 
 function TraceabilityPage() {
-  const [selected, setSelected] = React.useState(TRACE_RUNS[0]!.runId);
-  const run = TRACE_RUNS.find((r) => r.runId === selected)!;
+  const { traceRuns, isLoading, error } = useAppState();
+  const [selected, setSelected] = React.useState<string | null>(null);
+  // Nothing is selected until the runs arrive, so fall back to the newest.
+  const run = traceRuns.find((r) => r.runId === selected) ?? traceRuns[0];
+
+  if (!run) {
+    return (
+      <Panel>
+        <RegisterState
+          isLoading={isLoading}
+          error={error}
+          empty={{
+            title: "No production runs recorded",
+            body: "Runs appear here once a processor logs an input batch through to its output batch.",
+          }}
+        />
+      </Panel>
+    );
+  }
 
   const stages = [
-    { icon: Truck, label: "Input batch", id: run.inputBatch, lines: [run.inputSource, run.inputMass] },
-    { icon: Boxes, label: "Production run", id: run.runId, lines: [run.process, `${run.started} → ${run.completed}`] },
-    { icon: PackageCheck, label: "Output batch", id: run.outputBatch, lines: [run.outputMass, `Yield ${run.yield}`] },
-    { icon: FlaskConical, label: "Post-process quality", id: run.qc.verdict, lines: [run.qc.assay, run.qc.lab] },
+    {
+      icon: Truck,
+      label: "Input batch",
+      id: run.inputBatch,
+      lines: [run.inputSource, run.inputMass],
+    },
+    {
+      icon: Boxes,
+      label: "Production run",
+      id: run.runId,
+      lines: [run.process, `${run.started} → ${run.completed}`],
+    },
+    {
+      icon: PackageCheck,
+      label: "Output batch",
+      id: run.outputBatch,
+      lines: [run.outputMass, `Yield ${run.yield}`],
+    },
+    {
+      icon: FlaskConical,
+      label: "Post-process quality",
+      id: run.qc.verdict,
+      lines: [run.qc.assay, run.qc.lab],
+    },
   ];
 
   return (
@@ -47,13 +91,13 @@ function TraceabilityPage() {
         <Info className="mt-0.5 size-4 shrink-0 text-primary" />
         <p className="text-xs text-secondary-foreground">
           <span className="font-semibold">Context, not control.</span> Compliance decisions are made
-          against the ten evidence sections. Batch records are referenced during Operational Controls
-          review and during physical inspection reconciliation.
+          against the ten evidence sections. Batch records are referenced during Operational
+          Controls review and during physical inspection reconciliation.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {TRACE_RUNS.map((r) => (
+        {traceRuns.map((r) => (
           <button
             key={r.runId}
             onClick={() => setSelected(r.runId)}
@@ -65,7 +109,12 @@ function TraceabilityPage() {
             )}
           >
             <p className="font-semibold">{r.runId}</p>
-            <p className={cn("text-[11px]", selected === r.runId ? "opacity-75" : "text-muted-foreground")}>
+            <p
+              className={cn(
+                "text-[11px]",
+                selected === r.runId ? "opacity-75" : "text-muted-foreground",
+              )}
+            >
               {r.facility}
             </p>
           </button>
@@ -113,7 +162,10 @@ function TraceabilityPage() {
       </Panel>
 
       <Panel>
-        <PanelHeader title="All production runs" subtitle="Last 30 days across monitored facilities" />
+        <PanelHeader
+          title="All production runs"
+          subtitle="Last 30 days across monitored facilities"
+        />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
@@ -127,7 +179,7 @@ function TraceabilityPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {TRACE_RUNS.map((r) => (
+              {traceRuns.map((r) => (
                 <tr key={r.runId} className="hover:bg-accent/50">
                   <td className="px-5 py-3 text-xs font-medium">{r.runId}</td>
                   <td className="px-5 py-3 text-xs">{r.inputBatch}</td>
