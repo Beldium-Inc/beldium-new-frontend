@@ -512,8 +512,13 @@ export function OrgApplicationFlow() {
       const result = await submit.mutateAsync();
       navigate({ to: "/onboarding/submitted", search: { id: result.id } });
     } catch (error) {
-      if (error instanceof ApiError && error.code === "applicant_not_verified") {
-        toast.error("Verify your email address before submitting this application.");
+      // Both blocking cases already say exactly what to do, so the API message
+      // is better than anything restated here.
+      if (
+        error instanceof ApiError &&
+        (error.code === "applicant_not_verified" || error.code === "documents_rejected")
+      ) {
+        toast.error(error.message);
         return;
       }
       setFieldErrors(reportError(error, "The application could not be submitted."));
@@ -521,6 +526,18 @@ export function OrgApplicationFlow() {
   };
 
   const progress = application?.progress;
+
+  /**
+   * Why the API would refuse this submission, or null when it would take it.
+   * An incomplete application is not a reason — only an unverified applicant,
+   * or evidence the desk rejected and is still waiting on.
+   */
+  const rejectedDocuments = progress?.documents.rejected ?? [];
+  const blockedReason = progress?.blocking.includes("account")
+    ? "Verify your email address before submitting."
+    : rejectedDocuments.length
+      ? `Replace the rejected ${rejectedDocuments.length > 1 ? "documents" : "document"} first.`
+      : null;
   const documentsByType = useMemo(
     () => new Map((application?.documents ?? []).map((d) => [d.document_type, d])),
     [application?.documents],
@@ -1286,7 +1303,12 @@ export function OrgApplicationFlow() {
               {saving ? "Saving…" : "Save and continue"}
             </Button>
           ) : (
-            <Button size="lg" disabled={submit.isPending} onClick={() => void onSubmit()}>
+            <Button
+              size="lg"
+              disabled={submit.isPending || blockedReason !== null}
+              title={blockedReason ?? undefined}
+              onClick={() => void onSubmit()}
+            >
               <Check className="mr-1 size-4" />{" "}
               {submit.isPending ? "Submitting…" : "Submit application"}
             </Button>
