@@ -14,6 +14,11 @@ import { useAppState } from "@/verticals/processing/store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/inspections")({
+  /** `?ref=` deep-links a single record, so the notification bell can open it. */
+  validateSearch: (search: Record<string, unknown>): { ref?: string } => {
+    const ref = search["ref"];
+    return typeof ref === "string" && ref.trim() ? { ref: ref.trim() } : {};
+  },
   head: () => ({
     meta: [
       { title: "Inspections · Beldium Processing Compliance" },
@@ -46,7 +51,11 @@ function InspectionsPage() {
   const { inspections, updateInspection, capabilities, isLoading, error } = useAppState();
   const [dialog, setDialog] = React.useState<"inspector" | "schedule" | "outcome" | null>(null);
   const readOnly = !capabilities?.can_decide;
-  const [selected, setSelected] = React.useState(inspections[0]?.id ?? "");
+  const { ref } = Route.useSearch();
+  const [selected, setSelected] = React.useState(ref ?? "");
+  React.useEffect(() => {
+    if (ref) setSelected(ref);
+  }, [ref]);
   const active = inspections.find((i) => i.id === selected) ?? inspections[0];
 
   return (

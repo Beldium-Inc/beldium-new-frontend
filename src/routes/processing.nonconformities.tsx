@@ -7,6 +7,11 @@ import { sectionLabel } from "@/verticals/processing/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/processing/nonconformities")({
+  /** `?ref=` deep-links a single record, so the notification bell can open it. */
+  validateSearch: (search: Record<string, unknown>): { ref?: string } => {
+    const ref = search["ref"];
+    return typeof ref === "string" && ref.trim() ? { ref: ref.trim() } : {};
+  },
   head: () => ({
     meta: [
       { title: "Non-conformities · Beldium Processing Compliance" },
@@ -37,7 +42,13 @@ function NCPage() {
   const [filter, setFilter] = React.useState<"All" | "Open" | "Evidence Submitted" | "Closed">(
     "All",
   );
-  const [open, setOpen] = React.useState<string | null>(null);
+  const { ref } = Route.useSearch();
+  // Opened from the bell: show that finding straight away, and let a later
+  // click replace it without the URL fighting the user.
+  const [open, setOpen] = React.useState<string | null>(ref ?? null);
+  React.useEffect(() => {
+    if (ref) setOpen(ref);
+  }, [ref]);
 
   const rows = nonConformities.filter((n) => filter === "All" || n.status === filter);
   const active = nonConformities.find((n) => n.id === open);

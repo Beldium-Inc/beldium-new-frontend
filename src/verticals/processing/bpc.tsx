@@ -67,7 +67,7 @@ export function Pill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap",
+        "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap",
         toneClasses[tone],
         className,
       )}
@@ -104,20 +104,28 @@ export function StatCard({
     <Panel
       onClick={onClick}
       className={cn(
-        "p-5 transition-shadow",
+        "p-4 transition-shadow sm:p-5",
         onClick && "cursor-pointer hover:shadow-[0_14px_40px_-18px_rgba(16,30,61,0.45)]",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase sm:text-xs">
+          {label}
+        </p>
+        {/* Two tiles fit across a phone only if the badge stands down. */}
         {icon ? (
-          <span className={cn("flex size-9 items-center justify-center rounded-xl", accent[tone])}>
+          <span
+            className={cn(
+              "hidden size-9 items-center justify-center rounded-xl sm:flex",
+              accent[tone],
+            )}
+          >
             {icon}
           </span>
         ) : null}
       </div>
-      <p className="mt-3 text-3xl font-semibold text-foreground">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      <p className="mt-2 text-2xl font-semibold text-foreground sm:mt-3 sm:text-3xl">{value}</p>
+      {hint ? <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">{hint}</p> : null}
     </Panel>
   );
 }

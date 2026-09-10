@@ -285,7 +285,41 @@ export type Notification = {
   body: string;
   at: string;
   kind: "info" | "warn" | "error";
+  /**
+   * Where to read the whole record, as the router wants it — path and search
+   * separately, since a `?ref=` folded into the path is not parsed as search.
+   * Null when the target cannot be resolved.
+   */
+  target: { to: string; search?: Record<string, string> } | null;
 };
+
+/**
+ * The screen that holds each kind of record.
+ *
+ * Findings, alerts and inspections all live in a list with a detail panel, so
+ * the reference travels as a search param and the page opens that row. A
+ * document is read inside the application that supplied it, which has a route
+ * of its own.
+ */
+function notificationTarget(
+  entity: Api.ProcessingDashboard["notifications"][number]["entity"],
+  reference: string,
+): Notification["target"] {
+  if (!reference) return null;
+  switch (entity) {
+    case "non_conformity":
+      return { to: "/processing/nonconformities", search: { ref: reference } };
+    case "environmental_alert":
+      return { to: "/processing/environmental", search: { ref: reference } };
+    case "inspection":
+      return { to: "/processing/inspections", search: { ref: reference } };
+    case "document":
+      // A document is read inside the application that supplied it.
+      return { to: `/processing/applications/${reference}` };
+    default:
+      return null;
+  }
+}
 
 export type ReportItem = {
   id: string;
@@ -680,7 +714,14 @@ export function toExpiringDoc(row: Api.ExpiringDocument): ExpiringDoc {
 export function toNotification(
   row: Api.ProcessingDashboard["notifications"][number],
 ): Notification {
-  return { id: row.id, title: row.title, body: row.body, at: relativeTime(row.at), kind: row.kind };
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    at: relativeTime(row.at),
+    kind: row.kind,
+    target: notificationTarget(row.entity, row.reference),
+  };
 }
 
 export function toReportItem(row: Api.ComplianceReport): ReportItem {

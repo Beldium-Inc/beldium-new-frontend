@@ -73,15 +73,18 @@ function ReportsPage() {
         description="Assemble oversight reporting packs from the compliance record. Reports are read-only extracts; they do not alter processor standing."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1.4fr]">
-        <Panel>
+      {/* Grid items default to `min-width: auto`, so the long option labels in
+          the report-type select sized this column past the viewport on a phone.
+          `minmax(0, …)` and `min-w-0` let it shrink to the screen instead. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <Panel className="min-w-0">
           <PanelHeader title="Generate report" subtitle="Composed from current compliance data" />
           <div className="space-y-4 px-5 py-5">
             <Field label="Report type">
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as ReportKind)}
-                className="w-full rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm outline-none focus:border-ring"
+                className="w-full min-w-0 rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm outline-none focus:border-ring"
               >
                 {KINDS.map((k) => (
                   <option key={k.value} value={k.value}>

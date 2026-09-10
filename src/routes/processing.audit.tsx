@@ -63,11 +63,16 @@ function AuditPage() {
               <div className="min-w-0 flex-1 rounded-2xl border border-border px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-medium">{e.action}</p>
-                  <Pill tone="info">{e.target}</Pill>
+                  {/* A target is a reference plus a section name, far longer
+                      than a status chip, so this one wraps rather than running
+                      off a narrow screen. */}
+                  <Pill tone="info" className="break-words whitespace-normal">
+                    {e.target}
+                  </Pill>
                   <span className="ml-auto text-[11px] text-muted-foreground">{e.at}</span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{e.detail}</p>
-                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                <p className="mt-1.5 text-[11px] break-all text-muted-foreground">
                   {e.actor} · {e.role} · event {e.id}
                 </p>
               </div>

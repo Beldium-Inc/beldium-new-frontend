@@ -109,7 +109,7 @@ function ApplicantDashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Completeness"
           value={`${myApplication.completeness}%`}
@@ -286,7 +286,7 @@ function OperatorDashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Applications"
           value={applications.length}
@@ -339,7 +339,11 @@ function OperatorDashboard() {
                 params={{ id: a.id }}
                 className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-accent/60"
               >
-                <div className="min-w-0 flex-1">
+                {/* `flex-wrap` keeps the fixed-width meter and badge on this
+                    line, which squeezed this column to nothing on a phone and
+                    broke the reference one character per line. Taking the full
+                    row below `sm` pushes them onto their own line instead. */}
+                <div className="min-w-0 basis-full sm:flex-1 sm:basis-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-sm font-medium">{a.company}</p>
                     <Pill tone={statusTone(a.stage)}>{a.stage}</Pill>
@@ -348,7 +352,7 @@ function OperatorDashboard() {
                     {a.id} · {processingTypeLabel(a.processingType)} · {a.lga} LGA, {a.state} State
                   </p>
                 </div>
-                <div className="w-32">
+                <div className="min-w-32 flex-1 sm:w-32 sm:flex-none">
                   <p className="mb-1 text-[10px] text-muted-foreground">
                     Completeness {a.completeness}%
                   </p>
@@ -490,7 +494,7 @@ function RegulatorDashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Registered processors"
           value={totals?.processors ?? processors.length}

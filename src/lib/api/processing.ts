@@ -405,6 +405,11 @@ export interface ProcessingDashboard {
     body: string;
     at: string;
     kind: "info" | "warn" | "error";
+    /** What the item is about, so the bell can link through to the record. */
+    entity: "non_conformity" | "environmental_alert" | "document" | "inspection";
+    entity_id: string;
+    /** The reference the register's screens address that record by. */
+    reference: string;
   }[];
   recent_applications: ProcessingApplication[];
   open_alerts: EnvironmentalAlert[];

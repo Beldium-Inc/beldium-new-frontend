@@ -299,25 +299,79 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
                     Notifications
                   </p>
-                  {notifications.map((n) => (
-                    <div key={n.id} className="rounded-xl px-3 py-2 hover:bg-accent">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "size-2 rounded-full",
-                            n.kind === "error"
-                              ? "bg-destructive"
-                              : n.kind === "warn"
-                                ? "bg-warning"
-                                : "bg-primary",
-                          )}
-                        />
-                        <p className="text-xs font-medium">{n.title}</p>
-                        <span className="ml-auto text-[10px] text-muted-foreground">{n.at}</span>
+                  {notifications.length === 0 ? (
+                    <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">
+                      Nothing needs your attention.
+                    </p>
+                  ) : null}
+                  {notifications.map((n) => {
+                    const body = (
+                      <>
+                        <div className="flex items-start gap-2">
+                          <span
+                            className={cn(
+                              "mt-1 size-2 shrink-0 rounded-full",
+                              n.kind === "error"
+                                ? "bg-destructive"
+                                : n.kind === "warn"
+                                  ? "bg-warning"
+                                  : "bg-primary",
+                            )}
+                          />
+                          <p className="text-xs font-medium">{n.title}</p>
+                          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                            {n.at}
+                          </span>
+                        </div>
+                        <p className="mt-1 pl-4 text-[11px] text-muted-foreground">{n.body}</p>
+                        {n.target ? (
+                          <p className="mt-1 pl-4 text-[11px] font-medium text-primary">
+                            View record →
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                    // Only a row that leads somewhere is a link; the rest keep
+                    // the same shape without pretending to be clickable.
+                    return n.target ? (
+                      <Link
+                        key={n.id}
+                        to={n.target.to}
+                        search={n.target.search ?? {}}
+                        onClick={() => setNotifOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-left hover:bg-accent"
+                      >
+                        {body}
+                      </Link>
+                    ) : (
+                      <div key={n.id} className="rounded-xl px-3 py-2">
+                        {body}
                       </div>
-                      <p className="mt-1 pl-4 text-[11px] text-muted-foreground">{n.body}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
+                  <div className="mt-1 flex gap-1 border-t border-border pt-1">
+                    <Link
+                      to="/processing/nonconformities"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex-1 rounded-lg px-3 py-2 text-center text-[11px] font-medium hover:bg-accent"
+                    >
+                      All findings
+                    </Link>
+                    <Link
+                      to="/processing/environmental"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex-1 rounded-lg px-3 py-2 text-center text-[11px] font-medium hover:bg-accent"
+                    >
+                      All alerts
+                    </Link>
+                    <Link
+                      to="/processing/inspections"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex-1 rounded-lg px-3 py-2 text-center text-[11px] font-medium hover:bg-accent"
+                    >
+                      Inspections
+                    </Link>
+                  </div>
                 </div>
               ) : null}
             </div>
