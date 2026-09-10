@@ -24,7 +24,7 @@ Beldium-Mining-Compliance-Hub-2/
 .env
 .env.*
 !.env.example
-
+.env.example
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
