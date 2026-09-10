@@ -19,7 +19,7 @@ dist-ssr
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
-Beldium Mining Compliance Hub 2
+Beldium Mining Compliance Hub 2/
 # Local environment (VITE_* values are public once built; keep the file local anyway)
 .env
 .env.*
