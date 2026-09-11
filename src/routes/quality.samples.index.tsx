@@ -3,7 +3,15 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { PackagePlus } from "lucide-react";
 import { AppShell } from "@/verticals/quality/shell";
-import { EmptyState, PageHeader, Pill, SectionTitle, Stat, StatusPill, Surface } from "@/verticals/quality/ui";
+import {
+  EmptyState,
+  PageHeader,
+  Pill,
+  SectionTitle,
+  Stat,
+  StatusPill,
+  Surface,
+} from "@/verticals/quality/ui";
 import { useBeldium, useBuyerSpecList } from "@/verticals/quality/store";
 
 export const Route = createFileRoute("/quality/samples/")({
@@ -73,14 +81,29 @@ function SamplesPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Total samples" value={state.samples.length} />
-        <Stat label="In transit" value={state.samples.filter((s) => s.status === "in_transit").length} sub="custody open" />
-        <Stat label="Under test" value={state.samples.filter((s) => s.status === "testing").length} tone="pale" />
-        <Stat label="Certified" value={state.samples.filter((s) => s.status === "certified").length} sub="buyer-ready" />
+        <Stat
+          label="In transit"
+          value={state.samples.filter((s) => s.status === "in_transit").length}
+          sub="custody open"
+        />
+        <Stat
+          label="Under test"
+          value={state.samples.filter((s) => s.status === "testing").length}
+          tone="pale"
+        />
+        <Stat
+          label="Certified"
+          value={state.samples.filter((s) => s.status === "certified").length}
+          sub="buyer-ready"
+        />
       </div>
 
       {open && canRegister ? (
         <Surface className="mt-6">
-          <SectionTitle title="Register a new sample" hint="Creates the first custody event and seals the lot" />
+          <SectionTitle
+            title="Register a new sample"
+            hint="Creates the first custody event and seals the lot"
+          />
           <div className="grid gap-4 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
             {(
               [

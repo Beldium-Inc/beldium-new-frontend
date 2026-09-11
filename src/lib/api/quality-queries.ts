@@ -5,21 +5,21 @@ import {
   addCustodyEvent,
   advanceCorrectiveAction,
   assignApplication,
-  closeNonConformity,
+  closeQualityNonConformity,
   createTestRequest,
-  decideApplication,
-  fetchCapabilities,
+  decideQualityApplication,
+  fetchQualityCapabilities,
   fetchQualityDashboard,
-  getApplication,
+  getQualityApplication,
   getCertificate,
   getSample,
   issueCertificate,
-  listApplications,
+  listQualityApplications,
   listBuyerSpecs,
   listCertificates,
-  listNonConformities,
+  listQualityNonConformities,
   listSamples,
-  raiseNonConformity,
+  raiseQualityNonConformity,
   registerSample,
   resolveRiskFlag,
   revokeCertificate,
@@ -27,11 +27,11 @@ import {
   setResultVerdict,
   setSampleStatus,
   submitQualityReview,
-  type ApplicationStatus,
+  type QualityApplicationStatus,
   type DocStatus,
-  type ListQuery,
+  type QualityListQuery,
   type NewSampleInput,
-  type NonConformity,
+  type QualityNonConformity,
   type ResultVerdict,
   type SampleStatus,
 } from "./quality";
@@ -42,14 +42,15 @@ export const qualityKeys = {
   root: ["quality"] as const,
   capabilities: ["quality", "capabilities"] as const,
   dashboard: ["quality", "dashboard"] as const,
-  applications: (query: ListQuery = {}) => ["quality", "applications", query] as const,
+  applications: (query: QualityListQuery = {}) => ["quality", "applications", query] as const,
   application: (id: UUID) => ["quality", "application", id] as const,
-  samples: (query: ListQuery = {}) => ["quality", "samples", query] as const,
+  samples: (query: QualityListQuery = {}) => ["quality", "samples", query] as const,
   sample: (id: UUID) => ["quality", "sample", id] as const,
-  certificates: (query: ListQuery = {}) => ["quality", "certificates", query] as const,
+  certificates: (query: QualityListQuery = {}) => ["quality", "certificates", query] as const,
   certificate: (id: UUID) => ["quality", "certificate", id] as const,
-  buyerSpecs: (query: ListQuery = {}) => ["quality", "buyer-specs", query] as const,
-  nonConformities: (query: ListQuery = {}) => ["quality", "non-conformities", query] as const,
+  buyerSpecs: (query: QualityListQuery = {}) => ["quality", "buyer-specs", query] as const,
+  nonConformities: (query: QualityListQuery = {}) =>
+    ["quality", "non-conformities", query] as const,
 };
 
 /** Lists are large and change slowly; a dashboard remount shouldn't refetch all of them. */
@@ -57,7 +58,7 @@ const LIST_STALE_TIME = 30_000;
 
 // Every screen filters and totals client-side over the whole register, so a
 // partial page would silently under-report.
-const FULL_PAGE: ListQuery = { page_size: 100 };
+const FULL_PAGE: QualityListQuery = { page_size: 100 };
 
 function invalidateQuality(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: qualityKeys.root });
@@ -67,7 +68,7 @@ export function useQualityCapabilities() {
   const hasTokens = useHasTokens();
   return useQuery({
     queryKey: qualityKeys.capabilities,
-    queryFn: ({ signal }) => fetchCapabilities(signal),
+    queryFn: ({ signal }) => fetchQualityCapabilities(signal),
     enabled: hasTokens,
     staleTime: 5 * 60_000,
     retry: false,
@@ -84,11 +85,11 @@ export function useQualityDashboard() {
   });
 }
 
-export function useQualityApplications(query: ListQuery = FULL_PAGE) {
+export function useQualityApplications(query: QualityListQuery = FULL_PAGE) {
   const hasTokens = useHasTokens();
   return useQuery({
     queryKey: qualityKeys.applications(query),
-    queryFn: () => listApplications(query),
+    queryFn: () => listQualityApplications(query),
     enabled: hasTokens,
     staleTime: LIST_STALE_TIME,
   });
@@ -97,12 +98,12 @@ export function useQualityApplications(query: ListQuery = FULL_PAGE) {
 export function useQualityApplication(id: UUID | null) {
   return useQuery({
     queryKey: qualityKeys.application(id ?? "none"),
-    queryFn: () => getApplication(id as UUID),
+    queryFn: () => getQualityApplication(id as UUID),
     enabled: Boolean(id),
   });
 }
 
-export function useQualitySamples(query: ListQuery = FULL_PAGE) {
+export function useQualitySamples(query: QualityListQuery = FULL_PAGE) {
   const hasTokens = useHasTokens();
   return useQuery({
     queryKey: qualityKeys.samples(query),
@@ -120,7 +121,7 @@ export function useQualitySample(id: UUID | null) {
   });
 }
 
-export function useQualityCertificates(query: ListQuery = FULL_PAGE) {
+export function useQualityCertificates(query: QualityListQuery = FULL_PAGE) {
   const hasTokens = useHasTokens();
   return useQuery({
     queryKey: qualityKeys.certificates(query),
@@ -138,7 +139,7 @@ export function useQualityCertificate(id: UUID | null) {
   });
 }
 
-export function useBuyerSpecs(query: ListQuery = FULL_PAGE) {
+export function useBuyerSpecs(query: QualityListQuery = FULL_PAGE) {
   const hasTokens = useHasTokens();
   return useQuery({
     queryKey: qualityKeys.buyerSpecs(query),
@@ -148,11 +149,11 @@ export function useBuyerSpecs(query: ListQuery = FULL_PAGE) {
   });
 }
 
-export function useQualityNonConformities(query: ListQuery = FULL_PAGE) {
+export function useQualityNonConformities(query: QualityListQuery = FULL_PAGE) {
   const hasTokens = useHasTokens();
   return useQuery({
     queryKey: qualityKeys.nonConformities(query),
-    queryFn: () => listNonConformities(query),
+    queryFn: () => listQualityNonConformities(query),
     enabled: hasTokens,
     staleTime: LIST_STALE_TIME,
   });
@@ -178,11 +179,14 @@ export function useResolveRiskFlag() {
   });
 }
 
-export function useDecideApplication() {
+export function useDecideQualityApplication() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; status: ApplicationStatus; note?: string | undefined }) =>
-      decideApplication(input.id, { status: input.status, note: input.note }),
+    mutationFn: (input: {
+      id: UUID;
+      status: QualityApplicationStatus;
+      note?: string | undefined;
+    }) => decideQualityApplication(input.id, { status: input.status, note: input.note }),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }
@@ -242,7 +246,11 @@ export function useSetResultVerdict() {
       resultId: UUID;
       verdict: ResultVerdict;
       value?: string | undefined;
-    }) => setResultVerdict(input.sampleId, input.resultId, { verdict: input.verdict, value: input.value }),
+    }) =>
+      setResultVerdict(input.sampleId, input.resultId, {
+        verdict: input.verdict,
+        value: input.value,
+      }),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }
@@ -259,7 +267,8 @@ export function useSubmitQualityReview() {
 export function useSetSampleStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; status: SampleStatus }) => setSampleStatus(input.id, input.status),
+    mutationFn: (input: { id: UUID; status: SampleStatus }) =>
+      setSampleStatus(input.id, input.status),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }
@@ -286,9 +295,9 @@ export function useRaiseNonConformity() {
     mutationFn: (input: {
       title: string;
       against: string;
-      severity: NonConformity["severity"];
+      severity: QualityNonConformity["severity"];
       detail: string;
-    }) => raiseNonConformity(input),
+    }) => raiseQualityNonConformity(input),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }
@@ -311,10 +320,10 @@ export function useAdvanceCorrectiveAction() {
   });
 }
 
-export function useCloseNonConformity() {
+export function useCloseQualityNonConformity() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: UUID) => closeNonConformity(id),
+    mutationFn: (id: UUID) => closeQualityNonConformity(id),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }

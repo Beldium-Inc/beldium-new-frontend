@@ -8,6 +8,8 @@ export * from "./logistics-queries";
 export * from "./organisations";
 export * from "./processing";
 export * from "./processing-queries";
+export * from "./quality";
+export * from "./quality-queries";
 export * from "./queries";
 export * from "./tokens";
 export * from "./types";

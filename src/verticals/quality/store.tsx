@@ -8,9 +8,9 @@ import {
   useAdvanceCorrectiveAction,
   useAssignApplication,
   useBuyerSpecs,
-  useCloseNonConformity,
+  useCloseQualityNonConformity,
   useCreateTestRequest,
-  useDecideApplication,
+  useDecideQualityApplication,
   useIssueCertificate,
   useQualityApplications,
   useQualityCapabilities,
@@ -161,7 +161,7 @@ function toBuyerSpec(row: Api.BuyerSpec): BuyerSpec {
   };
 }
 
-function toNonConformity(row: Api.NonConformity): NonConformity {
+function toNonConformity(row: Api.QualityNonConformity): NonConformity {
   return {
     id: row.id,
     ref: row.reference,
@@ -193,7 +193,7 @@ interface State {
 
 interface Ctx {
   ready: boolean;
-  user: { name: string; title: string; org: string; initials: string } | null;
+  user: { role: Role; name: string; title: string; org: string; initials: string } | null;
   role: Role | null;
   state: State;
   logout: () => void;
@@ -214,7 +214,12 @@ interface Ctx {
     sampleId: string,
     input: { methods: string[]; priority: "standard" | "expedited"; turnaround: string },
   ) => void;
-  setResultVerdict: (sampleId: string, resultId: string, verdict: ResultVerdict, value?: string) => void;
+  setResultVerdict: (
+    sampleId: string,
+    resultId: string,
+    verdict: ResultVerdict,
+    value?: string,
+  ) => void;
   submitQualityReview: (sampleId: string, verdict: ResultVerdict, note: string) => void;
   setSampleStatus: (sampleId: string, status: SampleStatus) => void;
   issueCertificate: (sampleId: string) => Promise<string>;
@@ -256,7 +261,7 @@ export function BeldiumProvider({
 
   const setDocStatusFor = useSetDocumentStatus();
   const resolveFlagFor = useResolveRiskFlag();
-  const decideApplicationFor = useDecideApplication();
+  const decideApplicationFor = useDecideQualityApplication();
   const assignApplicationFor = useAssignApplication();
   const registerSampleFor = useRegisterSample();
   const addCustodyFor = useAddCustodyEvent();
@@ -268,7 +273,7 @@ export function BeldiumProvider({
   const raiseNonConformityFor = useRaiseNonConformity();
   const addCorrectiveActionFor = useAddCorrectiveAction();
   const advanceCorrectiveActionFor = useAdvanceCorrectiveAction();
-  const closeNonConformityFor = useCloseNonConformity();
+  const closeNonConformityFor = useCloseQualityNonConformity();
 
   const effectiveRole: Role = capabilities.data?.role ?? role;
 
@@ -280,6 +285,7 @@ export function BeldiumProvider({
     const initials =
       parts.length === 0 ? "??" : (parts[0]![0]! + (parts[1]?.[0] ?? "")).toUpperCase();
     return {
+      role: effectiveRole,
       name,
       title: ROLE_TITLE[effectiveRole],
       org: roleMeta[effectiveRole]?.label ?? "Beldium Quality & Control",
@@ -305,7 +311,12 @@ export function BeldiumProvider({
   );
 
   const queries = [
-    currentUser, capabilities, applicationsQuery, samplesQuery, certificatesQuery, nonConformitiesQuery,
+    currentUser,
+    capabilities,
+    applicationsQuery,
+    samplesQuery,
+    certificatesQuery,
+    nonConformitiesQuery,
   ];
   const isLoading = queries.some((query) => query.isPending);
   const firstError = queries.map((query) => query.error).find(Boolean) ?? null;

@@ -27,7 +27,8 @@ export const Route = createFileRoute("/quality/samples/$id")({
       { property: "og:title", content: "Sample dossier | Beldium" },
       {
         property: "og:description",
-        content: "Custody timeline, results, buyer-spec matching and quality review in one dossier.",
+        content:
+          "Custody timeline, results, buyer-spec matching and quality review in one dossier.",
       },
     ],
   }),
@@ -114,7 +115,10 @@ function SampleDetail() {
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           <Surface>
-            <SectionTitle title="Sample registration" hint="Identity fixed at the moment of sealing" />
+            <SectionTitle
+              title="Sample registration"
+              hint="Identity fixed at the moment of sealing"
+            />
             <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
               <Field label="Sample ref" value={sample.ref} />
               <Field label="Lot" value={sample.lot} />
@@ -178,7 +182,10 @@ function SampleDetail() {
           </Surface>
 
           <Surface>
-            <SectionTitle title="Test request" hint="Methods must fall inside the partner's accredited scope" />
+            <SectionTitle
+              title="Test request"
+              hint="Methods must fall inside the partner's accredited scope"
+            />
             {sample.testRequest ? (
               <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
                 <Field label="Requested" value={sample.testRequest.requestedAt} />
@@ -306,7 +313,10 @@ function SampleDetail() {
           </Surface>
 
           <Surface>
-            <SectionTitle title="Quality review" hint="Independent technical sign-off before certification" />
+            <SectionTitle
+              title="Quality review"
+              hint="Independent technical sign-off before certification"
+            />
             {sample.qualityReview ? (
               <div className="px-6 py-5">
                 <div className="flex flex-wrap items-center gap-3">
@@ -362,7 +372,10 @@ function SampleDetail() {
               {(spec?.limits ?? []).map((l) => {
                 const res = sample.results.find((r) => r.analyte === l.analyte);
                 return (
-                  <div key={l.analyte} className="flex items-center justify-between gap-2 px-6 py-3">
+                  <div
+                    key={l.analyte}
+                    className="flex items-center justify-between gap-2 px-6 py-3"
+                  >
                     <div>
                       <p className="text-sm font-medium text-navy">{l.analyte}</p>
                       <p className="text-xs text-muted-foreground">{l.rule}</p>
