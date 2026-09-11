@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { PackagePlus } from "lucide-react";
 import { AppShell } from "@/verticals/quality/shell";
 import { EmptyState, PageHeader, Pill, SectionTitle, Stat, StatusPill, Surface } from "@/verticals/quality/ui";
-import { buyerSpecs, useBeldium } from "@/verticals/quality/store";
+import { useBeldium, useBuyerSpecList } from "@/verticals/quality/store";
 
 export const Route = createFileRoute("/quality/samples/")({
   head: () => ({
@@ -31,6 +31,7 @@ export const Route = createFileRoute("/quality/samples/")({
 
 function SamplesPage() {
   const { state, role, registerSample } = useBeldium();
+  const buyerSpecs = useBuyerSpecList();
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState({
@@ -39,8 +40,15 @@ function SamplesPage() {
     mineSite: "Kivu Ridge Pit 4",
     origin: "South Kivu, DRC",
     massKg: "10",
-    buyerSpecId: buyerSpecs[0]!.id,
+    buyerSpecId: "",
   });
+
+  React.useEffect(() => {
+    if (!form.buyerSpecId && buyerSpecs.length > 0) {
+      setForm((f) => ({ ...f, buyerSpecId: buyerSpecs[0]!.id }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buyerSpecs]);
 
   const canRegister = role === "miner" || role === "operator";
 
@@ -128,12 +136,12 @@ function SamplesPage() {
           <div className="flex gap-2 px-6 pb-6">
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (!form.lot.trim()) {
                   toast.error("A lot reference is required");
                   return;
                 }
-                const id = registerSample({
+                const id = await registerSample({
                   material: form.material,
                   lot: form.lot,
                   mineSite: form.mineSite,

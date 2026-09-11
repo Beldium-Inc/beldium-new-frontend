@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/partner/activity")({
   head: () => ({
@@ -17,8 +16,8 @@ export const Route = createFileRoute("/logistics/partner/activity")({
 });
 
 function ActivityPage() {
-  const { companies } = useApp();
-  const c = companies.find((x) => x.id === PRIMARY_COMPANY_ID)!;
+  const { myCompany } = useApp();
+  const c = myCompany!;
 
   return (
     <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Activity" }]}>

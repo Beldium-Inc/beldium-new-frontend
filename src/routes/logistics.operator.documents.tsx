@@ -4,7 +4,7 @@ import { CalendarClock, FileClock } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, ComplianceBanner } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill, StatCard } from "@/verticals/logistics/bits";
-import { expiringDocuments } from "@/verticals/logistics/mock-data";
+import { useApp } from "@/verticals/logistics/store";
 
 export const Route = createFileRoute("/logistics/operator/documents")({
   head: () => ({
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/logistics/operator/documents")({
 });
 
 function ExpiringDocs() {
+  const { expiringDocuments } = useApp();
   const [query, setQuery] = React.useState("");
   const [severity, setSeverity] = React.useState("All");
 

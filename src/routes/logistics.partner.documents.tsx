@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { DocStatusBadge, PageHeader, Panel } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/partner/documents")({
   head: () => ({
@@ -20,8 +19,8 @@ export const Route = createFileRoute("/logistics/partner/documents")({
 });
 
 function PartnerDocuments() {
-  const { companies } = useApp();
-  const c = companies.find((x) => x.id === PRIMARY_COMPANY_ID)!;
+  const { myCompany } = useApp();
+  const c = myCompany!;
   const [query, setQuery] = React.useState("");
   const docs = c.documents.filter((d) => [d.name, d.category, d.issuer, d.reference].join(" ").toLowerCase().includes(query.toLowerCase()));
 

@@ -28,7 +28,7 @@ import {
 import { AppShell, ComplianceBanner } from "@/verticals/logistics/AppShell";
 import { KeyValue, PageHeader, Panel, Pill, RiskBadge, StatCard, StatusBadge } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { complianceTrend, expiringDocuments, riskDistribution } from "@/verticals/logistics/mock-data";
+import { complianceTrend, riskDistribution } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/operator/")({
   head: () => ({
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/logistics/operator/")({
 });
 
 function OperatorDashboard() {
-  const { companies, requests, notifications } = useApp();
+  const { companies, requests, notifications, expiringDocuments } = useApp();
   const navigate = useNavigate();
   const [query, setQuery] = React.useState("");
 

@@ -3,6 +3,8 @@ export * from "./config";
 export * from "./client";
 export * from "./compliance";
 export * from "./errors";
+export * from "./logistics";
+export * from "./logistics-queries";
 export * from "./organisations";
 export * from "./processing";
 export * from "./processing-queries";
