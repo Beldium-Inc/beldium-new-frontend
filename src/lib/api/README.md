@@ -74,7 +74,18 @@ through `lib/api/logistics.ts` / `lib/api/logistics-queries.ts` rather than
 `verticals/logistics/mock-data.ts`; the mock module now only supplies the `Company`,
 `Vehicle`, `Driver`, `ComplianceDocument`, `CheckSection`, `InfoRequest`, `Notification`,
 `AuditEntry` and `Role` types the store builds real objects against (its seed arrays are
-unused). The other five dashboards still run on their own local prototype stores.
+unused).
+
+**Marketplace is wired too.** `verticals/marketplace/store.tsx` reads and writes through
+`lib/api/marketplace.ts` / `lib/api/marketplace-queries.ts` rather than
+`verticals/marketplace/demo-data.ts`; that module now only supplies the `Application`,
+`Miner`, `Rfq`, `OrderRow`, `Notification` and `Role` view types the store builds real
+objects against (its seed arrays are gone).
+
+**Mining is wired too, and is the last vertical converted.** `verticals/mining/store.tsx`
+reads and writes through `lib/api/mining.ts` / `lib/api/mining-queries.ts` rather than a
+local `data.ts` (deleted); `verticals/mining/types.ts` now only supplies the camelCase view
+types the store's `mappers.ts` adapters build real objects against.
 
 Oversight reports are compiled server-side and downloaded as PDFs; the composer on the
 reports page posts to `/processing/reports/generate/` and the library lists what has been
@@ -128,3 +139,54 @@ write is addressed by. The store owns the map between them.
 Only the application **detail** response carries the ten evidence sections, so the review
 screen reads through `useApplicationDetail(reference)` rather than picking its row out of the
 queue.
+
+### How the marketplace vertical is wired
+
+```
+lib/api/marketplace.ts             fetchers + the DRF shapes, field-for-field
+lib/api/marketplace-queries.ts     TanStack hooks; every write invalidates ["marketplace"]
+verticals/marketplace/demo-data.ts the camelCase view types the screens read
+verticals/marketplace/store.tsx    one provider that runs the reads, exposes the writes, and
+                                    adapts API rows into those view types inline
+```
+
+The register is close enough to the wire format that a separate `domain.ts` adapter file
+wasn't needed — the conversions (applicant type, risk band, non-conformity severity, order
+stage) live at the top of `store.tsx`, the same way `verticals/processing/store.tsx` folds
+its own translation in rather than splitting it out.
+
+`createRfq` is the one action the screens call for its return value (the new RFQ's id, to
+navigate straight to its aggregation page), so it returns a `Promise<string>` rather than
+firing and forgetting like every other action here; the one call site awaits it.
+
+### How the mining vertical is wired
+
+```
+lib/api/mining.ts             fetchers + the DRF shapes, field-for-field
+lib/api/mining-queries.ts     TanStack hooks; every write invalidates ["mining"]
+verticals/mining/mappers.ts   snake_case/machine-value ↔ camelCase/display-label maps, plus
+                               the row adapters (API shape → verticals/mining/types.ts shape)
+verticals/mining/store.tsx    one provider that runs the reads, exposes the writes, and
+                               composes the register's read-side view from them
+```
+
+Mining's register is entity-heavy — sites, licences, applications, inspections, samples,
+non-conformities, environmental records, safety incidents, equipment, info requests and
+organisation KYC profiles all live under `/mining/*` — so, unlike marketplace, the adapters
+get their own file (`mappers.ts`) rather than living inline in `store.tsx`.
+
+A handful of API names collide with an identically-named export already in a sibling
+vertical's module (`processing.ts` chiefly, since both registers use the same evidence-review
+shape): `Inspection`, `NonConformity`, `Sample`, `ListQuery`, `Checklist`, `SectionField`,
+`ApplicationStatus` and their sibling functions/hooks are exported from `mining.ts` /
+`mining-queries.ts` with a `Mining` prefix (`MiningInspection`, `MiningNonConformity`,
+`useCreateMiningApplication`, …) so the barrel file's `export *` stays unambiguous — the same
+convention `quality.ts` (`QualityApplicationStatus`) and `export.ts` established.
+
+Only the site **detail** response (`GET /mining/sites/:id/`) carries the ten review sections;
+the list read used by `useStore().sites` omits them. The review screen instead reads through
+`useSiteDetail(siteId)`, mirroring `useApplicationDetail` in processing.
+
+A site's licence isn't addressed by a `licenceId` foreign key on the mining side — licences
+point at their site (`LicenceDoc.siteId`), not the other way round — so screens look one up
+with `licences.find(l => l.siteId === site.id)` rather than through the site row.

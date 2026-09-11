@@ -19,7 +19,8 @@ export const Route = createFileRoute("/marketplace/rfqs/")({
       { property: "og:title", content: "RFQs | Beldium Marketplace" },
       {
         property: "og:description",
-        content: "Publish a million-tonne offtake request and aggregate verified supply to fill it.",
+        content:
+          "Publish a million-tonne offtake request and aggregate verified supply to fill it.",
       },
     ],
   }),
@@ -43,14 +44,14 @@ function RfqsPage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const submit = () => {
+  const submit = async () => {
     const volume = Number(form.volumeTonnes);
     const price = Number(form.targetPriceUsd);
     if (!volume || !price) {
       toast.error("Volume and target price are required.");
       return;
     }
-    const id = createRfq({
+    const id = await createRfq({
       commodity: form.commodity,
       grade: form.grade,
       volumeTonnes: volume,
@@ -79,7 +80,11 @@ function RfqsPage() {
               return (
                 <li key={r.id} className="py-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <Link to="/marketplace/rfqs/$id" params={{ id: r.id }} className="font-medium hover:underline">
+                    <Link
+                      to="/marketplace/rfqs/$id"
+                      params={{ id: r.id }}
+                      className="font-medium hover:underline"
+                    >
                       {r.reference}
                     </Link>
                     <StatusBadge status={r.status} />
@@ -91,8 +96,8 @@ function RfqsPage() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {r.commodity} {r.grade} · {r.incoterm} {r.destination} · {r.deliveryWindow} · target $
-                    {r.targetPriceUsd}/t
+                    {r.commodity} {r.grade} · {r.incoterm} {r.destination} · {r.deliveryWindow} ·
+                    target ${r.targetPriceUsd}/t
                   </p>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
@@ -113,13 +118,25 @@ function RfqsPage() {
           <div className="grid gap-3">
             <Field label="Commodity" value={form.commodity} onChange={set("commodity")} />
             <Field label="Grade / specification" value={form.grade} onChange={set("grade")} />
-            <Field label="Volume (tonnes)" value={form.volumeTonnes} onChange={set("volumeTonnes")} />
+            <Field
+              label="Volume (tonnes)"
+              value={form.volumeTonnes}
+              onChange={set("volumeTonnes")}
+            />
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Incoterm" value={form.incoterm} onChange={set("incoterm")} />
-              <Field label="Target price ($/t)" value={form.targetPriceUsd} onChange={set("targetPriceUsd")} />
+              <Field
+                label="Target price ($/t)"
+                value={form.targetPriceUsd}
+                onChange={set("targetPriceUsd")}
+              />
             </div>
             <Field label="Destination" value={form.destination} onChange={set("destination")} />
-            <Field label="Delivery window" value={form.deliveryWindow} onChange={set("deliveryWindow")} />
+            <Field
+              label="Delivery window"
+              value={form.deliveryWindow}
+              onChange={set("deliveryWindow")}
+            />
             <Button onClick={submit}>
               <Sparkles className="size-4" /> Publish & aggregate supply
             </Button>

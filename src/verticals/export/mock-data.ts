@@ -5,11 +5,7 @@
 export type Role = "operator" | "exporter" | "regulator";
 
 export type DocStatus =
-  | "pending"
-  | "verified"
-  | "rejected"
-  | "replacement_requested"
-  | "clarification_requested";
+  "pending" | "verified" | "rejected" | "replacement_requested" | "clarification_requested";
 
 export type DocNote = {
   at: string;
@@ -81,7 +77,11 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   audit: "Audit Trail",
 };
 
-export type Field = { label: string; value: string; flag?: "warn" | "fail" };
+export type Field = {
+  label: string;
+  value?: string | undefined;
+  flag?: "warn" | "fail" | undefined;
+};
 
 export type ChecklistItem = {
   id: string;
@@ -144,13 +144,15 @@ export type Shipment = {
   checklist: ChecklistItem[];
   nonConformities: NonConformity[];
   audit: AuditEntry[];
-  decision?: {
-    outcome: "cleared" | "conditionally_cleared" | "declined";
-    by: string;
-    at: string;
-    rationale: string;
-    conditions?: string | undefined;
-  };
+  decision?:
+    | {
+        outcome: "cleared" | "conditionally_cleared" | "declined";
+        by: string;
+        at: string;
+        rationale: string;
+        conditions?: string | undefined;
+      }
+    | undefined;
 };
 
 export type MonitoringEvent = {
@@ -159,8 +161,8 @@ export type MonitoringEvent = {
   severity: "info" | "warning" | "critical";
   title: string;
   detail: string;
-  shipmentId?: string;
-  exporterId?: string;
+  shipmentId?: string | undefined;
+  exporterId?: string | undefined;
 };
 
 export const DISCLAIMER =

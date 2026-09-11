@@ -58,7 +58,9 @@ export function Stat({
   return (
     <div className="card-surface px-5 py-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
         {icon && <span className="text-muted-foreground">{icon}</span>}
       </div>
       <p className={cn("mt-2 font-display text-2xl font-semibold", toneClass)}>{value}</p>
@@ -139,7 +141,7 @@ export function RiskPill({ score, band }: { score: number; band: "low" | "medium
 export function FieldGrid({
   fields,
 }: {
-  fields: { label: string; value: string; flag?: "warn" | "fail" }[];
+  fields: { label: string; value?: string | undefined; flag?: "warn" | "fail" | undefined }[];
 }) {
   return (
     <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">

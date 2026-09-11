@@ -27,7 +27,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/verticals/mining/store";
-import { users } from "@/verticals/mining/data";
 import { navForRole } from "./nav";
 import { Chip } from "./chips";
 import { BeldiumLogo } from "@/components/beldium-logo";
@@ -50,16 +49,27 @@ const icons: Record<string, typeof Gauge> = {
   receipt: Receipt,
 };
 
-const roleLabel = { partner: "Mining Compliance Partner", miner: "Miner", regulator: "Regulatory Oversight" } as const;
+const roleLabel = {
+  partner: "Mining Compliance Partner",
+  miner: "Miner",
+  regulator: "Regulatory Oversight",
+} as const;
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { role, logout, notifications, markNotificationsRead, resetDemo } = useStore();
+  const {
+    role,
+    user: account,
+    logout,
+    notifications,
+    markNotificationsRead,
+    resetDemo,
+  } = useStore();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!role) return null;
-  const user = users[role];
+  const user = account ?? { name: "", initials: "??", title: "" };
   const items = navForRole(role);
   const groups = [...new Set(items.map((i) => i.group))];
   const mine = notifications.filter((n) => n.audience.includes(role));
@@ -75,7 +85,9 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="flex items-center gap-2.5 px-5 py-5">
         <BeldiumLogo className="size-9 rounded-md" />
         <div className="leading-tight">
-          <p className="font-display text-sm font-semibold text-sidebar-accent-foreground">Beldium</p>
+          <p className="font-display text-sm font-semibold text-sidebar-accent-foreground">
+            Beldium
+          </p>
           <p className="text-[11px] text-sidebar-foreground/70">Mining Compliance</p>
         </div>
       </div>
@@ -83,13 +95,17 @@ export function Shell({ children }: { children: ReactNode }) {
         <nav className="space-y-5 pb-6">
           {groups.map((group) => (
             <div key={group}>
-              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">{group}</p>
+              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+                {group}
+              </p>
               <ul className="space-y-0.5">
                 {items
                   .filter((i) => i.group === group)
                   .map((item) => {
                     const Icon = icons[item.icon] ?? Gauge;
-                    const active = pathname === item.to || (item.to !== "/mining/dashboard" && pathname.startsWith(item.to));
+                    const active =
+                      pathname === item.to ||
+                      (item.to !== "/mining/dashboard" && pathname.startsWith(item.to));
                     return (
                       <li key={item.to}>
                         <Link
@@ -113,7 +129,7 @@ export function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
       </ScrollArea>
-      <div className="border-t border-sidebar-border p-3">
+      {/* <div className="border-t border-sidebar-border p-3">
         <button
           onClick={resetDemo}
           className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[12px] text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -123,7 +139,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <p className="px-2.5 pt-2 text-[10px] leading-relaxed text-sidebar-foreground/50">
           Prototype: seeded demo data, no live systems connected.
         </p>
-      </div>
+      </div> */}
     </div>
   );
 
@@ -134,13 +150,23 @@ export function Shell({ children }: { children: ReactNode }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div className="w-64 shadow-panel">{sidebar}</div>
-          <button aria-label="Close navigation" className="flex-1 bg-foreground/40" onClick={() => setMobileOpen(false)} />
+          <button
+            aria-label="Close navigation"
+            className="flex-1 bg-foreground/40"
+            onClick={() => setMobileOpen(false)}
+          />
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-surface px-4 lg:px-6">
-          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen((v) => !v)} aria-label="Toggle navigation">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle navigation"
+          >
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
           <div className="min-w-0 flex-1">
@@ -151,7 +177,13 @@ export function Shell({ children }: { children: ReactNode }) {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative" aria-label="Notifications" onClick={() => markNotificationsRead()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                aria-label="Notifications"
+                onClick={() => markNotificationsRead()}
+              >
                 <Bell className="size-5" />
                 {unread > 0 && (
                   <span className="absolute top-1.5 right-1.5 grid size-4 place-items-center rounded-full bg-danger text-[9px] font-bold text-danger-foreground">
@@ -171,9 +203,21 @@ export function Shell({ children }: { children: ReactNode }) {
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-[13px] font-medium">{n.title}</p>
                         <Chip
-                          tone={n.tone === "positive" ? "success" : n.tone === "negative" ? "danger" : n.tone === "warning" ? "warning" : "neutral"}
+                          tone={
+                            n.tone === "positive"
+                              ? "success"
+                              : n.tone === "negative"
+                                ? "danger"
+                                : n.tone === "warning"
+                                  ? "warning"
+                                  : "neutral"
+                          }
                         >
-                          {n.tone === "positive" ? "Update" : n.tone === "negative" ? "Action" : "Notice"}
+                          {n.tone === "positive"
+                            ? "Update"
+                            : n.tone === "negative"
+                              ? "Action"
+                              : "Notice"}
                         </Chip>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">{n.body}</p>
