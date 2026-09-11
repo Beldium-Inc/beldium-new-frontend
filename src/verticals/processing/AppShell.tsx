@@ -200,7 +200,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <BeldiumLogo className="size-10" />
         <div className="leading-tight">
           <p className="text-sm font-semibold">Beldium</p>
-          <p className="text-[11px] text-sidebar-foreground/70">Processing Compliance</p>
+          <p className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">Processing Compliance</p>
         </div>
         <button
           className="ml-auto rounded-lg p-1.5 text-sidebar-foreground/70 lg:hidden"

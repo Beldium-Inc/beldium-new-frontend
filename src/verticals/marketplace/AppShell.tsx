@@ -54,13 +54,13 @@ export function AppShell({
 
   useEffect(() => setOpen(false), [pathname]);
 
-  if (!hydrated || !state.role) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading workspace…
-      </div>
-    );
-  }
+  // if (!hydrated || !state.role) {
+  //   return (
+  //     <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+  //       Loading workspace…
+  //     </div>
+  //   );
+  // }
 
   const persona = ROLE_PERSONA[state.role];
   const unread = state.notifications.filter(
@@ -78,7 +78,7 @@ export function AppShell({
       >
         <div className="flex items-center justify-between px-6 py-6">
           <Link to="/marketplace/dashboard" className="flex items-center gap-2.5">
-            <BeldiumLogo className="size-9 rounded-md" />
+            <BeldiumLogo className="size-10 rounded-3xl" />
             <span className="font-display text-base leading-tight font-semibold">
               Beldium
               <span className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">
@@ -100,7 +100,7 @@ export function AppShell({
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-3xl px-3 py-2.5 text-sm font-medium transition-colors",
                   active
                     ? "bg-secondary text-secondary-foreground"
                     : "text-primary-foreground/75 hover:bg-primary-foreground/10 hover:text-primary-foreground",

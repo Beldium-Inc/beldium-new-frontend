@@ -7,17 +7,17 @@ import { BeldiumLogo } from "@/components/beldium-logo";
 export function BeldiumMark({ className, dark = false }: { className?: string; dark?: boolean }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <BeldiumLogo className="h-9 w-9" />
+      <BeldiumLogo className="size-10 rounded-3xl" />
       <span className="leading-tight">
         <span
           className={cn(
-            "block font-display text-[15px] font-semibold tracking-tight",
+            "block font-display text-[14px] font-semibold tracking-tight",
             dark ? "text-white" : "text-[var(--brand)]",
           )}
         >
           Beldium
         </span>
-        <span className={cn("block text-[11px]", dark ? "text-white/60" : "text-muted-foreground")}>
+        <span className={cn("block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase", dark ? "text-white/60" : "text-muted-foreground")}>
           Logistics Compliance
         </span>
       </span>
