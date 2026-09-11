@@ -83,12 +83,12 @@ export function Shell({ children }: { children: ReactNode }) {
   const sidebar = (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <BeldiumLogo className="size-9 rounded-md" />
+        <BeldiumLogo className="size-10 rounded-3xl" />
         <div className="leading-tight">
           <p className="font-display text-sm font-semibold text-sidebar-accent-foreground">
             Beldium
           </p>
-          <p className="text-[11px] text-sidebar-foreground/70">Mining Compliance</p>
+          <p className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">Mining Compliance</p>
         </div>
       </div>
       <ScrollArea className="flex-1 px-3">
@@ -112,7 +112,7 @@ export function Shell({ children }: { children: ReactNode }) {
                           to={item.to}
                           onClick={() => setMobileOpen(false)}
                           className={cn(
-                            "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors",
+                            "flex items-center gap-2.5 rounded-3xl px-2.5 py-2 text-[13px] font-medium transition-colors",
                             active
                               ? "bg-sidebar-primary text-sidebar-primary-foreground"
                               : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

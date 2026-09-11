@@ -147,14 +147,14 @@ export function AppShell({
   const unread = notifications.filter((n) => n.audience.includes(role) && !n.read).length;
 
   const sidebar = (
-    <div className="flex h-full flex-col bg-[var(--brand)]">
-      <div className="border-b border-white/10 px-5 py-4">
+    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+      <div className="px-5 py-5">
         <BeldiumMark dark />
       </div>
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-6">
         {NAV[role].map((group) => (
           <div key={group.group}>
-            <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.14em] text-white/40 uppercase">
+            <p className="px-2 pb-1.5 text-[10px] font-semibold tracking-wider text-sidebar-foreground/50 uppercase">
               {group.group}
             </p>
             <ul className="space-y-0.5">
@@ -163,10 +163,10 @@ export function AppShell({
                   <Link
                     to={item.to}
                     activeOptions={{ exact: item.exact ?? false }}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white data-[status=active]:bg-white/12 data-[status=active]:font-medium data-[status=active]:text-white"
-                    activeProps={{ className: "bg-white/15 text-white font-medium" }}
+                    className="flex items-center gap-2.5 rounded-3xl px-2.5 py-2 text-[13px] font-medium text-sidebar-foreground/85 transition-colors "
+                    activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className="size-4 shrink-0" />
                     <span className="truncate">{item.label}</span>
                   </Link>
                 </li>
@@ -175,18 +175,18 @@ export function AppShell({
           </div>
         ))}
       </nav>
-      <div className="border-t border-white/10 p-4">
-        <div className="rounded-lg bg-white/5 p-3">
-          <p className="text-xs font-medium text-white">{session.person}</p>
-          <p className="mt-0.5 text-[11px] text-white/50">{session.title}</p>
-          <p className="text-[11px] text-white/50">{session.org}</p>
+      <div className="border-t border-sidebar-border p-3">
+        <div className="rounded-lg bg-sidebar-accent p-3">
+          <p className="text-xs font-medium text-sidebar-accent-foreground">{session.person}</p>
+          <p className="mt-0.5 text-[11px] text-sidebar-foreground/60">{session.title}</p>
+          <p className="text-[11px] text-sidebar-foreground/60">{session.org}</p>
           <button
             type="button"
             onClick={() => {
               signOut();
               navigate({ to: "/signin" });
             }}
-            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-white/20 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-white/10"
+            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-sidebar-border px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground transition hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
           >
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>
