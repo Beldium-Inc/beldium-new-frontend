@@ -201,7 +201,7 @@ function TrendBars() {
   // Math.max() of an empty list is -Infinity, which renders every bar wrong.
   const max = Math.max(1, ...kpiTrend.map((k) => k.inspections));
   return (
-    <div className="flex items-end gap-4 px-5 py-5">
+    <div className="flex items-end pt-40 gap-4 px-5 py-5">
       {kpiTrend.map((k) => (
         <div key={k.month} className="flex flex-1 flex-col items-center gap-2">
           <div className="flex h-32 w-full items-end justify-center gap-1">
