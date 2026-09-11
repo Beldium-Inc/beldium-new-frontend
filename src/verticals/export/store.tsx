@@ -1,13 +1,30 @@
 import * as React from "react";
+
+import { ApiError } from "@/lib/api/errors";
 import {
-  DEMO_USERS,
-  EXPORTERS,
-  MONITORING_EVENTS,
-  SHIPMENTS,
+  useAddShipmentAuditNote,
+  useClaimShipment,
+  useCreateShipment,
+  useDecideExportShipment,
+  useExportCapabilities,
+  useExporters,
+  useMonitoringEvents,
+  useRaiseExportNonConformity,
+  useReviewExportDocument,
+  useSetChecklistItemState,
+  useShipments,
+  useUpdateExportNonConformity,
+} from "@/lib/api/export-queries";
+import type {
+  Exporter as ApiExporter,
+  ExportDocStatus,
+  MonitoringEvent as ApiMonitoringEvent,
+  Shipment as ApiShipment,
+} from "@/lib/api/export";
+import { useCurrentUser } from "@/lib/api/queries";
+import {
   type AuditEntry,
   type ChecklistItem,
-  type DemoUser,
-  type DocStatus,
   type Exporter,
   type MonitoringEvent,
   type NonConformity,
@@ -21,29 +38,147 @@ type State = {
   events: MonitoringEvent[];
 };
 
-const STORAGE_KEY = "beldium.export.v1";
-
-const initialState: State = {
-  shipments: SHIPMENTS,
-  exporters: EXPORTERS,
-  events: MONITORING_EVENTS,
+export type SessionUser = {
+  id: string;
+  name: string;
+  role: Role;
+  title: string;
+  org: string;
+  initials: string;
+  exporterId?: string;
 };
 
-function now() {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+const ROLE_TITLE: Record<Role, string> = {
+  operator: "Compliance Partner / Operator",
+  exporter: "Export Manager",
+  regulator: "Regulatory Oversight User",
+};
+
+const ROLE_ORG: Record<Role, string> = {
+  operator: "Beldium Compliance Services",
+  exporter: "Registered exporter",
+  regulator: "Solid Minerals Oversight Desk",
+};
+
+function initialsOf(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "??";
+  return (parts[0]![0]! + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+function toViewExporter(e: ApiExporter): Exporter {
+  return {
+    id: e.id,
+    name: e.name,
+    rcNumber: e.rc_number,
+    state: e.state,
+    contact: e.contact_name,
+    email: e.contact_email,
+    phone: e.contact_phone,
+    minerals: e.minerals,
+    verification: e.verification,
+    complianceScore: e.compliance_score,
+    onboarded: e.onboarded_on,
+    licences: e.licences.map((l) => ({
+      name: l.name,
+      ref: l.ref,
+      expires: l.expires_on ?? "-",
+      status: l.status,
+    })),
+    kyc: e.kyc,
+  };
+}
+
+function toViewChecklist(c: ApiShipment["checklist"][number]): ChecklistItem {
+  return { id: c.id, label: c.label, section: c.section, state: c.state, detail: c.detail };
+}
+
+function toViewNonConformity(n: ApiShipment["non_conformities"][number]): NonConformity {
+  return {
+    id: n.id,
+    title: n.title,
+    severity: n.severity,
+    section: n.section,
+    raisedBy: n.raised_by,
+    raisedAt: n.raised_at,
+    status: n.status,
+    detail: n.detail,
+    response: n.response || undefined,
+  };
+}
+
+function toViewAudit(a: ApiShipment["audit"][number]): AuditEntry {
+  return { at: a.at, actor: a.actor, role: a.role, action: a.action, detail: a.detail };
+}
+
+function toViewShipment(s: ApiShipment): Shipment {
+  return {
+    id: s.id,
+    reference: s.reference,
+    exporterId: s.exporter,
+    mineral: s.mineral,
+    hsCode: s.hs_code,
+    grade: s.grade,
+    quantity: s.quantity,
+    destination: s.destination,
+    buyer: s.buyer,
+    port: s.port,
+    incoterm: s.incoterm,
+    valueUsd: s.value_usd,
+    etd: s.etd,
+    submitted: s.submitted_on,
+    status: s.status,
+    riskScore: s.risk_score,
+    riskBand: s.risk_band,
+    riskFactors: s.risk_factors,
+    sections: s.sections,
+    documents: s.documents.map((d) => ({
+      id: d.id,
+      name: d.name,
+      category: d.category,
+      issuer: d.issuer,
+      reference: d.reference,
+      issued: d.issued_on,
+      expires: d.expires_on ?? undefined,
+      status: d.status,
+      mandatory: d.mandatory,
+      notes: d.notes,
+    })),
+    checklist: s.checklist.map(toViewChecklist),
+    nonConformities: s.non_conformities.map(toViewNonConformity),
+    audit: s.audit.map(toViewAudit),
+    decision: s.decision
+      ? {
+          outcome: s.decision.outcome,
+          by: s.decision.by,
+          at: s.decision.at,
+          rationale: s.decision.rationale,
+          conditions: s.decision.conditions || undefined,
+        }
+      : undefined,
+  };
+}
+
+function toViewEvent(e: ApiMonitoringEvent): MonitoringEvent {
+  return {
+    id: e.id,
+    at: e.at,
+    severity: e.severity,
+    title: e.title,
+    detail: e.detail,
+    shipmentId: e.shipment ?? undefined,
+    exporterId: e.exporter ?? undefined,
+  };
 }
 
 type Ctx = {
   state: State;
-  user: DemoUser | null;
+  user: SessionUser | null;
   logout: () => void;
-  resetDemo: () => void;
   documentAction: (
     shipmentId: string,
     docId: string,
-    status: DocStatus,
+    status: ExportDocStatus,
     action: string,
     comment: string,
   ) => void;
@@ -64,12 +199,18 @@ type Ctx = {
     rationale: string,
     conditions?: string,
   ) => void;
-  addShipment: (draft: Partial<Shipment> & { mineral: string }) => string;
+  addShipment: (draft: Partial<Shipment> & { mineral: string }) => Promise<string>;
   regulatorAction: (shipmentId: string, action: string, detail: string) => void;
   log: (shipmentId: string, action: string, detail: string) => void;
+  /** True until the first read of every list has settled. */
+  isLoading: boolean;
+  /** The first failure across the loaded queries, or null. */
+  error: ApiError | null;
 };
 
 const StoreContext = React.createContext<Ctx | null>(null);
+
+const EMPTY_LIST = { results: [] };
 
 export function StoreProvider({
   children,
@@ -81,279 +222,105 @@ export function StoreProvider({
   role: Role;
   onSignOut: () => void;
 }) {
-  const user = DEMO_USERS.find((u) => u.role === role) ?? null;
-  const [state, setState] = React.useState<State>(initialState);
-  const [hydrated, setHydrated] = React.useState(false);
+  const currentUser = useCurrentUser();
+  const capabilities = useExportCapabilities();
+  const exporters = useExporters();
+  const shipments = useShipments();
+  const events = useMonitoringEvents();
 
-  React.useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setState({ ...initialState, ...(JSON.parse(raw) as State) });
-    } catch {
-      /* ignore */
-    }
-    setHydrated(true);
-  }, []);
+  const reviewDocumentFor = useReviewExportDocument();
+  const setChecklistItemFor = useSetChecklistItemState();
+  const raiseNonConformityFor = useRaiseExportNonConformity();
+  const updateNonConformityFor = useUpdateExportNonConformity();
+  const claimShipmentFor = useClaimShipment();
+  const decideShipmentFor = useDecideExportShipment();
+  const createShipmentFor = useCreateShipment();
+  const addAuditNoteFor = useAddShipmentAuditNote();
 
-  React.useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* ignore */
-    }
-  }, [state, hydrated]);
+  // The browser stores which dashboard the user picked at sign-in, but an
+  // account the API only grants oversight to must not be shown the operator's
+  // chrome. Choosing the lighter view stays allowed; claiming the heavier one
+  // does not — see the equivalent guard in the processing store.
+  const audience = capabilities.data?.audience;
+  const effectiveRole: Role =
+    audience === "regulator" ? "regulator" : audience === "exporter" ? "exporter" : role;
 
-  const actorName = user?.name ?? "Demo user";
-  const actorRole: Role | "system" = user?.role ?? "system";
+  const user = React.useMemo<SessionUser | null>(() => {
+    const account = currentUser.data;
+    if (!account) return null;
+    const name = [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
+    return {
+      id: account.id,
+      name,
+      role: effectiveRole,
+      title: ROLE_TITLE[effectiveRole],
+      org: ROLE_ORG[effectiveRole],
+      initials: initialsOf(name),
+      exporterId: capabilities.data?.exporter ?? undefined,
+    };
+  }, [currentUser.data, effectiveRole, capabilities.data?.exporter]);
 
-  const patchShipment = React.useCallback(
-    (id: string, fn: (s: Shipment) => Shipment) =>
-      setState((prev) => ({
-        ...prev,
-        shipments: prev.shipments.map((s) => (s.id === id ? fn(s) : s)),
-      })),
-    [],
+  const shipmentRows = React.useMemo(
+    () => (shipments.data ?? EMPTY_LIST).results.map(toViewShipment),
+    [shipments.data],
   );
+  const exporterRows = React.useMemo(
+    () => (exporters.data ?? EMPTY_LIST).results.map(toViewExporter),
+    [exporters.data],
+  );
+  const eventRows = React.useMemo(() => (events.data ?? EMPTY_LIST).results.map(toViewEvent), [events.data]);
 
-  const appendAudit = (s: Shipment, action: string, detail: string): AuditEntry[] => [
-    ...s.audit,
-    { at: now(), actor: actorName, role: actorRole, action, detail },
-  ];
+  const state: State = { shipments: shipmentRows, exporters: exporterRows, events: eventRows };
+
+  const queries = [currentUser, capabilities, exporters, shipments, events];
+  const isLoading = queries.some((query) => query.isPending);
+  const firstError = queries.map((query) => query.error).find(Boolean) ?? null;
 
   const value: Ctx = {
     state,
     user,
     logout: onSignOut,
-    resetDemo: () => setState(initialState),
-    log: (shipmentId, action, detail) =>
-      patchShipment(shipmentId, (s) => ({ ...s, audit: appendAudit(s, action, detail) })),
-    documentAction: (shipmentId, docId, status, action, comment) =>
-      patchShipment(shipmentId, (s) => {
-        const target = s.documents.find((d) => d.id === docId);
-        return {
-          ...s,
-          documents: s.documents.map((d) =>
-            d.id === docId
-              ? {
-                  ...d,
-                  status,
-                  notes: [...d.notes, { at: now(), by: actorName, action, comment }],
-                }
-              : d,
-          ),
-          audit: appendAudit(s, action, `${target?.name ?? docId}${comment ? `: ${comment}` : ""}`),
-        };
-      }),
-    toggleChecklist: (shipmentId, itemId, itemState) =>
-      patchShipment(shipmentId, (s) => {
-        const item = s.checklist.find((c) => c.id === itemId);
-        return {
-          ...s,
-          checklist: s.checklist.map((c) => (c.id === itemId ? { ...c, state: itemState } : c)),
-          audit: appendAudit(
-            s,
-            "Checklist updated",
-            `${item?.label ?? itemId} marked ${itemState.toUpperCase()}`,
-          ),
-        };
-      }),
-    raiseNonConformity: (shipmentId, nc) =>
-      patchShipment(shipmentId, (s) => ({
-        ...s,
-        status: s.status === "cleared" ? s.status : "info_requested",
-        nonConformities: [
-          ...s.nonConformities,
-          {
-            id: `NC-${s.reference.slice(-4)}-${s.nonConformities.length + 1}`,
-            raisedBy: actorName,
-            raisedAt: now().slice(0, 10),
-            status: "open",
-            ...nc,
-          },
-        ],
-        audit: appendAudit(s, "Non-conformity raised", `${nc.title} (${nc.severity})`),
-      })),
-    updateNonConformity: (shipmentId, ncId, patch) =>
-      patchShipment(shipmentId, (s) => ({
-        ...s,
-        nonConformities: s.nonConformities.map((n) => (n.id === ncId ? { ...n, ...patch } : n)),
-        audit: appendAudit(s, "Non-conformity updated", `${ncId} → ${patch.status ?? "response added"}`),
-      })),
-    claimShipment: (shipmentId) =>
-      patchShipment(shipmentId, (s) => ({
-        ...s,
-        status: s.status === "submitted" ? "in_review" : s.status,
-        sections: {
-          ...s.sections,
-          overview: (s.sections.overview ?? []).map((f) =>
-            f.label === "Assigned reviewer" ? { label: f.label, value: actorName } : f,
-          ),
-        },
-        audit: appendAudit(s, "Review started", `Assigned to ${actorName}`),
-      })),
-    decide: (shipmentId, outcome, rationale, conditions) =>
-      patchShipment(shipmentId, (s) => ({
-        ...s,
-        status: outcome,
-        decision: { outcome, by: actorName, at: now(), rationale, conditions },
-        audit: appendAudit(
-          s,
-          "Compliance decision",
-          `${outcome.replace(/_/g, " ")}: ${rationale.slice(0, 90)}`,
-        ),
-      })),
-    addShipment: (draft) => {
-      const seq = 500 + state.shipments.length;
-      const id = `SHP-2026-0${seq}`;
-      const exporterId = user?.exporterId ?? "EXP-1042";
-      const exporter = state.exporters.find((e) => e.id === exporterId);
-      const base: Shipment = {
-        id,
-        reference: `BEL/NEW/0${seq}`,
-        exporterId,
-        mineral: draft.mineral,
-        hsCode: draft.hsCode ?? "-",
-        grade: draft.grade ?? "-",
-        quantity: draft.quantity ?? "-",
-        destination: draft.destination ?? "-",
-        buyer: draft.buyer ?? "-",
-        port: draft.port ?? "Apapa Port, Lagos",
-        incoterm: draft.incoterm ?? "FOB",
-        valueUsd: draft.valueUsd ?? 0,
-        etd: draft.etd ?? "-",
-        submitted: now().slice(0, 10),
-        status: "submitted",
-        riskScore: 45,
-        riskBand: "medium",
-        riskFactors: [
-          { label: "New submission", weight: 20, note: "No operator review performed yet." },
-          {
-            label: "Exporter track record",
-            weight: 15,
-            note: `Compliance score ${exporter?.complianceScore ?? "-"}.`,
-          },
-          { label: "Document completeness", weight: 10, note: "Mandatory document set not yet uploaded." },
-        ],
-        sections: {
-          overview: [
-            { label: "Consignment reference", value: `BEL/NEW/0${seq}` },
-            { label: "Compliance stage", value: "Awaiting operator pickup" },
-            { label: "Days to ETD", value: draft.etd ?? "-" },
-            { label: "Assigned reviewer", value: "Unassigned", flag: "warn" },
-            { label: "Beldium record type", value: "Compliance verification record (not a government permit)" },
-          ],
-          exporter: [
-            { label: "Exporter", value: exporter?.name ?? "-" },
-            { label: "RC number", value: exporter?.rcNumber ?? "-" },
-            { label: "Verification state", value: exporter?.verification ?? "-" },
-            { label: "Compliance score", value: `${exporter?.complianceScore ?? "-"} / 100` },
-          ],
-          product: [
-            { label: "Commodity", value: draft.mineral },
-            { label: "HS code", value: draft.hsCode ?? "-" },
-            { label: "Grade / spec", value: draft.grade ?? "-" },
-            { label: "Packaging", value: draft.sections?.product?.[3]?.value ?? "To be declared" },
-          ],
-          quantity: [
-            { label: "Declared net weight", value: draft.quantity ?? "-" },
-            { label: "Weighbridge total", value: "Not supplied", flag: "warn" },
-            { label: "Reconciliation status", value: "Pending" },
-          ],
-          financial: [
-            { label: "Invoice value", value: `USD ${(draft.valueUsd ?? 0).toLocaleString()}` },
-            { label: "Incoterm", value: draft.incoterm ?? "FOB" },
-            { label: "NXP form", value: "Not opened", flag: "warn" },
-          ],
-          logistics: [
-            { label: "Loading port", value: draft.port ?? "-" },
-            { label: "Destination", value: draft.destination ?? "-" },
-            { label: "Buyer", value: draft.buyer ?? "-" },
-            { label: "ETD", value: draft.etd ?? "-" },
-          ],
-          regulatory: [
-            { label: "Beldium record status", value: "Not started" },
-            { label: "Mineral export permit", value: "To be supplied", flag: "warn" },
-          ],
-        },
-        documents: [
-          {
-            id: "D1",
-            name: "Commercial Invoice",
-            category: "Financial",
-            issuer: exporter?.name ?? "Exporter",
-            reference: "-",
-            issued: now().slice(0, 10),
-            status: "pending",
-            mandatory: true,
-            notes: [],
-          },
-          {
-            id: "D2",
-            name: "Packing List",
-            category: "Logistics",
-            issuer: exporter?.name ?? "Exporter",
-            reference: "-",
-            issued: now().slice(0, 10),
-            status: "pending",
-            mandatory: true,
-            notes: [],
-          },
-          {
-            id: "D3",
-            name: "Independent Assay Certificate",
-            category: "Quality",
-            issuer: "To be appointed",
-            reference: "-",
-            issued: "-",
-            status: "pending",
-            mandatory: true,
-            notes: [],
-          },
-          {
-            id: "D4",
-            name: "Mineral Export Permit",
-            category: "Regulatory",
-            issuer: "Mines Inspectorate",
-            reference: "-",
-            issued: "-",
-            status: "pending",
-            mandatory: true,
-            notes: [],
-          },
-        ],
-        checklist: [
-          { id: "C1", label: "Exporter verification current", section: "exporter", state: "open", detail: "To be confirmed by operator." },
-          { id: "C2", label: "All mandatory documents verified", section: "documents", state: "open", detail: "0 of 4 verified." },
-          { id: "C3", label: "Independent assay on file", section: "quality", state: "open", detail: "Not supplied." },
-          { id: "C4", label: "Quantity reconciled to weighbridge", section: "quantity", state: "open", detail: "Not supplied." },
-          { id: "C5", label: "Export permit valid through ETD", section: "regulatory", state: "open", detail: "Not supplied." },
-        ],
-        nonConformities: [],
-        audit: [
-          { at: now(), actor: actorName, role: actorRole, action: "Shipment submitted", detail: "Created from the exporter portal." },
-          { at: now(), actor: "Beldium Engine", role: "system", action: "Risk scored", detail: "Provisional score 45 (medium)." },
-        ],
-      };
-      setState((prev) => ({
-        ...prev,
-        shipments: [base, ...prev.shipments],
-        events: [
-          {
-            id: `EV-${900 + prev.events.length}`,
-            at: now(),
-            severity: "info",
-            title: "New consignment submitted",
-            detail: `${base.reference} submitted by ${exporter?.name ?? "exporter"}, awaiting operator pickup.`,
-            shipmentId: base.id,
-          },
-          ...prev.events,
-        ],
-      }));
-      return id;
+    documentAction: (shipmentId, docId, status, action, comment) => {
+      void reviewDocumentFor.mutateAsync({ id: docId, status, action, comment });
     },
-    regulatorAction: (shipmentId, action, detail) =>
-      patchShipment(shipmentId, (s) => ({ ...s, audit: appendAudit(s, action, detail) })),
+    toggleChecklist: (shipmentId, itemId, itemState) => {
+      void setChecklistItemFor.mutateAsync({ shipmentId, itemId, state: itemState });
+    },
+    raiseNonConformity: (shipmentId, nc) => {
+      void raiseNonConformityFor.mutateAsync({ shipment: shipmentId, ...nc });
+    },
+    updateNonConformity: (shipmentId, ncId, patch) => {
+      void updateNonConformityFor.mutateAsync({ id: ncId, ...patch });
+    },
+    claimShipment: (shipmentId) => {
+      void claimShipmentFor.mutateAsync(shipmentId);
+    },
+    decide: (shipmentId, outcome, rationale, conditions) => {
+      void decideShipmentFor.mutateAsync({ id: shipmentId, outcome, rationale, conditions });
+    },
+    addShipment: async (draft) => {
+      const created = await createShipmentFor.mutateAsync({
+        mineral: draft.mineral,
+        hs_code: draft.hsCode,
+        grade: draft.grade,
+        quantity: draft.quantity,
+        buyer: draft.buyer,
+        destination: draft.destination,
+        port: draft.port,
+        incoterm: draft.incoterm,
+        value_usd: draft.valueUsd,
+        etd: draft.etd,
+      });
+      return created.id;
+    },
+    regulatorAction: (shipmentId, action, detail) => {
+      void addAuditNoteFor.mutateAsync({ shipmentId, action, detail });
+    },
+    log: (shipmentId, action, detail) => {
+      void addAuditNoteFor.mutateAsync({ shipmentId, action, detail });
+    },
+    isLoading,
+    error: firstError instanceof ApiError ? firstError : null,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

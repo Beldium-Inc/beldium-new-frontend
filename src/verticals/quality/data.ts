@@ -1,9 +1,6 @@
 import type { Role } from "./types";
 
-export const roleMeta: Record<
-  Role,
-  { label: string; tagline: string; color: string }
-> = {
+export const roleMeta: Record<Role, { label: string; tagline: string; color: string }> = {
   operator: {
     label: "Compliance Operator",
     tagline: "Verifies Quality & Control Partners and owns the decision record",

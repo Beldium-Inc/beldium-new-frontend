@@ -16,7 +16,7 @@ export interface QualityCapabilities {
   is_staff: boolean;
 }
 
-export type ApplicationStatus =
+export type QualityApplicationStatus =
   "submitted" | "in_review" | "info_requested" | "approved" | "rejected";
 
 export type DocStatus = "pending" | "verified" | "flagged" | "expired";
@@ -63,7 +63,7 @@ export interface QualityApplication {
   id: UUID;
   reference: string;
   submitted_at: string;
-  status: ApplicationStatus;
+  status: QualityApplicationStatus;
   assigned_to: string;
   risk_score: number;
   organisation: {
@@ -198,7 +198,7 @@ export interface CorrectiveAction {
   status: "open" | "in_progress" | "complete";
 }
 
-export interface NonConformity {
+export interface QualityNonConformity {
   id: UUID;
   reference: string;
   title: string;
@@ -228,7 +228,7 @@ export interface QualityDashboard {
 
 // --- capabilities and dashboard ----------------------------------------------
 
-export function fetchCapabilities(signal?: AbortSignal): Promise<QualityCapabilities> {
+export function fetchQualityCapabilities(signal?: AbortSignal): Promise<QualityCapabilities> {
   return apiFetch<QualityCapabilities>(`${BASE}/me/`, { signal });
 }
 
@@ -238,7 +238,7 @@ export function fetchQualityDashboard(signal?: AbortSignal): Promise<QualityDash
 
 // --- applications -------------------------------------------------------------
 
-export interface ListQuery {
+export interface QualityListQuery {
   page?: number;
   page_size?: number;
   search?: string;
@@ -246,11 +246,13 @@ export interface ListQuery {
   [key: string]: string | number | boolean | null | undefined;
 }
 
-export function listApplications(query: ListQuery = {}): Promise<Paginated<QualityApplication>> {
+export function listQualityApplications(
+  query: QualityListQuery = {},
+): Promise<Paginated<QualityApplication>> {
   return apiFetch<Paginated<QualityApplication>>(`${BASE}/applications/`, { query });
 }
 
-export function getApplication(id: UUID): Promise<QualityApplication> {
+export function getQualityApplication(id: UUID): Promise<QualityApplication> {
   return apiFetch<QualityApplication>(`${BASE}/applications/${id}/`);
 }
 
@@ -271,9 +273,9 @@ export function resolveRiskFlag(appId: UUID, flagId: UUID): Promise<RiskFlag> {
   });
 }
 
-export function decideApplication(
+export function decideQualityApplication(
   id: UUID,
-  input: { status: ApplicationStatus; note?: string | undefined },
+  input: { status: QualityApplicationStatus; note?: string | undefined },
 ): Promise<QualityApplication> {
   return apiFetch<QualityApplication>(`${BASE}/applications/${id}/decide/`, {
     method: "POST",
@@ -287,7 +289,7 @@ export function assignApplication(id: UUID): Promise<QualityApplication> {
 
 // --- samples --------------------------------------------------------------------
 
-export function listSamples(query: ListQuery = {}): Promise<Paginated<Sample>> {
+export function listSamples(query: QualityListQuery = {}): Promise<Paginated<Sample>> {
   return apiFetch<Paginated<Sample>>(`${BASE}/samples/`, { query });
 }
 
@@ -346,7 +348,7 @@ export function setSampleStatus(id: UUID, status: SampleStatus): Promise<Sample>
 
 // --- certificates -----------------------------------------------------------
 
-export function listCertificates(query: ListQuery = {}): Promise<Paginated<Certificate>> {
+export function listCertificates(query: QualityListQuery = {}): Promise<Paginated<Certificate>> {
   return apiFetch<Paginated<Certificate>>(`${BASE}/certificates/`, { query });
 }
 
@@ -364,23 +366,28 @@ export function revokeCertificate(id: UUID): Promise<Certificate> {
 
 // --- buyer specs --------------------------------------------------------------
 
-export function listBuyerSpecs(query: ListQuery = {}): Promise<Paginated<BuyerSpec>> {
+export function listBuyerSpecs(query: QualityListQuery = {}): Promise<Paginated<BuyerSpec>> {
   return apiFetch<Paginated<BuyerSpec>>(`${BASE}/buyer-specs/`, { query });
 }
 
 // --- non-conformities -----------------------------------------------------------
 
-export function listNonConformities(query: ListQuery = {}): Promise<Paginated<NonConformity>> {
-  return apiFetch<Paginated<NonConformity>>(`${BASE}/non-conformities/`, { query });
+export function listQualityNonConformities(
+  query: QualityListQuery = {},
+): Promise<Paginated<QualityNonConformity>> {
+  return apiFetch<Paginated<QualityNonConformity>>(`${BASE}/non-conformities/`, { query });
 }
 
-export function raiseNonConformity(input: {
+export function raiseQualityNonConformity(input: {
   title: string;
   against: string;
-  severity: NonConformity["severity"];
+  severity: QualityNonConformity["severity"];
   detail: string;
-}): Promise<NonConformity> {
-  return apiFetch<NonConformity>(`${BASE}/non-conformities/`, { method: "POST", body: input });
+}): Promise<QualityNonConformity> {
+  return apiFetch<QualityNonConformity>(`${BASE}/non-conformities/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function addCorrectiveAction(
@@ -393,15 +400,14 @@ export function addCorrectiveAction(
   });
 }
 
-export function advanceCorrectiveAction(
-  ncId: UUID,
-  actionId: UUID,
-): Promise<CorrectiveAction> {
+export function advanceCorrectiveAction(ncId: UUID, actionId: UUID): Promise<CorrectiveAction> {
   return apiFetch<CorrectiveAction>(`${BASE}/non-conformities/${ncId}/capa/${actionId}/advance/`, {
     method: "POST",
   });
 }
 
-export function closeNonConformity(id: UUID): Promise<NonConformity> {
-  return apiFetch<NonConformity>(`${BASE}/non-conformities/${id}/close/`, { method: "POST" });
+export function closeQualityNonConformity(id: UUID): Promise<QualityNonConformity> {
+  return apiFetch<QualityNonConformity>(`${BASE}/non-conformities/${id}/close/`, {
+    method: "POST",
+  });
 }
