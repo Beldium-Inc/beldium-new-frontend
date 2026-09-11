@@ -12,7 +12,7 @@ import {
   StatusPill,
   Surface,
 } from "@/verticals/quality/ui";
-import { buyerSpecs, useBeldium } from "@/verticals/quality/store";
+import { useBeldium, useBuyerSpecList } from "@/verticals/quality/store";
 import type { ResultVerdict } from "@/verticals/quality/types";
 
 export const Route = createFileRoute("/quality/samples/$id")({
@@ -59,6 +59,7 @@ function SampleDetail() {
     issueCertificate,
     raiseNonConformity,
   } = useBeldium();
+  const buyerSpecs = useBuyerSpecList();
 
   const sample = state.samples.find((s) => s.id === id);
   const [methods, setMethods] = React.useState<string[]>([methodOptions[0]!]);
@@ -389,8 +390,8 @@ function SampleDetail() {
               ) : isPartner && sample.qualityReview && sample.qualityReview.verdict !== "fail" ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    const newId = issueCertificate(sample.id);
+                  onClick={async () => {
+                    const newId = await issueCertificate(sample.id);
                     toast.success("Certificate issued");
                     navigate({ to: "/quality/certificates/$id", params: { id: newId } });
                   }}

@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/partner/requests")({
   head: () => ({
@@ -20,8 +19,8 @@ export const Route = createFileRoute("/logistics/partner/requests")({
 });
 
 function PartnerRequests() {
-  const { requests } = useApp();
-  const mine = requests.filter((r) => r.companyId === PRIMARY_COMPANY_ID);
+  const { requests, myCompany } = useApp();
+  const mine = requests.filter((r) => r.companyId === myCompany?.id);
 
   return (
     <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Information requests" }]}>

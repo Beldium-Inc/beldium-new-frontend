@@ -3,7 +3,6 @@ import { Building2, MapPin } from "lucide-react";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { KeyValue, PageHeader, Panel, Pill } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/partner/company")({
   head: () => ({
@@ -18,8 +17,8 @@ export const Route = createFileRoute("/logistics/partner/company")({
 });
 
 function CompanyPage() {
-  const { companies } = useApp();
-  const c = companies.find((x) => x.id === PRIMARY_COMPANY_ID)!;
+  const { myCompany } = useApp();
+  const c = myCompany!;
 
   return (
     <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Company information" }]}>

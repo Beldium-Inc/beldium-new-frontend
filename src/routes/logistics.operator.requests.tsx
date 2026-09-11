@@ -5,7 +5,6 @@ import { AppShell } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
 import { RequestInfoModal } from "./logistics.operator.applications.$companyId";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/operator/requests")({
   head: () => ({
@@ -20,7 +19,7 @@ export const Route = createFileRoute("/logistics/operator/requests")({
 });
 
 function RequestsPage() {
-  const { requests } = useApp();
+  const { requests, companies } = useApp();
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState("All");
   const [open, setOpen] = React.useState(false);
@@ -109,7 +108,9 @@ function RequestsPage() {
           </Panel>
         ) : null}
       </div>
-      {open ? <RequestInfoModal companyId={PRIMARY_COMPANY_ID} onClose={() => setOpen(false)} /> : null}
+      {open && companies[0] ? (
+        <RequestInfoModal companyId={companies[0].id} onClose={() => setOpen(false)} />
+      ) : null}
     </AppShell>
   );
 }

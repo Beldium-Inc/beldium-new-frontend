@@ -67,8 +67,14 @@ organisation register and join requests.
 
 **Processing Compliance is fully wired, on both sides of the desk.** Every screen under
 `/processing` reads this API and every action writes to it; `verticals/processing` holds no
-fixture data any more. The other six dashboards still run on their own local prototype
-stores.
+fixture data any more.
+
+**Logistics Compliance is wired too.** `verticals/logistics/store.tsx` reads and writes
+through `lib/api/logistics.ts` / `lib/api/logistics-queries.ts` rather than
+`verticals/logistics/mock-data.ts`; the mock module now only supplies the `Company`,
+`Vehicle`, `Driver`, `ComplianceDocument`, `CheckSection`, `InfoRequest`, `Notification`,
+`AuditEntry` and `Role` types the store builds real objects against (its seed arrays are
+unused). The other five dashboards still run on their own local prototype stores.
 
 Oversight reports are compiled server-side and downloaded as PDFs; the composer on the
 reports page posts to `/processing/reports/generate/` and the library lists what has been
@@ -98,6 +104,22 @@ verticals/processing/store.tsx   one provider that runs the reads and exposes th
 The API speaks snake_case and machine values (`in_review`); the screens read camelCase and
 display labels (`In Review`). All of that translation lives in `domain.ts`, so no component
 touches a raw API row.
+
+### How the logistics vertical is wired
+
+```
+lib/api/logistics.ts             fetchers + the DRF shapes, field-for-field
+lib/api/logistics-queries.ts     TanStack hooks; every write invalidates ["logistics"]
+verticals/logistics/domain.ts    entity-level API → view adapters (Company, Vehicle, Driver, …)
+verticals/logistics/store.tsx    one provider that runs the reads, exposes the writes, and
+                                  shapes rows into the legacy `Company`/`InfoRequest`/
+                                  `Notification`/`AuditEntry` view models the screens expect
+```
+
+A few fields the old mock carried have no backend equivalent (a document's uploader name, a
+notification's severity `tone`, an audit event's human-readable target/outcome, per-domain
+checklist `items`) — the store fills these with sensible defaults rather than inventing data
+the API doesn't return.
 
 Two identifiers travel together on every row. `id` is the human reference (`BPC-APP-2026-4D62`)
 — what people quote and what the URLs carry — and `uuid` is the API's primary key, which every

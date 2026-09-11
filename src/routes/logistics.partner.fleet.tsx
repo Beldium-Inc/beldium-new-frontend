@@ -4,7 +4,6 @@ import { Gauge, MapPin, Radio, ShieldCheck, Truck } from "lucide-react";
 import { AppShell, ComplianceBanner } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill, StatCard } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 import type { Vehicle } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/partner/fleet")({
@@ -22,8 +21,8 @@ export const Route = createFileRoute("/logistics/partner/fleet")({
 const tone = (s: Vehicle["status"]): "success" | "warning" | "danger" => (s === "Compliant" ? "success" : s === "Attention" ? "warning" : "danger");
 
 function FleetPage() {
-  const { companies } = useApp();
-  const company = companies.find((c) => c.id === PRIMARY_COMPANY_ID)!;
+  const { myCompany } = useApp();
+  const company = myCompany!;
   const [query, setQuery] = React.useState("");
   const [filter, setFilter] = React.useState("All");
 

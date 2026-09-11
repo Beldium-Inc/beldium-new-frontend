@@ -24,32 +24,46 @@ import { Pill } from "@/verticals/processing/bpc";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
 
-type NavItem = { to: string; label: string; icon: React.ElementType; badge?: string };
+type NavItem = { to: string; label: string; icon: React.ElementType; badge?: string | undefined };
 
-const OPERATOR_NAV: { group: string; items: NavItem[] }[] = [
-  {
-    group: "Compliance",
-    items: [
-      { to: "/processing/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/processing/applications", label: "Applications", icon: FileStack, badge: "5" },
-      {
-        to: "/processing/nonconformities",
-        label: "Non-conformities",
-        icon: AlertTriangle,
-        badge: "3",
-      },
-      { to: "/processing/inspections", label: "Inspections", icon: ClipboardCheck },
-      { to: "/processing/onboarding", label: "New Application", icon: ScrollText },
-    ],
-  },
-  {
-    group: "Context",
-    items: [
-      { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
-      { to: "/processing/audit", label: "Audit Trail", icon: History },
-    ],
-  },
-];
+/** Counts pulled live from the store, so a nav badge never drifts from what its page actually shows. */
+type NavBadgeCounts = {
+  pendingApplications: number;
+  openNonConformities: number;
+  openEnvironmentalAlerts: number;
+};
+
+function buildOperatorNav(counts: NavBadgeCounts): { group: string; items: NavItem[] }[] {
+  return [
+    {
+      group: "Compliance",
+      items: [
+        { to: "/processing/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        {
+          to: "/processing/applications",
+          label: "Applications",
+          icon: FileStack,
+          badge: counts.pendingApplications ? String(counts.pendingApplications) : undefined,
+        },
+        {
+          to: "/processing/nonconformities",
+          label: "Non-conformities",
+          icon: AlertTriangle,
+          badge: counts.openNonConformities ? String(counts.openNonConformities) : undefined,
+        },
+        { to: "/processing/inspections", label: "Inspections", icon: ClipboardCheck },
+        { to: "/processing/onboarding", label: "New Application", icon: ScrollText },
+      ],
+    },
+    {
+      group: "Context",
+      items: [
+        { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
+        { to: "/processing/audit", label: "Audit Trail", icon: History },
+      ],
+    },
+  ];
+}
 
 const APPLICANT_NAV: { group: string; items: NavItem[] }[] = [
   {
@@ -70,33 +84,47 @@ const APPLICANT_NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
-const REGULATOR_NAV: { group: string; items: NavItem[] }[] = [
-  {
-    group: "Oversight",
-    items: [
-      { to: "/processing/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/processing/processors", label: "Processors & Facilities", icon: Factory },
-      { to: "/processing/monitoring", label: "Compliance Monitoring", icon: Gauge },
-      { to: "/processing/inspections", label: "Inspection Queue", icon: ClipboardCheck },
-    ],
-  },
-  {
-    group: "Signals",
-    items: [
-      { to: "/processing/environmental", label: "Environmental Alerts", icon: Leaf, badge: "2" },
-      { to: "/processing/incidents", label: "Incidents", icon: Siren },
-      { to: "/processing/nonconformities", label: "Non-conformities", icon: AlertTriangle },
-    ],
-  },
-  {
-    group: "Records",
-    items: [
-      { to: "/processing/reports", label: "Reports", icon: FileBarChart },
-      { to: "/processing/audit", label: "Audit History", icon: History },
-      { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
-    ],
-  },
-];
+function buildRegulatorNav(counts: NavBadgeCounts): { group: string; items: NavItem[] }[] {
+  return [
+    {
+      group: "Oversight",
+      items: [
+        { to: "/processing/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { to: "/processing/processors", label: "Processors & Facilities", icon: Factory },
+        { to: "/processing/monitoring", label: "Compliance Monitoring", icon: Gauge },
+        { to: "/processing/inspections", label: "Inspection Queue", icon: ClipboardCheck },
+      ],
+    },
+    {
+      group: "Signals",
+      items: [
+        {
+          to: "/processing/environmental",
+          label: "Environmental Alerts",
+          icon: Leaf,
+          badge: counts.openEnvironmentalAlerts
+            ? String(counts.openEnvironmentalAlerts)
+            : undefined,
+        },
+        { to: "/processing/incidents", label: "Incidents", icon: Siren },
+        {
+          to: "/processing/nonconformities",
+          label: "Non-conformities",
+          icon: AlertTriangle,
+          badge: counts.openNonConformities ? String(counts.openNonConformities) : undefined,
+        },
+      ],
+    },
+    {
+      group: "Records",
+      items: [
+        { to: "/processing/reports", label: "Reports", icon: FileBarChart },
+        { to: "/processing/audit", label: "Audit History", icon: History },
+        { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
+      ],
+    },
+  ];
+}
 
 /**
  * Closes a popover when a press lands outside it, or on Escape.
@@ -132,7 +160,7 @@ function useDismissOnOutside<T extends HTMLElement>(open: boolean, close: () => 
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, signOut, notifications } = useAppState();
+  const { user, signOut, notifications, applications, nonConformities, envAlerts } = useAppState();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -150,13 +178,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setProfileOpen(false);
   }, [pathname]);
 
+  // Same "still needs attention" semantics the dashboard stat cards use, so a
+  // nav badge and the number on the page it links to never disagree.
+  const badgeCounts: NavBadgeCounts = {
+    pendingApplications: applications.filter((a) => a.stage !== "Decided").length,
+    openNonConformities: nonConformities.filter((n) => n.status !== "Closed").length,
+    openEnvironmentalAlerts: envAlerts.filter((a) => a.status !== "Resolved").length,
+  };
+
   if (!user) return null;
   const nav =
     user.role === "operator"
-      ? OPERATOR_NAV
+      ? buildOperatorNav(badgeCounts)
       : user.role === "processor"
         ? APPLICANT_NAV
-        : REGULATOR_NAV;
+        : buildRegulatorNav(badgeCounts);
 
   const sidebar = (
     <div className="flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground">

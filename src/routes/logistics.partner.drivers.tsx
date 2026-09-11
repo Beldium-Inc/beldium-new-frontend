@@ -4,7 +4,6 @@ import { BadgeCheck, GraduationCap, IdCard, Users } from "lucide-react";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill, StatCard } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 import type { Driver } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/partner/drivers")({
@@ -22,8 +21,8 @@ export const Route = createFileRoute("/logistics/partner/drivers")({
 const tone = (s: Driver["status"]): "success" | "warning" | "danger" => (s === "Compliant" ? "success" : s === "Attention" ? "warning" : "danger");
 
 function DriversPage() {
-  const { companies } = useApp();
-  const company = companies.find((c) => c.id === PRIMARY_COMPANY_ID)!;
+  const { myCompany } = useApp();
+  const company = myCompany!;
   const [query, setQuery] = React.useState("");
   const drivers = company.drivers.filter((d) =>
     [d.name, d.licence, d.assignedVehicle, d.licenceClass].join(" ").toLowerCase().includes(query.toLowerCase()),

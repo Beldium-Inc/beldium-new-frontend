@@ -12,7 +12,6 @@ import {
 import { AppShell, ComplianceBanner } from "@/verticals/logistics/AppShell";
 import { KeyValue, PageHeader, Panel, Pill, ScoreBar, StatCard, StatusBadge } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { PRIMARY_COMPANY_ID } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/partner/")({
   head: () => ({
@@ -27,8 +26,8 @@ export const Route = createFileRoute("/logistics/partner/")({
 });
 
 function PartnerDashboard() {
-  const { companies, requests, notifications } = useApp();
-  const company = companies.find((c) => c.id === PRIMARY_COMPANY_ID)!;
+  const { myCompany, requests, notifications } = useApp();
+  const company = myCompany!;
   const open = requests.filter((r) => r.companyId === company.id && r.status === "Open");
 
   return (
