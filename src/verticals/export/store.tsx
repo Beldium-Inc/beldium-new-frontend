@@ -18,7 +18,7 @@ import {
 import type {
   Exporter as ApiExporter,
   ExportDocStatus,
-  MonitoringEvent as ApiMonitoringEvent,
+  ExportMonitoringEvent as ApiMonitoringEvent,
   Shipment as ApiShipment,
 } from "@/lib/api/export";
 import { useCurrentUser } from "@/lib/api/queries";
@@ -45,7 +45,7 @@ export type SessionUser = {
   title: string;
   org: string;
   initials: string;
-  exporterId?: string;
+  exporterId?: string | undefined;
 };
 
 const ROLE_TITLE: Record<Role, string> = {
@@ -268,7 +268,10 @@ export function StoreProvider({
     () => (exporters.data ?? EMPTY_LIST).results.map(toViewExporter),
     [exporters.data],
   );
-  const eventRows = React.useMemo(() => (events.data ?? EMPTY_LIST).results.map(toViewEvent), [events.data]);
+  const eventRows = React.useMemo(
+    () => (events.data ?? EMPTY_LIST).results.map(toViewEvent),
+    [events.data],
+  );
 
   const state: State = { shipments: shipmentRows, exporters: exporterRows, events: eventRows };
 

@@ -1,23 +1,35 @@
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+
+import { ApiError } from "@/lib/api/errors";
+import type * as Api from "@/lib/api/marketplace";
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+  useAcceptRfqAggregation,
+  useAddNonConformity,
+  useAdvanceNonConformity,
+  useAutoAggregateRfq,
+  useCreateRfq,
+  useDecideMarketplaceApplication,
+  useDispatchRfqNotifications,
+  useMarketplaceApplications,
+  useMarketplaceNotifications,
+  useMarketplaceOrders,
+  useMarkMarketplaceNotificationRead,
+  useMiners,
+  useRfqs,
+  useSaveRfqServices,
+  useSetRfqAllocation,
+  useSubmitRfqFinance,
+  useUpdateApplicationLimits,
+} from "@/lib/api/marketplace-queries";
+import { useCurrentUser } from "@/lib/api/queries";
 import {
-  seedApplications,
-  seedMiners,
-  seedNotifications,
-  seedOrders,
-  seedRfqs,
   type AppStatus,
   type Application,
+  type ApplicantType,
   type FinancePackage,
   type Miner,
   type Notification,
+  type NonConformity,
   type OrderRow,
   type Rfq,
   type Role,
@@ -49,24 +61,18 @@ type State = {
   notifications: Notification[];
 };
 
-const STORAGE_KEY = "beldium.marketplace.v1";
-
-const initialState: State = {
-  role: null,
-  applications: seedApplications,
-  miners: seedMiners,
-  rfqs: seedRfqs,
-  orders: seedOrders,
-  notifications: seedNotifications,
-};
-
 type Ctx = {
   state: State;
   hydrated: boolean;
   logout: () => void;
   applyOperatorAction: (id: string, action: OperatorAction, note: string) => void;
   updateLimits: (id: string, single: number, monthly: number) => void;
-  addNonConformity: (id: string, title: string, severity: "Minor" | "Major" | "Critical", note: string) => void;
+  addNonConformity: (
+    id: string,
+    title: string,
+    severity: "Minor" | "Major" | "Critical",
+    note: string,
+  ) => void;
   advanceNonConformity: (appId: string, ncId: string) => void;
   createRfq: (input: {
     commodity: string;
@@ -76,7 +82,7 @@ type Ctx = {
     destination: string;
     deliveryWindow: string;
     targetPriceUsd: number;
-  }) => string;
+  }) => Promise<string>;
   autoAggregate: (rfqId: string) => void;
   toggleAllocation: (rfqId: string, minerId: string) => void;
   setAllocationTonnes: (rfqId: string, minerId: string, tonnes: number) => void;
@@ -85,20 +91,219 @@ type Ctx = {
   saveServices: (rfqId: string, services: TransactionServices) => void;
   submitFinance: (rfqId: string, pkg: FinancePackage) => void;
   markAllRead: () => void;
+
+  error: ApiError | null;
 };
 
 const DemoContext = createContext<Ctx | null>(null);
 
-const nowIso = () => new Date().toISOString();
-const rid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+const EMPTY_LIST = { results: [] };
 
-const ACTION_RESULT: Record<OperatorAction, { status: AppStatus; label: string }> = {
-  verify: { status: "verified", label: "Verified" },
-  reject: { status: "rejected", label: "Rejected" },
-  request_info: { status: "info_requested", label: "Information requested" },
-  flag: { status: "flagged", label: "Flagged" },
-  escalate: { status: "escalated", label: "Escalated to committee" },
+// --- API row -> view shape adapters ------------------------------------------
+
+const APPLICANT_TYPE: Record<Api.ApplicantType, ApplicantType> = {
+  buyer: "Buyer",
+  offtaker: "Offtaker",
+  oem: "OEM",
 };
+
+const RISK_BAND: Record<Api.MarketplaceApplication["risk_band"], Application["riskBand"]> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+const NC_SEVERITY: Record<Api.MarketplaceNonConformity["severity"], NonConformity["severity"]> = {
+  minor: "Minor",
+  major: "Major",
+  critical: "Critical",
+};
+
+function toDocItem(row: Api.MarketplaceDocument): Application["documents"][number] {
+  return {
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    uploadedAt: row.uploaded_at,
+    status: row.status,
+    ...(row.expires_on ? { expires: row.expires_on } : {}),
+  };
+}
+
+function toNonConformity(row: Api.MarketplaceNonConformity): NonConformity {
+  return {
+    id: row.id,
+    title: row.title,
+    severity: NC_SEVERITY[row.severity],
+    raisedAt: row.raised_at,
+    status: row.status,
+    note: row.note,
+  };
+}
+
+function toApplication(row: Api.MarketplaceApplication): Application {
+  return {
+    id: row.id,
+    entityName: row.entity_name,
+    type: APPLICANT_TYPE[row.applicant_type],
+    country: row.country,
+    jurisdiction: row.jurisdiction,
+    registrationNo: row.registration_no,
+    vatNo: row.vat_no,
+    incorporated: row.incorporated_on ?? "",
+    website: row.website,
+    submittedAt: row.submitted_at ?? "",
+    status: row.status as AppStatus,
+    riskScore: row.risk_score,
+    riskBand: RISK_BAND[row.risk_band],
+    riskFactors: row.risk_factors,
+    sanctionsScreen: row.sanctions_screen,
+    pepScreen: row.pep_screen,
+    ownership: row.ownership.map((o) => ({
+      name: o.name,
+      pct: o.pct,
+      type: o.type,
+      country: o.country,
+      pep: o.pep,
+    })),
+    reps: row.representatives.map((r) => ({
+      name: r.name,
+      role: r.role,
+      email: r.email,
+      phone: r.phone,
+      idVerified: r.id_verified,
+    })),
+    profile: {
+      headline: row.profile.headline,
+      commodities: row.profile.commodities,
+      ...(row.profile.annual_demand_tonnes !== undefined
+        ? { annualDemandTonnes: row.profile.annual_demand_tonnes }
+        : {}),
+      ...(row.profile.annual_supply_tonnes !== undefined
+        ? { annualSupplyTonnes: row.profile.annual_supply_tonnes }
+        : {}),
+      markets: row.profile.markets,
+      yearsTrading: row.profile.years_trading,
+      turnoverUsd: row.profile.turnover_usd,
+      banking: row.profile.banking,
+      logistics: row.profile.logistics,
+    },
+    documents: row.documents.map(toDocItem),
+    limits: {
+      proposedSingleTxnUsd: row.limits.proposed_single_txn_usd,
+      proposedMonthlyUsd: row.limits.proposed_monthly_usd,
+      approvedSingleTxnUsd: row.limits.approved_single_txn_usd,
+      approvedMonthlyUsd: row.limits.approved_monthly_usd,
+      tenorDays: row.limits.tenor_days,
+    },
+    nonConformities: row.non_conformities.map(toNonConformity),
+    audit: row.audit.map((a) => ({
+      id: a.id,
+      at: a.at,
+      actor: a.actor,
+      action: a.action,
+      detail: a.detail,
+    })),
+    notes: row.notes,
+  };
+}
+
+function toMiner(row: Api.Miner): Miner {
+  return {
+    id: row.id,
+    name: row.name,
+    country: row.country,
+    region: row.region,
+    commodity: row.commodity,
+    capacityTpa: row.capacity_tpa,
+    availableTonnes: row.available_tonnes,
+    grade: row.grade,
+    compliance: row.compliance,
+    esgScore: row.esg_score,
+    logistics: row.logistics,
+    channels: row.channels,
+    phone: row.phone,
+    email: row.email,
+  };
+}
+
+function toRfq(row: Api.Rfq): Rfq {
+  return {
+    id: row.id,
+    reference: row.reference,
+    commodity: row.commodity,
+    grade: row.grade,
+    volumeTonnes: row.volume_tonnes,
+    incoterm: row.incoterm,
+    destination: row.destination,
+    deliveryWindow: row.delivery_window,
+    targetPriceUsd: row.target_price_usd,
+    createdBy: row.created_by,
+    createdByName: row.created_by_name,
+    createdAt: row.created_at,
+    status: row.status,
+    allocations: row.allocations.map((a) => ({
+      minerId: a.miner,
+      tonnes: a.tonnes,
+      state: a.state,
+      priceUsdPerTonne: a.price_usd_per_tonne,
+    })),
+    notifications: row.notifications.map((n) => ({
+      id: n.id,
+      minerId: n.miner,
+      minerName: "",
+      channel: n.channel,
+      status: n.status,
+      at: n.at,
+      preview: n.preview,
+    })),
+    ...(row.services ? { services: row.services } : {}),
+    ...(row.finance
+      ? {
+          finance: {
+            totalCommitmentUsd: row.finance.total_commitment_usd,
+            buyerContributionUsd: row.finance.buyer_contribution_usd,
+            requiredUsd: row.finance.required_usd,
+            instrument: row.finance.instrument,
+            tenorMonths: row.finance.tenor_months,
+            status: row.finance.status,
+            readiness: row.finance.readiness,
+          },
+        }
+      : {}),
+  };
+}
+
+function toOrderRow(row: Api.MarketplaceOrder): OrderRow {
+  const stage: OrderRow["stage"] =
+    row.stage === "contract_drafting"
+      ? "contract drafting"
+      : row.stage === "in_transit"
+        ? "in transit"
+        : row.stage;
+  return {
+    id: row.id,
+    reference: row.reference,
+    counterparty: row.counterparty,
+    commodity: row.commodity,
+    tonnes: row.tonnes,
+    valueUsd: row.value_usd,
+    stage,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toNotification(row: Api.MarketplaceNotification): Notification {
+  return {
+    id: row.id,
+    audience: row.audience,
+    title: row.title,
+    body: row.body,
+    channel: row.channel,
+    at: row.at,
+    read: Boolean(row.read_at),
+  };
+}
 
 export function DemoProvider({
   children,
@@ -110,260 +315,137 @@ export function DemoProvider({
   role: Role;
   onSignOut: () => void;
 }) {
-  const [state, setState] = useState<State>({ ...initialState, role });
-  const [hydrated, setHydrated] = useState(false);
+  const currentUser = useCurrentUser();
+  const applicationsQuery = useMarketplaceApplications();
+  const minersQuery = useMiners();
+  const rfqsQuery = useRfqs();
+  const ordersQuery = useMarketplaceOrders();
+  const notificationsQuery = useMarketplaceNotifications();
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setState((s) => ({ ...initialState, ...(JSON.parse(raw) as State), role: s.role }));
-    } catch {
-      /* ignore */
-    }
-    setHydrated(true);
-  }, []);
+  const decideFor = useDecideMarketplaceApplication();
+  const updateLimitsFor = useUpdateApplicationLimits();
+  const addNonConformityFor = useAddNonConformity();
+  const advanceNonConformityFor = useAdvanceNonConformity();
+  const createRfqFor = useCreateRfq();
+  const autoAggregateFor = useAutoAggregateRfq();
+  const setAllocationFor = useSetRfqAllocation();
+  const dispatchFor = useDispatchRfqNotifications();
+  const acceptAggregationFor = useAcceptRfqAggregation();
+  const saveServicesFor = useSaveRfqServices();
+  const submitFinanceFor = useSubmitRfqFinance();
+  const markReadFor = useMarkMarketplaceNotificationRead();
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* ignore */
-    }
-  }, [state, hydrated]);
+  const applicationsRaw = (applicationsQuery.data ?? EMPTY_LIST).results;
+  const minersRaw = (minersQuery.data ?? EMPTY_LIST).results;
+  const rfqsRaw = (rfqsQuery.data ?? EMPTY_LIST).results;
+  const ordersRaw = (ordersQuery.data ?? EMPTY_LIST).results;
+  const notificationsRaw = (notificationsQuery.data ?? EMPTY_LIST).results;
 
-  const patchApp = useCallback((id: string, fn: (a: Application) => Application) => {
-    setState((s) => ({
-      ...s,
-      applications: s.applications.map((a) => (a.id === id ? fn(a) : a)),
-    }));
-  }, []);
+  const applications = useMemo(() => applicationsRaw.map(toApplication), [applicationsRaw]);
+  const miners = useMemo(() => minersRaw.map(toMiner), [minersRaw]);
+  const rfqs = useMemo(() => rfqsRaw.map(toRfq), [rfqsRaw]);
+  const orders = useMemo(() => ordersRaw.map(toOrderRow), [ordersRaw]);
+  const notifications = useMemo(() => notificationsRaw.map(toNotification), [notificationsRaw]);
 
-  const patchRfq = useCallback((id: string, fn: (r: Rfq) => Rfq) => {
-    setState((s) => ({ ...s, rfqs: s.rfqs.map((r) => (r.id === id ? fn(r) : r)) }));
-  }, []);
+  const queries = [
+    currentUser,
+    applicationsQuery,
+    minersQuery,
+    rfqsQuery,
+    ordersQuery,
+    notificationsQuery,
+  ];
+  const isLoading = queries.some((q) => q.isPending);
+  const firstError = queries.map((q) => q.error).find(Boolean) ?? null;
 
-  const pushNotification = useCallback((n: Omit<Notification, "id" | "at" | "read">) => {
-    setState((s) => ({
-      ...s,
-      notifications: [{ ...n, id: rid("N"), at: nowIso(), read: false }, ...s.notifications],
-    }));
-  }, []);
+  const state: State = { role, applications, miners, rfqs, orders, notifications };
 
-  const value = useMemo<Ctx>(
-    () => ({
-      state,
-      hydrated,
-      logout: onSignOut,
+  const value: Ctx = {
+    state,
+    hydrated: !isLoading,
+    logout: onSignOut,
 
-      applyOperatorAction: (id, action, note) => {
-        const result = ACTION_RESULT[action];
-        patchApp(id, (a) => ({
-          ...a,
-          status: result.status,
-          limits:
-            action === "verify"
-              ? {
-                  ...a.limits,
-                  approvedSingleTxnUsd: a.limits.approvedSingleTxnUsd || a.limits.proposedSingleTxnUsd,
-                  approvedMonthlyUsd: a.limits.approvedMonthlyUsd || a.limits.proposedMonthlyUsd,
-                }
-              : action === "reject" || action === "flag"
-                ? { ...a.limits, approvedSingleTxnUsd: 0, approvedMonthlyUsd: 0 }
-                : a.limits,
-          audit: [
-            {
-              id: rid("AU"),
-              at: nowIso(),
-              actor: `${ROLE_PERSONA.operator.name} (Compliance)`,
-              action: result.label,
-              detail: note || `${result.label} via review workspace.`,
-            },
-            ...a.audit,
-          ],
-        }));
-        pushNotification({
-          audience: "operator",
-          title: `${result.label}: ${id}`,
-          body: note || `${result.label} recorded on application ${id}.`,
-          channel: "in_app",
-        });
-      },
+    applyOperatorAction: (id, action, note) => {
+      void decideFor.mutateAsync({ id, action, note });
+    },
 
-      updateLimits: (id, single, monthly) =>
-        patchApp(id, (a) => ({
-          ...a,
-          limits: { ...a.limits, approvedSingleTxnUsd: single, approvedMonthlyUsd: monthly },
-          audit: [
-            {
-              id: rid("AU"),
-              at: nowIso(),
-              actor: `${ROLE_PERSONA.operator.name} (Compliance)`,
-              action: "Transaction limits updated",
-              detail: `Single txn $${(single / 1e6).toFixed(0)}m / monthly $${(monthly / 1e6).toFixed(0)}m.`,
-            },
-            ...a.audit,
-          ],
-        })),
+    updateLimits: (id, single, monthly) => {
+      void updateLimitsFor.mutateAsync({ id, single, monthly });
+    },
 
-      addNonConformity: (id, title, severity, note) =>
-        patchApp(id, (a) => ({
-          ...a,
-          status: a.status === "verified" ? "under_review" : a.status,
-          nonConformities: [
-            { id: rid("NC"), title, severity, raisedAt: nowIso(), status: "open", note },
-            ...a.nonConformities,
-          ],
-          audit: [
-            {
-              id: rid("AU"),
-              at: nowIso(),
-              actor: `${ROLE_PERSONA.operator.name} (Compliance)`,
-              action: `Non-conformity raised (${severity})`,
-              detail: title,
-            },
-            ...a.audit,
-          ],
-        })),
+    addNonConformity: (id, title, severity, note) => {
+      const apiSeverity =
+        severity === "Minor" ? "minor" : severity === "Major" ? "major" : "critical";
+      void addNonConformityFor.mutateAsync({ id, title, severity: apiSeverity, note });
+    },
 
-      advanceNonConformity: (appId, ncId) =>
-        patchApp(appId, (a) => ({
-          ...a,
-          nonConformities: a.nonConformities.map((nc) =>
-            nc.id === ncId
-              ? { ...nc, status: nc.status === "open" ? "remediation" : "closed" }
-              : nc,
-          ),
-          audit: [
-            {
-              id: rid("AU"),
-              at: nowIso(),
-              actor: `${ROLE_PERSONA.operator.name} (Compliance)`,
-              action: "Non-conformity progressed",
-              detail: `${ncId} moved forward in remediation workflow.`,
-            },
-            ...a.audit,
-          ],
-        })),
+    advanceNonConformity: (appId, ncId) => {
+      void advanceNonConformityFor.mutateAsync({ id: appId, ncId });
+    },
 
-      createRfq: (input) => {
-        const id = rid("RFQ");
-        const rfq: Rfq = {
-          id,
-          reference: id,
-          ...input,
-          createdBy: state.role ?? "offtaker",
-          createdByName: ROLE_PERSONA[state.role ?? "offtaker"].org,
-          createdAt: nowIso(),
-          status: "matching",
-          allocations: [],
-          notifications: [],
-        };
-        setState((s) => ({ ...s, rfqs: [rfq, ...s.rfqs] }));
-        return id;
-      },
+    createRfq: async (input) => {
+      const rfq = await createRfqFor.mutateAsync({
+        commodity: input.commodity,
+        grade: input.grade,
+        volume_tonnes: input.volumeTonnes,
+        incoterm: input.incoterm,
+        destination: input.destination,
+        delivery_window: input.deliveryWindow,
+        target_price_usd: input.targetPriceUsd,
+      });
+      return rfq.id;
+    },
 
-      autoAggregate: (rfqId) =>
-        patchRfq(rfqId, (r) => {
-          const eligible = state.miners
-            .filter((m) => m.compliance === "verified")
-            .sort((a, b) => b.availableTonnes - a.availableTonnes);
-          let remaining = r.volumeTonnes;
-          const allocations = eligible
-            .map((m) => {
-              const take = Math.min(m.availableTonnes, remaining);
-              remaining -= take;
-              return take > 0
-                ? {
-                    minerId: m.id,
-                    tonnes: take,
-                    state: "offered" as const,
-                    priceUsdPerTonne: r.targetPriceUsd + (m.esgScore > 75 ? 6 : -4),
-                  }
-                : null;
-            })
-            .filter(Boolean) as Rfq["allocations"];
-          return { ...r, allocations, status: "aggregating" };
-        }),
+    autoAggregate: (rfqId) => {
+      void autoAggregateFor.mutateAsync(rfqId);
+    },
 
-      toggleAllocation: (rfqId, minerId) =>
-        patchRfq(rfqId, (r) => ({
-          ...r,
-          allocations: r.allocations.map((a) =>
-            a.minerId === minerId
-              ? { ...a, state: a.state === "accepted" ? "offered" : "accepted" }
-              : a,
-          ),
-        })),
+    toggleAllocation: (rfqId, minerId) => {
+      const rfq = rfqsRaw.find((r) => r.id === rfqId);
+      const current = rfq?.allocations.find((a) => a.miner === minerId);
+      const nextState = current?.state === "accepted" ? "offered" : "accepted";
+      void setAllocationFor.mutateAsync({ id: rfqId, miner: minerId, state: nextState });
+    },
 
-      setAllocationTonnes: (rfqId, minerId, tonnes) =>
-        patchRfq(rfqId, (r) => ({
-          ...r,
-          allocations: r.allocations.map((a) => (a.minerId === minerId ? { ...a, tonnes } : a)),
-        })),
+    setAllocationTonnes: (rfqId, minerId, tonnes) => {
+      void setAllocationFor.mutateAsync({ id: rfqId, miner: minerId, tonnes });
+    },
 
-      dispatchNotifications: (rfqId) =>
-        patchRfq(rfqId, (r) => {
-          const targets = r.allocations.length
-            ? r.allocations.map((a) => a.minerId)
-            : state.miners.filter((m) => m.compliance === "verified").map((m) => m.id);
-          const notifications = targets.flatMap((minerId) => {
-            const miner = state.miners.find((m) => m.id === minerId)!;
-            const tonnes = r.allocations.find((a) => a.minerId === minerId)?.tonnes ?? 0;
-            return miner.channels.map((channel, i) => ({
-              id: rid("MSG"),
-              minerId,
-              minerName: miner.name,
-              channel,
-              status: (i === 0 ? "delivered" : "sent") as "delivered" | "sent",
-              at: nowIso(),
-              preview:
-                channel === "sms"
-                  ? `Beldium: new verified RFQ ${r.reference}, ${tonnes.toLocaleString()}t ${r.commodity}, ${r.incoterm} ${r.destination}. Reply Y to indicate.`
-                  : channel === "email"
-                    ? `RFQ ${r.reference}: indicative allocation of ${tonnes.toLocaleString()}t ${r.commodity} (${r.grade}), target $${r.targetPriceUsd}/t.`
-                    : `In-app: allocation request ${tonnes.toLocaleString()}t against ${r.reference}.`,
-            }));
-          });
-          return { ...r, notifications, status: "notified" };
-        }),
+    dispatchNotifications: (rfqId) => {
+      void dispatchFor.mutateAsync(rfqId);
+    },
 
-      acceptAggregation: (rfqId) => {
-        const rfq = state.rfqs.find((r) => r.id === rfqId);
-        patchRfq(rfqId, (r) => ({
-          ...r,
-          status: "accepted",
-          allocations: r.allocations.map((a) => ({ ...a, state: "accepted" })),
-        }));
-        if (rfq) {
-          pushNotification({
-            audience: rfq.createdBy,
-            title: `Aggregated supply confirmed, ${rfq.reference}`,
-            body: `${rfq.allocations.length} verified miners confirmed ${rfq.allocations
-              .reduce((s, a) => s + a.tonnes, 0)
-              .toLocaleString()}t against your ${rfq.volumeTonnes.toLocaleString()}t request. Proceed to transaction services setup.`,
-            channel: "in_app",
-          });
-        }
-      },
+    acceptAggregation: (rfqId) => {
+      void acceptAggregationFor.mutateAsync(rfqId);
+    },
 
-      saveServices: (rfqId, services) => patchRfq(rfqId, (r) => ({ ...r, services })),
+    saveServices: (rfqId, services) => {
+      void saveServicesFor.mutateAsync({ id: rfqId, services });
+    },
 
-      submitFinance: (rfqId, pkg) => {
-        patchRfq(rfqId, (r) => ({ ...r, finance: pkg, status: "contracted" }));
-        pushNotification({
-          audience: state.role ?? "offtaker",
-          title: "Financing request submitted",
-          body: `Trade & supply-chain finance request for $${(pkg.requiredUsd / 1e6).toFixed(0)}m routed to the Beldium funding panel.`,
-          channel: "email",
-        });
-      },
+    submitFinance: (rfqId, pkg) => {
+      void submitFinanceFor.mutateAsync({
+        id: rfqId,
+        pkg: {
+          total_commitment_usd: pkg.totalCommitmentUsd,
+          buyer_contribution_usd: pkg.buyerContributionUsd,
+          required_usd: pkg.requiredUsd,
+          instrument: pkg.instrument,
+          tenor_months: pkg.tenorMonths,
+          status: pkg.status,
+          readiness: pkg.readiness,
+        },
+      });
+    },
 
-      markAllRead: () =>
-        setState((s) => ({ ...s, notifications: s.notifications.map((n) => ({ ...n, read: true })) })),
-    }),
-    [state, hydrated, patchApp, patchRfq, pushNotification],
-  );
+    markAllRead: () => {
+      for (const row of notificationsRaw) {
+        if (!row.read_at) void markReadFor.mutateAsync(row.id);
+      }
+    },
+
+    error: firstError instanceof ApiError ? firstError : null,
+  };
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }

@@ -40,7 +40,8 @@ export const exportKeys = {
   exporter: (id: UUID) => ["export", "exporter", id] as const,
   shipments: (query: ExportListQuery = {}) => ["export", "shipments", query] as const,
   shipment: (id: UUID) => ["export", "shipment", id] as const,
-  monitoringEvents: (query: ExportListQuery = {}) => ["export", "monitoring-events", query] as const,
+  monitoringEvents: (query: ExportListQuery = {}) =>
+    ["export", "monitoring-events", query] as const,
 };
 
 /** Lists are large and change slowly; a dashboard remount shouldn't refetch all of them. */
@@ -162,8 +163,17 @@ export function useDecideExportShipment() {
 export function useReviewExportDocument() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; status: ExportDocStatus; action: string; comment?: string | undefined }) =>
-      reviewExportDocument(input.id, { status: input.status, action: input.action, comment: input.comment }),
+    mutationFn: (input: {
+      id: UUID;
+      status: ExportDocStatus;
+      action: string;
+      comment?: string | undefined;
+    }) =>
+      reviewExportDocument(input.id, {
+        status: input.status,
+        action: input.action,
+        comment: input.comment,
+      }),
     onSuccess: () => invalidateExport(queryClient),
   });
 }

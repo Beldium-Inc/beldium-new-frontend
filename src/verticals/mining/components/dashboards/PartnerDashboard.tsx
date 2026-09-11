@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, CalendarClock, ClipboardList, FileWarning, ShieldAlert, TrendingUp } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  ClipboardList,
+  FileWarning,
+  ShieldAlert,
+  TrendingUp,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -16,23 +23,46 @@ import {
   YAxis,
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useStore } from "@/verticals/mining/store";
-import { complianceTrend, licences, organisations } from "@/verticals/mining/data";
 import { KpiCard, Panel, PageHeader } from "../primitives";
 import { Chip, RiskChip, ScorePill, StatusChip } from "../chips";
 
 export function PartnerDashboard() {
-  const { sites, reviews, nonConformities, applications, activity, startReview } = useStore();
+  const {
+    sites,
+    reviews,
+    nonConformities,
+    applications,
+    activity,
+    startReview,
+    licences,
+    organisations,
+    complianceTrend,
+  } = useStore();
 
   const openReviews = reviews.filter((r) => r.status !== "Completed");
   const openNc = nonConformities.filter((n) => n.status !== "Closed");
   const awaiting = nonConformities.filter((n) => n.status === "Awaiting Review");
-  const avgScore = Math.round(sites.reduce((a, s) => a + s.complianceScore, 0) / sites.length);
+  const avgScore = sites.length
+    ? Math.round(sites.reduce((a, s) => a + s.complianceScore, 0) / sites.length)
+    : 0;
   const riskSplit = (["Low", "Medium", "High"] as const).map((level) => ({
     name: level,
     value: sites.filter((s) => s.risk === level).length,
-    fill: level === "Low" ? "var(--color-success)" : level === "Medium" ? "var(--color-warning)" : "var(--color-danger)",
+    fill:
+      level === "Low"
+        ? "var(--color-success)"
+        : level === "Medium"
+          ? "var(--color-warning)"
+          : "var(--color-danger)",
   }));
   const expiring = licences
     .filter((l) => l.status === "Expiring" || l.status === "Expired")
@@ -61,44 +91,122 @@ export function PartnerDashboard() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Sites under management" value={sites.length} hint={`${sites.filter((s) => s.status === "Under Review").length} currently under review`} icon={<TrendingUp className="size-4" />} />
-        <KpiCard label="Average compliance score" value={`${avgScore}/100`} hint="Weighted across all ten factors" tone={avgScore >= 80 ? "success" : "warning"} />
-        <KpiCard label="Pending reviews" value={openReviews.length} hint={`${openReviews.filter((r) => r.priority === "High").length} high priority`} tone="warning" icon={<ClipboardList className="size-4" />} />
-        <KpiCard label="Open non-conformities" value={openNc.length} hint={`${awaiting.length} awaiting your decision`} tone="danger" icon={<AlertTriangle className="size-4" />} />
+        <KpiCard
+          label="Sites under management"
+          value={sites.length}
+          hint={`${sites.filter((s) => s.status === "Under Review").length} currently under review`}
+          icon={<TrendingUp className="size-4" />}
+        />
+        <KpiCard
+          label="Average compliance score"
+          value={`${avgScore}/100`}
+          hint="Weighted across all ten factors"
+          tone={avgScore >= 80 ? "success" : "warning"}
+        />
+        <KpiCard
+          label="Pending reviews"
+          value={openReviews.length}
+          hint={`${openReviews.filter((r) => r.priority === "High").length} high priority`}
+          tone="warning"
+          icon={<ClipboardList className="size-4" />}
+        />
+        <KpiCard
+          label="Open non-conformities"
+          value={openNc.length}
+          hint={`${awaiting.length} awaiting your decision`}
+          tone="danger"
+          icon={<AlertTriangle className="size-4" />}
+        />
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Panel title="Portfolio compliance trend" description="Average score against inspections completed and non-conformities open." bodyClassName="p-4">
+        <Panel
+          title="Portfolio compliance trend"
+          description="Average score against inspections completed and non-conformities open."
+          bodyClassName="p-4"
+        >
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={complianceTrend} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
               <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} stroke="var(--color-border)" />
-              <YAxis tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} stroke="var(--color-border)" />
-              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid var(--color-border)", fontSize: 12 }} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                stroke="var(--color-border)"
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                stroke="var(--color-border)"
+              />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 8,
+                  border: "1px solid var(--color-border)",
+                  fontSize: 12,
+                }}
+              />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="score" name="Avg score" stroke="var(--color-chart-1)" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="nonConformities" name="Open NCRs" stroke="var(--color-chart-4)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="inspections" name="Inspections" stroke="var(--color-chart-2)" strokeWidth={2} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="score"
+                name="Avg score"
+                stroke="var(--color-chart-1)"
+                strokeWidth={2.5}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="nonConformities"
+                name="Open NCRs"
+                stroke="var(--color-chart-4)"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="inspections"
+                name="Inspections"
+                stroke="var(--color-chart-2)"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Risk distribution" description="Sites by current risk band." bodyClassName="p-4">
+        <Panel
+          title="Risk distribution"
+          description="Sites by current risk band."
+          bodyClassName="p-4"
+        >
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={riskSplit} dataKey="value" nameKey="name" innerRadius={52} outerRadius={80} paddingAngle={3}>
+              <Pie
+                data={riskSplit}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={52}
+                outerRadius={80}
+                paddingAngle={3}
+              >
                 {riskSplit.map((r) => (
                   <Cell key={r.name} fill={r.fill} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid var(--color-border)", fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 8,
+                  border: "1px solid var(--color-border)",
+                  fontSize: 12,
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
           <ul className="mt-2 space-y-2">
             {riskSplit.map((r) => (
               <li key={r.name} className="flex items-center justify-between text-sm">
                 <span className="inline-flex items-center gap-2">
-                  <span className="size-2.5 rounded-full" style={{ background: r.fill }} /> {r.name} risk
+                  <span className="size-2.5 rounded-full" style={{ background: r.fill }} /> {r.name}{" "}
+                  risk
                 </span>
                 <span className="font-semibold tabular-nums">{r.value}</span>
               </li>
@@ -141,7 +249,12 @@ export function PartnerDashboard() {
                   </TableCell>
                   <TableCell className="text-sm tabular-nums">{r.due}</TableCell>
                   <TableCell className="text-right">
-                    <Button asChild size="sm" variant="outline" onClick={() => startReview(r.id)}>
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      onClick={() => startReview(r.id).catch(console.error)}
+                    >
                       <Link to="/mining/sites/$siteId" params={{ siteId: r.siteId }}>
                         Open
                       </Link>
@@ -154,7 +267,11 @@ export function PartnerDashboard() {
         </Panel>
 
         <div className="space-y-5">
-          <Panel title="Expiring & expired licences" description="Renewal watchlist." bodyClassName="p-0">
+          <Panel
+            title="Expiring & expired licences"
+            description="Renewal watchlist."
+            bodyClassName="p-0"
+          >
             <ul className="divide-y divide-border">
               {expiring.map((l) => (
                 <li key={l.id} className="flex items-start justify-between gap-3 px-5 py-3.5">
@@ -171,9 +288,15 @@ export function PartnerDashboard() {
             </ul>
           </Panel>
 
-          <Panel title="Awaiting your decision" description="Corrective actions submitted by operators." bodyClassName="p-0">
+          <Panel
+            title="Awaiting your decision"
+            description="Corrective actions submitted by operators."
+            bodyClassName="p-0"
+          >
             {awaiting.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-muted-foreground">Nothing awaiting a decision.</p>
+              <p className="px-5 py-6 text-sm text-muted-foreground">
+                Nothing awaiting a decision.
+              </p>
             ) : (
               <ul className="divide-y divide-border">
                 {awaiting.map((n) => (
@@ -195,19 +318,51 @@ export function PartnerDashboard() {
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <Panel title="Organisation compliance" description="Scores and risk bands by mining organisation." bodyClassName="p-4">
+        <Panel
+          title="Organisation compliance"
+          description="Scores and risk bands by mining organisation."
+          bodyClassName="p-4"
+        >
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={organisations.map((o) => ({ name: o.name.split(" ")[0], score: o.complianceScore }))} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
+            <BarChart
+              data={organisations.map((o) => ({
+                name: o.name.split(" ")[0],
+                score: o.complianceScore,
+              }))}
+              margin={{ top: 8, right: 12, left: -20, bottom: 0 }}
+            >
               <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} stroke="var(--color-border)" />
-              <YAxis tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} stroke="var(--color-border)" domain={[0, 100]} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid var(--color-border)", fontSize: 12 }} />
-              <Bar dataKey="score" name="Compliance score" radius={[4, 4, 0, 0]} fill="var(--color-chart-1)" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                stroke="var(--color-border)"
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                stroke="var(--color-border)"
+                domain={[0, 100]}
+              />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 8,
+                  border: "1px solid var(--color-border)",
+                  fontSize: 12,
+                }}
+              />
+              <Bar
+                dataKey="score"
+                name="Compliance score"
+                radius={[4, 4, 0, 0]}
+                fill="var(--color-chart-1)"
+              />
             </BarChart>
           </ResponsiveContainer>
           <div className="mt-3 space-y-2">
             {organisations.map((o) => (
-              <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
+              <div
+                key={o.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
+              >
                 <span className="text-sm font-medium">{o.name}</span>
                 <span className="flex items-center gap-2">
                   <ScorePill score={o.complianceScore} />
@@ -218,13 +373,27 @@ export function PartnerDashboard() {
           </div>
         </Panel>
 
-        <Panel title="Recent activity" description="Every reviewer action is written to the audit trail." bodyClassName="p-0">
+        <Panel
+          title="Recent activity"
+          description="Every reviewer action is written to the audit trail."
+          bodyClassName="p-0"
+        >
           <ul className="divide-y divide-border">
             {activity.slice(0, 8).map((a) => (
               <li key={a.id} className="px-5 py-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium">{a.action}</p>
-                  <Chip tone={a.tone === "positive" ? "success" : a.tone === "negative" ? "danger" : a.tone === "warning" ? "warning" : "neutral"}>
+                  <Chip
+                    tone={
+                      a.tone === "positive"
+                        ? "success"
+                        : a.tone === "negative"
+                          ? "danger"
+                          : a.tone === "warning"
+                            ? "warning"
+                            : "neutral"
+                    }
+                  >
                     {a.target ?? "-"}
                   </Chip>
                 </div>
@@ -239,7 +408,11 @@ export function PartnerDashboard() {
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <Panel title="Applications in flight" description="Intake pipeline with SLA position." bodyClassName="p-0">
+        <Panel
+          title="Applications in flight"
+          description="Intake pipeline with SLA position."
+          bodyClassName="p-0"
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -257,19 +430,28 @@ export function PartnerDashboard() {
                   <TableCell>
                     <StatusChip value={a.status} />
                   </TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">{a.slaDays ? `${a.slaDays} d left` : "-"}</TableCell>
+                  <TableCell className="text-right text-sm tabular-nums">
+                    {a.slaDays ? `${a.slaDays} d left` : "-"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </Panel>
 
-        <Panel title="Escalation watchlist" description="Sites with a High risk band or critical findings." bodyClassName="p-0">
+        <Panel
+          title="Escalation watchlist"
+          description="Sites with a High risk band or critical findings."
+          bodyClassName="p-0"
+        >
           <ul className="divide-y divide-border">
             {sites
               .filter((s) => s.risk === "High" || s.complianceScore < 70)
               .map((s) => (
-                <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+                <li
+                  key={s.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{s.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -292,9 +474,27 @@ export function PartnerDashboard() {
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Environmental breaches open" value={2} hint="Doka Stream turbidity, Oke-Ogun dust" tone="danger" icon={<ShieldAlert className="size-4" />} />
-        <KpiCard label="Documents pending verification" value={5} hint="Across 3 organisations" tone="warning" icon={<FileWarning className="size-4" />} />
-        <KpiCard label="Inspections next 30 days" value={2} hint="1 overdue verification visit" tone="warning" icon={<CalendarClock className="size-4" />} />
+        <KpiCard
+          label="Environmental breaches open"
+          value={2}
+          hint="Doka Stream turbidity, Oke-Ogun dust"
+          tone="danger"
+          icon={<ShieldAlert className="size-4" />}
+        />
+        <KpiCard
+          label="Documents pending verification"
+          value={5}
+          hint="Across 3 organisations"
+          tone="warning"
+          icon={<FileWarning className="size-4" />}
+        />
+        <KpiCard
+          label="Inspections next 30 days"
+          value={2}
+          hint="1 overdue verification visit"
+          tone="warning"
+          icon={<CalendarClock className="size-4" />}
+        />
       </div>
     </>
   );

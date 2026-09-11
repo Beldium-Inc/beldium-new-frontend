@@ -56,14 +56,31 @@ export const Route = createFileRoute("/export/shipments/$id")({
 const DOC_ACTIONS: { status: DocStatus; label: string; action: string }[] = [
   { status: "verified", label: "Verify", action: "Document verified" },
   { status: "rejected", label: "Reject", action: "Document rejected" },
-  { status: "replacement_requested", label: "Request replacement", action: "Replacement requested" },
-  { status: "clarification_requested", label: "Request clarification", action: "Clarification requested" },
+  {
+    status: "replacement_requested",
+    label: "Request replacement",
+    action: "Replacement requested",
+  },
+  {
+    status: "clarification_requested",
+    label: "Request clarification",
+    action: "Clarification requested",
+  },
 ];
 
 function ShipmentDetail() {
   const { id } = Route.useParams();
-  const { state, user, documentAction, toggleChecklist, raiseNonConformity, updateNonConformity, claimShipment, decide, regulatorAction } =
-    useStore();
+  const {
+    state,
+    user,
+    documentAction,
+    toggleChecklist,
+    raiseNonConformity,
+    updateNonConformity,
+    claimShipment,
+    decide,
+    regulatorAction,
+  } = useStore();
   const shipment = state.shipments.find((s) => s.id === id);
   const [section, setSection] = React.useState<SectionKey>("overview");
   const [activeDoc, setActiveDoc] = React.useState<string | null>(null);
@@ -135,7 +152,11 @@ function ShipmentDetail() {
         {isRegulator && (
           <div className="flex flex-wrap gap-2">
             {[
-              { label: "Request information", icon: MessageSquare, action: "Information requested" },
+              {
+                label: "Request information",
+                icon: MessageSquare,
+                action: "Information requested",
+              },
               { label: "Send reminder", icon: Bell, action: "Reminder sent" },
               { label: "Flag consignment", icon: Flag, action: "Shipment flagged" },
               { label: "Acknowledge", icon: CheckCircle2, action: "Acknowledged" },
@@ -145,7 +166,11 @@ function ShipmentDetail() {
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  regulatorAction(shipment.id, a.action, `Oversight desk: ${a.label.toLowerCase()}.`);
+                  regulatorAction(
+                    shipment.id,
+                    a.action,
+                    `Oversight desk: ${a.label.toLowerCase()}.`,
+                  );
                   toast.success(a.action);
                 }}
               >
@@ -268,7 +293,10 @@ function ShipmentDetail() {
               </div>
             </Panel>
           ) : section === "audit" ? (
-            <Panel title="Audit trail" description="Every action recorded against this consignment.">
+            <Panel
+              title="Audit trail"
+              description="Every action recorded against this consignment."
+            >
               <ol className="space-y-4">
                 {[...shipment.audit].reverse().map((a, i) => (
                   <li key={i} className="flex gap-3">
@@ -331,7 +359,11 @@ function ShipmentDetail() {
                     <p className="text-sm font-medium">{n.title}</p>
                     <Pill
                       tone={
-                        n.severity === "critical" ? "danger" : n.severity === "major" ? "warning" : "neutral"
+                        n.severity === "critical"
+                          ? "danger"
+                          : n.severity === "major"
+                            ? "warning"
+                            : "neutral"
                       }
                     >
                       {n.severity}
@@ -477,7 +509,10 @@ function ShipmentDetail() {
             </div>
           </Panel>
 
-          <Panel title="Risk reasoning" description={`Score ${shipment.riskScore} · ${shipment.riskBand} band.`}>
+          <Panel
+            title="Risk reasoning"
+            description={`Score ${shipment.riskScore} · ${shipment.riskBand} band.`}
+          >
             <ul className="space-y-3">
               {shipment.riskFactors.map((f) => (
                 <li key={f.label}>
@@ -486,7 +521,10 @@ function ShipmentDetail() {
                     <span className="text-xs text-muted-foreground">+{f.weight}</span>
                   </div>
                   <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${f.weight * 3}%` }} />
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${f.weight * 3}%` }}
+                    />
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground">{f.note}</p>
                 </li>
@@ -497,7 +535,15 @@ function ShipmentDetail() {
           <Panel title="Compliance decision">
             {shipment.decision ? (
               <div className="space-y-2">
-                <Pill tone={shipment.decision.outcome === "declined" ? "danger" : shipment.decision.outcome === "cleared" ? "success" : "warning"}>
+                <Pill
+                  tone={
+                    shipment.decision.outcome === "declined"
+                      ? "danger"
+                      : shipment.decision.outcome === "cleared"
+                        ? "success"
+                        : "warning"
+                  }
+                >
                   {shipment.decision.outcome.replace(/_/g, " ")}
                 </Pill>
                 <p className="text-xs text-muted-foreground">

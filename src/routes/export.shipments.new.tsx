@@ -7,7 +7,7 @@ import { DisclaimerNote, Panel } from "@/verticals/export/ui-kit";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { INCOTERM_OPTIONS, MINERAL_OPTIONS, PORT_OPTIONS } from "@/verticals/export/mock-data";
+import { INCOTERM_OPTIONS, MINERAL_OPTIONS, PORT_OPTIONS } from "@/verticals/export/options";
 
 export const Route = createFileRoute("/export/shipments/new")({
   head: () => ({
@@ -44,12 +44,13 @@ function NewShipmentPage() {
     etd: "",
   });
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const id = addShipment({
+    void addShipment({
       mineral: form.mineral,
       hsCode: form.hsCode,
       grade: form.grade || "-",
@@ -60,9 +61,10 @@ function NewShipmentPage() {
       incoterm: form.incoterm,
       valueUsd: Number(form.valueUsd) || 0,
       etd: form.etd || "-",
+    }).then((id) => {
+      toast.success("Consignment submitted to Beldium for review");
+      navigate({ to: "/export/shipments/$id", params: { id } });
     });
-    toast.success("Consignment submitted to Beldium for review");
-    navigate({ to: "/export/shipments/$id", params: { id } });
   };
 
   const selectCls =
@@ -77,7 +79,7 @@ function NewShipmentPage() {
               <div className="space-y-1.5">
                 <Label>Mineral</Label>
                 <select className={selectCls} value={form.mineral} onChange={set("mineral")}>
-                  {MINERAL_OPTIONS.map((m) => (
+                  {MINERAL_OPTIONS.map((m: string) => (
                     <option key={m}>{m}</option>
                   ))}
                 </select>
@@ -92,7 +94,11 @@ function NewShipmentPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Declared quantity</Label>
-                <Input value={form.quantity} onChange={set("quantity")} placeholder="e.g. 24.000 MT" />
+                <Input
+                  value={form.quantity}
+                  onChange={set("quantity")}
+                  placeholder="e.g. 24.000 MT"
+                />
               </div>
             </div>
           </Panel>
@@ -105,12 +111,16 @@ function NewShipmentPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Destination</Label>
-                <Input value={form.destination} onChange={set("destination")} placeholder="City, country" />
+                <Input
+                  value={form.destination}
+                  onChange={set("destination")}
+                  placeholder="City, country"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Port of loading</Label>
                 <select className={selectCls} value={form.port} onChange={set("port")}>
-                  {PORT_OPTIONS.map((p) => (
+                  {PORT_OPTIONS.map((p: string) => (
                     <option key={p}>{p}</option>
                   ))}
                 </select>
@@ -118,7 +128,7 @@ function NewShipmentPage() {
               <div className="space-y-1.5">
                 <Label>Incoterm</Label>
                 <select className={selectCls} value={form.incoterm} onChange={set("incoterm")}>
-                  {INCOTERM_OPTIONS.map((i) => (
+                  {INCOTERM_OPTIONS.map((i: string) => (
                     <option key={i}>{i}</option>
                   ))}
                 </select>
@@ -150,10 +160,19 @@ function NewShipmentPage() {
           </Panel>
           <Panel title="Mandatory document set">
             <ul className="space-y-2 text-xs text-muted-foreground">
-              {["Commercial invoice", "Packing list", "Independent assay certificate", "Mineral export permit", "Royalty payment receipt", "Chain of custody declaration"].map((d) => (
+              {[
+                "Commercial invoice",
+                "Packing list",
+                "Independent assay certificate",
+                "Mineral export permit",
+                "Royalty payment receipt",
+                "Chain of custody declaration",
+              ].map((d) => (
                 <li key={d} className="flex items-center justify-between gap-2">
                   <span>{d}</span>
-                  <span className="text-[11px] text-muted-foreground/80">upload after submission</span>
+                  <span className="text-[11px] text-muted-foreground/80">
+                    upload after submission
+                  </span>
                 </li>
               ))}
             </ul>

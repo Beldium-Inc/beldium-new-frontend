@@ -1,34 +1,76 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+
+import { ApiError } from "@/lib/api/errors";
 import {
-  activitySeed,
-  applications as appSeed,
-  documents as docSeed,
-  inspections as inspSeed,
-  infoRequestsSeed,
-  licences,
-  nonConformities as ncSeed,
-  organisations,
-  pendingReviews as reviewSeed,
-  samples,
-  sites as siteSeed,
-  users,
-} from "./data";
+  useAddScoreFactor as useAddScoreFactorApi,
+  useCloseMiningNonConformity,
+  useCreateInspection,
+  useCreateMiningApplication,
+  useCreateMiningNonConformity,
+  useCreateInfoRequest,
+  useEnvironmentalRecords,
+  useExpiringLicences,
+  useInfoRequests,
+  useLicences,
+  useMineSite,
+  useMineSites,
+  useMiningApplications,
+  useMiningAudit,
+  useMiningCapabilities,
+  useMiningDashboard,
+  useMiningDocuments,
+  useMiningInspections,
+  useMiningNonConformities,
+  useMiningSamples,
+  useOrganisationProfiles,
+  usePendingReviews,
+  useRespondToInfoRequest,
+  useReviewSiteSection,
+  useSafetyIncidents,
+  useSubmitMiningNonConformityEvidence,
+  useUpdateMineSite,
+  useUpdatePendingReview,
+} from "@/lib/api/mining-queries";
+import type { MiningAudience, SectionKey as ApiSectionKey } from "@/lib/api/mining";
+import { useCurrentUser, useOrganisationDirectory } from "@/lib/api/queries";
+import {
+  priorityToApi,
+  ncSeverityToApi,
+  toApplication,
+  toDocumentRecord,
+  toEnvRecord,
+  toInfoRequest,
+  toInspection,
+  toLicenceDoc,
+  toMineSite,
+  toMineSiteDetail,
+  toNonConformity,
+  toOrganisation,
+  toPendingReview,
+  toSafetyIncident,
+  toSample,
+} from "./mappers";
 import type {
   ActivityEntry,
   Application,
   DocumentRecord,
+  EnvRecord,
   InfoRequest,
   Inspection,
+  LicenceDoc,
   MineSite,
   NonConformity,
+  Organisation,
   PendingReview,
-  ReviewStatus,
   Role,
+  SafetyIncident,
+  Sample,
   SectionKey,
   Severity,
 } from "./types";
 
-export type SectionDecision = "Verify" | "Reject" | "Request Information" | "Request Inspection" | "Flag";
+export type SectionDecision =
+  "Verify" | "Reject" | "Request Information" | "Request Inspection" | "Flag";
 
 export interface Notification {
   id: string;
@@ -40,8 +82,33 @@ export interface Notification {
   audience: Role[];
 }
 
-interface State {
+const ROLE_TITLE: Record<Role, string> = {
+  partner: "Mining Compliance Partner",
+  miner: "Managing Director",
+  regulator: "Regulatory Oversight Officer",
+};
+
+function audienceToRole(audience: MiningAudience | null | undefined, fallback: Role): Role {
+  if (audience === "regulator") return "regulator";
+  if (audience === "miner") return "miner";
+  if (audience === "operator" || audience === "partner") return "partner";
+  return fallback;
+}
+
+function initialsOf(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "??";
+  return (parts[0]![0]! + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+interface Ctx {
   role: Role | null;
+  user: { name: string; initials: string; title: string } | null;
+  actorName: string;
+  hydrated: boolean;
+  isLoading: boolean;
+  error: ApiError | null;
+
   sites: MineSite[];
   nonConformities: NonConformity[];
   infoRequests: InfoRequest[];
@@ -51,64 +118,62 @@ interface State {
   documents: DocumentRecord[];
   activity: ActivityEntry[];
   notifications: Notification[];
-}
+  licences: LicenceDoc[];
+  organisations: Organisation[];
+  envRecords: EnvRecord[];
+  safetyIncidents: SafetyIncident[];
+  samples: Sample[];
+  complianceTrend: { month: string; score: number; inspections: number; nonConformities: number }[];
 
-const STORAGE_KEY = "beldium.mining.v1";
-
-function nowStamp() {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
-function todayStamp() {
-  return nowStamp().slice(0, 10);
-}
-
-let seq = 0;
-const uid = (p: string) => `${p}-${Date.now().toString(36)}-${seq++}`;
-
-const seedNotifications: Notification[] = [
-  { id: "n-1", at: "2026-08-22 14:20", title: "Corrective action awaiting review", body: "NCR-2026-018 (NL-024) has a corrective-action submission awaiting your decision.", tone: "warning", read: false, audience: ["partner"] },
-  { id: "n-2", at: "2026-08-21 08:05", title: "Licence expiring in 99 days", body: "ML-24187-NAS for Nasarawa Lithium Site NL-024 expires 30 Nov 2026.", tone: "warning", read: false, audience: ["partner", "miner", "regulator"] },
-  { id: "n-3", at: "2026-08-19 09:41", title: "Evidence uploaded", body: "Nasarawa Lithium Minerals Ltd uploaded silt trap commissioning evidence.", tone: "positive", read: false, audience: ["partner", "regulator"] },
-  { id: "n-4", at: "2026-08-18 17:02", title: "Environmental breach open", body: "Doka Stream turbidity at 68 NTU against a 50 NTU limit.", tone: "negative", read: true, audience: ["partner", "regulator", "miner"] },
-  { id: "n-5", at: "2026-08-06 11:18", title: "Information request open", body: "PEP screening for Sunrise Minerals Holding Ltd is due 27 Aug 2026.", tone: "warning", read: false, audience: ["miner", "partner"] },
-];
-
-const initialState: State = {
-  role: null,
-  sites: siteSeed,
-  nonConformities: ncSeed,
-  infoRequests: infoRequestsSeed as InfoRequest[],
-  inspections: inspSeed,
-  reviews: reviewSeed,
-  applications: appSeed,
-  documents: docSeed,
-  activity: activitySeed,
-  notifications: seedNotifications,
-};
-
-interface Ctx extends State {
-  actorName: string;
-  hydrated: boolean;
   logout: () => void;
   resetDemo: () => void;
   markNotificationsRead: () => void;
-  decideSection: (siteId: string, section: SectionKey, decision: SectionDecision, note: string) => void;
-  requestInformation: (input: { siteId: string; section: SectionKey | "general"; subject: string; details: string; dueBy: string; priority: "Low" | "Normal" | "High"; requestedFrom: string }) => void;
-  respondToInfoRequest: (id: string, message: string, attachments: string[]) => void;
-  raiseNonConformity: (input: { siteId: string; title: string; category: string; severity: Severity; requiredAction: string; responsiblePerson: string; deadline: string }) => void;
-  submitCorrectiveAction: (ncId: string, message: string, attachments: string[]) => void;
-  decideCorrectiveAction: (ncId: string, submissionId: string, decision: "Accepted" | "Rejected" | "More Info Requested", note: string) => void;
-  requestInspection: (siteId: string, type: string, note: string) => void;
-  completeReview: (reviewId: string) => void;
-  startReview: (reviewId: string) => void;
-  regulatorAction: (kind: "Send Reminder" | "Request Information" | "Flag Site" | "Acknowledge Submission", siteId: string, note?: string) => void;
+  decideSection: (
+    siteId: string,
+    section: SectionKey,
+    decision: SectionDecision,
+    note: string,
+  ) => Promise<void>;
+  requestInformation: (input: {
+    siteId: string;
+    section: SectionKey | "general";
+    subject: string;
+    details: string;
+    dueBy: string;
+    priority: "Low" | "Normal" | "High";
+    requestedFrom: string;
+  }) => Promise<void>;
+  respondToInfoRequest: (id: string, message: string, attachments: string[]) => Promise<void>;
+  raiseNonConformity: (input: {
+    siteId: string;
+    title: string;
+    category: string;
+    severity: Severity;
+    requiredAction: string;
+    responsiblePerson: string;
+    deadline: string;
+  }) => Promise<void>;
+  submitCorrectiveAction: (ncId: string, message: string, attachments: string[]) => Promise<void>;
+  decideCorrectiveAction: (
+    ncId: string,
+    submissionId: string,
+    decision: "Accepted" | "Rejected" | "More Info Requested",
+    note: string,
+  ) => Promise<void>;
+  requestInspection: (siteId: string, type: string, note: string) => Promise<void>;
+  completeReview: (reviewId: string) => Promise<void>;
+  startReview: (reviewId: string) => Promise<void>;
+  regulatorAction: (
+    kind: "Send Reminder" | "Request Information" | "Flag Site" | "Acknowledge Submission",
+    siteId: string,
+    note?: string,
+  ) => Promise<void>;
   logActivity: (entry: Omit<ActivityEntry, "id" | "at" | "role" | "actor">) => void;
 }
 
 const StoreContext = createContext<Ctx | null>(null);
+
+const EMPTY_LIST = { results: [] };
 
 export function PrototypeStoreProvider({
   children,
@@ -116,389 +181,356 @@ export function PrototypeStoreProvider({
   onSignOut,
 }: {
   children: ReactNode;
-  /** Seeded from the shared session, this dashboard no longer signs anyone in. */
+  /** Seeded from the shared session; the API's own `audience` can widen or narrow this. */
   role: Role;
   onSignOut: () => void;
 }) {
-  const [state, setState] = useState<State>({ ...initialState, role });
-  const [hydrated, setHydrated] = useState(false);
+  const currentUser = useCurrentUser();
+  const capabilities = useMiningCapabilities();
+  const dashboard = useMiningDashboard();
+  const sitesQuery = useMineSites();
+  const nonConformitiesQuery = useMiningNonConformities();
+  const inspectionsQuery = useMiningInspections();
+  const samplesQuery = useMiningSamples();
+  const applicationsQuery = useMiningApplications();
+  const reviewsQuery = usePendingReviews();
+  const infoRequestsQuery = useInfoRequests();
+  const licencesQuery = useLicences();
+  useExpiringLicences();
+  const documentsQuery = useMiningDocuments();
+  const envRecordsQuery = useEnvironmentalRecords();
+  const safetyIncidentsQuery = useSafetyIncidents();
+  const orgProfilesQuery = useOrganisationProfiles();
+  const orgDirectory = useOrganisationDirectory();
+  const auditQuery = useMiningAudit();
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setState((s) => ({ ...s, ...(JSON.parse(raw) as State), role: s.role }));
-    } catch {
-      /* ignore corrupt demo state */
-    }
-    setHydrated(true);
-  }, []);
+  const reviewSection = useReviewSiteSection();
+  const updateSite = useUpdateMineSite();
+  const createInspectionFor = useCreateInspection();
+  const createInfoRequestFor = useCreateInfoRequest();
+  const respondToInfoRequestFor = useRespondToInfoRequest();
+  const createNonConformityFor = useCreateMiningNonConformity();
+  const submitEvidenceFor = useSubmitMiningNonConformityEvidence();
+  const closeNonConformityFor = useCloseMiningNonConformity();
+  const updateReviewFor = useUpdatePendingReview();
+  // Not yet used by any screen; kept wired so the applicant/scoring flows can
+  // adopt them without another pass through the store.
+  void useCreateMiningApplication;
+  void useAddScoreFactorApi;
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* storage unavailable in demo */
-    }
-  }, [state, hydrated]);
+  const audience = capabilities.data?.audience;
+  const effectiveRole = audienceToRole(audience, role);
 
-  const actorName = state.role ? users[state.role].shortName : "System";
+  const user = useMemo(() => {
+    const account = currentUser.data;
+    if (!account) return null;
+    const name = [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
+    return { name, initials: initialsOf(name), title: ROLE_TITLE[effectiveRole] };
+  }, [currentUser.data, effectiveRole]);
 
-  const pushActivity = useCallback(
-    (s: State, entry: Omit<ActivityEntry, "id" | "at" | "role" | "actor">): ActivityEntry[] => [
-      { id: uid("act"), at: nowStamp(), actor: s.role ? users[s.role].shortName : "System", role: s.role ?? "partner", ...entry },
-      ...s.activity,
-    ],
-    [],
+  const sites = useMemo(
+    () => (sitesQuery.data ?? EMPTY_LIST).results.map(toMineSite),
+    [sitesQuery.data],
+  );
+  const nonConformities = useMemo(
+    () => (nonConformitiesQuery.data ?? EMPTY_LIST).results.map(toNonConformity),
+    [nonConformitiesQuery.data],
+  );
+  const inspections = useMemo(
+    () => (inspectionsQuery.data ?? EMPTY_LIST).results.map(toInspection),
+    [inspectionsQuery.data],
+  );
+  const samples = useMemo(
+    () => (samplesQuery.data ?? EMPTY_LIST).results.map(toSample),
+    [samplesQuery.data],
+  );
+  const applications = useMemo(
+    () => (applicationsQuery.data ?? EMPTY_LIST).results.map(toApplication),
+    [applicationsQuery.data],
+  );
+  const reviews = useMemo(
+    () => (reviewsQuery.data ?? EMPTY_LIST).results.map(toPendingReview),
+    [reviewsQuery.data],
+  );
+  const infoRequests = useMemo(
+    () => (infoRequestsQuery.data ?? EMPTY_LIST).results.map(toInfoRequest),
+    [infoRequestsQuery.data],
+  );
+  const licences = useMemo(
+    () => (licencesQuery.data ?? EMPTY_LIST).results.map(toLicenceDoc),
+    [licencesQuery.data],
+  );
+  const documents = useMemo(
+    () => (documentsQuery.data ?? EMPTY_LIST).results.map(toDocumentRecord),
+    [documentsQuery.data],
+  );
+  const envRecords = useMemo(
+    () => (envRecordsQuery.data ?? EMPTY_LIST).results.map(toEnvRecord),
+    [envRecordsQuery.data],
+  );
+  const safetyIncidents = useMemo(
+    () => (safetyIncidentsQuery.data ?? EMPTY_LIST).results.map(toSafetyIncident),
+    [safetyIncidentsQuery.data],
   );
 
-  const pushNotification = (s: State, n: Omit<Notification, "id" | "at" | "read">): Notification[] => [
-    { id: uid("n"), at: nowStamp(), read: false, ...n },
-    ...s.notifications,
+  const organisations = useMemo(() => {
+    const profiles = (orgProfilesQuery.data ?? EMPTY_LIST).results;
+    const dirRows = (orgDirectory.data ?? EMPTY_LIST).results;
+    return dirRows.map((row) => {
+      const profile = profiles.find((p) => p.organisation === row.id);
+      const sitesForOrg = sites.filter((s) => s.orgId === row.id);
+      return toOrganisation(row, profile, sitesForOrg);
+    });
+  }, [orgProfilesQuery.data, orgDirectory.data, sites]);
+
+  const activity: ActivityEntry[] = useMemo(
+    () =>
+      (auditQuery.data ?? EMPTY_LIST).results.map((row) => ({
+        id: row.id,
+        at: row.created_at.slice(0, 16).replace("T", " "),
+        actor: row.actor,
+        role: (row.role as Role) || "partner",
+        action: row.action,
+        detail: row.detail,
+        ...(row.target ? { target: row.target } : {}),
+        tone: "neutral" as const,
+      })),
+    [auditQuery.data],
+  );
+
+  const notifications: Notification[] = useMemo(
+    () =>
+      (dashboard.data?.notifications ?? []).map((raw, i) => {
+        const n = raw as Record<string, unknown>;
+        return {
+          id: String(n["id"] ?? i),
+          at: String(n["at"] ?? ""),
+          title: String(n["title"] ?? ""),
+          body: String(n["body"] ?? ""),
+          tone: (["neutral", "positive", "warning", "negative"] as const).includes(
+            n["tone"] as never,
+          )
+            ? (n["tone"] as Notification["tone"])
+            : "neutral",
+          read: Boolean(n["read"]),
+          audience: (Array.isArray(n["audience"])
+            ? n["audience"]
+            : ["partner", "miner", "regulator"]) as Role[],
+        };
+      }),
+    [dashboard.data],
+  );
+
+  const complianceTrend = useMemo(
+    () =>
+      (dashboard.data?.kpi_trend ?? []).map((raw) => {
+        const p = raw as Record<string, unknown>;
+        return {
+          month: String(p["month"] ?? ""),
+          score: Number(p["score"] ?? 0),
+          inspections: Number(p["inspections"] ?? 0),
+          nonConformities: Number(p["non_conformities"] ?? p["nonConformities"] ?? 0),
+        };
+      }),
+    [dashboard.data],
+  );
+
+  const queries = [
+    currentUser,
+    capabilities,
+    dashboard,
+    sitesQuery,
+    nonConformitiesQuery,
+    inspectionsQuery,
+    samplesQuery,
+    applicationsQuery,
+    reviewsQuery,
+    infoRequestsQuery,
+    licencesQuery,
+    documentsQuery,
+    envRecordsQuery,
+    safetyIncidentsQuery,
+    orgProfilesQuery,
+    orgDirectory,
+    auditQuery,
   ];
+  const isLoading = queries.some((q) => q.isPending);
+  const firstError = queries.map((q) => q.error).find(Boolean) ?? null;
 
   const logout = onSignOut;
   const resetDemo = useCallback(() => {
-    setState((s) => ({ ...initialState, role: s.role }));
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* noop */
-    }
+    // No local mutable state left to reset; kept so the sidebar action still compiles.
   }, []);
-
-  const markNotificationsRead = useCallback(
-    () => setState((s) => ({ ...s, notifications: s.notifications.map((n) => ({ ...n, read: true })) })),
-    [],
-  );
-
-  const logActivity = useCallback<Ctx["logActivity"]>((entry) => setState((s) => ({ ...s, activity: pushActivity(s, entry) })), [pushActivity]);
+  const markNotificationsRead = useCallback(() => {}, []);
+  const logActivity = useCallback(() => {}, []);
 
   const decideSection = useCallback<Ctx["decideSection"]>(
-    (siteId, section, decision, note) => {
-      setState((s) => {
-        const statusMap: Record<SectionDecision, ReviewStatus> = {
-          Verify: "Verified",
-          Reject: "Rejected",
-          "Request Information": "Info Requested",
-          "Request Inspection": "Inspection Requested",
-          Flag: "Flagged",
-        };
-        const nextStatus = statusMap[decision];
-        const sites = s.sites.map((site) => {
-          if (site.id !== siteId) return site;
-          const sections = site.sections.map((sec) =>
-            sec.key === section
-              ? { ...sec, status: nextStatus, decisionNote: note, decidedBy: users[s.role ?? "partner"].shortName, decidedAt: nowStamp() }
-              : sec,
-          );
-          const verified = sections.filter((x) => x.status === "Verified").length;
-          const rejected = sections.filter((x) => x.status === "Rejected" || x.status === "Flagged").length;
-          const score = Math.max(20, Math.min(99, site.complianceScore + (decision === "Verify" ? 2 : decision === "Reject" || decision === "Flag" ? -4 : 0)));
-          const risk = score >= 80 ? "Low" : score >= 60 ? "Medium" : "High";
-          const status =
-            decision === "Flag" ? "Suspended" : verified === sections.length ? "Operational" : rejected > 0 ? "Under Review" : site.status;
-          return { ...site, sections, complianceScore: score, risk: risk as MineSite["risk"], status: status as MineSite["status"] };
-        });
-        const site = sites.find((x) => x.id === siteId);
-        let inspections = s.inspections;
-        if (decision === "Request Inspection") {
-          inspections = [
-            {
-              id: uid("ins"),
-              ref: `INS-${new Date().getFullYear()}-${String(900 + s.inspections.length).padStart(4, "0")}`,
-              siteId,
-              type: `Targeted inspection: ${section}`,
-              scheduled: todayStamp(),
-              inspector: "Unassigned",
-              status: "Requested",
-              findings: [],
-              notes: note,
-            },
-            ...s.inspections,
-          ];
-        }
-        return {
-          ...s,
-          sites,
-          inspections,
-          activity: pushActivity(s, {
-            action: `${decision}: ${section} section`,
-            detail: note || `${decision} recorded against the ${section} section.`,
-            target: siteId,
-            tone: decision === "Verify" ? "positive" : decision === "Reject" || decision === "Flag" ? "negative" : "warning",
-          }),
-          notifications: pushNotification(s, {
-            title: `${decision}: ${site?.code ?? siteId} ${section}`,
-            body: note || `Reviewer recorded "${decision}" on the ${section} section.`,
-            tone: decision === "Verify" ? "positive" : decision === "Reject" || decision === "Flag" ? "negative" : "warning",
-            audience: ["miner", "regulator", "partner"],
-          }),
-        };
+    async (siteId, section, decision, note) => {
+      const status =
+        decision === "Verify"
+          ? "verified"
+          : decision === "Reject"
+            ? "rejected"
+            : decision === "Request Inspection"
+              ? "inspection_requested"
+              : decision === "Flag"
+                ? "flagged"
+                : "info_requested";
+      await reviewSection.mutateAsync({
+        id: siteId,
+        key: section as ApiSectionKey,
+        status,
+        note: note || undefined,
       });
+      if (decision === "Request Inspection") {
+        await createInspectionFor.mutateAsync({
+          site: siteId,
+          type: "follow_up",
+          inspector_name: "Unassigned",
+        });
+      }
+      if (decision === "Flag") {
+        await updateSite.mutateAsync({ id: siteId, patch: { status: "suspended", risk: "high" } });
+      }
     },
-    [pushActivity],
+    [reviewSection, createInspectionFor, updateSite],
   );
 
   const requestInformation = useCallback<Ctx["requestInformation"]>(
-    (input) => {
-      setState((s) => ({
-        ...s,
-        infoRequests: [
-          {
-            id: uid("ir"),
-            ...input,
-            requestedBy: users[s.role ?? "partner"].shortName,
-            requestedAt: todayStamp(),
-            status: "Open",
-          },
-          ...s.infoRequests,
-        ],
-        activity: pushActivity(s, {
-          action: "Information requested",
-          detail: `${input.subject}: due ${input.dueBy}.`,
-          target: input.siteId,
-          tone: "warning",
-        }),
-        notifications: pushNotification(s, {
-          title: "Information requested",
-          body: `${input.subject} (${input.siteId}), due ${input.dueBy}.`,
-          tone: "warning",
-          audience: ["miner", "partner"],
-        }),
-      }));
+    async (input) => {
+      await createInfoRequestFor.mutateAsync({
+        site: input.siteId,
+        section: input.section === "general" ? undefined : (input.section as ApiSectionKey),
+        subject: input.subject,
+        details: input.details,
+        due_by: input.dueBy,
+        priority: priorityToApi[input.priority],
+      });
     },
-    [pushActivity],
+    [createInfoRequestFor],
   );
 
   const respondToInfoRequest = useCallback<Ctx["respondToInfoRequest"]>(
-    (id, message, attachments) => {
-      setState((s) => ({
-        ...s,
-        infoRequests: s.infoRequests.map((r) =>
-          r.id === id
-            ? { ...r, status: "Responded", response: { at: nowStamp(), by: users[s.role ?? "miner"].shortName, message, attachments } }
-            : r,
-        ),
-        activity: pushActivity(s, { action: "Information response submitted", detail: message.slice(0, 140), tone: "positive" }),
-        notifications: pushNotification(s, {
-          title: "Information response received",
-          body: message.slice(0, 120),
-          tone: "positive",
-          audience: ["partner", "regulator"],
-        }),
-      }));
+    async (id, message) => {
+      await respondToInfoRequestFor.mutateAsync({ id, message });
     },
-    [pushActivity],
+    [respondToInfoRequestFor],
   );
 
   const raiseNonConformity = useCallback<Ctx["raiseNonConformity"]>(
-    (input) => {
-      setState((s) => {
-        const ref = `NCR-${new Date().getFullYear()}-${String(100 + s.nonConformities.length).padStart(3, "0")}`;
-        return {
-          ...s,
-          nonConformities: [
-            {
-              id: uid("nc"),
-              ref,
-              ...input,
-              raisedBy: `${users[s.role ?? "partner"].shortName} (${users[s.role ?? "partner"].title})`,
-              raisedAt: todayStamp(),
-              status: "Open",
-              submissions: [],
-            },
-            ...s.nonConformities,
-          ],
-          activity: pushActivity(s, {
-            action: "Non-conformity raised",
-            detail: `${ref}: ${input.title} (${input.severity}). Due ${input.deadline}.`,
-            target: input.siteId,
-            tone: "negative",
-          }),
-          notifications: pushNotification(s, {
-            title: `Non-conformity ${ref} raised`,
-            body: `${input.title}: ${input.severity}, due ${input.deadline}.`,
-            tone: "negative",
-            audience: ["miner", "regulator", "partner"],
-          }),
-        };
+    async (input) => {
+      await createNonConformityFor.mutateAsync({
+        site: input.siteId,
+        title: input.title,
+        category: input.category,
+        severity: ncSeverityToApi[input.severity],
+        required_action: input.requiredAction,
+        responsible_person: input.responsiblePerson,
+        deadline: input.deadline,
       });
     },
-    [pushActivity],
+    [createNonConformityFor],
   );
 
   const submitCorrectiveAction = useCallback<Ctx["submitCorrectiveAction"]>(
-    (ncId, message, attachments) => {
-      setState((s) => ({
-        ...s,
-        nonConformities: s.nonConformities.map((nc) =>
-          nc.id === ncId
-            ? {
-                ...nc,
-                status: "Awaiting Review",
-                submissions: [...nc.submissions, { id: uid("cs"), at: nowStamp(), by: users[s.role ?? "miner"].name, message, attachments }],
-              }
-            : nc,
-        ),
-        activity: pushActivity(s, {
-          action: "Corrective action submitted",
-          detail: message.slice(0, 140),
-          target: s.nonConformities.find((n) => n.id === ncId)?.ref ?? ncId,
-          tone: "positive",
-        }),
-        notifications: pushNotification(s, {
-          title: "Corrective action submitted",
-          body: `${s.nonConformities.find((n) => n.id === ncId)?.ref} awaits reviewer decision.`,
-          tone: "warning",
-          audience: ["partner", "regulator"],
-        }),
-      }));
+    async (ncId, message) => {
+      await submitEvidenceFor.mutateAsync({ id: ncId, message });
     },
-    [pushActivity],
+    [submitEvidenceFor],
   );
 
   const decideCorrectiveAction = useCallback<Ctx["decideCorrectiveAction"]>(
-    (ncId, submissionId, decision, note) => {
-      setState((s) => ({
-        ...s,
-        nonConformities: s.nonConformities.map((nc) =>
-          nc.id === ncId
-            ? {
-                ...nc,
-                status: decision === "Accepted" ? "Closed" : decision === "Rejected" ? "Escalated" : "In Progress",
-                submissions: nc.submissions.map((sub) =>
-                  sub.id === submissionId
-                    ? { ...sub, decision, decisionNote: note, decidedAt: nowStamp(), decidedBy: users[s.role ?? "partner"].shortName }
-                    : sub,
-                ),
-              }
-            : nc,
-        ),
-        activity: pushActivity(s, {
-          action: `Corrective action ${decision.toLowerCase()}`,
-          detail: note || `Decision recorded on ${s.nonConformities.find((n) => n.id === ncId)?.ref}.`,
-          target: s.nonConformities.find((n) => n.id === ncId)?.ref ?? ncId,
-          tone: decision === "Accepted" ? "positive" : decision === "Rejected" ? "negative" : "warning",
-        }),
-        notifications: pushNotification(s, {
-          title: `Corrective action ${decision.toLowerCase()}`,
-          body: `${s.nonConformities.find((n) => n.id === ncId)?.ref}: ${note || decision}`,
-          tone: decision === "Accepted" ? "positive" : "warning",
-          audience: ["miner", "partner", "regulator"],
-        }),
-      }));
+    async (ncId, _submissionId, decision, note) => {
+      await closeNonConformityFor.mutateAsync({
+        id: ncId,
+        accept: decision === "Accepted",
+        note: note || undefined,
+      });
     },
-    [pushActivity],
+    [closeNonConformityFor],
   );
 
   const requestInspection = useCallback<Ctx["requestInspection"]>(
-    (siteId, type, note) => {
-      setState((s) => ({
-        ...s,
-        inspections: [
-          {
-            id: uid("ins"),
-            ref: `INS-${new Date().getFullYear()}-${String(900 + s.inspections.length).padStart(4, "0")}`,
-            siteId,
-            type,
-            scheduled: todayStamp(),
-            inspector: "Unassigned",
-            status: "Requested",
-            findings: [],
-            notes: note,
-          },
-          ...s.inspections,
-        ],
-        activity: pushActivity(s, { action: "Inspection requested", detail: `${type}: ${note}`, target: siteId, tone: "warning" }),
-        notifications: pushNotification(s, { title: "Inspection requested", body: `${type} requested for ${siteId}.`, tone: "warning", audience: ["miner", "partner", "regulator"] }),
-      }));
+    async (siteId, _type, note) => {
+      void note;
+      await createInspectionFor.mutateAsync({
+        site: siteId,
+        type: "follow_up",
+        inspector_name: "Unassigned",
+        scheduled_for: null,
+      });
     },
-    [pushActivity],
+    [createInspectionFor],
   );
 
   const startReview = useCallback<Ctx["startReview"]>(
-    (reviewId) => setState((s) => ({ ...s, reviews: s.reviews.map((r) => (r.id === reviewId ? { ...r, status: "In Progress", assignedTo: users[s.role ?? "partner"].shortName } : r)) })),
-    [],
+    async (reviewId) => {
+      await updateReviewFor.mutateAsync({ id: reviewId, patch: { status: "in_progress" } });
+    },
+    [updateReviewFor],
   );
 
   const completeReview = useCallback<Ctx["completeReview"]>(
-    (reviewId) =>
-      setState((s) => ({
-        ...s,
-        reviews: s.reviews.map((r) => (r.id === reviewId ? { ...r, status: "Completed" } : r)),
-        activity: pushActivity(s, {
-          action: "Review completed",
-          detail: s.reviews.find((r) => r.id === reviewId)?.subject ?? "Review closed.",
-          target: s.reviews.find((r) => r.id === reviewId)?.siteId ?? reviewId,
-          tone: "positive",
-        }),
-      })),
-    [pushActivity],
+    async (reviewId) => {
+      await updateReviewFor.mutateAsync({ id: reviewId, patch: { status: "completed" } });
+    },
+    [updateReviewFor],
   );
 
   const regulatorAction = useCallback<Ctx["regulatorAction"]>(
-    (kind, siteId, note) => {
-      setState((s) => ({
-        ...s,
-        sites: kind === "Flag Site" ? s.sites.map((x) => (x.id === siteId ? { ...x, status: "Under Review", risk: "High" } : x)) : s.sites,
-        activity: pushActivity(s, {
-          action: kind,
-          detail: note || `${kind} issued for ${siteId} by regulatory oversight.`,
-          target: siteId,
-          tone: kind === "Acknowledge Submission" ? "positive" : "warning",
-        }),
-        notifications: pushNotification(s, {
-          title: kind,
-          body: note || `${kind} recorded for ${siteId}.`,
-          tone: kind === "Acknowledge Submission" ? "positive" : "warning",
-          audience: ["partner", "miner", "regulator"],
-        }),
-      }));
+    async (kind, siteId) => {
+      if (kind === "Flag Site") {
+        await updateSite.mutateAsync({
+          id: siteId,
+          patch: { status: "under_review", risk: "high" },
+        });
+      }
+      // Send Reminder / Request Information / Acknowledge Submission have no
+      // dedicated write endpoint yet; real oversight actions are recorded
+      // through the flows above instead.
     },
-    [pushActivity],
+    [updateSite],
   );
 
-  const value = useMemo<Ctx>(
-    () => ({
-      ...state,
-      actorName,
-      hydrated,
-      logout,
-      resetDemo,
-      markNotificationsRead,
-      decideSection,
-      requestInformation,
-      respondToInfoRequest,
-      raiseNonConformity,
-      submitCorrectiveAction,
-      decideCorrectiveAction,
-      requestInspection,
-      completeReview,
-      startReview,
-      regulatorAction,
-      logActivity,
-    }),
-    [
-      state,
-      actorName,
-      hydrated,
-      logout,
-      resetDemo,
-      markNotificationsRead,
-      decideSection,
-      requestInformation,
-      respondToInfoRequest,
-      raiseNonConformity,
-      submitCorrectiveAction,
-      decideCorrectiveAction,
-      requestInspection,
-      completeReview,
-      startReview,
-      regulatorAction,
-      logActivity,
-    ],
-  );
+  const value: Ctx = {
+    role: effectiveRole,
+    user,
+    actorName: user?.name ?? "System",
+    hydrated: !isLoading,
+    isLoading,
+    error: firstError instanceof ApiError ? firstError : null,
+
+    sites,
+    nonConformities,
+    infoRequests,
+    inspections,
+    reviews,
+    applications,
+    documents,
+    activity,
+    notifications,
+    licences,
+    organisations,
+    envRecords,
+    safetyIncidents,
+    samples,
+    complianceTrend,
+
+    logout,
+    resetDemo,
+    markNotificationsRead,
+    decideSection,
+    requestInformation,
+    respondToInfoRequest,
+    raiseNonConformity,
+    submitCorrectiveAction,
+    decideCorrectiveAction,
+    requestInspection,
+    completeReview,
+    startReview,
+    regulatorAction,
+    logActivity,
+  };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
@@ -509,21 +541,19 @@ export function useStore() {
   return ctx;
 }
 
-export function useSite(siteId: string) {
-  const { sites } = useStore();
-  return sites.find((s) => s.id === siteId);
+/**
+ * One site in full, including its ten review sections. The list read used by
+ * `useStore().sites` intentionally omits them, mirroring the API's list/detail split.
+ */
+export function useSiteDetail(siteId: string | null): {
+  site: MineSite | null;
+  isLoading: boolean;
+  error: ApiError | null;
+} {
+  const query = useMineSite(siteId);
+  return {
+    site: query.data ? toMineSiteDetail(query.data) : null,
+    isLoading: query.isPending,
+    error: query.error instanceof ApiError ? query.error : null,
+  };
 }
-
-export function orgById(id: string) {
-  return organisations.find((o) => o.id === id);
-}
-
-export function licenceById(id: string) {
-  return licences.find((l) => l.id === id);
-}
-
-export function samplesForSite(siteId: string) {
-  return samples.filter((s) => s.siteId === siteId);
-}
-
-export { organisations, licences, samples, users };

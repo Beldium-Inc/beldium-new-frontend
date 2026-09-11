@@ -45,11 +45,7 @@ export const EXPORT_SECTION_LABELS: Record<ExportSectionKey, string> = {
 };
 
 export type ExportDocStatus =
-  | "pending"
-  | "verified"
-  | "rejected"
-  | "replacement_requested"
-  | "clarification_requested";
+  "pending" | "verified" | "rejected" | "replacement_requested" | "clarification_requested";
 
 export type ShipmentStatus =
   | "draft"
@@ -212,7 +208,7 @@ export interface Shipment {
   updated_at: string;
 }
 
-export interface MonitoringEvent {
+export interface ExportMonitoringEvent {
   id: UUID;
   at: string;
   severity: "info" | "warning" | "critical";
@@ -238,7 +234,7 @@ export interface ExportDashboard {
     average_compliance_score: number;
   };
   recent_shipments: Shipment[];
-  events: MonitoringEvent[];
+  events: ExportMonitoringEvent[];
 }
 
 // --- capabilities and dashboard ---------------------------------------------
@@ -326,7 +322,10 @@ export function reviewExportDocument(
   id: UUID,
   input: { status: ExportDocStatus; action: string; comment?: string | undefined },
 ): Promise<ExportDocument> {
-  return apiFetch<ExportDocument>(`${BASE}/documents/${id}/review/`, { method: "POST", body: input });
+  return apiFetch<ExportDocument>(`${BASE}/documents/${id}/review/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function setChecklistItemState(
@@ -347,7 +346,10 @@ export function raiseExportNonConformity(input: {
   section: ExportSectionKey;
   detail?: string | undefined;
 }): Promise<ExportNonConformity> {
-  return apiFetch<ExportNonConformity>(`${BASE}/non-conformities/`, { method: "POST", body: input });
+  return apiFetch<ExportNonConformity>(`${BASE}/non-conformities/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function updateExportNonConformity(
@@ -379,6 +381,6 @@ export function addShipmentAuditNote(
 
 export function listMonitoringEvents(
   query: ExportListQuery = {},
-): Promise<Paginated<MonitoringEvent>> {
-  return apiFetch<Paginated<MonitoringEvent>>(`${BASE}/monitoring-events/`, { query });
+): Promise<Paginated<ExportMonitoringEvent>> {
+  return apiFetch<Paginated<ExportMonitoringEvent>>(`${BASE}/monitoring-events/`, { query });
 }
