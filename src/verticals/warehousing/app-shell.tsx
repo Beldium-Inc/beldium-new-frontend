@@ -1,9 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Bell,
   Boxes,
   Building2,
+  ChevronsLeft,
+  ChevronsRight,
   ClipboardCheck,
   FileText,
   FileWarning,
@@ -34,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 const ICONS = {
   LayoutDashboard,
@@ -104,21 +107,44 @@ export function AppShell({
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const profile = roleById(role);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("warehousing-nav-collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     if (roleId === null) navigate({ to: "/signin", replace: true });
     else if (roleId !== role) navigate({ to: roleById(roleId).home, replace: true });
   }, [roleId, role, navigate]);
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("warehousing-nav-collapsed", collapsed ? "1" : "0");
+    } catch {
+      // ignore write failures (private mode, disabled storage)
+    }
+  }, [collapsed]);
+
   if (roleId !== role) return null;
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-sidebar px-4 py-6 text-sidebar-foreground lg:flex">
-        <div className="flex items-center gap-3 px-2">
+      <aside
+        className={cn(
+          "sticky top-0 relative hidden h-screen shrink-0 flex-col bg-sidebar px-4 py-6 text-sidebar-foreground transition-[width] duration-200 lg:flex",
+          collapsed ? "lg:w-20" : "w-72",
+        )}
+      >
+        <div className={cn("flex items-center gap-3 px-2", collapsed && "lg:justify-center")}>
           <BeldiumLogo className="size-10" />
-          <div>
-            <p className="font-heading text-sm font-semibold text-sidebar-accent-foreground">Beldium</p>
+          <div className={cn(collapsed && "lg:hidden")}>
+            <p className="font-heading text-sm font-semibold text-sidebar-accent-foreground">
+              Beldium
+            </p>
             <p className="text-xs text-sidebar-foreground/70">Warehousing Compliance</p>
           </div>
         </div>
@@ -126,50 +152,61 @@ export function AppShell({
         <nav className="mt-8 flex flex-1 flex-col gap-1">
           {NAV[role].map((item) => {
             const Icon = ICONS[item.icon];
-            const active = item.to === profile.home ? pathname === item.to : pathname.startsWith(item.to);
+            const active =
+              item.to === profile.home ? pathname === item.to : pathname.startsWith(item.to);
             return (
               <Link
                 key={item.to}
                 to={item.to}
+                title={collapsed ? item.label : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                  collapsed && "lg:justify-center",
                   active
                     ? "bg-sidebar-primary text-sidebar-primary-foreground"
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <Icon className="size-4" />
-                {item.label}
+                <span className={cn(collapsed && "lg:hidden")}>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="rounded-2xl bg-sidebar-accent p-4 text-xs text-sidebar-accent-foreground/80">
-          <p className="font-heading font-semibold text-sidebar-accent-foreground">Demo environment</p>
-          <p className="mt-1 leading-relaxed">
-            Sample Nigerian mineral warehousing data. No live records, no backend.
-          </p>
-        </div>
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+          className="absolute top-8 -right-3 z-10 hidden size-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground lg:flex"
+        >
+          {collapsed ? (
+            <ChevronsRight className="size-3.5" />
+          ) : (
+            <ChevronsLeft className="size-3.5" />
+          )}
+        </button>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
-          <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
-            <div className="min-w-0">
-              <h1 className="truncate font-heading text-xl font-semibold text-primary">{title}</h1>
-              {subtitle ? <p className="mt-0.5 truncate text-sm text-muted-foreground">{subtitle}</p> : null}
-            </div>
-            <div className="flex items-center gap-3">
+        <DashboardHeader
+          title={title}
+          subtitle={subtitle}
+          actions={
+            <>
               {actions}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-11 gap-3 rounded-xl border-border pl-2 pr-3">
+                  <Button
+                    variant="outline"
+                    className="h-11 gap-3 rounded-xl border-border pl-2 pr-3"
+                  >
                     <span className="flex size-8 items-center justify-center rounded-lg bg-secondary font-heading text-xs font-semibold text-secondary-foreground">
                       {profile.initials}
                     </span>
                     <span className="hidden text-left leading-tight sm:block">
-                      <span className="block text-sm font-medium text-foreground">{profile.person}</span>
+                      <span className="block text-sm font-medium text-foreground">
+                        {profile.person}
+                      </span>
                       <span className="block text-xs text-muted-foreground">{profile.title}</span>
                     </span>
                   </Button>
@@ -208,26 +245,22 @@ export function AppShell({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          </div>
-          <nav className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2 lg:hidden">
-            {NAV[role].map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs text-muted-foreground data-[status=active]:bg-secondary data-[status=active]:text-secondary-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </header>
+            </>
+          }
+        />
+        <nav className="flex gap-1 overflow-x-auto border-b border-border bg-card/95 px-4 py-2 backdrop-blur lg:hidden">
+          {NAV[role].map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs text-muted-foreground data-[status=active]:bg-secondary data-[status=active]:text-secondary-foreground"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-8">{children}</main>
-
-        <footer className="border-t border-border px-6 py-4 text-xs text-muted-foreground">
-          Beldium Warehousing Compliance, front-end prototype with sample data for demonstration only.
-        </footer>
       </div>
     </div>
   );

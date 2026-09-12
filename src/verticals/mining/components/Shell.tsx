@@ -1,11 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   Bell,
   Boxes,
   Building2,
   ChartLine,
+  ChevronsLeft,
+  ChevronsRight,
   ClipboardList,
   Files,
   FlaskConical,
@@ -18,7 +20,6 @@ import {
   Menu,
   Mountain,
   Receipt,
-  RefreshCw,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -56,17 +57,26 @@ const roleLabel = {
 } as const;
 
 export function Shell({ children }: { children: ReactNode }) {
-  const {
-    role,
-    user: account,
-    logout,
-    notifications,
-    markNotificationsRead,
-    resetDemo,
-  } = useStore();
+  const { role, user: account, logout, notifications, markNotificationsRead } = useStore();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("mining-nav-collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("mining-nav-collapsed", collapsed ? "1" : "0");
+    } catch {
+      // ignore write failures (private mode, disabled storage)
+    }
+  }, [collapsed]);
 
   if (!role) return null;
   const user = account ?? { name: "", initials: "??", title: "" };
@@ -80,22 +90,34 @@ export function Shell({ children }: { children: ReactNode }) {
     navigate({ to: "/signin", replace: true });
   };
 
-  const sidebar = (
+  const sidebar = (collapsedDesktop: boolean) => (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <BeldiumLogo className="size-10 rounded-3xl" />
-        <div className="leading-tight">
+      <div
+        className={cn(
+          "flex items-center gap-2.5 px-5 py-5",
+          collapsedDesktop && "lg:justify-center lg:px-3",
+        )}
+      >
+        <BeldiumLogo className="size-10 shrink-0 rounded-3xl" />
+        <div className={cn("leading-tight", collapsedDesktop && "lg:hidden")}>
           <p className="font-display text-sm font-semibold text-sidebar-accent-foreground">
             Beldium
           </p>
-          <p className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">Mining Compliance</p>
+          <p className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">
+            Mining Compliance
+          </p>
         </div>
       </div>
       <ScrollArea className="flex-1 px-3">
         <nav className="space-y-5 pb-6">
           {groups.map((group) => (
             <div key={group}>
-              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              <p
+                className={cn(
+                  "px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50",
+                  collapsedDesktop && "lg:hidden",
+                )}
+              >
                 {group}
               </p>
               <ul className="space-y-0.5">
@@ -111,15 +133,19 @@ export function Shell({ children }: { children: ReactNode }) {
                         <Link
                           to={item.to}
                           onClick={() => setMobileOpen(false)}
+                          title={collapsedDesktop ? item.label : undefined}
                           className={cn(
                             "flex items-center gap-2.5 rounded-3xl px-2.5 py-2 text-[13px] font-medium transition-colors",
+                            collapsedDesktop && "lg:justify-center",
                             active
                               ? "bg-sidebar-primary text-sidebar-primary-foreground"
                               : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                           )}
                         >
                           <Icon className="size-4 shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          <span className={cn("truncate", collapsedDesktop && "lg:hidden")}>
+                            {item.label}
+                          </span>
                         </Link>
                       </li>
                     );
@@ -129,27 +155,34 @@ export function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
       </ScrollArea>
-      {/* <div className="border-t border-sidebar-border p-3">
-        <button
-          onClick={resetDemo}
-          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[12px] text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <RefreshCw className="size-3.5" /> Reset demo data
-        </button>
-        <p className="px-2.5 pt-2 text-[10px] leading-relaxed text-sidebar-foreground/50">
-          Prototype: seeded demo data, no live systems connected.
-        </p>
-      </div> */}
     </div>
   );
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 lg:block">{sidebar}</aside>
+      <aside
+        className={cn(
+          "sticky top-0 hidden h-screen shrink-0 transition-[width] duration-200 lg:block",
+          collapsed ? "lg:w-20" : "w-64",
+        )}
+      >
+        {sidebar(collapsed)}
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+          className="absolute top-8 -right-3 z-10 hidden size-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground lg:flex"
+        >
+          {collapsed ? (
+            <ChevronsRight className="size-3.5" />
+          ) : (
+            <ChevronsLeft className="size-3.5" />
+          )}
+        </button>
+      </aside>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div className="w-64 shadow-panel">{sidebar}</div>
+          <div className="w-64 max-w-[85vw] shadow-panel lg:max-w-none">{sidebar(false)}</div>
           <button
             aria-label="Close navigation"
             className="flex-1 bg-foreground/40"
@@ -171,7 +204,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </Button>
           <div className="min-w-0 flex-1">
             <Chip tone="info" className="hidden sm:inline-flex">
-              Prototype demo · {roleLabel[role]}
+              {roleLabel[role]}
             </Chip>
           </div>
 

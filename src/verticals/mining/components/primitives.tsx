@@ -13,13 +13,23 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        {eyebrow && <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{eyebrow}</p>}
-        <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>}
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        {eyebrow && (
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {eyebrow}
+          </p>
+        )}
+        <h1 className="font-display text-2xl font-semibold tracking-tight break-words">{title}</h1>
+        {description && (
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>
+        )}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }
@@ -87,10 +97,20 @@ export function KpiCard({
   );
 }
 
-export function Field({ label, value, children }: { label: string; value?: ReactNode; children?: ReactNode }) {
+export function Field({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: ReactNode;
+  children?: ReactNode;
+}) {
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
       <div className="mt-0.5 text-sm font-medium">{children ?? value}</div>
     </div>
   );
@@ -108,7 +128,7 @@ export function EmptyState({ title, description }: { title: string; description?
 export function DemoNote({ children }: { children: ReactNode }) {
   return (
     <p className="rounded-md border border-brand-soft bg-brand-soft/50 px-3 py-2 text-xs text-brand">
-      <span className="font-semibold">Prototype:</span> {children}
+      <span className="font-semibold">Note:</span> {children}
     </p>
   );
 }

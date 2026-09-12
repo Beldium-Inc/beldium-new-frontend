@@ -40,12 +40,6 @@ export function MinerDashboard() {
           </Button>
         }
       />
-      <div className="mb-5">
-        <DemoNote>
-          Seeded operator view for {org.name}. All submissions stay in your browser.
-        </DemoNote>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Organisation compliance"

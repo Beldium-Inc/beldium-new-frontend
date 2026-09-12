@@ -3,12 +3,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   Bell,
   Boxes,
+  ChevronsLeft,
+  ChevronsRight,
   ClipboardCheck,
   FileText,
   Landmark,
   LayoutDashboard,
   LogOut,
-  Menu,
   ScrollText,
   Search,
   ShieldCheck,
@@ -19,6 +20,7 @@ import { ROLE_LABEL, ROLE_PERSONA, useDemo } from "@/verticals/marketplace/store
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 const NAV = [
   { to: "/marketplace/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -47,6 +49,14 @@ export function AppShell({
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("marketplace-nav-collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     if (hydrated && !state.role) navigate({ to: "/signin", replace: true });
@@ -54,13 +64,15 @@ export function AppShell({
 
   useEffect(() => setOpen(false), [pathname]);
 
-  // if (!hydrated || !state.role) {
-  //   return (
-  //     <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-  //       Loading workspace…
-  //     </div>
-  //   );
-  // }
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("marketplace-nav-collapsed", collapsed ? "1" : "0");
+    } catch {
+      // ignore write failures (private mode, disabled storage)
+    }
+  }, [collapsed]);
+
+  if (!state.role) return null;
 
   const persona = ROLE_PERSONA[state.role];
   const unread = state.notifications.filter(
@@ -72,21 +84,39 @@ export function AppShell({
       {/* Sidebar */}
       <aside
         className={cn(
-          "navy-panel fixed inset-y-0 left-0 z-40 flex w-72 flex-col transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          "navy-panel fixed inset-y-0 left-0 z-40 flex max-w-[85vw] flex-col transition-[transform,width] duration-200 lg:sticky lg:top-0 lg:h-screen lg:max-w-none lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
+          collapsed ? "w-72 lg:w-20" : "w-72",
         )}
       >
-        <div className="flex items-center justify-between px-6 py-6">
-          <Link to="/marketplace/dashboard" className="flex items-center gap-2.5">
-            <BeldiumLogo className="size-10 rounded-3xl" />
-            <span className="font-display text-base leading-tight font-semibold">
+        <div
+          className={cn(
+            "flex items-center py-6",
+            collapsed ? "justify-center px-3 lg:px-3" : "justify-between px-6",
+          )}
+        >
+          <Link
+            to="/marketplace/dashboard"
+            className={cn("flex items-center gap-2.5", collapsed && "lg:justify-center")}
+          >
+            <BeldiumLogo className="size-10 shrink-0 rounded-3xl" />
+            <span
+              className={cn(
+                "font-display text-base leading-tight font-semibold",
+                collapsed && "lg:hidden",
+              )}
+            >
               Beldium
               <span className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">
                 Marketplace compliance
               </span>
             </span>
           </Link>
-          <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Close navigation">
+          <button
+            className="lg:hidden"
+            onClick={() => setOpen(false)}
+            aria-label="Close navigation"
+          >
             <X className="size-5" />
           </button>
         </div>
@@ -94,22 +124,30 @@ export function AppShell({
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
           {NAV.map((item) => {
             const active =
-              pathname === item.to || (item.to !== "/marketplace/dashboard" && pathname.startsWith(item.to));
+              pathname === item.to ||
+              (item.to !== "/marketplace/dashboard" && pathname.startsWith(item.to));
             return (
               <Link
                 key={item.to}
                 to={item.to}
+                title={collapsed ? item.label : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-3xl px-3 py-2.5 text-sm font-medium transition-colors",
+                  "relative flex items-center gap-3 rounded-3xl px-3 py-2.5 text-sm font-medium transition-colors",
+                  collapsed && "lg:justify-center",
                   active
                     ? "bg-secondary text-secondary-foreground"
                     : "text-primary-foreground/75 hover:bg-primary-foreground/10 hover:text-primary-foreground",
                 )}
               >
                 <item.icon className="size-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
+                <span className={cn("flex-1", collapsed && "lg:hidden")}>{item.label}</span>
                 {item.to === "/marketplace/notifications" && unread > 0 && (
-                  <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-destructive-foreground">
+                  <span
+                    className={cn(
+                      "rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-destructive-foreground",
+                      collapsed && "lg:absolute lg:top-1 lg:right-1",
+                    )}
+                  >
                     {unread}
                   </span>
                 )}
@@ -118,8 +156,13 @@ export function AppShell({
           })}
         </nav>
 
-        <div className="border-t border-primary-foreground/10 p-4">
-          <div className="mb-3">
+        <div
+          className={cn(
+            "border-t border-primary-foreground/10 p-4",
+            collapsed && "lg:flex lg:flex-col lg:items-center",
+          )}
+        >
+          <div className={cn("mb-3", collapsed && "lg:hidden")}>
             <p className="text-sm font-medium">{persona.name}</p>
             <p className="text-xs text-primary-foreground/60">{persona.org}</p>
             <p className="mt-1 inline-flex rounded bg-primary-foreground/10 px-2 py-0.5 text-[11px]">
@@ -131,11 +174,28 @@ export function AppShell({
               logout();
               navigate({ to: "/signin", replace: true });
             }}
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-primary-foreground/20 px-3 py-2 text-sm font-medium hover:bg-primary-foreground/10"
+            title={collapsed ? "Log out" : undefined}
+            className={cn(
+              "flex w-full items-center justify-center gap-2 rounded-md border border-primary-foreground/20 px-3 py-2 text-sm font-medium hover:bg-primary-foreground/10",
+              collapsed && "lg:w-auto lg:px-2.5",
+            )}
           >
-            <LogOut className="size-4" /> Log out
+            <LogOut className="size-4 shrink-0" />
+            <span className={cn(collapsed && "lg:hidden")}>Log out</span>
           </button>
         </div>
+
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+          className="absolute top-8 -right-3 z-10 hidden size-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground lg:flex"
+        >
+          {collapsed ? (
+            <ChevronsRight className="size-3.5" />
+          ) : (
+            <ChevronsLeft className="size-3.5" />
+          )}
+        </button>
       </aside>
 
       {open && (
@@ -148,26 +208,13 @@ export function AppShell({
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur">
-          <div className="flex items-start gap-3 px-4 py-4 sm:px-6 lg:px-8">
-            <button
-              className="mt-1 lg:hidden"
-              onClick={() => setOpen(true)}
-              aria-label="Open navigation"
-            >
-              <Menu className="size-5" />
-            </button>
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-semibold sm:text-xl">{title}</h1>
-              {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
-            </div>
-            <div className="flex shrink-0 items-center gap-2">{actions}</div>
-          </div>
-        </header>
+        <DashboardHeader
+          title={title}
+          subtitle={subtitle}
+          actions={actions}
+          onOpenNav={() => setOpen(true)}
+        />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
-        <footer className="border-t border-border px-4 py-4 text-xs text-muted-foreground sm:px-6 lg:px-8">
-          Prototype: seeded demo data, no live counterparties or funds.
-        </footer>
       </div>
     </div>
   );
