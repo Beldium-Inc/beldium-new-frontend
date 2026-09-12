@@ -16,12 +16,15 @@ export function ScoreBreakdown({ site }: { site: MineSite }) {
         description={`Weighted across ${factors.length} explainable factors. Each factor contributes weight × score.`}
       >
         {factors.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No factor-level breakdown captured for this site in the demo dataset.</p>
+          <p className="text-sm text-muted-foreground">
+            No factor-level breakdown captured for this site.
+          </p>
         ) : (
           <div className="space-y-4">
             {factors.map((f) => {
               const Trend = trendIcon[f.trend];
-              const tone = f.score >= 80 ? "bg-success" : f.score >= 60 ? "bg-warning" : "bg-danger";
+              const tone =
+                f.score >= 80 ? "bg-success" : f.score >= 60 ? "bg-warning" : "bg-danger";
               return (
                 <div key={f.id} className="rounded-md border border-border p-3.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -31,11 +34,16 @@ export function ScoreBreakdown({ site }: { site: MineSite }) {
                       <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-foreground">
                         {f.score}/100 <Trend className="size-3.5" />
                       </span>
-                      <span className="tabular-nums">+{((f.score * f.weight) / 100).toFixed(1)} pts</span>
+                      <span className="tabular-nums">
+                        +{((f.score * f.weight) / 100).toFixed(1)} pts
+                      </span>
                     </div>
                   </div>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className={`h-full rounded-full ${tone}`} style={{ width: `${f.score}%` }} />
+                    <div
+                      className={`h-full rounded-full ${tone}`}
+                      style={{ width: `${f.score}%` }}
+                    />
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">{f.reason}</p>
                 </div>
@@ -43,13 +51,18 @@ export function ScoreBreakdown({ site }: { site: MineSite }) {
             })}
             <div className="flex items-center justify-between rounded-md bg-brand-soft/60 px-3.5 py-3">
               <p className="text-sm font-semibold text-brand">Weighted composite score</p>
-              <p className="font-display text-lg font-semibold tabular-nums text-brand">{weighted.toFixed(0)}/100</p>
+              <p className="font-display text-lg font-semibold tabular-nums text-brand">
+                {weighted.toFixed(0)}/100
+              </p>
             </div>
           </div>
         )}
       </Panel>
 
-      <Panel title={`Why this site is rated ${site.risk} risk`} description="Reasoning generated from the factors above.">
+      <Panel
+        title={`Why this site is rated ${site.risk} risk`}
+        description="Reasoning generated from the factors above."
+      >
         <div className="mb-4">
           <RiskChip value={site.risk} />
         </div>

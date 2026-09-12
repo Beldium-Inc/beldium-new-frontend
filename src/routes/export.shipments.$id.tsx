@@ -95,7 +95,7 @@ function ShipmentDetail() {
     return (
       <AppShell title="Shipment not found">
         <Panel>
-          <p className="text-sm text-muted-foreground">This consignment is not in the demo data.</p>
+          <p className="text-sm text-muted-foreground">This consignment could not be found.</p>
           <Button className="mt-4" asChild>
             <Link to="/export/shipments">Back to consignments</Link>
           </Button>

@@ -10,7 +10,6 @@ import {
   Mountain,
   ShieldCheck,
   Ship,
-  Sparkles,
   Store,
   Truck,
   Warehouse,
@@ -143,9 +142,6 @@ function SignInPage() {
           </Link>
 
           <div className="space-y-4">
-            <span className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-              <Sparkles className="size-3.5" /> Prototype · seeded demo data
-            </span>
             <h1 className="font-display text-4xl leading-tight font-semibold sm:text-5xl">
               Compliance assurance across the minerals value chain
             </h1>

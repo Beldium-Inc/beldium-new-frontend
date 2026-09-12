@@ -4,6 +4,8 @@ import {
   AlertTriangle,
   Bell,
   Boxes,
+  ChevronsLeft,
+  ChevronsRight,
   ClipboardCheck,
   FileBarChart,
   FileStack,
@@ -166,6 +168,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("processing-nav-collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const closeNotif = React.useCallback(() => setNotifOpen(false), []);
   const closeProfile = React.useCallback(() => setProfileOpen(false), []);
@@ -177,6 +187,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setNotifOpen(false);
     setProfileOpen(false);
   }, [pathname]);
+
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem("processing-nav-collapsed", collapsed ? "1" : "0");
+    } catch {
+      // ignore write failures (private mode, disabled storage)
+    }
+  }, [collapsed]);
 
   // Same "still needs attention" semantics the dashboard stat cards use, so a
   // nav badge and the number on the page it links to never disagree.
@@ -195,15 +213,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         : buildRegulatorNav(badgeCounts);
 
   const sidebar = (
-    <div className="flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-3 px-5 py-5">
-        <BeldiumLogo className="size-10" />
-        <div className="leading-tight">
+    <div
+      className={cn(
+        "flex h-full w-72 max-w-[85vw] flex-col bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:max-w-none",
+        collapsed && "lg:w-20",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-3 px-5 py-5",
+          collapsed && "lg:justify-center lg:px-3",
+        )}
+      >
+        <BeldiumLogo className="size-10 shrink-0" />
+        <div className={cn("leading-tight", collapsed && "lg:hidden")}>
           <p className="text-sm font-semibold">Beldium</p>
-          <p className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">Processing Compliance</p>
+          <p className="block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase">
+            Processing Compliance
+          </p>
         </div>
         <button
-          className="ml-auto rounded-lg p-1.5 text-sidebar-foreground/70 lg:hidden"
+          className={cn(
+            "ml-auto rounded-lg p-1.5 text-sidebar-foreground/70 lg:hidden",
+            collapsed && "lg:hidden",
+          )}
           onClick={() => setMobileOpen(false)}
           aria-label="Close navigation"
         >
@@ -211,7 +244,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
       </div>
 
-      <div className="mx-4 mb-4 rounded-xl border border-sidebar-border bg-sidebar-accent/60 px-3 py-2.5">
+      <div
+        className={cn(
+          "mx-4 mb-4 rounded-xl border border-sidebar-border bg-sidebar-accent/60 px-3 py-2.5",
+          collapsed && "lg:hidden",
+        )}
+      >
         <p className="text-[10px] font-semibold tracking-[0.14em] text-sidebar-foreground/60 uppercase">
           Active role
         </p>
@@ -222,7 +260,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <nav className="flex-1 overflow-y-auto px-3 pb-6">
         {nav.map((group) => (
           <div key={group.group} className="mb-5">
-            <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.16em] text-sidebar-foreground/50 uppercase">
+            <p
+              className={cn(
+                "px-3 pb-2 text-[10px] font-semibold tracking-[0.16em] text-sidebar-foreground/50 uppercase",
+                collapsed && "lg:hidden",
+              )}
+            >
               {group.group}
             </p>
             <div className="space-y-1">
@@ -235,15 +278,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.to}
                     to={item.to}
+                    title={collapsed ? item.label : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                      "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                      collapsed && "lg:justify-center",
                       active
                         ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
                         : "text-sidebar-foreground/80 hover:bg-sidebar-accent",
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
+                    <span className={cn("truncate", collapsed && "lg:hidden")}>{item.label}</span>
                     {item.badge ? (
                       <span
                         className={cn(
@@ -251,6 +296,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           active
                             ? "bg-sidebar text-sidebar-foreground"
                             : "bg-sidebar-accent text-sidebar-foreground",
+                          collapsed && "lg:absolute lg:top-1 lg:right-1 lg:ml-0",
                         )}
                       >
                         {item.badge}
@@ -264,7 +310,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ))}
       </nav>
 
-      <div className="border-t border-sidebar-border px-4 py-4 text-[11px] text-sidebar-foreground/60">
+      <div
+        className={cn(
+          "border-t border-sidebar-border px-4 py-4 text-[11px] text-sidebar-foreground/60",
+          collapsed && "lg:hidden",
+        )}
+      >
         Live register · Beldium Processing Compliance API
       </div>
     </div>
@@ -272,7 +323,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 hidden h-screen shrink-0 lg:block">{sidebar}</aside>
+      <aside className="sticky top-0 hidden h-screen shrink-0 lg:relative lg:block">
+        {sidebar}
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+          className="absolute top-8 -right-3 z-10 hidden size-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground lg:flex"
+        >
+          {collapsed ? (
+            <ChevronsRight className="size-3.5" />
+          ) : (
+            <ChevronsLeft className="size-3.5" />
+          )}
+        </button>
+      </aside>
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">

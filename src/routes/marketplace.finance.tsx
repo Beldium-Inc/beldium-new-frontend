@@ -9,9 +9,16 @@ export const Route = createFileRoute("/marketplace/finance")({
   head: () => ({
     meta: [
       { title: "Trade & supply-chain finance | Beldium" },
-      { name: "description", content: "Structure the $500m financing requirement on a $600m offtake commitment with a $100m buyer contribution." },
+      {
+        name: "description",
+        content:
+          "Structure the $500m financing requirement on a $600m offtake commitment with a $100m buyer contribution.",
+      },
       { property: "og:title", content: "Trade & supply-chain finance | Beldium" },
-      { property: "og:description", content: "Financing gap, instrument selection and readiness checks for aggregated offtake." },
+      {
+        property: "og:description",
+        content: "Financing gap, instrument selection and readiness checks for aggregated offtake.",
+      },
     ],
   }),
   component: Finance,
@@ -27,12 +34,36 @@ function Finance() {
   const existing = rfq.finance;
 
   const readiness: FinancePackage["readiness"] = [
-    { label: "Buyer/offtaker compliance verified", ok: true, note: "KYC pack accepted; limits approved." },
-    { label: "Producers verified & aggregated", ok: rfq.allocations.length > 0, note: `${rfq.allocations.length} verified miners allocated.` },
-    { label: "Transaction services confirmed", ok: Boolean(rfq.services?.confirmed), note: "Logistics, insurance, quality and finance stack locked." },
-    { label: "Buyer contribution evidenced", ok: true, note: `${fmtUsd(BUYER)} cash confirmed by bank letter.` },
-    { label: "Offtake contract executed", ok: rfq.status === "contracted", note: "Signed contract required before drawdown." },
-    { label: "Insurance & security package", ok: Boolean(rfq.services?.insurance), note: "Marine cargo plus credit risk cover assigned to funder." },
+    {
+      label: "Buyer/offtaker compliance verified",
+      ok: true,
+      note: "KYC pack accepted; limits approved.",
+    },
+    {
+      label: "Producers verified & aggregated",
+      ok: rfq.allocations.length > 0,
+      note: `${rfq.allocations.length} verified miners allocated.`,
+    },
+    {
+      label: "Transaction services confirmed",
+      ok: Boolean(rfq.services?.confirmed),
+      note: "Logistics, insurance, quality and finance stack locked.",
+    },
+    {
+      label: "Buyer contribution evidenced",
+      ok: true,
+      note: `${fmtUsd(BUYER)} cash confirmed by bank letter.`,
+    },
+    {
+      label: "Offtake contract executed",
+      ok: rfq.status === "contracted",
+      note: "Signed contract required before drawdown.",
+    },
+    {
+      label: "Insurance & security package",
+      ok: Boolean(rfq.services?.insurance),
+      note: "Marine cargo plus credit risk cover assigned to funder.",
+    },
   ];
   const ready = readiness.filter((r) => r.ok).length;
 
@@ -50,17 +81,39 @@ function Finance() {
     <AppShell title="Finance" subtitle={`Programme funding for ${rfq.reference}`}>
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Metric label="Total offtake commitment" value={fmtUsd(TOTAL)} hint="1,000,000 t at $600/t" />
-          <Metric label="Buyer contribution" value={fmtUsd(BUYER)} hint="Equity / cash margin" tone="success" />
-          <Metric label="Financing required" value={fmtUsd(REQUIRED)} hint="Trade & supply-chain facility" tone="warning" />
+          <Metric
+            label="Total offtake commitment"
+            value={fmtUsd(TOTAL)}
+            hint="1,000,000 t at $600/t"
+          />
+          <Metric
+            label="Buyer contribution"
+            value={fmtUsd(BUYER)}
+            hint="Equity / cash margin"
+            tone="success"
+          />
+          <Metric
+            label="Financing required"
+            value={fmtUsd(REQUIRED)}
+            hint="Trade & supply-chain facility"
+            tone="warning"
+          />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
-          <SectionCard title="Financing readiness checks" description={`${ready} of ${readiness.length} conditions met`}>
+          <SectionCard
+            title="Financing readiness checks"
+            description={`${ready} of ${readiness.length} conditions met`}
+          >
             <ul className="space-y-3">
               {readiness.map((r) => (
-                <li key={r.label} className="flex items-start gap-3 rounded-md border border-border p-3">
-                  <span className={`mt-1 size-2.5 shrink-0 rounded-full ${r.ok ? "bg-success" : "bg-warning"}`} />
+                <li
+                  key={r.label}
+                  className="flex items-start gap-3 rounded-md border border-border p-3"
+                >
+                  <span
+                    className={`mt-1 size-2.5 shrink-0 rounded-full ${r.ok ? "bg-success" : "bg-warning"}`}
+                  />
                   <div>
                     <p className="text-sm font-medium">{r.label}</p>
                     <p className="text-xs text-muted-foreground">{r.note}</p>
@@ -83,7 +136,10 @@ function Finance() {
               <Row label="Structure" value="Borrowing base + receivables assignment" />
               <Row label="Tenor" value="18 months revolving" />
               <Row label="Security" value="Cargo, insurance proceeds, offtake contract" />
-              <Row label="Status" value={existing ? existing.status.replace(/_/g, " ") : "not started"} />
+              <Row
+                label="Status"
+                value={existing ? existing.status.replace(/_/g, " ") : "not started"}
+              />
             </dl>
             <Button
               className="mt-4 w-full"
@@ -96,9 +152,7 @@ function Finance() {
             >
               {existing ? "Resubmit to funding panel" : "Submit financing request"}
             </Button>
-            <DemoNote>
-              Illustrative only: no lender is contacted and no funds move in this prototype.
-            </DemoNote>
+            <DemoNote>Illustrative only: no lender is contacted and no funds move here.</DemoNote>
           </SectionCard>
         </div>
       </div>
