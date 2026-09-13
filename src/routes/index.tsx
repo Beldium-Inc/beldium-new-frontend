@@ -5,7 +5,7 @@ import { FileCheck2, MapPin, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BeldiumLogo } from "@/components/beldium-logo";
 import { useSession } from "@/lib/session";
-import { VERTICALS, homeFor } from "@/lib/verticals";
+import { COMPLIANCE_VERTICALS, homeFor } from "@/lib/verticals";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -88,6 +88,14 @@ function EntryPage() {
             </p>
           </div>
 
+          <p className="mt-4 text-sm text-muted-foreground">
+            Registering as a miner or mining organisation?{" "}
+            <Link to="/miner-portal" className="font-semibold text-brand underline">
+              Go to the Miner Portal
+            </Link>{" "}
+            — a separate, standalone workspace for your organisation, sites and compliance.
+          </p>
+
           <div className="mt-12 grid gap-4 sm:grid-cols-3">
             {highlights.map(({ icon: Icon, title, body }) => (
               <div key={title} className="rounded-[18px] bg-brand-soft/60 p-5">
@@ -103,7 +111,7 @@ function EntryPage() {
               Seven compliance sectors
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {VERTICALS.map((v) => (
+              {COMPLIANCE_VERTICALS.map((v) => (
                 <span
                   key={v.slug}
                   className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium"

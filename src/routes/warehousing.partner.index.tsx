@@ -55,7 +55,7 @@ function PartnerDashboard() {
       title="Reviewer dashboard"
       subtitle="Beldium Compliance Partners · Nigeria mineral warehousing portfolio"
       actions={
-        <Button asChild className="rounded-xl bg-link text-link-foreground hover:bg-link/90">
+        <Button asChild>
           <Link to="/warehousing/partner/applications/$id" params={{ id: "APP-2026-0147" }}>
             Open priority review
           </Link>
