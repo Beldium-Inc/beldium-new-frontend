@@ -7,7 +7,14 @@
 // `home` is relative to the vertical prefix; the full URL is `/${slug}${home}`.
 
 export type VerticalSlug =
-  "export" | "logistics" | "marketplace" | "mining" | "processing" | "quality" | "warehousing";
+  | "export"
+  | "logistics"
+  | "marketplace"
+  | "miner"
+  | "mining"
+  | "processing"
+  | "quality"
+  | "warehousing";
 
 export type VerticalRole = {
   id: string;
@@ -24,6 +31,19 @@ export type Vertical = {
 };
 
 export const VERTICALS: Vertical[] = [
+  {
+    slug: "miner",
+    name: "Miner Portal",
+    tagline: "Your organisation, sites, production and compliance in one place.",
+    roles: [
+      {
+        id: "miner",
+        label: "Miner / Producer",
+        blurb: "Manage your organisation, sites, production, inventory and compliance.",
+        home: "/dashboard",
+      },
+    ],
+  },
   {
     slug: "mining",
     name: "Mining Compliance",
@@ -235,6 +255,15 @@ export const VERTICALS: Vertical[] = [
 export const VERTICAL_BY_SLUG: Record<VerticalSlug, Vertical> = Object.fromEntries(
   VERTICALS.map((v) => [v.slug, v]),
 ) as Record<VerticalSlug, Vertical>;
+
+/**
+ * The seven shared compliance dashboards, excluding the standalone Miner
+ * Portal. The Miner Portal has its own entry point (`/miner-portal`) and
+ * intentionally does not appear in the compliance platform's sector picker
+ * (`/signin`, `/`, `/onboarding/sector`) — it's a separate product for
+ * miners, not another compliance-review seat.
+ */
+export const COMPLIANCE_VERTICALS: Vertical[] = VERTICALS.filter((v) => v.slug !== "miner");
 
 export function roleIn(slug: VerticalSlug, roleId: string): VerticalRole | undefined {
   return VERTICAL_BY_SLUG[slug].roles.find((r) => r.id === roleId);

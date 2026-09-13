@@ -36,7 +36,7 @@ function OperatorDashboard() {
       title="Apapa Mineral Terminal, Warehouse Block B"
       subtitle="Sahel Minerals & Logistics Ltd · Lagos State"
       actions={
-        <Button asChild className="rounded-xl bg-link text-link-foreground hover:bg-link/90">
+        <Button asChild>
           <Link to="/warehousing/operator/receive">Receive shipment</Link>
         </Button>
       }

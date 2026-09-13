@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthShell, OptionCard, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/lib/onboarding/store";
-import { VERTICALS } from "@/lib/verticals";
+import { COMPLIANCE_VERTICALS } from "@/lib/verticals";
 
 export const Route = createFileRoute("/onboarding/sector")({ component: SectorPage });
 
@@ -19,7 +19,7 @@ function SectorPage() {
       <ProgressHeader step={1} total={6} onBack={() => navigate({ to: "/" })} />
 
       <div className="space-y-4">
-        {VERTICALS.map((v) => (
+        {COMPLIANCE_VERTICALS.map((v) => (
           <OptionCard
             key={v.slug}
             active={selected === v.slug}

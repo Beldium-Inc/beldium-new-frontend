@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
-import { VERTICALS, homeFor, type Vertical, type VerticalSlug } from "@/lib/verticals";
+import { COMPLIANCE_VERTICALS, homeFor, type Vertical, type VerticalSlug } from "@/lib/verticals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +51,7 @@ const DISCLAIMER =
   "Beldium issues an independent compliance verification record. It is not a government permit, licence, or customs clearance and does not replace any statutory approval.";
 
 const VERTICAL_ICON: Record<VerticalSlug, React.ElementType> = {
+  miner: Mountain,
   mining: Mountain,
   processing: Factory,
   export: Ship,
@@ -177,7 +178,7 @@ function SignInPage() {
                 Choose the compliance sector your account belongs to.
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {VERTICALS.map((vertical) => {
+                {COMPLIANCE_VERTICALS.map((vertical) => {
                   const Icon = VERTICAL_ICON[vertical.slug];
                   return (
                     <button
