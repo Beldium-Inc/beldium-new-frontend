@@ -8,11 +8,7 @@ export const Route = createFileRoute("/warehousing/partner/audit")({
   head: () => ({
     meta: [
       { title: "Audit history | Beldium Compliance Partner" },
-      { name: "description", content: "Immutable audit trail of reviewer decisions, inspections ordered, non-conformities raised and alerts acknowledged." },
-      { property: "og:title", content: "Audit history | Beldium Compliance Partner" },
-      { property: "og:description", content: "Every compliance action recorded with actor and timestamp." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "description", content: "Audit trail of reviewer decisions across the warehousing register." },
     ],
   }),
   component: AuditPage,
@@ -20,27 +16,33 @@ export const Route = createFileRoute("/warehousing/partner/audit")({
 
 function AuditPage() {
   const { audit } = useDemo();
+  const events = audit?.events ?? [];
   return (
     <AppShell role="partner" title="Audit history" subtitle="Every action taken in this workspace is recorded">
-      <Panel title={`${audit.length} recorded events`} description="Newest first. Actions you take in this demo are appended live.">
+      <Panel title={`${events.length} recorded events`} description="Newest first.">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Timestamp</TableHead>
               <TableHead>Actor</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Entity</TableHead>
+              <TableHead>Event</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {audit.map((a) => (
+            {events.map((a) => (
               <TableRow key={a.id}>
-                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{a.timestamp}</TableCell>
-                <TableCell className="text-sm font-medium">{a.actor}</TableCell>
-                <TableCell className="text-sm">{a.action}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{a.entity}</TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{a.created_at}</TableCell>
+                <TableCell className="text-sm font-medium">{a.actor_id ?? "System"}</TableCell>
+                <TableCell className="text-sm">{a.event_type}</TableCell>
               </TableRow>
             ))}
+            {events.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                  No activity yet.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Panel>

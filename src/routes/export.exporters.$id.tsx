@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import * as React from "react";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { AppShell } from "@/verticals/export/AppShell";
 import { useStore } from "@/verticals/export/store";
-import { DisclaimerNote, DocStatusPill, Panel, Pill, ScoreBar, ShipmentStatusPill } from "@/verticals/export/ui-kit";
+import { ApplicationStatusPill, DisclaimerNote, DocStatusPill, Panel, Pill, ScoreBar } from "@/verticals/export/ui-kit";
 import { Button } from "@/components/ui/button";
+import { EXPORT_DOMAIN_LABELS, type ExportDomainStatus } from "@/lib/api/export";
 
 export const Route = createFileRoute("/export/exporters/$id")({
   head: () => ({
@@ -12,10 +14,8 @@ export const Route = createFileRoute("/export/exporters/$id")({
       { title: "Exporter Verification | Beldium Export Compliance" },
       {
         name: "description",
-        content: "Exporter verification file: licences, KYC checks, compliance score and consignment history.",
+        content: "Exporter verification file: admission application, domain review and compliance score.",
       },
-      { property: "og:title", content: "Exporter Verification | Beldium Export Compliance" },
-      { property: "og:description", content: "Exporter licences, KYC checks and consignment history." },
     ],
   }),
   component: ExporterDetail,
@@ -23,8 +23,11 @@ export const Route = createFileRoute("/export/exporters/$id")({
 
 function ExporterDetail() {
   const { id } = Route.useParams();
-  const { state, user } = useStore();
+  const { state, user, reviewSection, decide, reviewDocument, createApplication } = useStore();
   const e = state.exporters.find((x) => x.id === id);
+  const application = state.applications.find((a) => a.exporter === id);
+  const [note, setNote] = React.useState("");
+
   if (!e)
     return (
       <AppShell title="Exporter not found">
@@ -36,59 +39,108 @@ function ExporterDetail() {
       </AppShell>
     );
 
-  const shipments = state.shipments.filter((s) => s.exporterId === e.id);
+  const shipments = state.shipments.filter((s) => s.exporter === e.id);
+  const documents = state.documents.filter((d) => d.application === application?.id);
+
+  const setSectionVerdict = (key: string, status: ExportDomainStatus) => {
+    if (!application) return;
+    const score = status === "passed" ? 100 : status === "attention" ? 60 : 0;
+    reviewSection(application.id, key as never, { status, score, notes: note || "Reviewed by operator." });
+    toast.success(`${EXPORT_DOMAIN_LABELS[key as keyof typeof EXPORT_DOMAIN_LABELS]}: ${status}`);
+  };
 
   return (
     <AppShell
       title={e.name}
-      subtitle={`${e.rcNumber} · ${e.state} State · onboarded ${e.onboarded}`}
-      actions={
-        e.verification === "verified" ? (
-          <Pill tone="success">Verified</Pill>
-        ) : e.verification === "in_review" ? (
-          <Pill tone="warning">In review</Pill>
-        ) : (
-          <Pill tone="danger">Action required</Pill>
-        )
-      }
+      subtitle={`${e.reference} · ${e.registration_number}`}
+      actions={<ApplicationStatusPill status={application?.status ?? "not_started"} />}
     >
       <div className="grid gap-4 lg:grid-cols-[1.5fr_0.5fr]">
         <div className="space-y-4">
-          <Panel title="Licences & registrations" bodyClassName="p-0">
-            <div className="divide-y divide-border">
-              {e.licences.map((l) => (
-                <div key={l.name} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
-                  <div>
-                    <p className="text-sm font-medium">{l.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Ref {l.ref} · expires {l.expires}
-                    </p>
-                  </div>
-                  <DocStatusPill status={l.status} />
-                </div>
-              ))}
-            </div>
-          </Panel>
+          {!application && (
+            <Panel title="No admission application yet">
+              <p className="text-sm text-muted-foreground">
+                This exporter has not started an admission application.
+              </p>
+              {user?.role === "operator" && (
+                <Button className="mt-3" onClick={() => void createApplication(e.id)}>
+                  Start application
+                </Button>
+              )}
+            </Panel>
+          )}
 
-          <Panel title="KYC & due diligence">
-            <ul className="space-y-3">
-              {e.kyc.map((k) => (
-                <li key={k.label} className="flex items-start gap-2.5">
-                  {k.ok ? (
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
-                  ) : (
-                    <XCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
-                  )}
-                  <div>
-                    <p className="text-xs font-medium">{k.label}</p>
-                    <p className="text-[11px] text-muted-foreground">{k.value}</p>
+          {application && (
+            <Panel title="Domain review" bodyClassName="p-0">
+              <div className="divide-y divide-border">
+                {application.sections.map((s) => (
+                  <div key={s.key} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+                    <div>
+                      <p className="text-sm font-medium">{EXPORT_DOMAIN_LABELS[s.key]}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Score {s.score} · {s.review_notes || "No notes yet"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Pill
+                        tone={s.status === "passed" ? "success" : s.status === "failed" ? "danger" : s.status === "attention" ? "warning" : "neutral"}
+                      >
+                        {s.status}
+                      </Pill>
+                      {user?.role === "operator" && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" onClick={() => setSectionVerdict(s.key, "passed")}>
+                            Pass
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setSectionVerdict(s.key, "attention")}>
+                            Attention
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-destructive" onClick={() => setSectionVerdict(s.key, "failed")}>
+                            Fail
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </Panel>
+                ))}
+              </div>
+            </Panel>
+          )}
 
-          <Panel title="Consignment history" bodyClassName="p-0">
+          {application && (
+            <Panel title="Evidence" bodyClassName="p-0">
+              <div className="divide-y divide-border">
+                {documents.map((d) => (
+                  <div key={d.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+                    <div>
+                      <p className="text-sm font-medium">{d.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {EXPORT_DOMAIN_LABELS[d.domain]} · {d.issuer || "-"} · expires {d.expires_on ?? "-"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DocStatusPill status={d.status} />
+                      {user?.role === "operator" && d.status === "pending" && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" onClick={() => reviewDocument(d.id, "verified", "Verified by operator.")}>
+                            Verify
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-destructive" onClick={() => reviewDocument(d.id, "rejected", "Rejected by operator.")}>
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {documents.length === 0 && (
+                  <p className="px-5 py-8 text-center text-sm text-muted-foreground">No evidence uploaded.</p>
+                )}
+              </div>
+            </Panel>
+          )}
+
+          <Panel title="Shipment history" bodyClassName="p-0">
             <div className="divide-y divide-border">
               {shipments.map((s) => (
                 <Link
@@ -100,54 +152,70 @@ function ExporterDetail() {
                   <div>
                     <p className="text-sm font-medium">{s.reference}</p>
                     <p className="text-xs text-muted-foreground">
-                      {s.mineral} · {s.quantity} · ETD {s.etd}
+                      {s.quantity} {s.unit} · ETD {s.expected_ship_date}
                     </p>
                   </div>
-                  <ShipmentStatusPill status={s.status} />
+                  <Pill tone="neutral">{s.status}</Pill>
                 </Link>
               ))}
               {shipments.length === 0 && (
-                <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-                  No consignments on file.
-                </p>
+                <p className="px-5 py-8 text-center text-sm text-muted-foreground">No shipments on file.</p>
               )}
             </div>
           </Panel>
         </div>
 
         <div className="space-y-4">
-          <Panel title="Compliance score">
-            <p className="font-display text-3xl font-semibold">{e.complianceScore}</p>
-            <ScoreBar value={e.complianceScore} />
-            <p className="mt-3 text-xs text-muted-foreground">
-              Weighted from document quality, response times, non-conformity history and quantity
-              accuracy over the last 12 months.
-            </p>
-          </Panel>
+          {application && (
+            <Panel title="Compliance score">
+              <p className="font-display text-3xl font-semibold">{application.risk.compliance_score}</p>
+              <ScoreBar value={application.risk.compliance_score} />
+              <p className="mt-3 text-xs text-muted-foreground">Risk band: {application.risk.risk_band}</p>
+            </Panel>
+          )}
           <Panel title="Contact">
-            <p className="text-sm font-medium">{e.contact}</p>
-            <p className="text-xs text-muted-foreground">{e.email}</p>
-            <p className="text-xs text-muted-foreground">{e.phone}</p>
-            <p className="mt-3 text-xs text-muted-foreground">Minerals: {e.minerals.join(", ")}</p>
+            <p className="text-sm font-medium">{e.contact_name}</p>
+            <p className="text-xs text-muted-foreground">{e.contact_email}</p>
+            <p className="text-xs text-muted-foreground">{e.contact_phone}</p>
+            <p className="mt-3 text-xs text-muted-foreground">Destinations: {e.destinations.join(", ") || "-"}</p>
+            <p className="text-xs text-muted-foreground">Products: {e.product_categories.join(", ") || "-"}</p>
           </Panel>
-          {user?.role === "operator" && (
-            <Panel title="Verification actions">
-              <div className="grid gap-2">
-                <Button onClick={() => toast.success("Exporter verification approved")}>
-                  Approve verification
+          {user?.role === "operator" && application && (
+            <Panel title="Decision">
+              <textarea
+                className="w-full rounded-lg border border-border bg-background p-2 text-xs"
+                rows={3}
+                placeholder="Rationale"
+                value={note}
+                onChange={(ev) => setNote(ev.target.value)}
+              />
+              <div className="mt-2 grid gap-2">
+                <Button
+                  onClick={() => {
+                    decide(application.id, { status: "approved", rationale: note || "Approved." });
+                    toast.success("Application approved");
+                  }}
+                >
+                  <CheckCircle2 className="size-4" /> Approve
                 </Button>
-                <Button variant="outline" onClick={() => toast.success("Additional evidence requested")}>
-                  Request evidence
-                </Button>
-                <Button variant="outline" onClick={() => toast.success("Site visit scheduled")}>
-                  Schedule site visit
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    decide(application.id, { status: "conditionally_approved", rationale: note || "Conditionally approved." });
+                    toast.success("Conditionally approved");
+                  }}
+                >
+                  Conditionally approve
                 </Button>
                 <Button
                   variant="outline"
                   className="text-destructive"
-                  onClick={() => toast.error("Exporter suspended from new submissions")}
+                  onClick={() => {
+                    decide(application.id, { status: "rejected", rationale: note || "Rejected." });
+                    toast.error("Application rejected");
+                  }}
                 >
-                  Suspend exporter
+                  <XCircle className="size-4" /> Reject
                 </Button>
               </div>
               <DisclaimerNote className="mt-4" />

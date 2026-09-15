@@ -1,4 +1,4 @@
-// UI dropdown constants for the new-shipment form. Not backend data — these
+// UI dropdown constants for the new-shipment form. Not backend data; these
 // are option lists a compliance operator maintains by editing this file, not
 // something worth a round trip.
 

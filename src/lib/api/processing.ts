@@ -264,7 +264,7 @@ export interface Inspection {
   scheduled_for: string | null;
   inspector: UUID | null;
   inspector_name: string;
-  /** The assigned person, or "Unassigned" — already resolved by the backend. */
+  /** The assigned person, or "Unassigned", already resolved by the backend. */
   inspector_display: string;
   inspection_type: "pre_approval" | "routine" | "follow_up" | "incident_triggered";
   status: "requested" | "scheduled" | "in_progress" | "completed";
@@ -749,7 +749,7 @@ export function listComplianceReports(query: ListQuery = {}): Promise<Paginated<
  * Compile a report from the register and store the PDF. A report is a
  * point-in-time extract: its figures are those held at compilation and are
  * never restated, so generating twice gives two documents rather than
- * updating one. Desk and regulator only — it spans companies.
+ * updating one. Desk and regulator only; it spans companies.
  */
 export function generateReport(input: {
   kind: ReportKind;

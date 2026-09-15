@@ -34,7 +34,7 @@ import type { UUID } from "./types";
 /**
  * Cache keys for the marketplace register. Everything hangs off one
  * "marketplace" root so a write can invalidate the whole vertical when its
- * ripple is wide — an application decision, for instance, moves the
+ * ripple is wide: an application decision, for instance, moves the
  * application, the dashboard totals and the notification feed at once.
  */
 export const marketplaceKeys = {

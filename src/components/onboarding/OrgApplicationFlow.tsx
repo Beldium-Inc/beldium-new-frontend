@@ -111,7 +111,7 @@ function numeric(value: string): number {
  * Turns a DRF 400 into something a person can act on.
  *
  * The per-field messages are returned so the caller can put them on the
- * offending inputs; the toast carries only what has nowhere else to go — a
+ * offending inputs; the toast carries only what has nowhere else to go: a
  * non-field error, or a failure with no field detail at all. Repeating every
  * field message in a toast as well would say the same thing twice.
  */
@@ -128,7 +128,7 @@ function reportError(error: unknown, fallback: string): Record<string, string> {
   const anchored = Object.keys(fields).some((field) => !field.endsWith("non_field_errors"));
   if (loose.length) toast.error(loose.join(" · "));
   else if (!anchored) toast.error(error.message || fallback);
-  else toast.error("Some entries need attention — see the highlighted fields.");
+  else toast.error("Some entries need attention: see the highlighted fields.");
 
   return fields;
 }
@@ -529,7 +529,7 @@ export function OrgApplicationFlow() {
 
   /**
    * Why the API would refuse this submission, or null when it would take it.
-   * An incomplete application is not a reason — only an unverified applicant,
+   * An incomplete application is not a reason: only an unverified applicant,
    * or evidence the desk rejected and is still waiting on.
    */
   const rejectedDocuments = progress?.documents.rejected ?? [];

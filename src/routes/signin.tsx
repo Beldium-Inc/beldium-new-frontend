@@ -51,7 +51,6 @@ const DISCLAIMER =
   "Beldium issues an independent compliance verification record. It is not a government permit, licence, or customs clearance and does not replace any statutory approval.";
 
 const VERTICAL_ICON: Record<VerticalSlug, React.ElementType> = {
-  miner: Mountain,
   mining: Mountain,
   processing: Factory,
   export: Ship,

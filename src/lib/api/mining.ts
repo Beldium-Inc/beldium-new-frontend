@@ -5,7 +5,7 @@ import type { Paginated, UUID } from "./types";
 // applications, and the operational evidence that accumulates against them.
 // Everything here mirrors `beldium-backend/mining/serializers.py`
 // field-for-field, so the shapes below are the backend's, not a re-spelling.
-// Mirrors `./processing.ts`'s structure closely — see that file for the
+// Mirrors `./processing.ts`'s structure closely; see that file for the
 // sibling vertical.
 
 const BASE = "/mining";
@@ -214,7 +214,7 @@ export interface MiningInspection {
   scheduled_for: string | null;
   inspector: UUID | null;
   inspector_name: string;
-  /** The assigned person, or "Unassigned" — already resolved by the backend. */
+  /** The assigned person, or "Unassigned", already resolved by the backend. */
   inspector_display: string;
   status: InspectionStatus;
   result: InspectionResult;
@@ -893,7 +893,7 @@ export type ReportScope = string;
 export type MiningReportPeriod = "last_month" | "last_quarter" | "year_to_date" | "all_time";
 
 /**
- * Streams a PDF rather than returning JSON — the caller is expected to open
+ * Streams a PDF rather than returning JSON; the caller is expected to open
  * this as a download link / new tab rather than route it through `apiFetch`.
  */
 export function miningReportUrl(input: {
@@ -908,7 +908,7 @@ export function miningReportUrl(input: {
   return `${BASE}/reports/?${params.toString()}`;
 }
 
-/** The register-wide trail. Operator/regulator only — it spans organisations. */
+/** The register-wide trail. Operator/regulator only; it spans organisations. */
 export function listMiningAudit(query: MiningListQuery = {}): Promise<Paginated<MiningAuditEvent>> {
   return apiFetch<Paginated<MiningAuditEvent>>(`${BASE}/audit/`, { query });
 }

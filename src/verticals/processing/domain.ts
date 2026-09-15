@@ -286,7 +286,7 @@ export type Notification = {
   at: string;
   kind: "info" | "warn" | "error";
   /**
-   * Where to read the whole record, as the router wants it — path and search
+   * Where to read the whole record, as the router wants it: path and search
    * separately, since a `?ref=` folded into the path is not parsed as search.
    * Null when the target cannot be resolved.
    */
@@ -738,7 +738,7 @@ export function toReportItem(row: Api.ComplianceReport): ReportItem {
   };
 }
 
-/** "2h ago" / "3d ago" — the notification tray's own format. */
+/** "2h ago" / "3d ago": the notification tray's own format. */
 export function relativeTime(iso: string): string {
   const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
   if (minutes < 60) return `${minutes}m ago`;

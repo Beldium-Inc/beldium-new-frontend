@@ -50,7 +50,7 @@ import type { UUID } from "./types";
 
 /**
  * Cache keys for the processing register. Everything hangs off one "processing"
- * root so a write can invalidate the whole vertical when its ripple is wide —
+ * root so a write can invalidate the whole vertical when its ripple is wide,
  * a decision, for instance, moves the application, the processor's status and
  * every dashboard total at once.
  */
@@ -144,7 +144,7 @@ export function useProcessingApplications(query: ListQuery = FULL_PAGE) {
   });
 }
 
-/** The detail read — the only response carrying the ten evidence sections. */
+/** The detail read: the only response carrying the ten evidence sections. */
 export function useProcessingApplication(id: UUID | null) {
   return useQuery({
     queryKey: processingKeys.application(id ?? "none"),

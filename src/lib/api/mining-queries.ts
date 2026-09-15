@@ -77,7 +77,7 @@ import type { UUID } from "./types";
 
 /**
  * Cache keys for the mining register. Everything hangs off one "mining" root
- * so a write with a wide ripple — a section verdict, a decision — can
+ * so a write with a wide ripple (a section verdict, a decision) can
  * invalidate the whole vertical at once, same as `processingKeys`.
  */
 export const miningKeys = {
@@ -110,7 +110,7 @@ export const miningKeys = {
 const LIST_STALE_TIME = 30_000;
 
 // Every screen filters and totals client-side over the whole set, so a
-// partial page would silently under-report — same rationale as `processing`.
+// partial page would silently under-report, same rationale as `processing`.
 const FULL_PAGE: MiningListQuery = { page_size: 100 };
 
 function invalidateMining(queryClient: QueryClient): void {
@@ -161,7 +161,7 @@ export function useMineSites(query: MiningListQuery = FULL_PAGE) {
   });
 }
 
-/** The detail read — the only response carrying the ten evidence sections. */
+/** The detail read: the only response carrying the ten evidence sections. */
 export function useMineSite(id: UUID | null) {
   return useQuery({
     queryKey: miningKeys.site(id ?? "none"),

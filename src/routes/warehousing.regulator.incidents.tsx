@@ -7,76 +7,53 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export const Route = createFileRoute("/warehousing/regulator/incidents")({
   head: () => ({
     meta: [
-      { title: "Incidents & non-conformities | Beldium Regulatory Portal" },
-      { name: "description", content: "Operator-reported incidents and open non-conformities across registered mineral warehouses." },
-      { property: "og:title", content: "Incidents & non-conformities | Beldium Regulatory Portal" },
-      { property: "og:description", content: "Oversight of safety, environmental and security events." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { title: "Incidents | Beldium Regulatory Portal" },
+      { name: "description", content: "Safety, environmental, security and stock-integrity incidents across registered warehouses." },
     ],
   }),
   component: RegulatorIncidents,
 });
 
 function RegulatorIncidents() {
-  const { incidents, nonConformities } = useDemo();
+  const { state } = useDemo();
   return (
-    <AppShell role="regulator" title="Incidents & non-conformities" subtitle="Read-only oversight feed">
-      <div className="space-y-6">
-        <Panel title="Reported incidents" description="Submitted by warehouse operators.">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ref</TableHead>
-                <TableHead>Incident</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {incidents.map((i) => (
+    <AppShell role="regulator" title="Incidents" subtitle="Read-only oversight feed">
+      <Panel title="Incident register" description="Reported by warehouse operators against their registered facilities.">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Warehouse</TableHead>
+              <TableHead>Incident</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Severity</TableHead>
+              <TableHead>Occurred</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {state.incidents.map((i) => {
+              const w = state.warehouses.find((x) => x.id === i.warehouse);
+              return (
                 <TableRow key={i.id}>
-                  <TableCell className="text-sm font-medium text-primary">{i.id}</TableCell>
+                  <TableCell className="text-sm font-medium text-primary">{w?.name ?? "-"}</TableCell>
                   <TableCell className="max-w-96 text-sm">{i.title}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{i.category}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{i.category.replace("_", " ")}</TableCell>
                   <TableCell><StatusPill tone={toneForStatus(i.severity)}>{i.severity}</StatusPill></TableCell>
-                  <TableCell className="text-sm">{i.date}</TableCell>
-                  <TableCell><StatusPill tone={toneForStatus(i.status)}>{i.status}</StatusPill></TableCell>
+                  <TableCell className="text-sm">{i.occurred_on}</TableCell>
+                  <TableCell><StatusPill tone={toneForStatus(i.status)}>{i.status.replace("_", " ")}</StatusPill></TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
-
-        <Panel title="Non-conformities" description="Raised by the compliance partner during review or inspection.">
-          <Table>
-            <TableHeader>
+              );
+            })}
+            {state.incidents.length === 0 && (
               <TableRow>
-                <TableHead>Ref</TableHead>
-                <TableHead>Facility</TableHead>
-                <TableHead>Finding</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Due</TableHead>
-                <TableHead>Status</TableHead>
+                <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                  No incidents reported.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {nonConformities.map((n) => (
-                <TableRow key={n.id}>
-                  <TableCell className="text-sm font-medium text-primary">{n.id}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{n.facility}</TableCell>
-                  <TableCell className="max-w-96 text-sm">{n.title}</TableCell>
-                  <TableCell><StatusPill tone={toneForStatus(n.severity)}>{n.severity}</StatusPill></TableCell>
-                  <TableCell className="text-sm">{n.due}</TableCell>
-                  <TableCell><StatusPill tone={toneForStatus(n.status)}>{n.status}</StatusPill></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
-      </div>
+            )}
+          </TableBody>
+        </Table>
+      </Panel>
     </AppShell>
   );
 }

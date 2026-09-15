@@ -89,7 +89,7 @@ export function updateCurrentUser(patch: CurrentUserPatch): Promise<User> {
 
 /**
  * Verify the account's phone number. Both calls need a signed-in account, so
- * this is only reachable after the email code has been consumed — that is what
+ * this is only reachable after the email code has been consumed, since that is what
  * issues the token pair.
  */
 export function requestPhoneVerification(phoneNumber: string): Promise<{ message: string }> {
@@ -111,7 +111,7 @@ export function confirmPhoneVerification(input: {
 
 /**
  * End the session. The refresh token is blacklisted server-side so it cannot be
- * replayed — dropping it locally alone would leave it usable for its full seven
+ * replayed: dropping it locally alone would leave it usable for its full seven
  * days by anyone who had copied it. The local pair is cleared either way: a
  * failed call must not strand someone signed in.
  */

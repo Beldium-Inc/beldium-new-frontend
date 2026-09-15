@@ -81,7 +81,7 @@ export interface SectionData {
 
 /**
  * Save one section. The backend validates the whole `data` object on every
- * write — there is no partial save — and returns the full application, so the
+ * write (there is no partial save) and returns the full application, so the
  * caller can replace its cached copy with the saved state rather than assuming
  * the optimistic one took.
  */
@@ -163,7 +163,7 @@ export function listDocuments(id: UUID): Promise<ComplianceDocument[]> {
 
 /**
  * Upload (or replace) one document. `title` is ignored for the fifteen required
- * types — the backend substitutes its own label — and the endpoint rejects a
+ * types (the backend substitutes its own label) and the endpoint rejects a
  * `document_type` that is neither required nor already requested by a reviewer.
  * Re-uploading an existing type returns 200 and resets it to `submitted`.
  */

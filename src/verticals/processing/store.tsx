@@ -106,7 +106,7 @@ type Ctx = {
   /**
    * The application an applicant lands on. Reads are already scoped to the
    * caller, so these are all their own; this picks the one they can actually
-   * act on — a draft or one the desk has sent back — before falling back to
+   * act on (a draft or one the desk has sent back) before falling back to
    * whatever is still open, then to the most recent.
    */
   myApplication: ApplicationSummary | null;
@@ -207,7 +207,7 @@ type Ctx = {
   /**
    * Retained so the screens' call sites still compile. The API writes the audit
    * trail itself from the mutation that caused the entry, so there is nothing
-   * for the client to append — a client-written trail would be unverifiable.
+   * for the client to append; a client-written trail would be unverifiable.
    */
   log: (action: string, target: string, detail: string) => void;
 };
@@ -328,7 +328,7 @@ export function AppStateProvider({
   );
 
   // An applicant usually has one application, but a company registering a
-  // second facility has two — so "mine" is the one still needing work rather
+  // second facility has two, so "mine" is the one still needing work rather
   // than whatever the queue ordering happens to put first.
   const currentApplication = React.useMemo(() => {
     const actionable = applicationRows.find(

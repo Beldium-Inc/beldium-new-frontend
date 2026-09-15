@@ -93,7 +93,7 @@ function EntryPage() {
             <Link to="/miner-portal" className="font-semibold text-brand underline">
               Go to the Miner Portal
             </Link>{" "}
-            — a separate, standalone workspace for your organisation, sites and compliance.
+            A separate, standalone workspace for your organisation, sites and compliance.
           </p>
 
           <div className="mt-12 grid gap-4 sm:grid-cols-3">

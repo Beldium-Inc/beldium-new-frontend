@@ -222,7 +222,7 @@ function NCPage() {
 
 /**
  * The applicant's answer to a finding: what was done, and the evidence for it.
- * The file is optional — some corrective actions are a written explanation —
+ * The file is optional; some corrective actions are a written explanation,
  * but the description never is, because the desk rules on it.
  */
 function EvidenceForm({

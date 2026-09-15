@@ -1,100 +1,108 @@
 import { createFileRoute } from "@tanstack/react-router";
-import * as React from "react";
-import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ApiError } from "@/lib/api/errors";
-import { useMiner } from "@/verticals/miner/store";
-import { PageHeader, Panel, EmptyState } from "@/verticals/miner/components/primitives";
-import { StatusChip } from "@/verticals/miner/components/chips";
+import { useLicences, useMiningDocuments } from "@/lib/api/mining-queries";
 
 export const Route = createFileRoute("/miner/documents")({ component: DocumentsPage });
 
-function DocumentsPage() {
-  const { primarySite, documents, uploadDocument } = useMiner();
-  const [name, setName] = React.useState("");
-  const [category, setCategory] = React.useState("");
-  const [file, setFile] = React.useState<File | null>(null);
-  const [submitting, setSubmitting] = React.useState(false);
+const statusTone: Record<string, string> = {
+  verified: "bg-success/10 text-success",
+  active: "bg-success/10 text-success",
+  pending: "bg-warning/10 text-warning",
+  expiring: "bg-warning/10 text-warning",
+  rejected: "bg-danger/10 text-danger",
+  expired: "bg-danger/10 text-danger",
+  suspended: "bg-danger/10 text-danger",
+};
 
-  const submit = async () => {
-    if (!primarySite || !name || !file) {
-      toast.error("Provide a document name and a file.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await uploadDocument({ site: primarySite.id, name, ...(category ? { category } : {}), file });
-      toast.success("Document uploaded.");
-      setName("");
-      setCategory("");
-      setFile(null);
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Upload failed.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+function DocumentsPage() {
+  const docsQuery = useMiningDocuments();
+  const licencesQuery = useLicences();
+  const docs = docsQuery.data?.results ?? [];
+  const licences = licencesQuery.data?.results ?? [];
 
   return (
-    <>
-      <PageHeader title="Documents" description="Licences, certificates and other compliance documents." />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Documents</h1>
+        <p className="text-sm text-muted-foreground">Licences and supporting documents for your site.</p>
+      </div>
 
-      {primarySite && (
-        <Panel title="Upload a document" className="mb-5">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Licences</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {licences.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">No licences on file.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Number</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Authority</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Expires</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {licences.map((l) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-mono text-xs">{l.number}</TableCell>
+                      <TableCell className="text-sm">{l.type}</TableCell>
+                      <TableCell className="text-sm">{l.authority}</TableCell>
+                      <TableCell>
+                        <Badge className={statusTone[l.status] ?? ""}>{l.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{l.expires_on ?? "N/A"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-            <div className="space-y-1.5">
-              <Label>Category</Label>
-              <Input value={category} onChange={(e) => setCategory(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>File</Label>
-              <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            </div>
-          </div>
-          <Button className="mt-4" size="sm" onClick={() => void submit()} disabled={submitting}>
-            {submitting ? "Uploading…" : "Upload"}
-          </Button>
-        </Panel>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
-      <Panel bodyClassName="p-0">
-        {documents.length === 0 ? (
-          <div className="p-6">
-            <EmptyState title="No documents uploaded yet" />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Uploaded</TableHead>
-                <TableHead>Expiry</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {documents.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell className="font-medium">{d.name}</TableCell>
-                  <TableCell>{d.category}</TableCell>
-                  <TableCell>{d.uploaded}</TableCell>
-                  <TableCell>{d.expiry ?? "—"}</TableCell>
-                  <TableCell><StatusChip value={d.status} /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </Panel>
-    </>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Other documents</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {docs.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">No documents uploaded.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Expires</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {docs.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="text-sm">{d.name}</TableCell>
+                      <TableCell className="text-sm">{d.category}</TableCell>
+                      <TableCell>
+                        <Badge className={statusTone[d.status] ?? ""}>{d.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{d.expires_on ?? "N/A"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -73,7 +73,7 @@ function EmailChannel({
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
   const [seconds, setSeconds] = useState(RESEND_COOLDOWN_SECONDS);
-  // A code can fail because the address was already verified — in another tab,
+  // A code can fail because the address was already verified, in another tab,
   // or on an earlier visit. The API cannot say which without letting anyone
   // enumerate accounts, so after a failure we offer the way out.
   const [offerSignIn, setOfferSignIn] = useState(false);
@@ -182,7 +182,7 @@ function EmailChannel({
 
 /**
  * The phone channel is a real OTP, but both of its endpoints need a signed-in
- * account — and the token pair only arrives when the email code is consumed.
+ * account, and the token pair only arrives when the email code is consumed.
  * So this stays locked until the email is verified, rather than pretending the
  * two are independent.
  */
@@ -245,7 +245,7 @@ function PhoneChannel({
       <div className="mt-4 space-y-3">
         {!emailVerified ? (
           <p className="text-xs text-muted-foreground">
-            Confirm your email address first — verifying your number needs a signed-in account.
+            Confirm your email address first. Verifying your number needs a signed-in account.
           </p>
         ) : !sent ? (
           <div className="flex flex-wrap items-center gap-3">
