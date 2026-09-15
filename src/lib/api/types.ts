@@ -310,8 +310,8 @@ export interface ApplicationProgress {
   outstanding_sections: (keyof ApplicationProgressSections)[];
   /**
    * Why a submission would be refused, empty when it would be accepted.
-   * `account` — the applicant's email is unverified.
-   * `rejected_documents` — the desk rejected evidence that has not been replaced.
+   * `account`: the applicant's email is unverified.
+   * `rejected_documents`: the desk rejected evidence that has not been replaced.
    * An incomplete application is not itself a reason.
    */
   blocking: ("account" | "rejected_documents")[];

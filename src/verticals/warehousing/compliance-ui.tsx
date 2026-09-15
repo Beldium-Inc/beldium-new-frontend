@@ -19,8 +19,8 @@ export function StatCard({
     default: "bg-muted text-foreground",
     success: "bg-success text-success-foreground",
     warning: "bg-warning/40 text-warning-foreground",
-    danger: "bg-destructive/25 text-destructive-foreground",
-    info: "bg-secondary text-secondary-foreground",
+    danger: "bg-danger/25 text-danger-foreground",
+    info: "bg-brand-soft text-brand",
   } as const;
   return (
     <Card className="rounded-2xl border-border/70 shadow-card">
@@ -69,10 +69,10 @@ export function Panel({
 
 const STATUS_TONES: Record<string, string> = {
   neutral: "bg-muted text-muted-foreground",
-  info: "bg-secondary text-secondary-foreground",
+  info: "bg-brand-soft text-brand",
   success: "bg-success text-success-foreground",
   warning: "bg-warning/40 text-warning-foreground",
-  danger: "bg-destructive/25 text-destructive-foreground",
+  danger: "bg-danger/25 text-danger-foreground",
   brand: "bg-primary text-primary-foreground",
 };
 
@@ -100,20 +100,6 @@ export function toneForStatus(status: string): Tone {
   if (["rejected", "suspended", "declined", "overdue", "open", "critical", "major", "high", "missing"].includes(s))
     return "danger";
   return "info";
-}
-
-export function DemoDataBanner({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-dashed border-link/40 bg-secondary/60 px-4 py-3 text-sm text-primary",
-        className,
-      )}
-    >
-      <span className="font-heading font-semibold">Sample data</span>: all companies, CAC/TIN numbers,
-      facilities and documents shown are fictional and for demonstration only.
-    </div>
-  );
 }
 
 export function Field({ label, value }: { label: string; value: ReactNode }) {

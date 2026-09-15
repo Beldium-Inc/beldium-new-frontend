@@ -70,7 +70,7 @@ import type { UUID } from "./types";
 
 /**
  * Cache keys for the logistics register. Everything hangs off one
- * "logistics" root so a write can invalidate the whole vertical at once —
+ * "logistics" root so a write can invalidate the whole vertical at once:
  * a decision, for instance, moves the application, the company's dashboard
  * row and the notification feed all together.
  */

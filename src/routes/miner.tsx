@@ -1,34 +1,30 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { Shell } from "@/verticals/miner/components/Shell";
-import { MinerStoreProvider } from "@/verticals/miner/store";
 import { useSession } from "@/lib/session";
-import { useSignOut } from "@/lib/sign-out";
-import { roleIn } from "@/lib/verticals";
+import { MinerHubProvider } from "@/verticals/miner-hub/store";
+import { MinerHubShell } from "@/verticals/miner-hub/shell";
+
+// The Miner Hub: a richer, single miner-facing workspace spanning marketplace
+// RFQs, supply commitments, transactions, logistics and finance, superseding
+// what `/miner-portal` used to hand off into (the narrow `mining` vertical
+// scoped to the miner role). It reuses the same session — signed in via
+// `/miner-portal`, `vertical: "mining"`, `role: "miner"` — rather than
+// introducing a new auth flow, since `/mining/*` (organisation, sites,
+// production, inventory, compliance) is still real and still linked to from
+// here.
 
 export const Route = createFileRoute("/miner")({
   ssr: false,
-  head: () => ({
-    meta: [
-      { title: "Beldium Miner Portal" },
-      {
-        name: "description",
-        content:
-          "Manage your organisation, mine sites, production, inventory and compliance in one place.",
-      },
-    ],
-  }),
-  component: MinerLayout,
+  head: () => ({ meta: [{ title: "Beldium Miner Hub" }] }),
+  component: MinerHubLayout,
 });
 
-function MinerLayout() {
+function MinerHubLayout() {
   const { session, hydrated } = useSession();
-  const signOut = useSignOut();
   const navigate = useNavigate();
 
-  const role = session?.vertical === "miner" ? session.role : null;
-  const valid = role !== null && roleIn("miner", role) !== undefined;
+  const valid = session?.vertical === "mining" && session.role === "miner";
 
   useEffect(() => {
     if (hydrated && !valid) navigate({ to: "/miner-portal" });
@@ -45,13 +41,12 @@ function MinerLayout() {
   }
 
   return (
-    // data-vertical scopes this dashboard's theme tokens (see src/styles.css).
-    <div data-vertical="miner">
-      <MinerStoreProvider onSignOut={signOut}>
-        <Shell>
+    <div data-vertical="miner-hub">
+      <MinerHubProvider>
+        <MinerHubShell>
           <Outlet />
-        </Shell>
-      </MinerStoreProvider>
+        </MinerHubShell>
+      </MinerHubProvider>
     </div>
   );
 }

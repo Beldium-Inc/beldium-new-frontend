@@ -1,10 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { toast } from "sonner";
-import { Bell, Flag, MessageSquare, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/verticals/export/AppShell";
 import { useStore } from "@/verticals/export/store";
-import { DisclaimerNote, Panel, Pill, RiskPill, ShipmentStatusPill, Stat } from "@/verticals/export/ui-kit";
-import { Button } from "@/components/ui/button";
+import { ApplicationStatusPill, DisclaimerNote, Panel, Pill, Stat } from "@/verticals/export/ui-kit";
 
 export const Route = createFileRoute("/export/oversight")({
   head: () => ({
@@ -12,72 +9,55 @@ export const Route = createFileRoute("/export/oversight")({
       { title: "Regulatory Oversight | Beldium Export Compliance" },
       {
         name: "description",
-        content:
-          "Read-only oversight of Nigerian mineral export compliance activity with request-information, reminder, flag and acknowledge actions.",
+        content: "Read-only oversight of exporter admission applications and compliance activity.",
       },
-      { property: "og:title", content: "Regulatory Oversight | Beldium Export Compliance" },
-      { property: "og:description", content: "Read-only oversight of mineral export compliance activity." },
     ],
   }),
   component: OversightPage,
 });
 
+const DECIDED = new Set(["approved", "conditionally_approved", "rejected"]);
+
 function OversightPage() {
-  const { state, regulatorAction } = useStore();
-  const cleared = state.shipments.filter((s) => s.status === "cleared" || s.status === "conditionally_cleared");
-  const highRisk = state.shipments.filter((s) => s.riskBand === "high");
-  const openNc = state.shipments.flatMap((s) => s.nonConformities.filter((n) => n.status !== "closed"));
+  const { state } = useStore();
+  const approved = state.applications.filter((a) => a.status === "approved" || a.status === "conditionally_approved");
+  const highRisk = state.applications.filter((a) => a.risk.risk_band === "high");
+  const open = state.applications.filter((a) => !DECIDED.has(a.status));
 
   return (
     <AppShell title="Regulatory oversight" subtitle="Read-only visibility across Beldium compliance activity">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Consignments monitored" value={state.shipments.length} hint="All exporters" />
-        <Stat label="Records issued" value={cleared.length} tone="success" hint="Cleared or conditional" />
-        <Stat label="High risk" value={highRisk.length} tone="danger" hint="Escalated by Beldium" />
-        <Stat label="Open findings" value={openNc.length} tone="warning" hint="Across all consignments" />
+        <Stat label="Exporters monitored" value={state.exporters.length} />
+        <Stat label="Approved" value={approved.length} tone="success" hint="Approved or conditional" />
+        <Stat label="High risk" value={highRisk.length} tone="danger" />
+        <Stat label="Open applications" value={open.length} tone="warning" />
       </div>
 
       <Panel
-        title="Consignment register"
-        description="Oversight users can view records and request action, but cannot edit them."
+        title="Exporter register"
+        description="Oversight users can view records but cannot edit them."
         bodyClassName="p-0"
       >
         <div className="divide-y divide-border">
-          {state.shipments.map((s) => {
-            const exporter = state.exporters.find((e) => e.id === s.exporterId);
+          {state.exporters.map((e) => {
+            const application = state.applications.find((a) => a.exporter === e.id);
             return (
-              <div key={s.id} className="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+              <div key={e.id} className="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link to="/export/shipments/$id" params={{ id: s.id }} className="font-display text-sm font-semibold hover:underline">
-                      {s.reference}
+                    <Link to="/export/exporters/$id" params={{ id: e.id }} className="font-display text-sm font-semibold hover:underline">
+                      {e.name}
                     </Link>
-                    <ShipmentStatusPill status={s.status} />
-                    <RiskPill score={s.riskScore} band={s.riskBand} />
+                    <ApplicationStatusPill status={application?.status ?? "not_started"} />
+                    {application && (
+                      <Pill tone={application.risk.risk_band === "high" ? "danger" : application.risk.risk_band === "medium" ? "warning" : "success"}>
+                        Risk {application.risk.compliance_score} · {application.risk.risk_band}
+                      </Pill>
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {exporter?.name} · {s.mineral} · {s.quantity} · {s.destination} · ETD {s.etd}
+                    {e.reference} · {e.destinations.join(", ") || "No destinations listed"}
                   </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: "Request info", icon: MessageSquare, action: "Information requested" },
-                    { label: "Reminder", icon: Bell, action: "Reminder sent" },
-                    { label: "Flag", icon: Flag, action: "Shipment flagged" },
-                    { label: "Acknowledge", icon: ShieldCheck, action: "Acknowledged" },
-                  ].map((a) => (
-                    <Button
-                      key={a.action}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        regulatorAction(s.id, a.action, `Oversight desk: ${a.label.toLowerCase()}.`);
-                        toast.success(`${a.action}: ${s.reference}`);
-                      }}
-                    >
-                      <a.icon className="size-3.5" /> {a.label}
-                    </Button>
-                  ))}
                 </div>
               </div>
             );
@@ -85,32 +65,13 @@ function OversightPage() {
         </div>
       </Panel>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Open findings raised by Beldium">
-          <ul className="space-y-3">
-            {openNc.map((n) => (
-              <li key={n.id} className="rounded-lg border border-border p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium">{n.title}</p>
-                  <Pill tone={n.severity === "critical" ? "danger" : n.severity === "major" ? "warning" : "neutral"}>
-                    {n.severity}
-                  </Pill>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{n.detail}</p>
-              </li>
-            ))}
-            {openNc.length === 0 && <li className="text-sm text-muted-foreground">No open findings.</li>}
-          </ul>
-        </Panel>
-        <Panel title="Scope of this view">
-          <ul className="space-y-2 text-xs leading-relaxed text-muted-foreground">
-            <li>View compliance records, evidence sections and audit trails.</li>
-            <li>Request information, send reminders, flag consignments and acknowledge records.</li>
-            <li>No editing of exporter records, documents, checklists or decisions.</li>
-          </ul>
-          <DisclaimerNote className="mt-4" />
-        </Panel>
-      </div>
+      <Panel title="Scope of this view">
+        <ul className="space-y-2 text-xs leading-relaxed text-muted-foreground">
+          <li>View compliance records, domain reviews and audit trails.</li>
+          <li>No editing of exporter records, documents or decisions.</li>
+        </ul>
+        <DisclaimerNote className="mt-4" />
+      </Panel>
     </AppShell>
   );
 }

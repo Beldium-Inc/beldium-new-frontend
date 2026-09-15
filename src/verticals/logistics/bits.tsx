@@ -29,7 +29,7 @@ const toneMap: Record<string, string> = {
   success: "bg-[var(--success)]/60 text-[var(--success-foreground)] border-[var(--success)]",
   warning: "bg-[var(--warning)]/25 text-[var(--warning-foreground)] border-[var(--warning)]/60",
   danger: "bg-[var(--danger)]/20 text-[var(--danger-foreground)] border-[var(--danger)]/50",
-  info: "bg-[var(--brand-soft)] text-[var(--brand)] border-[#b9d3fb]",
+  info: "bg-[var(--brand-soft)] text-[var(--brand)] border-[var(--brand)]/30",
   neutral: "bg-muted text-muted-foreground border-border",
 };
 
@@ -234,7 +234,7 @@ export function KeyValue({ items }: { items: { label: string; value: React.React
 
 export function ReadOnlyNotice({ text }: { text: string }) {
   return (
-    <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-[#b9d3fb] bg-[var(--brand-soft)]/60 px-4 py-3 text-sm text-[var(--brand)]">
+    <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-[var(--brand)]/30 bg-[var(--brand-soft)]/60 px-4 py-3 text-sm text-[var(--brand)]">
       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{text}</span>
     </div>

@@ -1,133 +1,79 @@
 import { createFileRoute } from "@tanstack/react-router";
-import * as React from "react";
-import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ApiError } from "@/lib/api/errors";
-import { useMiner } from "@/verticals/miner/store";
-import { PageHeader, Panel, EmptyState } from "@/verticals/miner/components/primitives";
-import { Chip } from "@/verticals/miner/components/chips";
+import { useMineSites } from "@/lib/api/mining-queries";
+import { useBatches } from "@/lib/api/ecosystem-queries";
+import { tonnes } from "@/verticals/miner-hub/store";
 
 export const Route = createFileRoute("/miner/inventory")({ component: InventoryPage });
 
-function InventoryPage() {
-  const { primarySite, inventory, createInventoryItem } = useMiner();
-  const [open, setOpen] = React.useState(false);
-  const [name, setName] = React.useState("");
-  const [category, setCategory] = React.useState("");
-  const [quantity, setQuantity] = React.useState("");
-  const [unit, setUnit] = React.useState("t");
-  const [threshold, setThreshold] = React.useState("");
-  const [submitting, setSubmitting] = React.useState(false);
+const stageTone: Record<string, string> = {
+  stockpile: "bg-muted text-muted-foreground",
+  allocated: "bg-brand/10 text-brand",
+  in_transit: "bg-warning/10 text-warning",
+  warehouse: "bg-brand/10 text-brand",
+  processing: "bg-warning/10 text-warning",
+  export_ready: "bg-success/10 text-success",
+  shipped: "bg-success/10 text-success",
+  delivered: "bg-success/10 text-success",
+};
 
-  const submit = async () => {
-    if (!primarySite || !name || !category || !quantity) {
-      toast.error("Fill in item name, category and quantity.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await createInventoryItem({
-        site: primarySite.id,
-        category,
-        name,
-        quantity: Number(quantity),
-        unit,
-        ...(threshold ? { threshold: Number(threshold) } : {}),
-      });
-      toast.success("Inventory item added.");
-      setOpen(false);
-      setName("");
-      setCategory("");
-      setQuantity("");
-      setThreshold("");
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Could not save the item.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+function InventoryPage() {
+  const sitesQuery = useMineSites();
+  const batchesQuery = useBatches();
+  const site = sitesQuery.data?.results?.[0];
+  const batches = batchesQuery.data?.results ?? [];
 
   return (
-    <>
-      <PageHeader
-        title="Inventory"
-        description="Mineral stockpile and consumables on hand at your primary site."
-        actions={
-          primarySite ? (
-            <Button size="sm" onClick={() => setOpen((v) => !v)}>
-              {open ? "Cancel" : "Add item"}
-            </Button>
-          ) : undefined
-        }
-      />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Mineral Inventory</h1>
+        <p className="text-sm text-muted-foreground">Stock aggregated at {site?.name ?? "your site"}, by batch.</p>
+      </div>
 
-      {open && (
-        <Panel title="New inventory item" className="mb-5">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1.5">
-              <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Category</Label>
-              <Input value={category} onChange={(e) => setCategory(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Quantity</Label>
-              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Unit</Label>
-              <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Low-stock threshold</Label>
-              <Input type="number" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
-            </div>
-          </div>
-          <Button className="mt-4" size="sm" onClick={() => void submit()} disabled={submitting}>
-            {submitting ? "Saving…" : "Save item"}
-          </Button>
-        </Panel>
-      )}
-
-      <Panel bodyClassName="p-0">
-        {inventory.length === 0 ? (
-          <div className="p-6">
-            <EmptyState title="No inventory recorded yet" description="Add your first item above." />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {inventory.map((i) => {
-                const low = i.threshold != null && i.quantity <= i.threshold;
-                return (
-                  <TableRow key={i.id}>
-                    <TableCell className="font-medium">{i.name}</TableCell>
-                    <TableCell>{i.category}</TableCell>
-                    <TableCell className="tabular-nums">{i.quantity.toLocaleString()} {i.unit}</TableCell>
-                    <TableCell>
-                      <Chip tone={low ? "warning" : "success"}>{low ? "Low stock" : "OK"}</Chip>
-                    </TableCell>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Material batches</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {batchesQuery.isLoading ? (
+            <p className="p-4 text-sm text-muted-foreground">Loading…</p>
+          ) : batches.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">No batches recorded.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Batch</TableHead>
+                    <TableHead>Mineral</TableHead>
+                    <TableHead>Tonnes</TableHead>
+                    <TableHead>Grade</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Location</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </Panel>
-    </>
+                </TableHeader>
+                <TableBody>
+                  {batches.map((b) => (
+                    <TableRow key={b.id}>
+                      <TableCell className="font-mono text-xs">{b.reference}</TableCell>
+                      <TableCell className="text-sm">{b.mineral}</TableCell>
+                      <TableCell className="text-sm">{tonnes(b.tonnes)}</TableCell>
+                      <TableCell className="text-sm">{b.grade}</TableCell>
+                      <TableCell>
+                        <Badge className={stageTone[b.stage] ?? ""}>{b.stage.replace(/_/g, " ")}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{b.location}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

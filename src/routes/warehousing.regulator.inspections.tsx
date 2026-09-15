@@ -8,45 +8,49 @@ export const Route = createFileRoute("/warehousing/regulator/inspections")({
   head: () => ({
     meta: [
       { title: "Inspections | Beldium Regulatory Portal" },
-      { name: "description", content: "Inspection programme across registered mineral warehouses with type, inspector, date, status and finding counts." },
-      { property: "og:title", content: "Inspections | Beldium Regulatory Portal" },
-      { property: "og:description", content: "Oversight of the partner's inspection programme." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "description", content: "Inspection programme across registered mineral warehouses." },
     ],
   }),
   component: RegulatorInspections,
 });
 
 function RegulatorInspections() {
-  const { inspections } = useDemo();
+  const { state } = useDemo();
   return (
     <AppShell role="regulator" title="Inspection programme" subtitle="Read-only schedule and outcomes">
       <Panel title="Inspections" description="Overdue inspections are escalated to the partner automatically.">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Ref</TableHead>
               <TableHead>Facility</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Inspector</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Findings</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Next due</TableHead>
+              <TableHead>Outcome</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inspections.map((i) => (
-              <TableRow key={i.id}>
-                <TableCell className="text-sm font-medium text-primary">{i.id}</TableCell>
-                <TableCell className="text-sm">{i.facility}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{i.type}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{i.inspector}</TableCell>
-                <TableCell className="text-sm">{i.date}</TableCell>
-                <TableCell className="text-sm">{i.findings}</TableCell>
-                <TableCell><StatusPill tone={toneForStatus(i.status)}>{i.status}</StatusPill></TableCell>
+            {state.inspections.map((i) => {
+              const f = state.facilities.find((x) => x.id === i.facility);
+              return (
+                <TableRow key={i.id}>
+                  <TableCell className="text-sm font-medium text-primary">{f?.name ?? "-"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{i.inspection_type}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{i.inspector_name}</TableCell>
+                  <TableCell className="text-sm">{i.inspected_on}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{i.next_due_on ?? "-"}</TableCell>
+                  <TableCell><StatusPill tone={toneForStatus(i.outcome)}>{i.outcome}</StatusPill></TableCell>
+                </TableRow>
+              );
+            })}
+            {state.inspections.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                  No inspections recorded.
+                </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </Panel>

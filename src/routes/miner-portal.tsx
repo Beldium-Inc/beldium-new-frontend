@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
-import { homeFor } from "@/lib/verticals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 // The Miner Portal is a standalone product, not another card in the shared
 // compliance sector picker (see COMPLIANCE_VERTICALS in lib/verticals.ts).
-// This route is its own entry point — its own URL, its own branding, its own
-// sign-in/sign-up — independent of /signin and /onboarding/*. It still
+// This route is its own entry point: its own URL, its own branding, its own
+// sign-in/sign-up, independent of /signin and /onboarding/*. It still
 // authenticates against the same accounts API and hands off to the same
 // `useSession` mechanism as the rest of the platform, since the authenticated
 // /miner/* app already depends on that; only the surrounding chrome and entry
@@ -29,7 +28,7 @@ export const Route = createFileRoute("/miner-portal")({
       {
         name: "description",
         content:
-          "Sign in or register for the Beldium Miner Portal — your organisation, sites, production and compliance in one place.",
+          "Sign in or register for the Beldium Miner Portal: your organisation, sites, production and compliance in one place.",
       },
     ],
   }),
@@ -53,13 +52,16 @@ function MinerPortalEntry() {
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (hydrated && session?.vertical === "miner") {
-      navigate({ to: homeFor("miner", session.role) });
+    if (hydrated && session?.vertical === "mining" && session.role === "miner") {
+      navigate({ to: "/miner/dashboard" });
     }
   }, [hydrated, session, navigate]);
 
+  // Hands off into the Miner Hub — a richer, single miner-facing workspace
+  // (marketplace, supply chain, finance) — rather than the narrower `mining`
+  // vertical scoped to the miner role. Still the same session/auth.
   const enterMinerWorkspace = () => {
-    startSession("miner", "miner");
+    startSession("mining", "miner");
     navigate({ to: "/miner/dashboard" });
   };
 
@@ -150,7 +152,7 @@ function MinerPortalEntry() {
 
           <div className="space-y-4">
             <h1 className="font-display text-4xl leading-tight font-semibold sm:text-5xl">
-              Your organisation, sites and compliance — in one place
+              Your organisation, sites and compliance, in one place
             </h1>
             <p className="max-w-lg text-sm leading-relaxed text-primary-foreground/75">
               Register your mining organisation, submit your application, track its review, and

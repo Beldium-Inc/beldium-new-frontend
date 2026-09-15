@@ -36,21 +36,21 @@ import { Route as MarketplaceMarketplaceRouteImport } from './routes/marketplace
 import { Route as MarketplaceNotificationsRouteImport } from './routes/marketplace.notifications'
 import { Route as MarketplaceOffersRouteImport } from './routes/marketplace.offers'
 import { Route as MarketplaceOrdersRouteImport } from './routes/marketplace.orders'
-import { Route as MinerIndexRouteImport } from './routes/miner.index'
-import { Route as MinerActionsRouteImport } from './routes/miner.actions'
-import { Route as MinerApplicationRouteImport } from './routes/miner.application'
-import { Route as MinerApplicationRecordRouteImport } from './routes/miner.application-record'
+import { Route as MinerCommitmentsRouteImport } from './routes/miner.commitments'
 import { Route as MinerComplianceRouteImport } from './routes/miner.compliance'
 import { Route as MinerDashboardRouteImport } from './routes/miner.dashboard'
 import { Route as MinerDocumentsRouteImport } from './routes/miner.documents'
-import { Route as MinerEquipmentRouteImport } from './routes/miner.equipment'
+import { Route as MinerExportsRouteImport } from './routes/miner.exports'
+import { Route as MinerFinanceRouteImport } from './routes/miner.finance'
 import { Route as MinerInventoryRouteImport } from './routes/miner.inventory'
-import { Route as MinerNotificationsRouteImport } from './routes/miner.notifications'
+import { Route as MinerLogisticsRouteImport } from './routes/miner.logistics'
 import { Route as MinerOrganisationRouteImport } from './routes/miner.organisation'
+import { Route as MinerProcessingRouteImport } from './routes/miner.processing'
 import { Route as MinerProductionRouteImport } from './routes/miner.production'
+import { Route as MinerQualityRouteImport } from './routes/miner.quality'
 import { Route as MinerReportsRouteImport } from './routes/miner.reports'
-import { Route as MinerSettingsRouteImport } from './routes/miner.settings'
-import { Route as MinerSitesRouteImport } from './routes/miner.sites'
+import { Route as MinerRfqsRouteImport } from './routes/miner.rfqs'
+import { Route as MinerWarehousingRouteImport } from './routes/miner.warehousing'
 import { Route as MiningIndexRouteImport } from './routes/mining.index'
 import { Route as MiningActionsRouteImport } from './routes/mining.actions'
 import { Route as MiningApplicationsRouteImport } from './routes/mining.applications'
@@ -136,6 +136,8 @@ import { Route as MarketplaceRfqsIndexRouteImport } from './routes/marketplace.r
 import { Route as MarketplaceRfqsIdRouteImport } from './routes/marketplace.rfqs.$id'
 import { Route as MinerSitesIndexRouteImport } from './routes/miner.sites.index'
 import { Route as MinerSitesSiteIdRouteImport } from './routes/miner.sites.$siteId'
+import { Route as MinerTransactionsIndexRouteImport } from './routes/miner.transactions.index'
+import { Route as MinerTransactionsTransactionIdRouteImport } from './routes/miner.transactions.$transactionId'
 import { Route as MiningSitesIndexRouteImport } from './routes/mining.sites.index'
 import { Route as MiningSitesSiteIdRouteImport } from './routes/mining.sites.$siteId'
 import { Route as ProcessingApplicationsIdRouteImport } from './routes/processing.applications.$id'
@@ -162,6 +164,7 @@ import { Route as WarehousingPartnerInspectionsRouteImport } from './routes/ware
 import { Route as WarehousingPartnerNonConformitiesRouteImport } from './routes/warehousing.partner.non-conformities'
 import { Route as WarehousingRegulatorIndexRouteImport } from './routes/warehousing.regulator.index'
 import { Route as WarehousingRegulatorCertificatesRouteImport } from './routes/warehousing.regulator.certificates'
+import { Route as WarehousingRegulatorConditionsRouteImport } from './routes/warehousing.regulator.conditions'
 import { Route as WarehousingRegulatorFacilitiesRouteImport } from './routes/warehousing.regulator.facilities'
 import { Route as WarehousingRegulatorIncidentsRouteImport } from './routes/warehousing.regulator.incidents'
 import { Route as WarehousingRegulatorInspectionsRouteImport } from './routes/warehousing.regulator.inspections'
@@ -306,24 +309,9 @@ const MarketplaceOrdersRoute = MarketplaceOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => MarketplaceRoute,
 } as any)
-const MinerIndexRoute = MinerIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => MinerRoute,
-} as any)
-const MinerActionsRoute = MinerActionsRouteImport.update({
-  id: '/actions',
-  path: '/actions',
-  getParentRoute: () => MinerRoute,
-} as any)
-const MinerApplicationRoute = MinerApplicationRouteImport.update({
-  id: '/application',
-  path: '/application',
-  getParentRoute: () => MinerRoute,
-} as any)
-const MinerApplicationRecordRoute = MinerApplicationRecordRouteImport.update({
-  id: '/application-record',
-  path: '/application-record',
+const MinerCommitmentsRoute = MinerCommitmentsRouteImport.update({
+  id: '/commitments',
+  path: '/commitments',
   getParentRoute: () => MinerRoute,
 } as any)
 const MinerComplianceRoute = MinerComplianceRouteImport.update({
@@ -341,9 +329,14 @@ const MinerDocumentsRoute = MinerDocumentsRouteImport.update({
   path: '/documents',
   getParentRoute: () => MinerRoute,
 } as any)
-const MinerEquipmentRoute = MinerEquipmentRouteImport.update({
-  id: '/equipment',
-  path: '/equipment',
+const MinerExportsRoute = MinerExportsRouteImport.update({
+  id: '/exports',
+  path: '/exports',
+  getParentRoute: () => MinerRoute,
+} as any)
+const MinerFinanceRoute = MinerFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
   getParentRoute: () => MinerRoute,
 } as any)
 const MinerInventoryRoute = MinerInventoryRouteImport.update({
@@ -351,9 +344,9 @@ const MinerInventoryRoute = MinerInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => MinerRoute,
 } as any)
-const MinerNotificationsRoute = MinerNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
+const MinerLogisticsRoute = MinerLogisticsRouteImport.update({
+  id: '/logistics',
+  path: '/logistics',
   getParentRoute: () => MinerRoute,
 } as any)
 const MinerOrganisationRoute = MinerOrganisationRouteImport.update({
@@ -361,9 +354,19 @@ const MinerOrganisationRoute = MinerOrganisationRouteImport.update({
   path: '/organisation',
   getParentRoute: () => MinerRoute,
 } as any)
+const MinerProcessingRoute = MinerProcessingRouteImport.update({
+  id: '/processing',
+  path: '/processing',
+  getParentRoute: () => MinerRoute,
+} as any)
 const MinerProductionRoute = MinerProductionRouteImport.update({
   id: '/production',
   path: '/production',
+  getParentRoute: () => MinerRoute,
+} as any)
+const MinerQualityRoute = MinerQualityRouteImport.update({
+  id: '/quality',
+  path: '/quality',
   getParentRoute: () => MinerRoute,
 } as any)
 const MinerReportsRoute = MinerReportsRouteImport.update({
@@ -371,14 +374,14 @@ const MinerReportsRoute = MinerReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => MinerRoute,
 } as any)
-const MinerSettingsRoute = MinerSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const MinerRfqsRoute = MinerRfqsRouteImport.update({
+  id: '/rfqs',
+  path: '/rfqs',
   getParentRoute: () => MinerRoute,
 } as any)
-const MinerSitesRoute = MinerSitesRouteImport.update({
-  id: '/sites',
-  path: '/sites',
+const MinerWarehousingRoute = MinerWarehousingRouteImport.update({
+  id: '/warehousing',
+  path: '/warehousing',
   getParentRoute: () => MinerRoute,
 } as any)
 const MiningIndexRoute = MiningIndexRouteImport.update({
@@ -815,15 +818,26 @@ const MarketplaceRfqsIdRoute = MarketplaceRfqsIdRouteImport.update({
   getParentRoute: () => MarketplaceRoute,
 } as any)
 const MinerSitesIndexRoute = MinerSitesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => MinerSitesRoute,
+  id: '/sites/',
+  path: '/sites/',
+  getParentRoute: () => MinerRoute,
 } as any)
 const MinerSitesSiteIdRoute = MinerSitesSiteIdRouteImport.update({
-  id: '/$siteId',
-  path: '/$siteId',
-  getParentRoute: () => MinerSitesRoute,
+  id: '/sites/$siteId',
+  path: '/sites/$siteId',
+  getParentRoute: () => MinerRoute,
 } as any)
+const MinerTransactionsIndexRoute = MinerTransactionsIndexRouteImport.update({
+  id: '/transactions/',
+  path: '/transactions/',
+  getParentRoute: () => MinerRoute,
+} as any)
+const MinerTransactionsTransactionIdRoute =
+  MinerTransactionsTransactionIdRouteImport.update({
+    id: '/transactions/$transactionId',
+    path: '/transactions/$transactionId',
+    getParentRoute: () => MinerRoute,
+  } as any)
 const MiningSitesIndexRoute = MiningSitesIndexRouteImport.update({
   id: '/sites/',
   path: '/sites/',
@@ -971,6 +985,12 @@ const WarehousingRegulatorCertificatesRoute =
     path: '/regulator/certificates',
     getParentRoute: () => WarehousingRoute,
   } as any)
+const WarehousingRegulatorConditionsRoute =
+  WarehousingRegulatorConditionsRouteImport.update({
+    id: '/regulator/conditions',
+    path: '/regulator/conditions',
+    getParentRoute: () => WarehousingRoute,
+  } as any)
 const WarehousingRegulatorFacilitiesRoute =
   WarehousingRegulatorFacilitiesRouteImport.update({
     id: '/regulator/facilities',
@@ -1039,20 +1059,21 @@ export interface FileRoutesByFullPath {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
-  '/miner/actions': typeof MinerActionsRoute
-  '/miner/application': typeof MinerApplicationRoute
-  '/miner/application-record': typeof MinerApplicationRecordRoute
+  '/miner/commitments': typeof MinerCommitmentsRoute
   '/miner/compliance': typeof MinerComplianceRoute
   '/miner/dashboard': typeof MinerDashboardRoute
   '/miner/documents': typeof MinerDocumentsRoute
-  '/miner/equipment': typeof MinerEquipmentRoute
+  '/miner/exports': typeof MinerExportsRoute
+  '/miner/finance': typeof MinerFinanceRoute
   '/miner/inventory': typeof MinerInventoryRoute
-  '/miner/notifications': typeof MinerNotificationsRoute
+  '/miner/logistics': typeof MinerLogisticsRoute
   '/miner/organisation': typeof MinerOrganisationRoute
+  '/miner/processing': typeof MinerProcessingRoute
   '/miner/production': typeof MinerProductionRoute
+  '/miner/quality': typeof MinerQualityRoute
   '/miner/reports': typeof MinerReportsRoute
-  '/miner/settings': typeof MinerSettingsRoute
-  '/miner/sites': typeof MinerSitesRouteWithChildren
+  '/miner/rfqs': typeof MinerRfqsRoute
+  '/miner/warehousing': typeof MinerWarehousingRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/applications': typeof MiningApplicationsRoute
   '/mining/audit': typeof MiningAuditRoute
@@ -1100,7 +1121,6 @@ export interface FileRoutesByFullPath {
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
-  '/miner/': typeof MinerIndexRoute
   '/mining/': typeof MiningIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/processing/': typeof ProcessingIndexRoute
@@ -1133,6 +1153,7 @@ export interface FileRoutesByFullPath {
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
   '/miner/sites/$siteId': typeof MinerSitesSiteIdRoute
+  '/miner/transactions/$transactionId': typeof MinerTransactionsTransactionIdRoute
   '/mining/sites/$siteId': typeof MiningSitesSiteIdRoute
   '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
   '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
@@ -1152,6 +1173,7 @@ export interface FileRoutesByFullPath {
   '/warehousing/partner/inspections': typeof WarehousingPartnerInspectionsRoute
   '/warehousing/partner/non-conformities': typeof WarehousingPartnerNonConformitiesRoute
   '/warehousing/regulator/certificates': typeof WarehousingRegulatorCertificatesRoute
+  '/warehousing/regulator/conditions': typeof WarehousingRegulatorConditionsRoute
   '/warehousing/regulator/facilities': typeof WarehousingRegulatorFacilitiesRoute
   '/warehousing/regulator/incidents': typeof WarehousingRegulatorIncidentsRoute
   '/warehousing/regulator/inspections': typeof WarehousingRegulatorInspectionsRoute
@@ -1165,6 +1187,7 @@ export interface FileRoutesByFullPath {
   '/marketplace/compliance/': typeof MarketplaceComplianceIndexRoute
   '/marketplace/rfqs/': typeof MarketplaceRfqsIndexRoute
   '/miner/sites/': typeof MinerSitesIndexRoute
+  '/miner/transactions/': typeof MinerTransactionsIndexRoute
   '/mining/sites/': typeof MiningSitesIndexRoute
   '/quality/applications/': typeof QualityApplicationsIndexRoute
   '/quality/certificates/': typeof QualityCertificatesIndexRoute
@@ -1178,6 +1201,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/miner': typeof MinerRouteWithChildren
   '/miner-portal': typeof MinerPortalRoute
   '/signin': typeof SigninRoute
   '/export/dashboard': typeof ExportDashboardRoute
@@ -1192,19 +1216,21 @@ export interface FileRoutesByTo {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
-  '/miner/actions': typeof MinerActionsRoute
-  '/miner/application': typeof MinerApplicationRoute
-  '/miner/application-record': typeof MinerApplicationRecordRoute
+  '/miner/commitments': typeof MinerCommitmentsRoute
   '/miner/compliance': typeof MinerComplianceRoute
   '/miner/dashboard': typeof MinerDashboardRoute
   '/miner/documents': typeof MinerDocumentsRoute
-  '/miner/equipment': typeof MinerEquipmentRoute
+  '/miner/exports': typeof MinerExportsRoute
+  '/miner/finance': typeof MinerFinanceRoute
   '/miner/inventory': typeof MinerInventoryRoute
-  '/miner/notifications': typeof MinerNotificationsRoute
+  '/miner/logistics': typeof MinerLogisticsRoute
   '/miner/organisation': typeof MinerOrganisationRoute
+  '/miner/processing': typeof MinerProcessingRoute
   '/miner/production': typeof MinerProductionRoute
+  '/miner/quality': typeof MinerQualityRoute
   '/miner/reports': typeof MinerReportsRoute
-  '/miner/settings': typeof MinerSettingsRoute
+  '/miner/rfqs': typeof MinerRfqsRoute
+  '/miner/warehousing': typeof MinerWarehousingRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/applications': typeof MiningApplicationsRoute
   '/mining/audit': typeof MiningAuditRoute
@@ -1252,7 +1278,6 @@ export interface FileRoutesByTo {
   '/export': typeof ExportIndexRoute
   '/logistics': typeof LogisticsIndexRoute
   '/marketplace': typeof MarketplaceIndexRoute
-  '/miner': typeof MinerIndexRoute
   '/mining': typeof MiningIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/processing': typeof ProcessingIndexRoute
@@ -1285,6 +1310,7 @@ export interface FileRoutesByTo {
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
   '/miner/sites/$siteId': typeof MinerSitesSiteIdRoute
+  '/miner/transactions/$transactionId': typeof MinerTransactionsTransactionIdRoute
   '/mining/sites/$siteId': typeof MiningSitesSiteIdRoute
   '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
   '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
@@ -1304,6 +1330,7 @@ export interface FileRoutesByTo {
   '/warehousing/partner/inspections': typeof WarehousingPartnerInspectionsRoute
   '/warehousing/partner/non-conformities': typeof WarehousingPartnerNonConformitiesRoute
   '/warehousing/regulator/certificates': typeof WarehousingRegulatorCertificatesRoute
+  '/warehousing/regulator/conditions': typeof WarehousingRegulatorConditionsRoute
   '/warehousing/regulator/facilities': typeof WarehousingRegulatorFacilitiesRoute
   '/warehousing/regulator/incidents': typeof WarehousingRegulatorIncidentsRoute
   '/warehousing/regulator/inspections': typeof WarehousingRegulatorInspectionsRoute
@@ -1317,6 +1344,7 @@ export interface FileRoutesByTo {
   '/marketplace/compliance': typeof MarketplaceComplianceIndexRoute
   '/marketplace/rfqs': typeof MarketplaceRfqsIndexRoute
   '/miner/sites': typeof MinerSitesIndexRoute
+  '/miner/transactions': typeof MinerTransactionsIndexRoute
   '/mining/sites': typeof MiningSitesIndexRoute
   '/quality/applications': typeof QualityApplicationsIndexRoute
   '/quality/certificates': typeof QualityCertificatesIndexRoute
@@ -1354,20 +1382,21 @@ export interface FileRoutesById {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
-  '/miner/actions': typeof MinerActionsRoute
-  '/miner/application': typeof MinerApplicationRoute
-  '/miner/application-record': typeof MinerApplicationRecordRoute
+  '/miner/commitments': typeof MinerCommitmentsRoute
   '/miner/compliance': typeof MinerComplianceRoute
   '/miner/dashboard': typeof MinerDashboardRoute
   '/miner/documents': typeof MinerDocumentsRoute
-  '/miner/equipment': typeof MinerEquipmentRoute
+  '/miner/exports': typeof MinerExportsRoute
+  '/miner/finance': typeof MinerFinanceRoute
   '/miner/inventory': typeof MinerInventoryRoute
-  '/miner/notifications': typeof MinerNotificationsRoute
+  '/miner/logistics': typeof MinerLogisticsRoute
   '/miner/organisation': typeof MinerOrganisationRoute
+  '/miner/processing': typeof MinerProcessingRoute
   '/miner/production': typeof MinerProductionRoute
+  '/miner/quality': typeof MinerQualityRoute
   '/miner/reports': typeof MinerReportsRoute
-  '/miner/settings': typeof MinerSettingsRoute
-  '/miner/sites': typeof MinerSitesRouteWithChildren
+  '/miner/rfqs': typeof MinerRfqsRoute
+  '/miner/warehousing': typeof MinerWarehousingRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/applications': typeof MiningApplicationsRoute
   '/mining/audit': typeof MiningAuditRoute
@@ -1415,7 +1444,6 @@ export interface FileRoutesById {
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
-  '/miner/': typeof MinerIndexRoute
   '/mining/': typeof MiningIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/processing/': typeof ProcessingIndexRoute
@@ -1448,6 +1476,7 @@ export interface FileRoutesById {
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
   '/miner/sites/$siteId': typeof MinerSitesSiteIdRoute
+  '/miner/transactions/$transactionId': typeof MinerTransactionsTransactionIdRoute
   '/mining/sites/$siteId': typeof MiningSitesSiteIdRoute
   '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
   '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
@@ -1467,6 +1496,7 @@ export interface FileRoutesById {
   '/warehousing/partner/inspections': typeof WarehousingPartnerInspectionsRoute
   '/warehousing/partner/non-conformities': typeof WarehousingPartnerNonConformitiesRoute
   '/warehousing/regulator/certificates': typeof WarehousingRegulatorCertificatesRoute
+  '/warehousing/regulator/conditions': typeof WarehousingRegulatorConditionsRoute
   '/warehousing/regulator/facilities': typeof WarehousingRegulatorFacilitiesRoute
   '/warehousing/regulator/incidents': typeof WarehousingRegulatorIncidentsRoute
   '/warehousing/regulator/inspections': typeof WarehousingRegulatorInspectionsRoute
@@ -1480,6 +1510,7 @@ export interface FileRoutesById {
   '/marketplace/compliance/': typeof MarketplaceComplianceIndexRoute
   '/marketplace/rfqs/': typeof MarketplaceRfqsIndexRoute
   '/miner/sites/': typeof MinerSitesIndexRoute
+  '/miner/transactions/': typeof MinerTransactionsIndexRoute
   '/mining/sites/': typeof MiningSitesIndexRoute
   '/quality/applications/': typeof QualityApplicationsIndexRoute
   '/quality/certificates/': typeof QualityCertificatesIndexRoute
@@ -1518,20 +1549,21 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
-    | '/miner/actions'
-    | '/miner/application'
-    | '/miner/application-record'
+    | '/miner/commitments'
     | '/miner/compliance'
     | '/miner/dashboard'
     | '/miner/documents'
-    | '/miner/equipment'
+    | '/miner/exports'
+    | '/miner/finance'
     | '/miner/inventory'
-    | '/miner/notifications'
+    | '/miner/logistics'
     | '/miner/organisation'
+    | '/miner/processing'
     | '/miner/production'
+    | '/miner/quality'
     | '/miner/reports'
-    | '/miner/settings'
-    | '/miner/sites'
+    | '/miner/rfqs'
+    | '/miner/warehousing'
     | '/mining/actions'
     | '/mining/applications'
     | '/mining/audit'
@@ -1579,7 +1611,6 @@ export interface FileRouteTypes {
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
-    | '/miner/'
     | '/mining/'
     | '/onboarding/'
     | '/processing/'
@@ -1612,6 +1643,7 @@ export interface FileRouteTypes {
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
     | '/miner/sites/$siteId'
+    | '/miner/transactions/$transactionId'
     | '/mining/sites/$siteId'
     | '/processing/applications/$id'
     | '/processing/processors/$id'
@@ -1631,6 +1663,7 @@ export interface FileRouteTypes {
     | '/warehousing/partner/inspections'
     | '/warehousing/partner/non-conformities'
     | '/warehousing/regulator/certificates'
+    | '/warehousing/regulator/conditions'
     | '/warehousing/regulator/facilities'
     | '/warehousing/regulator/incidents'
     | '/warehousing/regulator/inspections'
@@ -1644,6 +1677,7 @@ export interface FileRouteTypes {
     | '/marketplace/compliance/'
     | '/marketplace/rfqs/'
     | '/miner/sites/'
+    | '/miner/transactions/'
     | '/mining/sites/'
     | '/quality/applications/'
     | '/quality/certificates/'
@@ -1657,6 +1691,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/miner'
     | '/miner-portal'
     | '/signin'
     | '/export/dashboard'
@@ -1671,19 +1706,21 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
-    | '/miner/actions'
-    | '/miner/application'
-    | '/miner/application-record'
+    | '/miner/commitments'
     | '/miner/compliance'
     | '/miner/dashboard'
     | '/miner/documents'
-    | '/miner/equipment'
+    | '/miner/exports'
+    | '/miner/finance'
     | '/miner/inventory'
-    | '/miner/notifications'
+    | '/miner/logistics'
     | '/miner/organisation'
+    | '/miner/processing'
     | '/miner/production'
+    | '/miner/quality'
     | '/miner/reports'
-    | '/miner/settings'
+    | '/miner/rfqs'
+    | '/miner/warehousing'
     | '/mining/actions'
     | '/mining/applications'
     | '/mining/audit'
@@ -1731,7 +1768,6 @@ export interface FileRouteTypes {
     | '/export'
     | '/logistics'
     | '/marketplace'
-    | '/miner'
     | '/mining'
     | '/onboarding'
     | '/processing'
@@ -1764,6 +1800,7 @@ export interface FileRouteTypes {
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
     | '/miner/sites/$siteId'
+    | '/miner/transactions/$transactionId'
     | '/mining/sites/$siteId'
     | '/processing/applications/$id'
     | '/processing/processors/$id'
@@ -1783,6 +1820,7 @@ export interface FileRouteTypes {
     | '/warehousing/partner/inspections'
     | '/warehousing/partner/non-conformities'
     | '/warehousing/regulator/certificates'
+    | '/warehousing/regulator/conditions'
     | '/warehousing/regulator/facilities'
     | '/warehousing/regulator/incidents'
     | '/warehousing/regulator/inspections'
@@ -1796,6 +1834,7 @@ export interface FileRouteTypes {
     | '/marketplace/compliance'
     | '/marketplace/rfqs'
     | '/miner/sites'
+    | '/miner/transactions'
     | '/mining/sites'
     | '/quality/applications'
     | '/quality/certificates'
@@ -1832,20 +1871,21 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
-    | '/miner/actions'
-    | '/miner/application'
-    | '/miner/application-record'
+    | '/miner/commitments'
     | '/miner/compliance'
     | '/miner/dashboard'
     | '/miner/documents'
-    | '/miner/equipment'
+    | '/miner/exports'
+    | '/miner/finance'
     | '/miner/inventory'
-    | '/miner/notifications'
+    | '/miner/logistics'
     | '/miner/organisation'
+    | '/miner/processing'
     | '/miner/production'
+    | '/miner/quality'
     | '/miner/reports'
-    | '/miner/settings'
-    | '/miner/sites'
+    | '/miner/rfqs'
+    | '/miner/warehousing'
     | '/mining/actions'
     | '/mining/applications'
     | '/mining/audit'
@@ -1893,7 +1933,6 @@ export interface FileRouteTypes {
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
-    | '/miner/'
     | '/mining/'
     | '/onboarding/'
     | '/processing/'
@@ -1926,6 +1965,7 @@ export interface FileRouteTypes {
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
     | '/miner/sites/$siteId'
+    | '/miner/transactions/$transactionId'
     | '/mining/sites/$siteId'
     | '/processing/applications/$id'
     | '/processing/processors/$id'
@@ -1945,6 +1985,7 @@ export interface FileRouteTypes {
     | '/warehousing/partner/inspections'
     | '/warehousing/partner/non-conformities'
     | '/warehousing/regulator/certificates'
+    | '/warehousing/regulator/conditions'
     | '/warehousing/regulator/facilities'
     | '/warehousing/regulator/incidents'
     | '/warehousing/regulator/inspections'
@@ -1958,6 +1999,7 @@ export interface FileRouteTypes {
     | '/marketplace/compliance/'
     | '/marketplace/rfqs/'
     | '/miner/sites/'
+    | '/miner/transactions/'
     | '/mining/sites/'
     | '/quality/applications/'
     | '/quality/certificates/'
@@ -2176,32 +2218,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketplaceOrdersRouteImport
       parentRoute: typeof MarketplaceRoute
     }
-    '/miner/': {
-      id: '/miner/'
-      path: '/'
-      fullPath: '/miner/'
-      preLoaderRoute: typeof MinerIndexRouteImport
-      parentRoute: typeof MinerRoute
-    }
-    '/miner/actions': {
-      id: '/miner/actions'
-      path: '/actions'
-      fullPath: '/miner/actions'
-      preLoaderRoute: typeof MinerActionsRouteImport
-      parentRoute: typeof MinerRoute
-    }
-    '/miner/application': {
-      id: '/miner/application'
-      path: '/application'
-      fullPath: '/miner/application'
-      preLoaderRoute: typeof MinerApplicationRouteImport
-      parentRoute: typeof MinerRoute
-    }
-    '/miner/application-record': {
-      id: '/miner/application-record'
-      path: '/application-record'
-      fullPath: '/miner/application-record'
-      preLoaderRoute: typeof MinerApplicationRecordRouteImport
+    '/miner/commitments': {
+      id: '/miner/commitments'
+      path: '/commitments'
+      fullPath: '/miner/commitments'
+      preLoaderRoute: typeof MinerCommitmentsRouteImport
       parentRoute: typeof MinerRoute
     }
     '/miner/compliance': {
@@ -2225,11 +2246,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MinerDocumentsRouteImport
       parentRoute: typeof MinerRoute
     }
-    '/miner/equipment': {
-      id: '/miner/equipment'
-      path: '/equipment'
-      fullPath: '/miner/equipment'
-      preLoaderRoute: typeof MinerEquipmentRouteImport
+    '/miner/exports': {
+      id: '/miner/exports'
+      path: '/exports'
+      fullPath: '/miner/exports'
+      preLoaderRoute: typeof MinerExportsRouteImport
+      parentRoute: typeof MinerRoute
+    }
+    '/miner/finance': {
+      id: '/miner/finance'
+      path: '/finance'
+      fullPath: '/miner/finance'
+      preLoaderRoute: typeof MinerFinanceRouteImport
       parentRoute: typeof MinerRoute
     }
     '/miner/inventory': {
@@ -2239,11 +2267,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MinerInventoryRouteImport
       parentRoute: typeof MinerRoute
     }
-    '/miner/notifications': {
-      id: '/miner/notifications'
-      path: '/notifications'
-      fullPath: '/miner/notifications'
-      preLoaderRoute: typeof MinerNotificationsRouteImport
+    '/miner/logistics': {
+      id: '/miner/logistics'
+      path: '/logistics'
+      fullPath: '/miner/logistics'
+      preLoaderRoute: typeof MinerLogisticsRouteImport
       parentRoute: typeof MinerRoute
     }
     '/miner/organisation': {
@@ -2253,11 +2281,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MinerOrganisationRouteImport
       parentRoute: typeof MinerRoute
     }
+    '/miner/processing': {
+      id: '/miner/processing'
+      path: '/processing'
+      fullPath: '/miner/processing'
+      preLoaderRoute: typeof MinerProcessingRouteImport
+      parentRoute: typeof MinerRoute
+    }
     '/miner/production': {
       id: '/miner/production'
       path: '/production'
       fullPath: '/miner/production'
       preLoaderRoute: typeof MinerProductionRouteImport
+      parentRoute: typeof MinerRoute
+    }
+    '/miner/quality': {
+      id: '/miner/quality'
+      path: '/quality'
+      fullPath: '/miner/quality'
+      preLoaderRoute: typeof MinerQualityRouteImport
       parentRoute: typeof MinerRoute
     }
     '/miner/reports': {
@@ -2267,18 +2309,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MinerReportsRouteImport
       parentRoute: typeof MinerRoute
     }
-    '/miner/settings': {
-      id: '/miner/settings'
-      path: '/settings'
-      fullPath: '/miner/settings'
-      preLoaderRoute: typeof MinerSettingsRouteImport
+    '/miner/rfqs': {
+      id: '/miner/rfqs'
+      path: '/rfqs'
+      fullPath: '/miner/rfqs'
+      preLoaderRoute: typeof MinerRfqsRouteImport
       parentRoute: typeof MinerRoute
     }
-    '/miner/sites': {
-      id: '/miner/sites'
-      path: '/sites'
-      fullPath: '/miner/sites'
-      preLoaderRoute: typeof MinerSitesRouteImport
+    '/miner/warehousing': {
+      id: '/miner/warehousing'
+      path: '/warehousing'
+      fullPath: '/miner/warehousing'
+      preLoaderRoute: typeof MinerWarehousingRouteImport
       parentRoute: typeof MinerRoute
     }
     '/mining/': {
@@ -2864,17 +2906,31 @@ declare module '@tanstack/react-router' {
     }
     '/miner/sites/': {
       id: '/miner/sites/'
-      path: '/'
+      path: '/sites'
       fullPath: '/miner/sites/'
       preLoaderRoute: typeof MinerSitesIndexRouteImport
-      parentRoute: typeof MinerSitesRoute
+      parentRoute: typeof MinerRoute
     }
     '/miner/sites/$siteId': {
       id: '/miner/sites/$siteId'
-      path: '/$siteId'
+      path: '/sites/$siteId'
       fullPath: '/miner/sites/$siteId'
       preLoaderRoute: typeof MinerSitesSiteIdRouteImport
-      parentRoute: typeof MinerSitesRoute
+      parentRoute: typeof MinerRoute
+    }
+    '/miner/transactions/': {
+      id: '/miner/transactions/'
+      path: '/transactions'
+      fullPath: '/miner/transactions/'
+      preLoaderRoute: typeof MinerTransactionsIndexRouteImport
+      parentRoute: typeof MinerRoute
+    }
+    '/miner/transactions/$transactionId': {
+      id: '/miner/transactions/$transactionId'
+      path: '/transactions/$transactionId'
+      fullPath: '/miner/transactions/$transactionId'
+      preLoaderRoute: typeof MinerTransactionsTransactionIdRouteImport
+      parentRoute: typeof MinerRoute
     }
     '/mining/sites/': {
       id: '/mining/sites/'
@@ -3056,6 +3112,13 @@ declare module '@tanstack/react-router' {
       path: '/regulator/certificates'
       fullPath: '/warehousing/regulator/certificates'
       preLoaderRoute: typeof WarehousingRegulatorCertificatesRouteImport
+      parentRoute: typeof WarehousingRoute
+    }
+    '/warehousing/regulator/conditions': {
+      id: '/warehousing/regulator/conditions'
+      path: '/regulator/conditions'
+      fullPath: '/warehousing/regulator/conditions'
+      preLoaderRoute: typeof WarehousingRegulatorConditionsRouteImport
       parentRoute: typeof WarehousingRoute
     }
     '/warehousing/regulator/facilities': {
@@ -3253,54 +3316,48 @@ const MarketplaceRouteWithChildren = MarketplaceRoute._addFileChildren(
   MarketplaceRouteChildren,
 )
 
-interface MinerSitesRouteChildren {
-  MinerSitesSiteIdRoute: typeof MinerSitesSiteIdRoute
-  MinerSitesIndexRoute: typeof MinerSitesIndexRoute
-}
-
-const MinerSitesRouteChildren: MinerSitesRouteChildren = {
-  MinerSitesSiteIdRoute: MinerSitesSiteIdRoute,
-  MinerSitesIndexRoute: MinerSitesIndexRoute,
-}
-
-const MinerSitesRouteWithChildren = MinerSitesRoute._addFileChildren(
-  MinerSitesRouteChildren,
-)
-
 interface MinerRouteChildren {
-  MinerActionsRoute: typeof MinerActionsRoute
-  MinerApplicationRoute: typeof MinerApplicationRoute
-  MinerApplicationRecordRoute: typeof MinerApplicationRecordRoute
+  MinerCommitmentsRoute: typeof MinerCommitmentsRoute
   MinerComplianceRoute: typeof MinerComplianceRoute
   MinerDashboardRoute: typeof MinerDashboardRoute
   MinerDocumentsRoute: typeof MinerDocumentsRoute
-  MinerEquipmentRoute: typeof MinerEquipmentRoute
+  MinerExportsRoute: typeof MinerExportsRoute
+  MinerFinanceRoute: typeof MinerFinanceRoute
   MinerInventoryRoute: typeof MinerInventoryRoute
-  MinerNotificationsRoute: typeof MinerNotificationsRoute
+  MinerLogisticsRoute: typeof MinerLogisticsRoute
   MinerOrganisationRoute: typeof MinerOrganisationRoute
+  MinerProcessingRoute: typeof MinerProcessingRoute
   MinerProductionRoute: typeof MinerProductionRoute
+  MinerQualityRoute: typeof MinerQualityRoute
   MinerReportsRoute: typeof MinerReportsRoute
-  MinerSettingsRoute: typeof MinerSettingsRoute
-  MinerSitesRoute: typeof MinerSitesRouteWithChildren
-  MinerIndexRoute: typeof MinerIndexRoute
+  MinerRfqsRoute: typeof MinerRfqsRoute
+  MinerWarehousingRoute: typeof MinerWarehousingRoute
+  MinerSitesSiteIdRoute: typeof MinerSitesSiteIdRoute
+  MinerTransactionsTransactionIdRoute: typeof MinerTransactionsTransactionIdRoute
+  MinerSitesIndexRoute: typeof MinerSitesIndexRoute
+  MinerTransactionsIndexRoute: typeof MinerTransactionsIndexRoute
 }
 
 const MinerRouteChildren: MinerRouteChildren = {
-  MinerActionsRoute: MinerActionsRoute,
-  MinerApplicationRoute: MinerApplicationRoute,
-  MinerApplicationRecordRoute: MinerApplicationRecordRoute,
+  MinerCommitmentsRoute: MinerCommitmentsRoute,
   MinerComplianceRoute: MinerComplianceRoute,
   MinerDashboardRoute: MinerDashboardRoute,
   MinerDocumentsRoute: MinerDocumentsRoute,
-  MinerEquipmentRoute: MinerEquipmentRoute,
+  MinerExportsRoute: MinerExportsRoute,
+  MinerFinanceRoute: MinerFinanceRoute,
   MinerInventoryRoute: MinerInventoryRoute,
-  MinerNotificationsRoute: MinerNotificationsRoute,
+  MinerLogisticsRoute: MinerLogisticsRoute,
   MinerOrganisationRoute: MinerOrganisationRoute,
+  MinerProcessingRoute: MinerProcessingRoute,
   MinerProductionRoute: MinerProductionRoute,
+  MinerQualityRoute: MinerQualityRoute,
   MinerReportsRoute: MinerReportsRoute,
-  MinerSettingsRoute: MinerSettingsRoute,
-  MinerSitesRoute: MinerSitesRouteWithChildren,
-  MinerIndexRoute: MinerIndexRoute,
+  MinerRfqsRoute: MinerRfqsRoute,
+  MinerWarehousingRoute: MinerWarehousingRoute,
+  MinerSitesSiteIdRoute: MinerSitesSiteIdRoute,
+  MinerTransactionsTransactionIdRoute: MinerTransactionsTransactionIdRoute,
+  MinerSitesIndexRoute: MinerSitesIndexRoute,
+  MinerTransactionsIndexRoute: MinerTransactionsIndexRoute,
 }
 
 const MinerRouteWithChildren = MinerRoute._addFileChildren(MinerRouteChildren)
@@ -3495,6 +3552,7 @@ interface WarehousingRouteChildren {
   WarehousingPartnerInspectionsRoute: typeof WarehousingPartnerInspectionsRoute
   WarehousingPartnerNonConformitiesRoute: typeof WarehousingPartnerNonConformitiesRoute
   WarehousingRegulatorCertificatesRoute: typeof WarehousingRegulatorCertificatesRoute
+  WarehousingRegulatorConditionsRoute: typeof WarehousingRegulatorConditionsRoute
   WarehousingRegulatorFacilitiesRoute: typeof WarehousingRegulatorFacilitiesRoute
   WarehousingRegulatorIncidentsRoute: typeof WarehousingRegulatorIncidentsRoute
   WarehousingRegulatorInspectionsRoute: typeof WarehousingRegulatorInspectionsRoute
@@ -3522,6 +3580,7 @@ const WarehousingRouteChildren: WarehousingRouteChildren = {
   WarehousingPartnerNonConformitiesRoute:
     WarehousingPartnerNonConformitiesRoute,
   WarehousingRegulatorCertificatesRoute: WarehousingRegulatorCertificatesRoute,
+  WarehousingRegulatorConditionsRoute: WarehousingRegulatorConditionsRoute,
   WarehousingRegulatorFacilitiesRoute: WarehousingRegulatorFacilitiesRoute,
   WarehousingRegulatorIncidentsRoute: WarehousingRegulatorIncidentsRoute,
   WarehousingRegulatorInspectionsRoute: WarehousingRegulatorInspectionsRoute,

@@ -13,7 +13,7 @@ import {
  *
  * A compliance application hangs off an organisation (the backend field is a
  * OneToOne), so both have to exist before any section can be saved. Neither is
- * created here — the organisation step of the flow creates them on its first
+ * created here; the organisation step of the flow creates them on its first
  * save, once it has the name and type the API requires.
  */
 export interface ApplicationContext {

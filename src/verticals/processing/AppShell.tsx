@@ -132,7 +132,7 @@ function buildRegulatorNav(counts: NavBadgeCounts): { group: string; items: NavI
  * Closes a popover when a press lands outside it, or on Escape.
  *
  * Listens for `pointerdown` rather than `click` so the menu is gone by the time
- * whatever was underneath reacts — a click handler would leave it hanging open
+ * whatever was underneath reacts; a click handler would leave it hanging open
  * over the page for the rest of the gesture. The toggle button lives inside the
  * returned ref, so pressing it is not "outside": its own handler does the
  * toggling and this one leaves it alone.

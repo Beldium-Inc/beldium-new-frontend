@@ -3,24 +3,15 @@ import * as React from "react";
 import { Search } from "lucide-react";
 import { AppShell } from "@/verticals/export/AppShell";
 import { useStore } from "@/verticals/export/store";
-import { Panel, Pill, RiskPill, ShipmentStatusPill } from "@/verticals/export/ui-kit";
+import { Panel, Pill } from "@/verticals/export/ui-kit";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/export/shipments/")({
   head: () => ({
     meta: [
-      { title: "Consignments | Beldium Export Compliance" },
-      {
-        name: "description",
-        content:
-          "Browse Nigerian mineral export consignments with risk banding, document progress and compliance status.",
-      },
-      { property: "og:title", content: "Consignments | Beldium Export Compliance" },
-      {
-        property: "og:description",
-        content: "Mineral export consignments with risk banding and compliance status.",
-      },
+      { title: "Shipments | Beldium Export Compliance" },
+      { name: "description", content: "Browse export shipments across the register." },
     ],
   }),
   component: ShipmentsPage,
@@ -30,18 +21,15 @@ function ShipmentsPage() {
   const { state, user } = useStore();
   const [q, setQ] = React.useState("");
 
-  const mine =
-    user?.role === "exporter"
-      ? state.shipments.filter((s) => s.exporterId === user.exporterId)
-      : state.shipments;
+  const mine = user?.role === "exporter" ? state.shipments.filter((s) => s.exporter === user.exporterId) : state.shipments;
 
   const rows = mine.filter((s) =>
-    `${s.reference} ${s.mineral} ${s.destination} ${s.buyer}`.toLowerCase().includes(q.toLowerCase()),
+    `${s.reference} ${s.destination_country} ${s.port_of_loading}`.toLowerCase().includes(q.toLowerCase()),
   );
 
   return (
     <AppShell
-      title={user?.role === "exporter" ? "My shipments" : "Consignments"}
+      title={user?.role === "exporter" ? "My shipments" : "Shipments"}
       subtitle={`${rows.length} record${rows.length === 1 ? "" : "s"}`}
       actions={
         user?.role === "exporter" ? (
@@ -57,14 +45,14 @@ function ShipmentsPage() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by reference, mineral, buyer or destination"
+            placeholder="Search by reference or destination"
             className="h-9 border-0 shadow-none focus-visible:ring-0"
           />
         </div>
         <div className="divide-y divide-border">
           {rows.map((s) => {
-            const exporter = state.exporters.find((e) => e.id === s.exporterId);
-            const verified = s.documents.filter((d) => d.status === "verified").length;
+            const exporter = state.exporters.find((e) => e.id === s.exporter);
+            const product = state.products.find((p) => p.id === s.product);
             return (
               <Link
                 key={s.id}
@@ -75,36 +63,28 @@ function ShipmentsPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-sm font-semibold">{s.reference}</span>
-                    <ShipmentStatusPill status={s.status} />
-                    <RiskPill score={s.riskScore} band={s.riskBand} />
+                    <Pill tone="neutral">{s.status}</Pill>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {s.mineral} · {s.quantity} · {exporter?.name}
+                    {product?.name ?? "Product"} · {s.quantity} {s.unit} · {exporter?.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {s.port} → {s.destination} · {s.incoterm} · ETD {s.etd}
+                    {s.port_of_loading} → {s.port_of_discharge}, {s.destination_country} · ETD {s.expected_ship_date}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-6">
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Value</p>
-                    <p className="text-sm font-semibold">USD {s.valueUsd.toLocaleString()}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Documents</p>
                     <p className="text-sm font-semibold">
-                      {verified}/{s.documents.length}
+                      {s.currency} {Number(s.estimated_value).toLocaleString()}
                     </p>
                   </div>
-                  <Pill tone="neutral">{s.hsCode}</Pill>
                 </div>
               </Link>
             );
           })}
           {rows.length === 0 && (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-              No consignments found.
-            </p>
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">No shipments found.</p>
           )}
         </div>
       </Panel>

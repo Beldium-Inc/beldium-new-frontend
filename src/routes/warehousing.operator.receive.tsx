@@ -1,171 +1,153 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/verticals/warehousing/app-shell";
-import { DemoDataBanner, Panel, StatusPill } from "@/verticals/warehousing/compliance-ui";
+import { Panel } from "@/verticals/warehousing/compliance-ui";
 import { useDemo } from "@/verticals/warehousing/store";
-import { STORAGE_HIERARCHY } from "@/verticals/warehousing/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, ScaleIcon } from "lucide-react";
 
 export const Route = createFileRoute("/warehousing/operator/receive")({
   head: () => ({
     meta: [
       { title: "Receive shipment | Beldium Warehouse Operator" },
-      { name: "description", content: "Weighbridge capture for inbound mineral shipments with automatic weight variance flagging against declared tonnage." },
-      { property: "og:title", content: "Receive shipment | Beldium Warehouse Operator" },
-      { property: "og:description", content: "Book inbound trucks into storage and flag weight variances." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "description", content: "Book an inbound mineral shipment into a storage zone as a new lot." },
     ],
   }),
   component: ReceivePage,
 });
 
-const BAYS: string[] = STORAGE_HIERARCHY.flatMap((z) => z.rows.filter((r) => r.capacity > 0).map((r) => r.id));
-
 function ReceivePage() {
-  const { incoming, receiveShipment, batches } = useDemo();
-  const [selected, setSelected] = useState<string>(incoming[0]?.id ?? "");
-  const [actual, setActual] = useState("");
-  const [bay, setBay] = useState(BAYS[0] ?? "A-BAY-01");
+  const { myWarehouse, state, createLot } = useDemo();
+  const navigate = useNavigate();
+  const facilities = state.facilities.filter((f) => f.warehouse === myWarehouse?.id);
+  const [facility, setFacility] = useState(facilities[0]?.id ?? "");
+  const zonesForFacility = state.zones.filter((z) => z.facility === facility);
+  const [zone, setZone] = useState(zonesForFacility[0]?.id ?? "");
+  const [form, setForm] = useState({
+    product_name: "",
+    batch_number: "",
+    owner_name: "",
+    quantity: "",
+    actual_weighbridge_quantity: "",
+    unit: "tonnes",
+    received_on: new Date().toISOString().slice(0, 10),
+  });
 
-  const shipment = incoming.find((s) => s.id === selected);
-  const expected = shipment ? Number(shipment.expected.replace(/[^\d.]/g, "")) : 0;
-  const preview = actual && expected ? ((Number(actual) - expected) / expected) * 100 : null;
+  const declared = Number(form.quantity) || 0;
+  const measured = Number(form.actual_weighbridge_quantity) || 0;
+  const variance = declared > 0 && form.actual_weighbridge_quantity ? ((measured - declared) / declared) * 100 : null;
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!myWarehouse || !facility || !zone) {
+      toast.error("Select a facility and zone before receiving stock.");
+      return;
+    }
+    void createLot({
+      warehouse: myWarehouse.id,
+      facility,
+      zone,
+      product_name: form.product_name || "Mineral consignment",
+      batch_number: form.batch_number || "-",
+      owner_name: form.owner_name || "-",
+      quantity: form.quantity || "0",
+      actual_weighbridge_quantity: form.actual_weighbridge_quantity || null,
+      unit: form.unit,
+      received_on: form.received_on,
+      expires_on: null,
+      status: "received",
+    }).then(() => {
+      toast.success("Shipment received into inventory");
+      navigate({ to: "/warehousing/operator/inventory" });
+    });
+  };
+
+  const selectCls = "h-10 w-full rounded-xl border border-input bg-background px-3 text-sm";
 
   return (
-    <AppShell role="operator" title="Receive shipment" subtitle="Weighbridge 2 · tolerance ±0.5% against declared waybill tonnage">
-      <div className="space-y-6">
-        <DemoDataBanner />
-
-        <div className="grid gap-6 xl:grid-cols-3">
-          <Panel className="xl:col-span-2" title="Booked inbound trucks" description="Select a shipment to capture the weighbridge reading.">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead />
-                  <TableHead>Ref</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Commodity</TableHead>
-                  <TableHead>Declared</TableHead>
-                  <TableHead>Waybill</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {incoming.map((s) => (
-                  <TableRow
-                    key={s.id}
-                    onClick={() => setSelected(s.id)}
-                    className={s.id === selected ? "cursor-pointer bg-accent/60" : "cursor-pointer"}
-                  >
-                    <TableCell>
-                      <span className={`inline-block size-3 rounded-full ${s.id === selected ? "bg-link" : "bg-border"}`} />
-                    </TableCell>
-                    <TableCell className="font-medium text-primary">{s.id}</TableCell>
-                    <TableCell className="text-sm">{s.supplier}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{s.commodity}</TableCell>
-                    <TableCell className="text-sm">{s.expected}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{s.waybill}</TableCell>
-                  </TableRow>
+    <AppShell role="operator" title="Receive shipment" subtitle="Book an inbound shipment into storage as a new lot">
+      <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
+        <Panel title="Shipment details">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Facility</Label>
+              <select className={selectCls} value={facility} onChange={(e) => { setFacility(e.target.value); setZone(""); }}>
+                {facilities.length === 0 && <option value="">No facilities registered</option>}
+                {facilities.map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
                 ))}
-                {incoming.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                      No inbound trucks outstanding, all bookings received.
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
-          </Panel>
-
-          <Panel title="Weighbridge capture" description="Net weight after tare deduction.">
-            {shipment ? (
-              <div className="space-y-4">
-                <div className="rounded-xl bg-secondary/60 p-4 text-sm">
-                  <p className="font-medium text-primary">{shipment.id} · {shipment.truckPlate}</p>
-                  <p className="mt-1 text-muted-foreground">Declared {shipment.expected} · ETA {shipment.eta}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="net">Actual net tonnes</Label>
-                  <Input id="net" type="number" step="0.1" value={actual} onChange={(e) => setActual(e.target.value)} placeholder={String(expected)} className="rounded-xl" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bay">Put-away location</Label>
-                  <select
-                    id="bay"
-                    value={bay}
-                    onChange={(e) => setBay(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
-                  >
-                    {BAYS.map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {preview !== null ? (
-                  <div className={`flex items-start gap-3 rounded-xl p-3 text-sm ${Math.abs(preview) > 0.5 ? "bg-warning/25" : "bg-success/40"}`}>
-                    {Math.abs(preview) > 0.5 ? <AlertTriangle className="mt-0.5 size-4" /> : <ScaleIcon className="mt-0.5 size-4" />}
-                    <span>
-                      Variance {preview.toFixed(2)}%:{" "}
-                      {Math.abs(preview) > 0.5
-                        ? "exceeds tolerance, a monitoring alert will be raised to Beldium."
-                        : "within the ±0.5% tolerance."}
-                    </span>
-                  </div>
-                ) : null}
-
-                <Button
-                  className="w-full rounded-xl bg-link text-link-foreground hover:bg-link/90"
-                  onClick={() => {
-                    const t = Number(actual);
-                    if (!t || t <= 0) {
-                      toast.error("Enter the weighbridge net tonnage");
-                      return;
-                    }
-                    const { variance, flagged } = receiveShipment(shipment.id, t, bay, "Ibrahim Bello");
-                    setActual("");
-                    setSelected("");
-                    if (flagged) {
-                      toast.warning(`Received with ${variance.toFixed(2)}% weight variance`, {
-                        description: "Batch quarantined and a variance alert sent to Beldium continuous monitoring.",
-                      });
-                    } else {
-                      toast.success(`${shipment.id} received into ${bay}`, {
-                        description: `Variance ${variance.toFixed(2)}%, within tolerance.`,
-                      });
-                    }
-                  }}
-                >
-                  Confirm receipt
-                </Button>
-              </div>
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">Select an inbound shipment to capture weights.</p>
-            )}
-          </Panel>
-        </div>
-
-        <Panel title="Recently received batches" description="Latest put-aways from the weighbridge.">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {batches.slice(0, 6).map((b) => (
-              <div key={b.id} className="rounded-xl border border-border/70 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-primary">{b.id}</p>
-                  <StatusPill tone={b.status === "Quarantine" ? "danger" : "success"}>{b.status}</StatusPill>
-                </div>
-                <p className="mt-1 text-sm">{b.commodity}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{b.tonnes.toLocaleString()} t · {b.location} · {b.received}</p>
-              </div>
-            ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Zone</Label>
+              <select className={selectCls} value={zone} onChange={(e) => setZone(e.target.value)}>
+                {zonesForFacility.length === 0 && <option value="">No zones in this facility</option>}
+                {zonesForFacility.map((z) => (
+                  <option key={z.id} value={z.id}>{z.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product">Product</Label>
+              <Input id="product" value={form.product_name} onChange={set("product_name")} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="batch">Batch number</Label>
+              <Input id="batch" value={form.batch_number} onChange={set("batch_number")} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="owner">Owner</Label>
+              <Input id="owner" value={form.owner_name} onChange={set("owner_name")} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qty">Declared quantity</Label>
+              <Input id="qty" type="number" step="0.01" value={form.quantity} onChange={set("quantity")} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="unit">Unit</Label>
+              <Input id="unit" value={form.unit} onChange={set("unit")} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="received">Received on</Label>
+              <Input id="received" type="date" value={form.received_on} onChange={set("received_on")} className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="actualQty">Weighbridge quantity (optional)</Label>
+              <Input
+                id="actualQty"
+                type="number"
+                step="0.01"
+                value={form.actual_weighbridge_quantity}
+                onChange={set("actual_weighbridge_quantity")}
+                className="rounded-xl"
+                placeholder="Measured weight, if weighed on intake"
+              />
+            </div>
           </div>
+          {variance !== null && (
+            <p className={`mt-4 text-xs font-medium ${Math.abs(variance) > 2 ? "text-destructive" : "text-muted-foreground"}`}>
+              Variance vs declared: {variance > 0 ? "+" : ""}
+              {variance.toFixed(2)}%
+              {Math.abs(variance) > 2 ? ". Exceeds 2% tolerance, will be flagged for review." : ""}
+            </p>
+          )}
         </Panel>
-      </div>
+        <Panel title="What happens next">
+          <p className="text-sm text-muted-foreground">
+            The lot is added to your inventory register as "received". Advance it through stored, released and
+            dispatched from the inventory page. If a weighbridge reading is captured, the variance against the
+            declared quantity is recorded against the lot for audit.
+          </p>
+          <Button type="submit" className="mt-4 w-full rounded-xl bg-link text-link-foreground hover:bg-link/90">
+            Confirm receipt
+          </Button>
+        </Panel>
+      </form>
     </AppShell>
   );
 }

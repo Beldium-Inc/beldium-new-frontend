@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { DISCLAIMER, type DocStatus, type ShipmentStatus } from "@/verticals/export/mock-data";
+import { DISCLAIMER } from "@/verticals/export/mock-data";
+import type { ExportApplicationStatus, ExportEvidenceStatus } from "@/lib/api/export";
 import { ShieldAlert } from "lucide-react";
 
 export function Panel({
@@ -101,30 +102,29 @@ export function Pill({
   );
 }
 
-const shipmentStatusMap: Record<ShipmentStatus, { label: string; tone: Tone }> = {
+const applicationStatusMap: Record<ExportApplicationStatus, { label: string; tone: Tone }> = {
   draft: { label: "Draft", tone: "neutral" },
   submitted: { label: "Submitted", tone: "info" },
-  in_review: { label: "In review", tone: "info" },
-  info_requested: { label: "Information requested", tone: "warning" },
-  cleared: { label: "Cleared", tone: "success" },
-  conditionally_cleared: { label: "Conditionally cleared", tone: "warning" },
-  declined: { label: "Declined", tone: "danger" },
+  under_review: { label: "Under review", tone: "info" },
+  awaiting_information: { label: "Awaiting information", tone: "warning" },
+  conditionally_approved: { label: "Conditionally approved", tone: "warning" },
+  approved: { label: "Approved", tone: "success" },
+  rejected: { label: "Rejected", tone: "danger" },
 };
 
-export function ShipmentStatusPill({ status }: { status: ShipmentStatus }) {
-  const s = shipmentStatusMap[status];
+export function ApplicationStatusPill({ status }: { status: ExportApplicationStatus | "not_started" }) {
+  if (status === "not_started") return <Pill tone="neutral">Not started</Pill>;
+  const s = applicationStatusMap[status];
   return <Pill tone={s.tone}>{s.label}</Pill>;
 }
 
-export const docStatusMap: Record<DocStatus, { label: string; tone: Tone }> = {
+export const docStatusMap: Record<ExportEvidenceStatus, { label: string; tone: Tone }> = {
   pending: { label: "Pending review", tone: "neutral" },
   verified: { label: "Verified", tone: "success" },
   rejected: { label: "Rejected", tone: "danger" },
-  replacement_requested: { label: "Replacement requested", tone: "warning" },
-  clarification_requested: { label: "Clarification requested", tone: "warning" },
 };
 
-export function DocStatusPill({ status }: { status: DocStatus }) {
+export function DocStatusPill({ status }: { status: ExportEvidenceStatus }) {
   const s = docStatusMap[status];
   return <Pill tone={s.tone}>{s.label}</Pill>;
 }

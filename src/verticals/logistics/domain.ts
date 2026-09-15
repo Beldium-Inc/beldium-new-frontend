@@ -539,7 +539,7 @@ export function toDashboardCompanyRow(row: Api.LogisticsDashboardCompany): Dashb
   };
 }
 
-/** "2h ago" / "3d ago" — the notification tray's own format. */
+/** "2h ago" / "3d ago": the notification tray's own format. */
 export function relativeTime(iso: string): string {
   const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
   if (minutes < 60) return `${minutes}m ago`;

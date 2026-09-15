@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 /**
  * The one header every sector dashboard renders inside its AppShell. Actions
  * drop to their own row under the title on narrow screens instead of being
- * squeezed beside a truncating heading — the layout that was cramming a menu
- * button, title, and a wide action button onto one line on mobile.
+ * squeezed beside a truncating heading (the layout that was cramming a menu
+ * button, title, and a wide action button onto one line on mobile).
  */
 export function DashboardHeader({
   title,
@@ -18,7 +18,7 @@ export function DashboardHeader({
   title: string;
   subtitle?: string | undefined;
   actions?: ReactNode;
-  /** Omit when this vertical has no mobile drawer/overlay to open — the menu button is skipped rather than rendered inert. */
+  /** Omit when this vertical has no mobile drawer/overlay to open; the menu button is skipped rather than rendered inert. */
   onOpenNav?: (() => void) | undefined;
   className?: string | undefined;
 }) {

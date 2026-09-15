@@ -160,7 +160,7 @@ export function ScoreBar({ value, tone }: { value: number; tone?: Tone }) {
 }
 
 /**
- * A small modal for the desk's one-field actions — assigning an inspector,
+ * A small modal for the desk's one-field actions: assigning an inspector,
  * confirming a date, recording an outcome. The pages that need it each had a
  * button with no handler; this is what they now open, rather than a
  * `window.prompt` in an app that looks like this one.

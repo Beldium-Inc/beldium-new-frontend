@@ -1,19 +1,6 @@
 import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   AlertOctagon,
   ArrowRight,
@@ -28,7 +15,6 @@ import {
 import { AppShell, ComplianceBanner } from "@/verticals/logistics/AppShell";
 import { KeyValue, PageHeader, Panel, Pill, RiskBadge, StatCard, StatusBadge } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { complianceTrend, riskDistribution } from "@/verticals/logistics/mock-data";
 
 export const Route = createFileRoute("/logistics/operator/")({
   head: () => ({
@@ -62,6 +48,22 @@ function OperatorDashboard() {
     .filter((c) => c.name.toLowerCase().includes(query.toLowerCase()) || c.id.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => a.riskScore - b.riskScore);
 
+  const restricted = companies.filter((c) => c.status === "Rejected");
+  const criticalDocs = expiringDocuments.filter((d) => d.daysLeft <= 10);
+  const snapshot = [
+    { label: "Approved", value: counts.approved, color: "#2563EB" },
+    { label: "Pending", value: counts.pending, color: "#FBBF24" },
+    { label: "Rejected", value: counts.rejected, color: "#F87171" },
+  ];
+  const riskDistribution = [
+    { band: "Low", value: companies.filter((c) => c.risk === "Low").length, color: "#B0E2CD" },
+    { band: "Medium", value: companies.filter((c) => c.risk === "Medium").length, color: "#FBBF24" },
+    { band: "High", value: companies.filter((c) => c.risk === "High").length, color: "#F87171" },
+  ];
+  const medianScore = companies.length
+    ? [...companies].map((c) => c.riskScore).sort((a, b) => a - b)[Math.floor(companies.length / 2)]
+    : null;
+
   return (
     <AppShell
       role="operator"
@@ -70,7 +72,7 @@ function OperatorDashboard() {
     >
       <PageHeader
         title="Compliance dashboard"
-        description="Continuous assurance across 59 registered logistics operators. 3 credentials expire within 10 days."
+        description={`Continuous assurance across ${companies.length} registered logistics operators. ${criticalDocs.length} credential${criticalDocs.length === 1 ? "" : "s"} expire within 10 days.`}
         actions={
           <>
             <Link
@@ -79,23 +81,31 @@ function OperatorDashboard() {
             >
               <ClipboardList className="h-3.5 w-3.5" /> All applications
             </Link>
-            <Link
-              to="/logistics/operator/applications/$companyId"
-              params={{ companyId: "BLD-2417" }}
-              search={{ tab: "overview" as const }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white transition hover:bg-[var(--brand)]/90"
-            >
-              Continue active review <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            {queue[0] && (
+              <Link
+                to="/logistics/operator/applications/$companyId"
+                params={{ companyId: queue[0].id }}
+                search={{ tab: "overview" as const }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white transition hover:bg-[var(--brand)]/90"
+              >
+                Continue active review <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </>
         }
       />
 
-      <ComplianceBanner
-        tone="warning"
-        title="Continuous compliance: 1 operator restricted, 3 credentials critical"
-        body="Sahel Haulage & Minerals Ltd is restricted from mineral haulage until its Mining Cadastre licence is verified. Plateau Mineral Movers' fleet insurance expires in 8 days."
-      />
+      {(restricted.length > 0 || criticalDocs.length > 0) && (
+        <ComplianceBanner
+          tone="warning"
+          title={`Continuous compliance: ${restricted.length} operator${restricted.length === 1 ? "" : "s"} restricted, ${criticalDocs.length} credential${criticalDocs.length === 1 ? "" : "s"} critical`}
+          body={
+            restricted.length > 0
+              ? `${restricted[0]!.name} is ${restricted[0]!.status.toLowerCase()}.${criticalDocs[0] ? ` ${criticalDocs[0].document} expires in ${criticalDocs[0].daysLeft} days.` : ""}`
+              : `${criticalDocs[0]!.document} expires in ${criticalDocs[0]!.daysLeft} days.`
+          }
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Applications" value={counts.applications} hint="Total in register" icon={Inbox} tone="info" onClick={() => navigate({ to: "/logistics/operator/applications" })} />
@@ -110,36 +120,27 @@ function OperatorDashboard() {
 
       <div className="mt-6 grid gap-4 xl:grid-cols-3">
         <Panel
-          title="Compliance trend"
-          description="Decisions and average risk score by month"
+          title="Register snapshot"
+          description="Current decisions across the register"
           className="xl:col-span-2"
           bodyClassName="p-4"
         >
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={complianceTrend} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gApproved" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563EB" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#2563EB" stopOpacity={0.02} />
-                  </linearGradient>
-                  <linearGradient id="gPending" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FBBF24" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#FBBF24" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
+              <BarChart data={snapshot} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F2" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#5B6B85" }} stroke="#E2E8F2" />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#5B6B85" }} stroke="#E2E8F2" />
                 <YAxis tick={{ fontSize: 12, fill: "#5B6B85" }} stroke="#E2E8F2" />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F2", fontSize: 12 }}
                   labelStyle={{ color: "#101E3D", fontWeight: 600 }}
                 />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="approved" name="Approved" stroke="#2563EB" fill="url(#gApproved)" strokeWidth={2} />
-                <Area type="monotone" dataKey="pending" name="Pending" stroke="#FBBF24" fill="url(#gPending)" strokeWidth={2} />
-                <Line type="monotone" dataKey="avgRisk" name="Avg risk score" stroke="#101E3D" strokeWidth={2} dot={false} />
-              </AreaChart>
+                <Bar dataKey="value" name="Companies" radius={[6, 6, 0, 0]}>
+                  {snapshot.map((s) => (
+                    <Cell key={s.label} fill={s.color} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </Panel>
@@ -161,9 +162,9 @@ function OperatorDashboard() {
           <div className="mt-2 border-t border-border pt-4">
             <KeyValue
               items={[
-                { label: "Median score", value: "84 / 100" },
-                { label: "Restricted scopes", value: "2 operators" },
-                { label: "SLA compliance", value: "91%" },
+                { label: "Median score", value: medianScore !== null ? `${medianScore} / 100` : "-" },
+                { label: "Restricted operators", value: `${restricted.length}` },
+                { label: "Registered operators", value: `${companies.length}` },
               ]}
             />
           </div>

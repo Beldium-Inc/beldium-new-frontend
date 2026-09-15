@@ -83,6 +83,7 @@ const NAV: Record<RoleId, { to: string; label: string; icon: IconName }[]> = {
     { to: "/warehousing/regulator", label: "Oversight dashboard", icon: "LayoutDashboard" },
     { to: "/warehousing/regulator/facilities", label: "Registered facilities", icon: "Building2" },
     { to: "/warehousing/regulator/certificates", label: "Certificates", icon: "BadgeCheck" },
+    { to: "/warehousing/regulator/conditions", label: "Conditions", icon: "FileWarning" },
     { to: "/warehousing/regulator/inspections", label: "Inspections", icon: "ClipboardCheck" },
     { to: "/warehousing/regulator/incidents", label: "Incidents & alerts", icon: "ShieldAlert" },
     { to: "/warehousing/regulator/reports", label: "Reports", icon: "Gauge" },
@@ -102,7 +103,7 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { roleId, signOut } = useDemo();
+  const { roleId, signOut, user } = useDemo();
   const { signIn } = useSession();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -201,11 +202,11 @@ export function AppShell({
                     className="h-11 gap-3 rounded-xl border-border pl-2 pr-3"
                   >
                     <span className="flex size-8 items-center justify-center rounded-lg bg-secondary font-heading text-xs font-semibold text-secondary-foreground">
-                      {profile.initials}
+                      {user?.initials ?? "??"}
                     </span>
                     <span className="hidden text-left leading-tight sm:block">
                       <span className="block text-sm font-medium text-foreground">
-                        {profile.person}
+                        {user?.name ?? profile.title}
                       </span>
                       <span className="block text-xs text-muted-foreground">{profile.title}</span>
                     </span>
@@ -213,7 +214,7 @@ export function AppShell({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-72 rounded-2xl">
                   <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                    Signed in as {profile.demoEmail}
+                    {profile.org}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
