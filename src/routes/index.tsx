@@ -90,9 +90,12 @@ function EntryPage() {
 
           <p className="mt-4 text-sm text-muted-foreground">
             Registering as a miner or mining organisation?{" "}
-            <Link to="/miner-portal" className="font-semibold text-brand underline">
+            <a
+              href={import.meta.env["VITE_MINER_PORTAL_URL"] ?? "http://localhost:5174"}
+              className="font-semibold text-brand underline"
+            >
               Go to the Miner Portal
-            </Link>{" "}
+            </a>{" "}
             A separate, standalone workspace for your organisation, sites and compliance.
           </p>
 
