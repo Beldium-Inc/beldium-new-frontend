@@ -471,7 +471,7 @@ export function operationalSeed(): Pick<
 export function submittedActivity(orgName: string): ActivityEvent[] {
   return [
     { id: "a1", at: "2026-08-14", actor: orgName || "Your organisation", message: "Organisation application submitted for verification.", kind: "submission" },
-    { id: "a2", at: "2026-08-18", actor: "Beldium review team", message: "Completeness check passed — moved to technical review.", kind: "review" },
+    { id: "a2", at: "2026-08-18", actor: "Beldium review team", message: "Completeness check passed - moved to technical review.", kind: "review" },
     { id: "a3", at: "2026-08-26", actor: "Beldium review team", message: "Information request IR-2026-0418 raised.", kind: "request" },
     { id: "a4", at: "2026-08-29", actor: "Beldium review team", message: "Information request IR-2026-0431 raised.", kind: "request" },
   ];

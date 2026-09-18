@@ -40,7 +40,7 @@ function CommitmentsPage() {
         <StatCard label="Remaining" value={tonnes(active.reduce((s, c) => s + c.remaining, 0))} />
       </div>
 
-      {active.length === 0 ? <EmptyState label="No active commitments — accept an RFQ to create one." /> : null}
+      {active.length === 0 ? <EmptyState label="No active commitments - accept an RFQ to create one." /> : null}
 
       <div className="grid gap-4">
         {active.map((c) => {
@@ -50,7 +50,7 @@ function CommitmentsPage() {
           return (
             <Panel
               key={c.id}
-              title={`${tx.reference} — ${tx.buyer_name}`}
+              title={`${tx.reference} - ${tx.buyer_name}`}
               description={`${tx.mineral} · ${tx.incoterm}`}
               actions={<StageChip stage={tx.stage} />}
             >
@@ -103,7 +103,7 @@ function CommitmentsPage() {
                       <Td className="font-medium">{b.reference}</Td>
                       <Td>{b.mineral}</Td>
                       <Td>{tonnes(b.tonnes)}</Td>
-                      <Td>{b.grade ?? "—"}</Td>
+                      <Td>{b.grade ?? "-"}</Td>
                       <Td>{b.stage.replace(/_/g, " ")}</Td>
                       <Td className="text-xs text-muted-foreground">{b.location}</Td>
                     </tr>

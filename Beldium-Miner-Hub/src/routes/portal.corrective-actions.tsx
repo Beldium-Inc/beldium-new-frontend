@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMineSites, useNonConformities, useSubmitCorrectiveEvidence } from "@/lib/api/mining-queries";
 import type { CorrectiveSubmission } from "@/lib/api/mining";
 
-const title = "Corrective actions — Beldium Miner Hub";
+const title = "Corrective actions - Beldium Miner Hub";
 const description = "Track findings, owners, due dates and submit evidence that closes corrective actions.";
 
 export const Route = createFileRoute("/portal/corrective-actions")({
@@ -37,7 +37,7 @@ function ActionsPage() {
     ? nonConformitiesQuery.data
     : (nonConformitiesQuery.data?.results ?? []);
   const sites = Array.isArray(sitesQuery.data) ? sitesQuery.data : (sitesQuery.data?.results ?? []);
-  const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? "—";
+  const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? "-";
   const count = (s: string) => items.filter((a) => a.status === s).length;
 
   return (
@@ -69,7 +69,7 @@ function ActionsPage() {
                   </StatusChip>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {a.reference} · {siteName(a.site)} · owner {a.responsible_person || "—"} · due {a.deadline}
+                  {a.reference} · {siteName(a.site)} · owner {a.responsible_person || "-"} · due {a.deadline}
                 </p>
               </div>
             </div>

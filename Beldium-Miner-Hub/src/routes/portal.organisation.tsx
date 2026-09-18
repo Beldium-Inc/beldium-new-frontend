@@ -9,7 +9,7 @@ import {
   useOrganisationMembers,
 } from "@/lib/api/queries";
 
-const title = "Organisation & members — Beldium Miner Hub";
+const title = "Organisation & members - Beldium Miner Hub";
 const description = "Organisation profile, team members, roles and pending join requests.";
 
 export const Route = createFileRoute("/portal/organisation")({
@@ -55,7 +55,7 @@ function OrganisationPage() {
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-6 px-5 py-2.5 text-sm">
                 <dt className="text-muted-foreground">{k}</dt>
-                <dd className="text-right text-card-foreground">{v || "—"}</dd>
+                <dd className="text-right text-card-foreground">{v || "-"}</dd>
               </div>
             ))}
           </dl>

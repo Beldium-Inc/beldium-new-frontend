@@ -6,7 +6,7 @@ import { StatusChip } from "@/components/status-chip";
 import { Input } from "@/components/ui/input";
 import { useInventory, useMineSites } from "@/lib/api/mining-queries";
 
-const title = "Inventory & stockpiles — Beldium Miner Hub";
+const title = "Inventory & stockpiles - Beldium Miner Hub";
 const description = "Consumables, spares and mineral stockpiles with reorder thresholds across mining sites.";
 
 export const Route = createFileRoute("/portal/inventory")({
@@ -28,7 +28,7 @@ function InventoryPage() {
   const sitesQuery = useMineSites();
   const [q, setQ] = useState("");
   const sites = Array.isArray(sitesQuery.data) ? sitesQuery.data : (sitesQuery.data?.results ?? []);
-  const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? "—";
+  const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? "-";
   const items = Array.isArray(inventoryQuery.data) ? inventoryQuery.data : (inventoryQuery.data?.results ?? []);
   const rows = items.filter(
     (i) =>
@@ -81,7 +81,7 @@ function InventoryPage() {
                   <td className="px-4 py-2.5 text-card-foreground">
                     {i.quantity.toLocaleString()} {i.unit}
                   </td>
-                  <td className="px-4 py-2.5 text-card-foreground">{i.threshold?.toLocaleString() ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-card-foreground">{i.threshold?.toLocaleString() ?? "-"}</td>
                   <td className="px-4 py-2.5">
                     <StatusChip tone={isLow ? "warning" : "success"}>{isLow ? "Reorder" : "In stock"}</StatusChip>
                   </td>

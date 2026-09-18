@@ -8,7 +8,7 @@ import type { Paginated, UUID } from "./types";
 // REST resources.
 //
 // Two backend gaps confirmed against ecosystem/views.py: there is no
-// accept/decline action on Rfq, and no allocate/fulfil action on Commitment —
+// accept/decline action on Rfq, and no allocate/fulfil action on Commitment -
 // both are plain PATCH-based here until the backend adds dedicated actions.
 
 export type RfqStatus = "open" | "accepted" | "partially_accepted" | "declined" | "expired";
@@ -46,7 +46,7 @@ export function getRfq(id: UUID): Promise<Rfq> {
   return apiFetch<Rfq>(`/ecosystem/rfqs/${id}/`);
 }
 
-/** No dedicated accept action exists on the backend — PATCH the status directly. */
+/** No dedicated accept action exists on the backend - PATCH the status directly. */
 export function acceptRfq(id: UUID, committedQuantity: number): Promise<Rfq> {
   return apiFetch<Rfq>(`/ecosystem/rfqs/${id}/`, {
     method: "PATCH",

@@ -5,7 +5,7 @@ import { StatusChip } from "@/components/status-chip";
 import { useMyOrganisations } from "@/lib/api/queries";
 import { useEquipment, useMineSites, useMiningApplications, useMiningDocuments } from "@/lib/api/mining-queries";
 
-const title = "Submitted application — Beldium Miner Hub";
+const title = "Submitted application - Beldium Miner Hub";
 const description = "Read-only record of the mining organisation application submitted for verification.";
 
 export const Route = createFileRoute("/portal/application-record")({
@@ -30,7 +30,7 @@ function Block({ heading, rows }: { heading: string; rows: [string, string][] })
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-6 px-5 py-2.5 text-sm">
             <dt className="text-muted-foreground">{k}</dt>
-            <dd className="text-right font-medium text-card-foreground">{v || "—"}</dd>
+            <dd className="text-right font-medium text-card-foreground">{v || "-"}</dd>
           </div>
         ))}
       </dl>
@@ -83,7 +83,7 @@ function RecordPage() {
               <li key={a.id} className="px-5 py-3 text-sm">
                 <div className="font-medium text-card-foreground">{a.reference}</div>
                 <div className="text-muted-foreground">
-                  {a.type} · {a.mineral ?? "—"} · {a.status.replace("_", " ")}
+                  {a.type} · {a.mineral ?? "-"} · {a.status.replace("_", " ")}
                 </div>
               </li>
             ))}
@@ -99,7 +99,7 @@ function RecordPage() {
               <li key={s.id} className="px-5 py-3 text-sm">
                 <div className="font-medium text-card-foreground">{s.name}</div>
                 <div className="text-muted-foreground">
-                  {s.code} · {s.state ?? "—"} · {s.mineral} · {s.area_ha ?? "—"} ha · {s.workforce ?? "—"} workers ·{" "}
+                  {s.code} · {s.state ?? "-"} · {s.mineral} · {s.area_ha ?? "-"} ha · {s.workforce ?? "-"} workers ·{" "}
                   {(s.status ?? "").replace("_", " ")}
                 </div>
               </li>

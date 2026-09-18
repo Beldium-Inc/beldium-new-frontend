@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useInfoRequests, useRespondToInfoRequest } from "@/lib/api/mining-queries";
 
-const title = "Information requests — Beldium Miner Hub";
+const title = "Information requests - Beldium Miner Hub";
 const description = "Respond to reviewer information requests.";
 
 export const Route = createFileRoute("/portal/requests")({
@@ -50,7 +50,7 @@ function RequestsPage() {
                   </StatusChip>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  raised by {r.requested_by_name} · {r.site_name} · due {r.due_by || "—"}
+                  raised by {r.requested_by_name} · {r.site_name} · due {r.due_by || "-"}
                 </p>
               </div>
             </div>

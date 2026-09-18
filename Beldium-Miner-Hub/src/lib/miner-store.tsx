@@ -187,7 +187,7 @@ function applyStageEffects(
     case "export_ready":
       tx.exportRecord.complianceStatus = "cleared";
       tx.exportRecord.readyAt = at;
-      setBatchStage("export_ready", `${tx.exportRecord.port} — bonded bay`);
+      setBatchStage("export_ready", `${tx.exportRecord.port} - bonded bay`);
       break;
     case "shipped":
       tx.exportRecord.shippedAt = at;
@@ -199,7 +199,7 @@ function applyStageEffects(
       break;
     case "delivered":
       tx.exportRecord.deliveredAt = at;
-      setBatchStage("delivered", `${tx.destination} — delivered to buyer`);
+      setBatchStage("delivered", `${tx.destination} - delivered to buyer`);
       break;
     case "payment_settlement":
       tx.payment.status = "paid";
@@ -348,7 +348,7 @@ export function MinerProvider({ children }: { children: ReactNode }) {
           if (s === "verified") {
             d.timeline = d.timeline.map((t) => ({ ...t, state: "complete", at: t.at ?? today }));
             d.activity = [
-              { id: `a-${Date.now()}`, at: today, actor: "Beldium review team", message: "Verification approved — full miner access granted.", kind: "review" },
+              { id: `a-${Date.now()}`, at: today, actor: "Beldium review team", message: "Verification approved - full miner access granted.", kind: "review" },
               ...d.activity,
             ];
           }
@@ -472,7 +472,7 @@ export function MinerProvider({ children }: { children: ReactNode }) {
               id: `ev-${Date.now()}`,
               at: stamp(),
               domain: "marketplace",
-              message: `${rfq.status === "accepted" ? "Accepted" : "Partially accepted"} ${rfq.reference} — ${qty.toLocaleString("en-US")} t committed to ${rfq.buyer}.`,
+              message: `${rfq.status === "accepted" ? "Accepted" : "Partially accepted"} ${rfq.reference} - ${qty.toLocaleString("en-US")} t committed to ${rfq.buyer}.`,
               reference: `TX-2026-${seq}`,
             },
             ...d.ecosystemEvents,

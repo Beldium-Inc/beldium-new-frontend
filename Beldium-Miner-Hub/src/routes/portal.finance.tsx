@@ -32,8 +32,8 @@ function FinancePage() {
                 <Td className="font-medium">{inv.transaction_reference}</Td>
                 <Td>{usd(inv.amount)}</Td>
                 <Td>{inv.advance_percent}%</Td>
-                <Td className="text-xs">{inv.due_at ?? "—"}</Td>
-                <Td className="text-xs">{inv.paid_at ?? "—"}</Td>
+                <Td className="text-xs">{inv.due_at ?? "-"}</Td>
+                <Td className="text-xs">{inv.paid_at ?? "-"}</Td>
                 <Td>{usd(inv.amount_outstanding)}</Td>
                 <Td><StatusPill value={inv.status} /></Td>
               </tr>

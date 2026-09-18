@@ -5,7 +5,7 @@ import { PageHeader, StatCard } from "@/components/miner-shell";
 import { StatusChip } from "@/components/status-chip";
 import { useMineSites } from "@/lib/api/mining-queries";
 
-const title = "Mining sites — Beldium Miner Hub";
+const title = "Mining sites - Beldium Miner Hub";
 const description = "All declared mining sites with mineral, method, workforce and operating status.";
 
 export const Route = createFileRoute("/portal/sites/")({
@@ -58,11 +58,11 @@ function SitesPage() {
               </div>
               <div className="flex justify-between gap-4">
                 <dt>State</dt>
-                <dd className="text-card-foreground">{s.state || "—"}</dd>
+                <dd className="text-card-foreground">{s.state || "-"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt>Workforce</dt>
-                <dd className="text-card-foreground">{s.workforce ?? "—"}</dd>
+                <dd className="text-card-foreground">{s.workforce ?? "-"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt>Compliance</dt>

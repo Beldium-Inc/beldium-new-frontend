@@ -41,7 +41,7 @@ function ExportsPage() {
                 <Td>{tx.buyer_name}</Td>
                 <Td>{tx.mineral}</Td>
                 <Td>{tx.destination}</Td>
-                <Td className="text-xs text-muted-foreground">{tx.export_shipment ?? "—"}</Td>
+                <Td className="text-xs text-muted-foreground">{tx.export_shipment ?? "-"}</Td>
                 <Td><StageChip stage={tx.stage} /></Td>
                 <Td>
                   {tx.stage !== "delivered" ? (

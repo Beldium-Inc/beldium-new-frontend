@@ -37,10 +37,10 @@ function ReportsPage() {
     <div>
       <PageHeader title="Reports" description="Aggregated ecosystem performance across marketplace, material flow and settlement." />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active RFQs" value={e ? String(e.active_rfqs) : "—"} />
-        <StatCard label="Committed to date" value={e ? tonnes(e.active_supply_commitments) : "—"} />
-        <StatCard label="Aggregated" value={e ? tonnes(e.aggregated_to_date) : "—"} />
-        <StatCard label="Outstanding payments" value={e ? usd(e.outstanding_payments) : "—"} />
+        <StatCard label="Active RFQs" value={e ? String(e.active_rfqs) : "-"} />
+        <StatCard label="Committed to date" value={e ? tonnes(e.active_supply_commitments) : "-"} />
+        <StatCard label="Aggregated" value={e ? tonnes(e.aggregated_to_date) : "-"} />
+        <StatCard label="Outstanding payments" value={e ? usd(e.outstanding_payments) : "-"} />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Material by stage">

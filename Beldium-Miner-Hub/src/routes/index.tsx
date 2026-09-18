@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import mineralRocks from "@/assets/mineral-rocks.gif.asset.json";
 
 
-const title = "Beldium Miner Hub — Mining organisation onboarding & operations";
+const title = "Beldium Miner Hub - Mining organisation onboarding & operations";
 const description =
   "Register a mining organisation, complete the 8-step verification application, and run sites, production, inventory and compliance from the Beldium Miner Hub.";
 

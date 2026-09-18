@@ -42,7 +42,7 @@ function TransactionDetail() {
   return (
     <div>
       <PageHeader
-        title={`${tx.reference} — ${tx.buyer_name}`}
+        title={`${tx.reference} - ${tx.buyer_name}`}
         description={`${tx.mineral} · ${tx.grade_spec} · ${tx.incoterm} → ${tx.destination}`}
         actions={
           <div className="flex gap-2">
@@ -106,11 +106,11 @@ function TransactionDetail() {
         <div className="grid gap-6">
           <Panel title="Cross-domain links">
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div><dt className="text-xs text-muted-foreground">Quality sample</dt><dd>{tx.quality_sample ?? "—"}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">Warehousing lot</dt><dd>{tx.warehousing_lot ?? "—"}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">Processing run</dt><dd>{tx.processing_run ?? "—"}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">Export shipment</dt><dd>{tx.export_shipment ?? "—"}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">Finance invoice</dt><dd>{tx.finance_invoice ?? "—"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Quality sample</dt><dd>{tx.quality_sample ?? "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Warehousing lot</dt><dd>{tx.warehousing_lot ?? "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Processing run</dt><dd>{tx.processing_run ?? "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Export shipment</dt><dd>{tx.export_shipment ?? "-"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Finance invoice</dt><dd>{tx.finance_invoice ?? "-"}</dd></div>
             </dl>
           </Panel>
 
@@ -121,8 +121,8 @@ function TransactionDetail() {
                   <Td>{m.kind}</Td>
                   <Td>{m.carrier}<div className="text-xs text-muted-foreground">{m.vehicle}</div></Td>
                   <Td className="text-xs">{m.from_location} → {m.to_location}</Td>
-                  <Td className="text-xs">{m.picked_up_at ?? "—"}</Td>
-                  <Td className="text-xs">{m.arrived_at ?? "—"}</Td>
+                  <Td className="text-xs">{m.picked_up_at ?? "-"}</Td>
+                  <Td className="text-xs">{m.arrived_at ?? "-"}</Td>
                   <Td><StatusPill value={m.status} /></Td>
                 </tr>
               ))}
@@ -136,7 +136,7 @@ function TransactionDetail() {
                   <Td className="font-medium">{b.reference}</Td>
                   <Td>{b.mineral}</Td>
                   <Td>{tonnes(b.tonnes)}</Td>
-                  <Td>{b.grade ?? "—"}</Td>
+                  <Td>{b.grade ?? "-"}</Td>
                   <Td>{b.stage.replace(/_/g, " ")}</Td>
                   <Td className="text-xs text-muted-foreground">{b.location}</Td>
                 </tr>

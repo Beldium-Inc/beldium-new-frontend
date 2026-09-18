@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMineSites, useMiningDocuments, useUploadMiningDocument } from "@/lib/api/mining-queries";
 
-const title = "Documents — Beldium Miner Hub";
+const title = "Documents - Beldium Miner Hub";
 const description = "Licences, permits, environmental plans and supporting documents held for your organisation.";
 
 export const Route = createFileRoute("/portal/documents")({

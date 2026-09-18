@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { useUpdateCurrentUser } from "@/lib/api/queries";
 import { ApiError } from "@/lib/api/errors";
 
-const title = "Settings — Beldium Miner Hub";
+const title = "Settings - Beldium Miner Hub";
 const description = "Account profile and verification state for the miner workspace.";
 
 export const Route = createFileRoute("/portal/settings")({

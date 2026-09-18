@@ -15,7 +15,7 @@ import {
 } from "@/lib/api/ecosystem-queries";
 import { nextStage } from "@/lib/api/ecosystem";
 
-const title = "Miner dashboard — Beldium Miner Hub";
+const title = "Miner dashboard - Beldium Miner Hub";
 const description = "Verification progress, activity, information requests and operational KPIs for your mining organisation.";
 
 export const Route = createFileRoute("/portal/")({
@@ -113,7 +113,7 @@ function UnderReviewDashboard({ orgName, status }: { orgName: string; status: st
             <li key={a.id} className="flex items-center justify-between text-sm">
               <div>
                 <div className="font-medium text-card-foreground">{a.reference}</div>
-                <div className="text-muted-foreground">{a.type} · {a.mineral ?? "—"}</div>
+                <div className="text-muted-foreground">{a.type} · {a.mineral ?? "-"}</div>
               </div>
               <StatusChip tone={a.status === "approved" ? "success" : a.status === "rejected" ? "danger" : "info"}>
                 {a.status.replace("_", " ")}
@@ -145,25 +145,25 @@ function VerifiedDashboard({ orgName }: { orgName: string }) {
     <>
       <PageHeader
         title={`Welcome back, ${orgName}`}
-        description="Interconnected ecosystem view — demand, commitments, material location and settlement across every transaction."
+        description="Interconnected ecosystem view - demand, commitments, material location and settlement across every transaction."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <StatCard
           label="Compliance status"
-          value={d ? `${d.totals.average_compliance_score}%` : "—"}
+          value={d ? `${d.totals.average_compliance_score}%` : "-"}
           {...(d ? { hint: `${d.totals.overdue_non_conformities} overdue · ${d.totals.open_non_conformities} open` } : {})}
         />
-        <StatCard label="Active RFQs" value={e ? String(e.active_rfqs) : "—"} />
-        <StatCard label="Active supply commitments" value={e ? String(e.active_supply_commitments) : "—"} />
-        <StatCard label="Aggregated to date" value={e ? tonnes(e.aggregated_to_date) : "—"} />
-        <StatCard label="Available inventory" value={e ? tonnes(e.available_inventory) : "—"} hint="Unallocated stockpile" />
-        <StatCard label="In transit" value={e ? tonnes(e.in_transit) : "—"} />
-        <StatCard label="In processing" value={e ? tonnes(e.in_processing) : "—"} />
-        <StatCard label="Export ready" value={e ? tonnes(e.export_ready) : "—"} />
-        <StatCard label="Active transactions" value={e ? String(e.active_transactions) : "—"} />
-        <StatCard label="Outstanding payments" value={e ? usd(e.outstanding_payments) : "—"} />
-        <StatCard label="Actions required" value={e ? String(e.actions_required.length) : "—"} />
+        <StatCard label="Active RFQs" value={e ? String(e.active_rfqs) : "-"} />
+        <StatCard label="Active supply commitments" value={e ? String(e.active_supply_commitments) : "-"} />
+        <StatCard label="Aggregated to date" value={e ? tonnes(e.aggregated_to_date) : "-"} />
+        <StatCard label="Available inventory" value={e ? tonnes(e.available_inventory) : "-"} hint="Unallocated stockpile" />
+        <StatCard label="In transit" value={e ? tonnes(e.in_transit) : "-"} />
+        <StatCard label="In processing" value={e ? tonnes(e.in_processing) : "-"} />
+        <StatCard label="Export ready" value={e ? tonnes(e.export_ready) : "-"} />
+        <StatCard label="Active transactions" value={e ? String(e.active_transactions) : "-"} />
+        <StatCard label="Outstanding payments" value={e ? usd(e.outstanding_payments) : "-"} />
+        <StatCard label="Actions required" value={e ? String(e.actions_required.length) : "-"} />
         <StatCard label="Mining sites" value={String(siteList.length)} />
       </div>
 
@@ -278,7 +278,7 @@ function VerifiedDashboard({ orgName }: { orgName: string }) {
                   {s.name}
                 </Link>
                 <div className="text-muted-foreground">
-                  {s.mineral} · {s.state ?? "—"}
+                  {s.mineral} · {s.state ?? "-"}
                 </div>
               </div>
               <StatusChip tone={s.status === "operational" ? "success" : "warning"}>{(s.status ?? "").replace("_", " ")}</StatusChip>

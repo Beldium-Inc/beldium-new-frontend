@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 import type { Paginated, UUID } from "./types";
 
-// Miner-scoped calls against the `mining` Django app only — no review/decision
+// Miner-scoped calls against the `mining` Django app only - no review/decision
 // endpoints (`sections/*/review`, `recompute-score`, non-conformity closure,
 // document/licence review, inspection/application decisions). Those belong to
 // the regulator/officer compliance app, not this portal.

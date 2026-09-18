@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
 
-const title = "Create a miner account — Beldium Miner Hub";
+const title = "Create a miner account - Beldium Miner Hub";
 const description =
   "Register a new mining organisation, request to join an existing organisation, or sign up as an individual miner.";
 
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/signup")({
 });
 
 /**
- * The backend has no "miner" onboarding_role — a mining organisation is
+ * The backend has no "miner" onboarding_role - a mining organisation is
  * identified by `organisations.Organisation.organisation_type=mining_company`,
  * created after email verification. This local `role` only decides which
  * onboarding path the miner-portal UI walks them through afterwards; it is

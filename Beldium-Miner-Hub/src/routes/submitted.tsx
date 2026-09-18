@@ -5,7 +5,7 @@ import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { useMiner } from "@/lib/miner-store";
 
-const title = "Application submitted — Beldium Miner Hub";
+const title = "Application submitted - Beldium Miner Hub";
 const description = "Your mining organisation application has been submitted for verification. Sign in to track review progress.";
 
 export const Route = createFileRoute("/submitted")({

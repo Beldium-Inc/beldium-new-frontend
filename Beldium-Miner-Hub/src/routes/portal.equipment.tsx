@@ -4,7 +4,7 @@ import { PageHeader, StatCard } from "@/components/miner-shell";
 import { StatusChip } from "@/components/status-chip";
 import { useEquipment, useMineSites } from "@/lib/api/mining-queries";
 
-const title = "Equipment register — Beldium Miner Hub";
+const title = "Equipment register - Beldium Miner Hub";
 const description = "Declared plant and machinery with condition, serials and certificate expiry.";
 
 export const Route = createFileRoute("/portal/equipment")({
@@ -56,7 +56,7 @@ function EquipmentPage() {
                 <td className="px-4 py-2.5 font-medium text-card-foreground">{e.name}</td>
                 <td className="px-4 py-2.5 text-card-foreground">{e.serial}</td>
                 <td className="px-4 py-2.5 text-card-foreground">{siteName(e.site)}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">{e.cert_expires_on || "—"}</td>
+                <td className="px-4 py-2.5 text-muted-foreground">{e.cert_expires_on || "-"}</td>
                 <td className="px-4 py-2.5">
                   <StatusChip tone={e.status === "certified" ? "success" : "warning"}>{e.status.replace("_", " ")}</StatusChip>
                 </td>

@@ -15,7 +15,7 @@ import { queryKeys, useCurrentUser, useHasTokens } from "./api/queries";
 import type { User } from "./api/types";
 
 // The signed-in identity, as the API sees it. This is the miner portal's only
-// identity/session concept — unlike the compliance app there is no separate
+// identity/session concept - unlike the compliance app there is no separate
 // vertical/role picker here.
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";

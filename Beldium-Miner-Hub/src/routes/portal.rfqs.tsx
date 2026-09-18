@@ -31,7 +31,7 @@ function RfqsPage() {
     <div>
       <PageHeader
         title="RFQs"
-        description="Buyer demand received through the Beldium marketplace. Accept, partially accept or decline — accepted demand becomes a supply commitment and a transaction."
+        description="Buyer demand received through the Beldium marketplace. Accept, partially accept or decline - accepted demand becomes a supply commitment and a transaction."
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Active RFQs" value={String(open.length)} hint="Awaiting your response" />
@@ -58,7 +58,7 @@ function RfqsPage() {
       <div className="mb-6 grid gap-4 lg:grid-cols-2">
         {open.length === 0 ? <EmptyState label="No open RFQs right now." /> : null}
         {open.map((r) => (
-          <Panel key={r.id} title={`${r.reference} — ${r.buyer_name}`} description={`respond by ${r.respond_by ?? "—"}`}>
+          <Panel key={r.id} title={`${r.reference} - ${r.buyer_name}`} description={`respond by ${r.respond_by ?? "-"}`}>
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div><dt className="text-xs text-muted-foreground">Mineral</dt><dd>{r.mineral}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Specification</dt><dd>{r.grade_spec}</dd></div>
@@ -107,9 +107,9 @@ function RfqsPage() {
               <Td>{r.buyer_name}</Td>
               <Td>{r.mineral}</Td>
               <Td>{tonnes(r.quantity_requested)}</Td>
-              <Td>{r.committed_quantity ? tonnes(r.committed_quantity) : "—"}</Td>
+              <Td>{r.committed_quantity ? tonnes(r.committed_quantity) : "-"}</Td>
               <Td className="text-xs text-muted-foreground">{r.received_at}</Td>
-              <Td className="text-xs text-muted-foreground">{r.respond_by ?? "—"}</Td>
+              <Td className="text-xs text-muted-foreground">{r.respond_by ?? "-"}</Td>
               <Td><StatusPill value={r.status} /></Td>
             </tr>
           ))}

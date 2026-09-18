@@ -6,7 +6,7 @@ import { StatusChip } from "@/components/status-chip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEquipment, useInventory, useMineSites, useNonConformities, useProduction } from "@/lib/api/mining-queries";
 
-const title = "Mining site dashboard — Beldium Miner Hub";
+const title = "Mining site dashboard - Beldium Miner Hub";
 const description = "Site overview, production, equipment, workforce, compliance and corrective actions.";
 
 export const Route = createFileRoute("/portal/sites/$siteId")({
@@ -70,7 +70,7 @@ function SiteDashboard() {
       </Link>
       <PageHeader
         title={site.name}
-        description={`${site.code} · ${site.mineral} · ${site.state ?? "—"}`}
+        description={`${site.code} · ${site.mineral} · ${site.state ?? "-"}`}
         actions={
           <StatusChip tone={site.status === "operational" ? "success" : "warning"}>
             {(site.status ?? "").replace("_", " ")}
@@ -90,8 +90,8 @@ function SiteDashboard() {
         <TabsContent value="overview" className="mt-5">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label="Tonnes recorded" value={mined.toLocaleString()} hint="All reported periods" />
-            <StatCard label="Workforce" value={String(site.workforce ?? "—")} />
-            <StatCard label="Licensed area" value={`${site.area_ha ?? "—"} ha`} />
+            <StatCard label="Workforce" value={String(site.workforce ?? "-")} />
+            <StatCard label="Licensed area" value={`${site.area_ha ?? "-"} ha`} />
             <StatCard label="Compliance score" value={`${site.compliance_percent}%`} />
           </div>
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -107,7 +107,7 @@ function SiteDashboard() {
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">{k}</dt>
-                    <dd className="text-card-foreground">{v || "—"}</dd>
+                    <dd className="text-card-foreground">{v || "-"}</dd>
                   </div>
                 ))}
               </dl>
@@ -133,7 +133,7 @@ function SiteDashboard() {
         <TabsContent value="production" className="mt-5">
           <Table
             head={["Period", "Commodity", "Tonnage", "Grade"]}
-            rows={production.map((p) => [`${p.period_start} – ${p.period_end}`, p.commodity, p.tonnage.toLocaleString(), String(p.grade ?? "—")])}
+            rows={production.map((p) => [`${p.period_start} – ${p.period_end}`, p.commodity, p.tonnage.toLocaleString(), String(p.grade ?? "-")])}
             empty="No production reported for this site."
           />
         </TabsContent>
@@ -141,7 +141,7 @@ function SiteDashboard() {
         <TabsContent value="equipment" className="mt-5">
           <Table
             head={["Equipment", "Serial", "Certificate expiry", "Status"]}
-            rows={equipment.map((e) => [e.name, e.serial, e.cert_expires_on || "—", e.status])}
+            rows={equipment.map((e) => [e.name, e.serial, e.cert_expires_on || "-", e.status])}
             empty="No equipment assigned to this site."
           />
         </TabsContent>
@@ -149,7 +149,7 @@ function SiteDashboard() {
         <TabsContent value="inventory" className="mt-5">
           <Table
             head={["Item", "Category", "Quantity", "Unit", "Threshold"]}
-            rows={inventory.map((i) => [i.name, i.category, i.quantity.toLocaleString(), i.unit, String(i.threshold ?? "—")])}
+            rows={inventory.map((i) => [i.name, i.category, i.quantity.toLocaleString(), i.unit, String(i.threshold ?? "-")])}
             empty="No inventory recorded for this site."
           />
         </TabsContent>

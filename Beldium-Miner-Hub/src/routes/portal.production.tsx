@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatCard } from "@/components/miner-shell";
 import { useMineSites, useProduction } from "@/lib/api/mining-queries";
 
-const title = "Production reporting — Beldium Miner Hub";
+const title = "Production reporting - Beldium Miner Hub";
 const description = "Tonnes produced and grade across all mining sites.";
 
 export const Route = createFileRoute("/portal/production")({
@@ -26,7 +26,7 @@ function ProductionPage() {
   const rawRows = Array.isArray(productionQuery.data) ? productionQuery.data : (productionQuery.data?.results ?? []);
   const rows = [...rawRows].sort((a, b) => b.period_start.localeCompare(a.period_start));
   const sites = Array.isArray(sitesQuery.data) ? sitesQuery.data : (sitesQuery.data?.results ?? []);
-  const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? "—";
+  const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? "-";
 
   const tonnage = rows.reduce((s, p) => s + p.tonnage, 0);
   const max = Math.max(1, ...rows.map((r) => r.tonnage));
@@ -79,7 +79,7 @@ function ProductionPage() {
                 <td className="px-4 py-2.5 text-card-foreground">{siteName(r.site)}</td>
                 <td className="px-4 py-2.5 text-card-foreground">{r.commodity}</td>
                 <td className="px-4 py-2.5 text-card-foreground">{r.tonnage.toLocaleString()}</td>
-                <td className="px-4 py-2.5 text-card-foreground">{r.grade ?? "—"}</td>
+                <td className="px-4 py-2.5 text-card-foreground">{r.grade ?? "-"}</td>
               </tr>
             ))}
           </tbody>

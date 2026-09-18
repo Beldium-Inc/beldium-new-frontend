@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
 
-const title = "Sign in — Beldium Miner Hub";
+const title = "Sign in - Beldium Miner Hub";
 const description = "Universal sign-in for miners, mining organisation admins and organisation staff.";
 
 export const Route = createFileRoute("/auth")({

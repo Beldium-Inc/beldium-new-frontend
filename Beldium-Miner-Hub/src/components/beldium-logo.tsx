@@ -1,10 +1,9 @@
-import logo from "@/assets/beldium-logo.jpg.asset.json";
 import { cn } from "@/lib/utils";
 
 export function BeldiumMark({ className }: { className?: string }) {
   return (
     <img
-      src={logo.url}
+      src="/logo.png"
       alt="Beldium logo"
       className={cn("h-9 w-9 rounded-full border border-border/40 object-cover", className)}
     />

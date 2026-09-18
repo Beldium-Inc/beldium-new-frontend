@@ -4,7 +4,7 @@ import { Bell } from "lucide-react";
 import { PageHeader } from "@/components/miner-shell";
 import { useMiningDashboard } from "@/lib/api/mining-queries";
 
-const title = "Notifications — Beldium Miner Hub";
+const title = "Notifications - Beldium Miner Hub";
 const description = "Verification updates, information requests and compliance reminders.";
 
 export const Route = createFileRoute("/portal/notifications")({

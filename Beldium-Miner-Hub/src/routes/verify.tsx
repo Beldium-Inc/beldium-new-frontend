@@ -14,7 +14,7 @@ import { confirmPhoneVerification, requestPhoneVerification } from "@/lib/api/au
 import { organisationDirectory } from "@/lib/api/organisations";
 import { useCreateJoinRequest } from "@/lib/api/queries";
 
-const title = "Verify your account — Beldium Miner Hub";
+const title = "Verify your account - Beldium Miner Hub";
 const description = "Confirm your email address and mobile number before starting your mining organisation application.";
 
 const searchSchema = z.object({
@@ -117,7 +117,7 @@ function VerifyPage() {
     try {
       if (role === "org_admin" && organisationName) {
         // Registration number/tax ID/address are required by the backend but
-        // are collected in step 1 of the application wizard, not here — the
+        // are collected in step 1 of the application wizard, not here - the
         // wizard creates the real organisation record on that step's submit.
         navigate({ to: "/application", search: { organisationName } });
         return;

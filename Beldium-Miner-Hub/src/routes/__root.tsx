@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Beldium Miner Hub — miner onboarding, organisation verification and mining operations workspace prototype.",
+          "Beldium Miner Hub - miner onboarding, organisation verification and mining operations workspace prototype.",
       },
       { name: "author", content: "Beldium" },
       { property: "og:title", content: "Beldium Miner Hub" },

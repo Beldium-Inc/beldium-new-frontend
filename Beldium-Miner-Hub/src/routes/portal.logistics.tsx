@@ -43,8 +43,8 @@ function LogisticsPage() {
                   <Td className="text-xs">{move.from_location} → {move.to_location}</Td>
                   <Td>{move.tonnes}</Td>
                   <Td className="text-xs">{move.assigned_at}</Td>
-                  <Td className="text-xs">{move.picked_up_at ?? "—"}</Td>
-                  <Td className="text-xs">{move.arrived_at ?? "—"}</Td>
+                  <Td className="text-xs">{move.picked_up_at ?? "-"}</Td>
+                  <Td className="text-xs">{move.arrived_at ?? "-"}</Td>
                   <Td><StatusPill value={move.status} /></Td>
                 </tr>
               );

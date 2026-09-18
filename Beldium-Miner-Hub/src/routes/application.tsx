@@ -25,7 +25,7 @@ import { ApiError } from "@/lib/api/errors";
 import { createMineSite, createEquipment, createApplication } from "@/lib/api/mining";
 import { useCreateOrganisation } from "@/lib/api/queries";
 
-const title = "Mining organisation application — Beldium Miner Hub";
+const title = "Mining organisation application - Beldium Miner Hub";
 const description =
   "Eight-step mining organisation verification application: details, ownership, licences, sites, equipment, environment, documents and declaration.";
 
@@ -323,7 +323,7 @@ function StepContacts() {
       <Field label="Contact email" type="email" value={c.primaryEmail} onChange={set("primaryEmail")} />
       <Field label="Contact phone" value={c.primaryPhone} onChange={set("primaryPhone")} />
       <div className="space-y-2 sm:col-span-2">
-        <Label>Beneficial owners (name, ID, % holding — one per line)</Label>
+        <Label>Beneficial owners (name, ID, % holding - one per line)</Label>
         <Textarea rows={4} value={c.beneficialOwners} onChange={(e) => set("beneficialOwners")(e.target.value)} />
       </div>
       <div className="space-y-2 sm:col-span-2">
@@ -398,8 +398,8 @@ function StepSites() {
               <div className="text-sm">
                 <div className="font-medium text-card-foreground">{s.name}</div>
                 <div className="text-muted-foreground">
-                  {s.licenceNo} · {s.region || "—"} · {s.mineral || "—"} · {s.method} · {s.hectares || "—"} ha ·{" "}
-                  {s.workforce || "—"} workers · {s.status}
+                  {s.licenceNo} · {s.region || "-"} · {s.mineral || "-"} · {s.method} · {s.hectares || "-"} ha ·{" "}
+                  {s.workforce || "-"} workers · {s.status}
                 </div>
               </div>
               <Button
@@ -494,8 +494,8 @@ function StepEquipment() {
               <div className="text-sm">
                 <div className="font-medium text-card-foreground">{e.name}</div>
                 <div className="text-muted-foreground">
-                  {e.type || "—"} · serial {e.serial} · {sites.find((s) => s.id === e.siteId)?.name ?? "Unassigned"} ·{" "}
-                  {e.year || "—"} · {e.condition}
+                  {e.type || "-"} · serial {e.serial} · {sites.find((s) => s.id === e.siteId)?.name ?? "Unassigned"} ·{" "}
+                  {e.year || "-"} · {e.condition}
                 </div>
               </div>
               <Button
@@ -634,14 +634,14 @@ function StepDeclaration() {
     saveApplication((d) => ({ ...d, declaration: { ...d.declaration, ...patch } }));
 
   const summary: [string, string][] = [
-    ["Legal name", app.org.legalName || "—"],
-    ["Registration number", app.org.registrationNo || "—"],
+    ["Legal name", app.org.legalName || "-"],
+    ["Registration number", app.org.registrationNo || "-"],
     ["Entity type", app.org.entityType],
-    ["Primary contact", app.contacts.primaryName || "—"],
-    ["Primary licence", `${app.licences.licenceNumber || "—"} (${app.licences.licenceType})`],
+    ["Primary contact", app.contacts.primaryName || "-"],
+    ["Primary licence", `${app.licences.licenceNumber || "-"} (${app.licences.licenceType})`],
     ["Mining sites", String(app.sites.length)],
     ["Equipment items", String(app.equipment.length)],
-    ["EMP reference", app.environment.empNumber || "—"],
+    ["EMP reference", app.environment.empNumber || "-"],
     ["Documents uploaded", `${app.documents.filter((d) => d.fileName).length} of ${app.documents.length}`],
   ];
 
