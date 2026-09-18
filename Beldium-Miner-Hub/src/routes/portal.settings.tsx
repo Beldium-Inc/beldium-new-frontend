@@ -5,10 +5,12 @@ import { PageHeader } from "@/components/miner-shell";
 import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { useUpdateCurrentUser } from "@/lib/api/queries";
 import { ApiError } from "@/lib/api/errors";
+import { formatPhoneNumber } from "@/lib/phone";
 
 const title = "Settings - Beldium Miner Hub";
 const description = "Account profile and verification state for the miner workspace.";
@@ -61,11 +63,19 @@ function SettingsPage() {
             ).map(([key, label]) => (
               <div key={key} className="space-y-1.5">
                 <Label htmlFor={key}>{label}</Label>
-                <Input
-                  id={key}
-                  value={form[key]}
-                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                />
+                {key === "phone_number" ? (
+                  <PhoneInput
+                    id={key}
+                    value={form[key]}
+                    onChange={(v) => setForm((f) => ({ ...f, phone_number: v }))}
+                  />
+                ) : (
+                  <Input
+                    id={key}
+                    value={form[key]}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                  />
+                )}
               </div>
             ))}
             <div className="flex items-center gap-3">
@@ -73,7 +83,9 @@ function SettingsPage() {
                 disabled={updateUser.isPending}
                 onClick={() => {
                   setError("");
-                  updateUser.mutate(form, {
+                  updateUser.mutate(
+                    { ...form, phone_number: formatPhoneNumber(form.phone_number) },
+                    {
                     onError: (cause) => setError(cause instanceof ApiError ? cause.message : "Could not save changes."),
                   });
                 }}

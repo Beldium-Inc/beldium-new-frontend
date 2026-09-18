@@ -17,6 +17,8 @@ import { GeoPanel } from "@/verticals/mining/components/GeoPanel";
 import { ScoreBreakdown } from "@/verticals/mining/components/ScoreBreakdown";
 import { ReviewActions } from "@/verticals/mining/components/ReviewActions";
 import { RequestInfoDialog } from "@/verticals/mining/components/RequestInfoDialog";
+import { useMiningDocuments, useReviewMiningDocument } from "@/lib/api/mining-queries";
+import { downloadDocumentUrl } from "@/lib/api/mining";
 
 export const Route = createFileRoute("/mining/sites/$siteId")({ component: SiteDetail });
 
@@ -26,6 +28,8 @@ function SiteDetail() {
   const { site, isLoading } = useSiteDetail(siteId);
   const [tab, setTab] = useState<string>("corporate");
   const [infoFor, setInfoFor] = useState<string | null>(null);
+  const documentsQuery = useMiningDocuments({ site: siteId });
+  const reviewDocument = useReviewMiningDocument();
 
   if (!site) {
     return (
@@ -44,6 +48,7 @@ function SiteDetail() {
 
   const org = organisations.find((o) => o.id === site.orgId);
   const lic = licences.find((l) => l.siteId === site.id);
+  const documents = documentsQuery.data?.results ?? [];
 
   return (
     <>
@@ -172,6 +177,53 @@ function SiteDetail() {
                     <p className="text-xs text-muted-foreground">Collected {s.collected}</p>
                   </li>
                 ))}
+            </ul>
+          </Panel>
+          <Panel title="Uploaded documents" bodyClassName="p-0">
+            <ul className="divide-y divide-border">
+              {documents.map((d) => (
+                <li key={d.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{d.name}</span>
+                    <StatusChip value={d.status} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {d.category} · {d.original_name || "no file"} · uploaded by {d.uploaded_by_name}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {d.file_url ? (
+                      <Button asChild size="sm" variant="ghost">
+                        <a href={downloadDocumentUrl(d.id)} target="_blank" rel="noreferrer">
+                          Download
+                        </a>
+                      </Button>
+                    ) : null}
+                    {d.status === "pending" ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewDocument.isPending}
+                          onClick={() => reviewDocument.mutate({ id: d.id, status: "verified" })}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewDocument.isPending}
+                          onClick={() => reviewDocument.mutate({ id: d.id, status: "rejected" })}
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+              {documents.length === 0 ? (
+                <li className="px-5 py-6 text-sm text-muted-foreground">No documents uploaded for this site.</li>
+              ) : null}
             </ul>
           </Panel>
           <Panel title="Non-conformities" bodyClassName="p-0">

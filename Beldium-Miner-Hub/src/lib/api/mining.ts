@@ -44,8 +44,54 @@ export function createMineSite(input: MineSiteInput): Promise<MineSite> {
   return apiFetch<MineSite>("/mining/sites/", { method: "POST", body: input });
 }
 
-export function getMineSite(id: UUID): Promise<MineSite> {
-  return apiFetch<MineSite>(`/mining/sites/${id}/`);
+export type ReviewSectionStatus =
+  | "pending"
+  | "under_review"
+  | "verified"
+  | "rejected"
+  | "info_requested"
+  | "inspection_requested"
+  | "flagged";
+
+export interface ReviewSectionField {
+  label: string;
+  value: string;
+  flag: "ok" | "warn" | "bad" | null;
+  note: string;
+}
+
+export interface ReviewSection {
+  id: UUID;
+  site: UUID;
+  key: string;
+  label: string;
+  title: string;
+  summary: string;
+  weight: number;
+  score: number;
+  status: ReviewSectionStatus;
+  fields: ReviewSectionField[];
+  decision_note: string;
+  decided_by_name: string | null;
+  decided_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MineSiteDetail extends MineSite {
+  sections: ReviewSection[];
+  review: {
+    sections_total: number;
+    sections_present: number;
+    sections_verified: number;
+    sections_rejected: number;
+    sections_flagged: number;
+  };
+  outstanding: { section: string; label: string; missing_prompts: string[] }[];
+}
+
+export function getMineSite(id: UUID): Promise<MineSiteDetail> {
+  return apiFetch<MineSiteDetail>(`/mining/sites/${id}/`);
 }
 
 export type EquipmentStatus = "certified" | "due_inspection" | "out_of_service";
