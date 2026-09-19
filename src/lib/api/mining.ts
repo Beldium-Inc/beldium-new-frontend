@@ -912,3 +912,35 @@ export function miningReportUrl(input: {
 export function listMiningAudit(query: MiningListQuery = {}): Promise<Paginated<MiningAuditEvent>> {
   return apiFetch<Paginated<MiningAuditEvent>>(`${BASE}/audit/`, { query });
 }
+
+// --- organisation verification (desk) ---------------------------------------------
+
+export interface OrganisationVerificationRow {
+  id: UUID;
+  name: string;
+  beldium_id: string | null;
+  verification_status: "draft" | "under_review" | "verified" | "rejected" | "suspended";
+  verified_at: string | null;
+  rejection_reason: string;
+  sites_total: number;
+  sites_verified: number;
+  documents_total: number;
+  documents_verified: number;
+  blockers: string[];
+  ready: boolean;
+}
+
+export function listOrganisationVerification(): Promise<{ results: OrganisationVerificationRow[] }> {
+  return apiFetch(`${BASE}/organisation-verification/`);
+}
+
+export function decideOrganisationVerification(
+  id: UUID,
+  decision: "verify" | "reject",
+  reason?: string,
+): Promise<OrganisationVerificationRow> {
+  return apiFetch(`${BASE}/organisation-verification/${id}/${decision}/`, {
+    method: "POST",
+    body: reason ? { reason } : {},
+  });
+}

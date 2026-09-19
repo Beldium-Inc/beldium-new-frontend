@@ -71,6 +71,8 @@ import {
   type SafetyIncident,
   type MiningSectionField,
   type SectionKey,
+  decideOrganisationVerification,
+  listOrganisationVerification,
 } from "./mining";
 import { useHasTokens } from "./queries";
 import type { UUID } from "./types";
@@ -682,3 +684,24 @@ export function useReviewMiningDocument() {
 }
 
 export type { CorrectiveSubmission };
+
+export function useOrganisationVerification() {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: [...miningKeys.root, "organisation-verification"] as const,
+    queryFn: () => listOrganisationVerification(),
+    enabled: hasTokens,
+  });
+}
+
+export function useDecideOrganisation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; decision: "verify" | "reject"; reason?: string }) =>
+      decideOrganisationVerification(input.id, input.decision, input.reason),
+    onSuccess: () => {
+      invalidateMining(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ["organisations"] });
+    },
+  });
+}

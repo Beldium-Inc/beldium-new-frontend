@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSiteDetail, useStore } from "@/verticals/mining/store";
-import { Field, PageHeader, Panel, DemoNote } from "@/verticals/mining/components/primitives";
+import { Field, PageHeader, Panel } from "@/verticals/mining/components/primitives";
 import { RiskChip, ScorePill, StatusChip } from "@/verticals/mining/components/chips";
 import { GeoPanel } from "@/verticals/mining/components/GeoPanel";
 import { ScoreBreakdown } from "@/verticals/mining/components/ScoreBreakdown";
@@ -57,9 +57,6 @@ function SiteDetail() {
         title={`${site.name}: mine review`}
         description="Section-by-section review with evidence, reviewer decisions and an explainable compliance score."
       />
-      <div className="mb-5">
-        <DemoNote>Reviewer actions update status, activity and the audit trail locally.</DemoNote>
-      </div>
 
       <Panel title="Review header">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -75,7 +72,7 @@ function SiteDetail() {
             <RiskChip value={site.risk} />
           </Field>
           <Field label="Status">
-            <StatusChip value={site.status} />
+            <StatusChip value={site.status === "Operational" ? "Verified" : site.status} />
           </Field>
         </div>
       </Panel>
@@ -97,14 +94,37 @@ function SiteDetail() {
             {site.sections.map((s) => (
               <TabsContent key={s.key} value={s.key} className="mt-4 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-muted-foreground">{s.summary}</p>
+                  <div>
+                    <h3 className="text-base font-semibold">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {s.summary || "No summary has been provided for this section."}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Weight {s.weight}% · Section score {s.score}/100
+                    </p>
+                  </div>
                   <StatusChip value={s.status} />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {s.fields.map((f) => (
-                    <Field key={f.label} label={f.label} value={f.value} />
-                  ))}
-                </div>
+                {s.decidedBy ? (
+                  <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+                    <p>
+                      Last decision by <span className="font-medium">{s.decidedBy}</span>
+                      {s.decidedAt ? ` on ${new Date(s.decidedAt).toLocaleString()}` : ""}
+                    </p>
+                    {s.decisionNote ? <p className="mt-1 text-muted-foreground">{s.decisionNote}</p> : null}
+                  </div>
+                ) : null}
+                {s.fields.length ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {s.fields.map((f) => (
+                      <Field key={f.label} label={f.label} value={f.value} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    The miner has not submitted any answers for this section yet.
+                  </p>
+                )}
                 <div className="rounded-md border border-border">
                   <Table>
                     <TableHeader>
@@ -127,6 +147,13 @@ function SiteDetail() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {s.evidence.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                            No evidence uploaded for this section.
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
                     </TableBody>
                   </Table>
                 </div>

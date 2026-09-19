@@ -22,7 +22,7 @@ import { APPLICATION_STEPS, type ApplicationEquipment, type ApplicationSite } fr
 import { useMiner } from "@/lib/miner-store";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/errors";
-import { createMineSite, createEquipment, createApplication } from "@/lib/api/mining";
+import { createMineSite, createEquipment, createApplication, uploadDocument } from "@/lib/api/mining";
 import { useCreateOrganisation } from "@/lib/api/queries";
 
 const title = "Mining organisation application - Beldium Miner Hub";
@@ -69,6 +69,9 @@ function Field({
   );
 }
 
+// File objects cannot be persisted in the localStorage draft, so they live here until submit.
+const pendingFiles = new Map<string, File>();
+
 function ApplicationPage() {
   const { state, saveApplication } = useMiner();
   const { organisationName } = Route.useSearch();
@@ -101,6 +104,8 @@ function ApplicationPage() {
     if (step === 5 && app.equipment.length === 0) return "Add at least one item of equipment or plant.";
     if (step === 6 && !app.environment.empNumber) return "An environmental management plan reference is required.";
     if (step === 7 && app.documents.some((d) => d.required && !d.fileName)) return "Upload all required documents.";
+    if ((step === 7 || step === 8) && app.documents.some((d) => d.fileName && !pendingFiles.has(d.id)))
+      return "Some documents were uploaded in an earlier session. Please re-upload them on the Supporting documents step.";
     if (step === 8) {
       const dec = app.declaration;
       if (!dec.signatory || !dec.position) return "Enter the signatory name and position.";
@@ -143,6 +148,15 @@ function ApplicationPage() {
         await createEquipment({ site: backendSiteId, name: item.name, serial: item.serial });
       }
 
+      const documentSite = siteIdMap.values().next().value;
+      if (documentSite) {
+        for (const doc of app.documents) {
+          const file = pendingFiles.get(doc.id);
+          if (!file) continue;
+          await uploadDocument({ site: documentSite, name: doc.label, category: "Application document", file });
+        }
+      }
+
       await createApplication({
         organisation: organisation.id,
         type: "admission",
@@ -150,6 +164,7 @@ function ApplicationPage() {
         submitted_on: new Date().toISOString().slice(0, 10),
       });
 
+      pendingFiles.clear();
       navigate({ to: "/submitted" });
     } catch (cause) {
       setError(
@@ -605,6 +620,7 @@ function StepDocuments() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  pendingFiles.set(doc.id, file);
                   saveApplication((d) => ({
                     ...d,
                     documents: d.documents.map((x) =>

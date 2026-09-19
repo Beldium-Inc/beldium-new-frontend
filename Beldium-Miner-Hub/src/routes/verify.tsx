@@ -134,10 +134,10 @@ function VerifyPage() {
           return;
         }
         await createJoinRequest.mutateAsync({ organisation: match.id });
-        navigate({ to: "/auth" });
+        navigate({ to: user ? "/portal" : "/auth" });
         return;
       }
-      navigate({ to: "/auth" });
+      navigate({ to: user ? "/portal" : "/auth" });
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : "Something went wrong. Try again.");
     } finally {

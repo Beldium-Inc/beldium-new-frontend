@@ -294,7 +294,7 @@ export function toScoreFactor(row: ApiScoreFactor): ScoreFactor {
 export function toReviewSection(row: ApiReviewSection): ReviewSection {
   return {
     key: row.key,
-    title: row.title,
+    title: row.title || row.label,
     summary: row.summary,
     weight: row.weight,
     score: row.score,

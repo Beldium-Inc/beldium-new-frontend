@@ -63,6 +63,19 @@ export function updateOrganisation(
   return apiFetch<Organisation>(`/organisations/${id}/`, { method: "PATCH", body: patch });
 }
 
+/** Moves a draft (or rejected) organisation to under_review. Requires an org admin role. */
+export function submitOrganisation(id: UUID): Promise<Organisation> {
+  return apiFetch<Organisation>(`/organisations/${id}/submit/`, { method: "POST" });
+}
+
+/** Approves or rejects an organisation under review. Restricted to Django staff/admin accounts. */
+export function decideOrganisation(
+  id: UUID,
+  input: { decision: "verified" | "rejected"; reason?: string },
+): Promise<Organisation> {
+  return apiFetch<Organisation>(`/organisations/${id}/decide/`, { method: "POST", body: input });
+}
+
 export function deleteOrganisation(id: UUID): Promise<void> {
   return apiFetch<void>(`/organisations/${id}/`, { method: "DELETE" });
 }
@@ -121,4 +134,38 @@ export function decideJoinRequest(
   input: { decision: "approved" | "rejected"; notes?: string },
 ): Promise<JoinRequest> {
   return apiFetch<JoinRequest>(`/join-requests/${id}/decide/`, { method: "POST", body: input });
+}
+
+export type TimelineStageState = "complete" | "current" | "attention" | "failed" | "upcoming";
+
+export interface TimelineStage {
+  key: string;
+  title: string;
+  description: string;
+  state: TimelineStageState;
+  at: string | null;
+  detail: string;
+}
+
+export interface TimelineActivity {
+  id: string;
+  event_type: string;
+  message: string;
+  actor: string;
+  at: string;
+}
+
+export interface OrganisationTimeline {
+  status: VerificationStatus;
+  application_status: string | null;
+  application_reference: string | null;
+  documents: { total: number; verified: number; awaiting: number; attention: number };
+  sites: { verified: number; total: number };
+  stages: TimelineStage[];
+  activity: TimelineActivity[];
+}
+
+/** Verification stages and a member-safe activity feed. Readable by any active member. */
+export function getOrganisationTimeline(id: UUID): Promise<OrganisationTimeline> {
+  return apiFetch<OrganisationTimeline>(`/organisations/${id}/timeline/`);
 }

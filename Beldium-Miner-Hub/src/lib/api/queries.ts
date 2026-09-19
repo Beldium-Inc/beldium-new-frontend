@@ -8,13 +8,16 @@ import {
   createJoinRequest,
   createOrganisation,
   decideJoinRequest,
+  decideOrganisation,
   getOrganisation,
+  getOrganisationTimeline,
   listInvitations,
   listMembers,
   listMyJoinRequests,
   listOrganisationJoinRequests,
   listOrganisations,
   organisationDirectory,
+  submitOrganisation,
   updateOrganisation,
   type OrganisationInput,
   type OrganisationQuery,
@@ -31,6 +34,7 @@ export const queryKeys = {
   organisations: (query: OrganisationQuery = {}) => ["organisations", "list", query] as const,
   directory: (query: OrganisationQuery = {}) => ["organisations", "directory", query] as const,
   organisation: (id: UUID) => ["organisations", "detail", id] as const,
+  timeline: (id: UUID) => ["organisations", id, "timeline"] as const,
   members: (id: UUID) => ["organisations", id, "members"] as const,
   invitations: (id: UUID) => ["organisations", id, "invitations"] as const,
   organisationJoinRequests: (id: UUID) => ["organisations", id, "join-requests"] as const,
@@ -77,6 +81,16 @@ export function useMyOrganisations(query: OrganisationQuery = {}) {
     queryKey: queryKeys.organisations(query),
     queryFn: () => listOrganisations(query),
     enabled: hasTokens,
+  });
+}
+
+export function useOrganisationTimeline(id: UUID | undefined) {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: queryKeys.timeline(id ?? ""),
+    queryFn: () => getOrganisationTimeline(id as UUID),
+    enabled: hasTokens && Boolean(id),
+    refetchInterval: 30_000,
   });
 }
 
@@ -146,6 +160,29 @@ export function useUpdateOrganisation(id: UUID) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (patch: Partial<OrganisationInput>) => updateOrganisation(id, patch),
+    onSuccess: (organisation) => {
+      queryClient.setQueryData(queryKeys.organisation(id), organisation);
+      void queryClient.invalidateQueries({ queryKey: ["organisations"] });
+    },
+  });
+}
+
+export function useSubmitOrganisation(id: UUID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => submitOrganisation(id),
+    onSuccess: (organisation) => {
+      queryClient.setQueryData(queryKeys.organisation(id), organisation);
+      void queryClient.invalidateQueries({ queryKey: ["organisations"] });
+    },
+  });
+}
+
+export function useDecideOrganisation(id: UUID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { decision: "verified" | "rejected"; reason?: string }) =>
+      decideOrganisation(id, input),
     onSuccess: (organisation) => {
       queryClient.setQueryData(queryKeys.organisation(id), organisation);
       void queryClient.invalidateQueries({ queryKey: ["organisations"] });

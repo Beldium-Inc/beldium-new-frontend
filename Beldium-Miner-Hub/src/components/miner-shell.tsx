@@ -140,6 +140,7 @@ export function MinerShell({ children }: { children: React.ReactNode }) {
                   {org.verification_status.replace("_", " ")}
                 </StatusChip>
               ) : null}
+              
               <Button
                 variant="ghost"
                 size="sm"
