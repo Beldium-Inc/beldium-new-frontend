@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
 import { confirmPhoneVerification, requestPhoneVerification } from "@/lib/api/auth";
 import { organisationDirectory } from "@/lib/api/organisations";
-import { useCreateJoinRequest } from "@/lib/api/queries";
+import { useCreateJoinRequest, useUpdateCurrentUser } from "@/lib/api/queries";
 
 const title = "Verify your account - Beldium Miner Hub";
 const description = "Confirm your email address and mobile number before starting your mining organisation application.";
@@ -42,6 +42,8 @@ function VerifyPage() {
   const { email, role, organisationName } = Route.useSearch();
   const { user, confirmEmail, resendCode, refetchUser } = useAuth();
   const createJoinRequest = useCreateJoinRequest();
+  const updateUser = useUpdateCurrentUser();
+  const [newPhone, setNewPhone] = useState("");
   const navigate = useNavigate();
 
   const [emailCode, setEmailCode] = useState("");
@@ -80,12 +82,12 @@ function VerifyPage() {
     }
   }
 
-  async function requestPhoneCode() {
-    if (!user?.phone_number) return setError("Add a phone number to your account first.");
+  async function requestPhoneCode(number = user?.phone_number) {
+    if (!number) return setError("Add a phone number to your account first.");
     setBusy(true);
     setError("");
     try {
-      await requestPhoneVerification(user.phone_number);
+      await requestPhoneVerification(number);
       setPhoneRequested(true);
       setNote("A verification code was sent by SMS.");
     } catch (cause) {
@@ -93,6 +95,23 @@ function VerifyPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function saveNewPhone() {
+    const number = newPhone.trim();
+    if (!/^\+[1-9]\d{7,14}$/.test(number)) {
+      return setError("Enter the number with its country code, e.g. +2348012345678.");
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await updateUser.mutateAsync({ phone_number: number });
+    } catch (cause) {
+      setBusy(false);
+      return setError(cause instanceof ApiError ? cause.message : "Could not save the phone number.");
+    }
+    setBusy(false);
+    await requestPhoneCode(number);
   }
 
   async function submitPhoneCode() {
@@ -215,8 +234,25 @@ function VerifyPage() {
             </div>
             {!phoneVerified ? (
               <div className="mt-4 flex flex-wrap items-end gap-3">
-                {!phoneRequested ? (
-                  <Button disabled={busy} onClick={requestPhoneCode}>
+                {!user?.phone_number ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPhone">Mobile number</Label>
+                      <Input
+                        id="newPhone"
+                        value={newPhone}
+                        inputMode="tel"
+                        className="w-56"
+                        onChange={(e) => setNewPhone(e.target.value.replace(/[^\d+]/g, ""))}
+                        placeholder="+2348012345678"
+                      />
+                    </div>
+                    <Button disabled={busy} onClick={saveNewPhone}>
+                      Save &amp; send SMS code
+                    </Button>
+                  </>
+                ) : !phoneRequested ? (
+                  <Button disabled={busy} onClick={() => requestPhoneCode()}>
                     Send SMS code
                   </Button>
                 ) : (
@@ -236,7 +272,7 @@ function VerifyPage() {
                     <Button disabled={busy} onClick={submitPhoneCode}>
                       Confirm number
                     </Button>
-                    <Button variant="ghost" disabled={busy} onClick={requestPhoneCode}>
+                    <Button variant="ghost" disabled={busy} onClick={() => requestPhoneCode()}>
                       Resend code
                     </Button>
                   </>
