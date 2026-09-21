@@ -5,7 +5,7 @@ import { PageHeader, StatCard } from "@/components/miner-shell";
 import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
 import { DataTable, DomainChip, EmptyState, Panel, Td } from "@/components/ecosystem-ui";
-import { useMyOrganisations } from "@/lib/api/queries";
+import { useMyOrganisations, useOrganisationTimeline } from "@/lib/api/queries";
 import { useMineSites, useMiningApplications, useMiningDashboard } from "@/lib/api/mining-queries";
 import {
   useAdvanceTransactionStage,
@@ -63,10 +63,11 @@ function PortalHome() {
   }
 
   if (org.verification_status === "verified") return <VerifiedDashboard orgName={org.name} />;
-  return <UnderReviewDashboard orgName={org.name} status={org.verification_status} />;
+  return <UnderReviewDashboard orgId={org.id} orgName={org.name} status={org.verification_status} />;
 }
 
-function UnderReviewDashboard({ orgName, status }: { orgName: string; status: string }) {
+function UnderReviewDashboard({ orgId, orgName, status }: { orgId: string; orgName: string; status: string }) {
+  const timeline = useOrganisationTimeline(orgId);
   const applications = useMiningApplications();
   const sites = useMineSites();
   const apps = Array.isArray(applications.data) ? applications.data : (applications.data?.results ?? []);
@@ -90,7 +91,11 @@ function UnderReviewDashboard({ orgName, status }: { orgName: string; status: st
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Status" value={status.replace("_", " ")} hint="Organisation verification" />
         <StatCard label="Applications" value={String(apps.length)} hint={`${infoRequested.length} need info`} />
-        <StatCard label="Declared sites" value={String(siteList.length)} />
+        <StatCard
+          label="Declared sites"
+          value={String(siteList.length)}
+          hint={`${timeline.data?.sites.verified ?? 0} verified`}
+        />
         <StatCard label="Info requests" value={String(infoRequested.length)} hint="Awaiting your response" />
       </div>
 
@@ -122,6 +127,57 @@ function UnderReviewDashboard({ orgName, status }: { orgName: string; status: st
           ))}
           {apps.length === 0 ? <li className="text-sm text-muted-foreground">No applications yet.</li> : null}
         </ul>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-[3fr_2fr]">
+        <div className="rounded-md border border-border bg-card p-5">
+          <h2 className="text-sm font-semibold text-card-foreground">Review timeline</h2>
+          {timeline.isPending ? <p className="mt-4 text-sm text-muted-foreground">Loading timeline…</p> : null}
+          {timeline.isError ? <p className="mt-4 text-sm text-destructive">Could not load the review timeline.</p> : null}
+          <ol className="mt-4 space-y-5">
+            {timeline.data?.stages.map((stage) => (
+              <li key={stage.key} className="flex gap-3">
+                <span
+                  className={`mt-1.5 h-3 w-3 shrink-0 rounded-full ${
+                    stage.state === "complete"
+                      ? "bg-success"
+                      : stage.state === "current"
+                        ? "bg-success ring-4 ring-success/20"
+                        : stage.state === "attention"
+                          ? "bg-warning ring-4 ring-warning/20"
+                          : stage.state === "failed"
+                            ? "bg-destructive"
+                            : "bg-muted-foreground/30"
+                  }`}
+                />
+                <div className="text-sm">
+                  <div className="font-medium text-card-foreground">{stage.title}</div>
+                  <div className="text-muted-foreground">{stage.detail || stage.description}</div>
+                  {stage.at ? (
+                    <div className="mt-0.5 text-xs text-muted-foreground">{new Date(stage.at).toLocaleDateString()}</div>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="rounded-md border border-border bg-card p-5">
+          <h2 className="text-sm font-semibold text-card-foreground">Activity</h2>
+          <ul className="mt-4 space-y-3">
+            {timeline.data?.activity.map((a) => (
+              <li key={a.id} className="text-sm">
+                <div className="text-card-foreground">{a.message}</div>
+                <div className="text-xs text-muted-foreground">
+                  {a.actor} · {new Date(a.at).toLocaleString()}
+                </div>
+              </li>
+            ))}
+            {timeline.data && timeline.data.activity.length === 0 ? (
+              <li className="text-sm text-muted-foreground">No activity yet.</li>
+            ) : null}
+          </ul>
+        </div>
       </div>
     </>
   );

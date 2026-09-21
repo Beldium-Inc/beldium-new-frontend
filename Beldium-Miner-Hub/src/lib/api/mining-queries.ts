@@ -12,6 +12,7 @@ import {
   fetchChecklist,
   fetchDashboard,
   fetchMe,
+  getMineSite,
   listApplications,
   listDocuments,
   listEquipment,
@@ -78,6 +79,15 @@ export function useMiningChecklist() {
 export function useMineSites() {
   const hasTokens = useHasTokens();
   return useQuery({ queryKey: miningKeys.sites, queryFn: listMineSites, enabled: hasTokens });
+}
+
+/** Site detail, including the ten review sections and the reviewer's verdict on each. */
+export function useMineSite(id: UUID | null) {
+  return useQuery({
+    queryKey: [...miningKeys.sites, "detail", id ?? "none"],
+    queryFn: () => getMineSite(id as UUID),
+    enabled: Boolean(id),
+  });
 }
 
 export function useCreateMineSite() {

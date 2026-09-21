@@ -1,8 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import mineralRocks from "@/assets/mineral-rocks.gif.asset.json";
-
 import { BeldiumLockup } from "@/components/beldium-logo";
 
 export function AuthLayout({
@@ -20,12 +18,12 @@ export function AuthLayout({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col lg:flex-row">
+      <div className="flex min-h-screen w-full flex-col lg:flex-row">
         <aside
-          className="relative hidden w-full max-w-md flex-col justify-between overflow-hidden bg-sidebar p-10 lg:flex"
+          className="relative hidden w-full flex-col justify-between overflow-hidden bg-sidebar p-10 lg:flex lg:w-2/5 xl:w-1/3"
         >
           <div className="absolute inset-0" aria-hidden>
-            <img src={mineralRocks.url} alt="" className="h-full w-full object-cover" />
+            <img src="/leftside-animation.gif" alt="" className="h-full w-full object-cover" />
           </div>
 
           <div className="absolute inset-0 bg-sidebar/90" aria-hidden />

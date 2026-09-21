@@ -6,14 +6,12 @@ import { useAuth } from "@/lib/auth";
 import { AuthShell, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOnboarding } from "@/lib/onboarding/store";
-
-/** Strip the spaces and dashes people type; the API wants bare E.164. */
-function normalisePhone(value: string): string {
-  return value.replace(/[\s-]/g, "").trim();
-}
+import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
 
 export const Route = createFileRoute("/onboarding/account")({ component: AccountPage });
 
@@ -45,9 +43,10 @@ function AccountPage() {
     if (account.fullName.trim().length < 3) e["fullName"] = "Enter your full name.";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(account.email.trim()))
       e["email"] = "Enter a valid work email address.";
-    // The verification endpoint requires E.164, so anything else captured here
-    // could never be confirmed. Spaces and dashes are stripped before the check.
-    if (!/^\+[1-9]\d{7,14}$/.test(normalisePhone(account.phone)))
+    // The verification endpoint requires E.164; the field itself normalises
+    // common local formats to it on blur, so this only fires for something
+    // genuinely unparseable.
+    if (!isValidPhoneNumber(formatPhoneNumber(account.phone)))
       e["phone"] =
         "Enter the number in international format, including the country code, e.g. +234 803 000 0000.";
     if (account.password.length < 8) e["password"] = "Use at least 8 characters.";
@@ -70,7 +69,7 @@ function AccountPage() {
         agreed_terms: account.acceptedTerms,
         first_name: parts[0] ?? "",
         last_name: parts.slice(1).join(" "),
-        phone_number: normalisePhone(account.phone),
+        phone_number: formatPhoneNumber(account.phone),
       });
       updateAccount({ emailVerified: false });
       toast.success("Account created. We emailed you a six-digit code.");
@@ -151,21 +150,19 @@ function AccountPage() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="phone">Mobile number</Label>
-          <Input
+          <PhoneInput
             id="phone"
-            type="tel"
             value={account.phone}
-            onChange={(ev) => updateAccount({ phone: ev.target.value, phoneVerified: false })}
-            placeholder="+234 803 000 0000"
+            onChange={(v) => updateAccount({ phone: v, phoneVerified: false })}
+            placeholder="08030000000"
             autoComplete="tel"
           />
           {errors["phone"] && <p className="text-xs text-danger">{errors["phone"]}</p>}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             value={account.password}
             onChange={(ev) => updateAccount({ password: ev.target.value })}
             autoComplete="new-password"
@@ -185,9 +182,8 @@ function AccountPage() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="confirmPassword">Confirm password</Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             value={confirmPassword}
             onChange={(ev) => setConfirmPassword(ev.target.value)}
             autoComplete="new-password"

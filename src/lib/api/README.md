@@ -7,15 +7,15 @@ Everything here talks to the Django backend in `../../../beldium-backend`.
 | File               | Responsibility                                                                      |
 | ------------------ | ----------------------------------------------------------------------------------- |
 | `config.ts`        | Resolves the API origin from `VITE_API_URL` and owns the `/api/v1` prefix           |
-| `errors.ts`        | `ApiError` — the backend's `{ status, message, error: { code, details } }` envelope |
+| `errors.ts`        | `ApiError` - the backend's `{ status, message, error: { code, details } }` envelope |
 | `tokens.ts`        | The JWT pair in `localStorage`, mirrored in memory, synced across tabs              |
-| `client.ts`        | `apiFetch` — bearer header, one refresh-and-retry on 401, JSON in and out           |
+| `client.ts`        | `apiFetch` - bearer header, one refresh-and-retry on 401, JSON in and out           |
 | `types.ts`         | The DRF serialiser shapes, field-for-field                                          |
 | `auth.ts`          | register / verify-email / resend / token / me                                       |
 | `organisations.ts` | Organisations, members, invitations, join requests                                  |
 | `queries.ts`       | TanStack Query keys and hooks over the two modules above                            |
 
-`lib/auth.tsx` sits on top of this and provides `useAuth()` — the signed-in user plus
+`lib/auth.tsx` sits on top of this and provides `useAuth()` - the signed-in user plus
 `signIn`, `signUp`, `confirmEmail`, `resendCode` and `signOut`. It is a different thing from
 `lib/session.tsx`, which records which of the seven dashboards you are working in and in what
 role.
@@ -23,7 +23,7 @@ role.
 That stored role is a **view preference, not a permission**. The processing API decides what
 a caller may actually do from their organisation memberships, and returns it from
 `/processing/me/`. Render controls against `capabilities.can_decide`, never against the
-session's role — a value in `localStorage` must not be able to unlock a review action.
+session's role - a value in `localStorage` must not be able to unlock a review action.
 
 ## Using it
 
@@ -57,7 +57,7 @@ try {
 VITE_API_URL=http://localhost:8000
 ```
 
-Origin only — no trailing slash and no `/api/v1`. The backend must list this app's origin in
+Origin only - no trailing slash and no `/api/v1`. The backend must list this app's origin in
 `CORS_ALLOWED_ORIGINS`; `http://localhost:8080` is there by default.
 
 ## What is connected
@@ -129,11 +129,11 @@ verticals/logistics/store.tsx    one provider that runs the reads, exposes the w
 
 A few fields the old mock carried have no backend equivalent (a document's uploader name, a
 notification's severity `tone`, an audit event's human-readable target/outcome, per-domain
-checklist `items`) — the store fills these with sensible defaults rather than inventing data
+checklist `items`) - the store fills these with sensible defaults rather than inventing data
 the API doesn't return.
 
 Two identifiers travel together on every row. `id` is the human reference (`BPC-APP-2026-4D62`)
-— what people quote and what the URLs carry — and `uuid` is the API's primary key, which every
+- what people quote and what the URLs carry - and `uuid` is the API's primary key, which every
 write is addressed by. The store owns the map between them.
 
 Only the application **detail** response carries the ten evidence sections, so the review
@@ -151,7 +151,7 @@ verticals/marketplace/store.tsx    one provider that runs the reads, exposes the
 ```
 
 The register is close enough to the wire format that a separate `domain.ts` adapter file
-wasn't needed — the conversions (applicant type, risk band, non-conformity severity, order
+wasn't needed - the conversions (applicant type, risk band, non-conformity severity, order
 stage) live at the top of `store.tsx`, the same way `verticals/processing/store.tsx` folds
 its own translation in rather than splitting it out.
 
@@ -170,9 +170,9 @@ verticals/mining/store.tsx    one provider that runs the reads, exposes the writ
                                composes the register's read-side view from them
 ```
 
-Mining's register is entity-heavy — sites, licences, applications, inspections, samples,
+Mining's register is entity-heavy - sites, licences, applications, inspections, samples,
 non-conformities, environmental records, safety incidents, equipment, info requests and
-organisation KYC profiles all live under `/mining/*` — so, unlike marketplace, the adapters
+organisation KYC profiles all live under `/mining/*` - so, unlike marketplace, the adapters
 get their own file (`mappers.ts`) rather than living inline in `store.tsx`.
 
 A handful of API names collide with an identically-named export already in a sibling
@@ -180,13 +180,13 @@ vertical's module (`processing.ts` chiefly, since both registers use the same ev
 shape): `Inspection`, `NonConformity`, `Sample`, `ListQuery`, `Checklist`, `SectionField`,
 `ApplicationStatus` and their sibling functions/hooks are exported from `mining.ts` /
 `mining-queries.ts` with a `Mining` prefix (`MiningInspection`, `MiningNonConformity`,
-`useCreateMiningApplication`, …) so the barrel file's `export *` stays unambiguous — the same
+`useCreateMiningApplication`, …) so the barrel file's `export *` stays unambiguous - the same
 convention `quality.ts` (`QualityApplicationStatus`) and `export.ts` established.
 
 Only the site **detail** response (`GET /mining/sites/:id/`) carries the ten review sections;
 the list read used by `useStore().sites` omits them. The review screen instead reads through
 `useSiteDetail(siteId)`, mirroring `useApplicationDetail` in processing.
 
-A site's licence isn't addressed by a `licenceId` foreign key on the mining side — licences
-point at their site (`LicenceDoc.siteId`), not the other way round — so screens look one up
+A site's licence isn't addressed by a `licenceId` foreign key on the mining side - licences
+point at their site (`LicenceDoc.siteId`), not the other way round - so screens look one up
 with `licences.find(l => l.siteId === site.id)` rather than through the site row.

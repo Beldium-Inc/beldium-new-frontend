@@ -11,12 +11,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSiteDetail, useStore } from "@/verticals/mining/store";
-import { Field, PageHeader, Panel, DemoNote } from "@/verticals/mining/components/primitives";
+import { Field, PageHeader, Panel } from "@/verticals/mining/components/primitives";
 import { RiskChip, ScorePill, StatusChip } from "@/verticals/mining/components/chips";
 import { GeoPanel } from "@/verticals/mining/components/GeoPanel";
 import { ScoreBreakdown } from "@/verticals/mining/components/ScoreBreakdown";
 import { ReviewActions } from "@/verticals/mining/components/ReviewActions";
 import { RequestInfoDialog } from "@/verticals/mining/components/RequestInfoDialog";
+import { useMiningDocuments, useReviewMiningDocument } from "@/lib/api/mining-queries";
+import { downloadDocumentUrl } from "@/lib/api/mining";
 
 export const Route = createFileRoute("/mining/sites/$siteId")({ component: SiteDetail });
 
@@ -26,6 +28,8 @@ function SiteDetail() {
   const { site, isLoading } = useSiteDetail(siteId);
   const [tab, setTab] = useState<string>("corporate");
   const [infoFor, setInfoFor] = useState<string | null>(null);
+  const documentsQuery = useMiningDocuments({ site: siteId });
+  const reviewDocument = useReviewMiningDocument();
 
   if (!site) {
     return (
@@ -44,6 +48,7 @@ function SiteDetail() {
 
   const org = organisations.find((o) => o.id === site.orgId);
   const lic = licences.find((l) => l.siteId === site.id);
+  const documents = documentsQuery.data?.results ?? [];
 
   return (
     <>
@@ -52,9 +57,6 @@ function SiteDetail() {
         title={`${site.name}: mine review`}
         description="Section-by-section review with evidence, reviewer decisions and an explainable compliance score."
       />
-      <div className="mb-5">
-        <DemoNote>Reviewer actions update status, activity and the audit trail locally.</DemoNote>
-      </div>
 
       <Panel title="Review header">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -70,7 +72,7 @@ function SiteDetail() {
             <RiskChip value={site.risk} />
           </Field>
           <Field label="Status">
-            <StatusChip value={site.status} />
+            <StatusChip value={site.status === "Operational" ? "Verified" : site.status} />
           </Field>
         </div>
       </Panel>
@@ -92,14 +94,37 @@ function SiteDetail() {
             {site.sections.map((s) => (
               <TabsContent key={s.key} value={s.key} className="mt-4 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-muted-foreground">{s.summary}</p>
+                  <div>
+                    <h3 className="text-base font-semibold">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {s.summary || "No summary has been provided for this section."}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Weight {s.weight}% · Section score {s.score}/100
+                    </p>
+                  </div>
                   <StatusChip value={s.status} />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {s.fields.map((f) => (
-                    <Field key={f.label} label={f.label} value={f.value} />
-                  ))}
-                </div>
+                {s.decidedBy ? (
+                  <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+                    <p>
+                      Last decision by <span className="font-medium">{s.decidedBy}</span>
+                      {s.decidedAt ? ` on ${new Date(s.decidedAt).toLocaleString()}` : ""}
+                    </p>
+                    {s.decisionNote ? <p className="mt-1 text-muted-foreground">{s.decisionNote}</p> : null}
+                  </div>
+                ) : null}
+                {s.fields.length ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {s.fields.map((f) => (
+                      <Field key={f.label} label={f.label} value={f.value} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    The miner has not submitted any answers for this section yet.
+                  </p>
+                )}
                 <div className="rounded-md border border-border">
                   <Table>
                     <TableHeader>
@@ -122,6 +147,13 @@ function SiteDetail() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {s.evidence.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                            No evidence uploaded for this section.
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
                     </TableBody>
                   </Table>
                 </div>
@@ -172,6 +204,53 @@ function SiteDetail() {
                     <p className="text-xs text-muted-foreground">Collected {s.collected}</p>
                   </li>
                 ))}
+            </ul>
+          </Panel>
+          <Panel title="Uploaded documents" bodyClassName="p-0">
+            <ul className="divide-y divide-border">
+              {documents.map((d) => (
+                <li key={d.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{d.name}</span>
+                    <StatusChip value={d.status} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {d.category} · {d.original_name || "no file"} · uploaded by {d.uploaded_by_name}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {d.file_url ? (
+                      <Button asChild size="sm" variant="ghost">
+                        <a href={downloadDocumentUrl(d.id)} target="_blank" rel="noreferrer">
+                          Download
+                        </a>
+                      </Button>
+                    ) : null}
+                    {d.status === "pending" ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewDocument.isPending}
+                          onClick={() => reviewDocument.mutate({ id: d.id, status: "verified" })}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewDocument.isPending}
+                          onClick={() => reviewDocument.mutate({ id: d.id, status: "rejected" })}
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+              {documents.length === 0 ? (
+                <li className="px-5 py-6 text-sm text-muted-foreground">No documents uploaded for this site.</li>
+              ) : null}
             </ul>
           </Panel>
           <Panel title="Non-conformities" bodyClassName="p-0">

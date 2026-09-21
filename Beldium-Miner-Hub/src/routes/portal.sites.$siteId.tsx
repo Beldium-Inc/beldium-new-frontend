@@ -4,7 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/miner-shell";
 import { StatusChip } from "@/components/status-chip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useEquipment, useInventory, useMineSites, useNonConformities, useProduction } from "@/lib/api/mining-queries";
+import { useEquipment, useInventory, useMineSite, useNonConformities, useProduction } from "@/lib/api/mining-queries";
+import type { ReviewSectionStatus } from "@/lib/api/mining";
 
 const title = "Mining site dashboard - Beldium Miner Hub";
 const description = "Site overview, production, equipment, workforce, compliance and corrective actions.";
@@ -23,18 +24,27 @@ export const Route = createFileRoute("/portal/sites/$siteId")({
   component: SiteDashboard,
 });
 
+const sectionStatusTone: Record<ReviewSectionStatus, "success" | "warning" | "danger" | "info" | "neutral"> = {
+  pending: "neutral",
+  under_review: "info",
+  verified: "success",
+  rejected: "danger",
+  info_requested: "warning",
+  inspection_requested: "warning",
+  flagged: "danger",
+};
+
 function SiteDashboard() {
   const { siteId } = Route.useParams();
-  const sitesQuery = useMineSites();
+  const siteQuery = useMineSite(siteId);
   const productionQuery = useProduction();
   const equipmentQuery = useEquipment();
   const inventoryQuery = useInventory();
   const nonConformitiesQuery = useNonConformities();
 
-  const sites = Array.isArray(sitesQuery.data) ? sitesQuery.data : (sitesQuery.data?.results ?? []);
-  const site = sites.find((s) => s.id === siteId);
+  const site = siteQuery.data;
 
-  if (sitesQuery.isLoading) {
+  if (siteQuery.isLoading) {
     return <p className="text-sm text-muted-foreground">Loading site…</p>;
   }
 
@@ -81,6 +91,7 @@ function SiteDashboard() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="review">Review sections</TabsTrigger>
           <TabsTrigger value="production">Production</TabsTrigger>
           <TabsTrigger value="equipment">Equipment</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
@@ -92,7 +103,11 @@ function SiteDashboard() {
             <StatCard label="Tonnes recorded" value={mined.toLocaleString()} hint="All reported periods" />
             <StatCard label="Workforce" value={String(site.workforce ?? "-")} />
             <StatCard label="Licensed area" value={`${site.area_ha ?? "-"} ha`} />
-            <StatCard label="Compliance score" value={`${site.compliance_percent}%`} />
+            <StatCard
+              label="Sections reviewed"
+              value={`${site.review.sections_verified}/${site.review.sections_total}`}
+              hint={`${site.review.sections_rejected} rejected · ${site.review.sections_flagged} flagged`}
+            />
           </div>
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <section className="rounded-md border border-border bg-card p-5">
@@ -128,6 +143,33 @@ function SiteDashboard() {
               </ul>
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="review" className="mt-5">
+          <p className="mb-4 text-sm text-muted-foreground">
+            Each section is reviewed independently by the compliance desk. A rejected or flagged section
+            includes the reviewer's note below.
+          </p>
+          <ul className="space-y-3">
+            {site.sections.map((section) => (
+              <li key={section.id} className="rounded-md border border-border bg-card p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium text-card-foreground">{section.label}</span>
+                  <StatusChip tone={sectionStatusTone[section.status]}>{section.status.replace(/_/g, " ")}</StatusChip>
+                </div>
+                {section.decided_by_name ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Reviewed by {section.decided_by_name} on {section.decided_at ? new Date(section.decided_at).toLocaleString() : "-"}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">Not yet reviewed.</p>
+                )}
+                {section.decision_note ? (
+                  <p className="mt-2 rounded-sm bg-muted/50 p-2 text-sm text-card-foreground">{section.decision_note}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </TabsContent>
 
         <TabsContent value="production" className="mt-5">

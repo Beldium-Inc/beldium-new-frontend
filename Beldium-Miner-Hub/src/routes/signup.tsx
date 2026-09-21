@@ -5,10 +5,13 @@ import { useState } from "react";
 import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
+import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
 
 const title = "Create a miner account - Beldium Miner Hub";
 const description =
@@ -79,8 +82,9 @@ function SignupPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!form.fullName || !form.email.includes("@") || form.phone.length < 6 || form.password.length < 8) {
-      setError("Complete your name, a valid email, a phone number and an 8+ character password.");
+    const phone = formatPhoneNumber(form.phone);
+    if (!form.fullName || !form.email.includes("@") || !isValidPhoneNumber(phone) || form.password.length < 8) {
+      setError("Complete your name, a valid email, a complete phone number and an 8+ character password.");
       return;
     }
     if (role !== "individual" && !form.organisationName) {
@@ -102,7 +106,7 @@ function SignupPage() {
         agreed_terms: true,
         first_name: firstName ?? "",
         last_name: rest.join(" "),
-        phone_number: form.phone,
+        phone_number: phone,
       });
       navigate({
         to: "/verify",
@@ -170,11 +174,16 @@ function SignupPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Mobile number</Label>
-            <Input id="phone" value={form.phone} onChange={set("phone")} placeholder="+260 97 123 4567" />
+            <PhoneInput
+              id="phone"
+              value={form.phone}
+              onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+              placeholder="08012345678"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={form.password} onChange={set("password")} placeholder="••••••••" />
+            <PasswordInput id="password" value={form.password} onChange={set("password")} placeholder="••••••••" />
           </div>
         </div>
 
