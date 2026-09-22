@@ -22,21 +22,35 @@ export const Route = createFileRoute("/onboarding/verify")({
 
 const RESEND_COOLDOWN_SECONDS = 45;
 
+// SMS sending is temporarily disabled on the backend (no approved Termii
+// sender ID yet). Phone verification here is already optional and doesn't
+// block onboarding, but grey it out so people don't wait on a code that
+// won't arrive. Flip back to true once SMS sending is re-enabled.
+const PHONE_VERIFICATION_ENABLED = false;
+
 function ChannelShell({
   icon,
   title,
   target,
   verified,
+  dimmed,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   target: string;
   verified: boolean;
+  dimmed?: boolean;
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[18px] border border-border bg-surface p-5">
+    <div
+      className={
+        dimmed
+          ? "rounded-[18px] border border-border bg-surface/40 p-5 opacity-60"
+          : "rounded-[18px] border border-border bg-surface p-5"
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="grid size-9 place-items-center rounded-[12px] bg-brand-soft text-brand">
@@ -47,11 +61,15 @@ function ChannelShell({
             <p className="text-xs text-muted-foreground">{target || "Not provided"}</p>
           </div>
         </div>
-        {verified && (
+        {dimmed ? (
+          <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            Unavailable
+          </span>
+        ) : verified ? (
           <span className="rounded-full border border-success/50 bg-success/30 px-2.5 py-1 text-xs font-medium">
             Verified
           </span>
-        )}
+        ) : null}
       </div>
       {!verified && children}
     </div>
@@ -241,9 +259,15 @@ function PhoneChannel({
       title="Mobile number"
       target={phone}
       verified={verified}
+      dimmed={!PHONE_VERIFICATION_ENABLED}
     >
       <div className="mt-4 space-y-3">
-        {!emailVerified ? (
+        {!PHONE_VERIFICATION_ENABLED ? (
+          <p className="text-xs text-muted-foreground">
+            Phone verification is temporarily unavailable. You can confirm your number later from your
+            profile.
+          </p>
+        ) : !emailVerified ? (
           <p className="text-xs text-muted-foreground">
             Confirm your email address first. Verifying your number needs a signed-in account.
           </p>
