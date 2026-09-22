@@ -17,6 +17,12 @@ import { useCreateJoinRequest, useUpdateCurrentUser } from "@/lib/api/queries";
 const title = "Verify your account - Beldium Miner Hub";
 const description = "Confirm your email address and mobile number before starting your mining organisation application.";
 
+// SMS sending is temporarily disabled on the backend (no approved Termii
+// sender ID yet), so phone verification can't be completed. Skip the gate
+// and grey out the step until that's sorted — flip this back to true to
+// re-enable.
+const PHONE_VERIFICATION_ENABLED = false;
+
 const searchSchema = z.object({
   email: z.string().optional(),
   role: z.enum(["org_admin", "org_staff", "individual"]).optional(),
@@ -56,7 +62,7 @@ function VerifyPage() {
   const targetEmail = user?.email ?? email;
   const emailVerified = Boolean(user?.email_verified_at);
   const phoneVerified = Boolean(user?.phone_verified_at);
-  const bothVerified = emailVerified && phoneVerified;
+  const bothVerified = PHONE_VERIFICATION_ENABLED ? emailVerified && phoneVerified : emailVerified;
 
   if (!targetEmail) {
     return (
@@ -221,7 +227,13 @@ function VerifyPage() {
         </div>
 
         {emailVerified ? (
-          <div className="rounded-md border border-border bg-card p-5">
+          <div
+            className={
+              PHONE_VERIFICATION_ENABLED
+                ? "rounded-md border border-border bg-card p-5"
+                : "rounded-md border border-border bg-muted/40 p-5 opacity-60"
+            }
+          >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Smartphone className="h-4 w-4 text-accent" />
@@ -230,9 +242,20 @@ function VerifyPage() {
                   <div className="text-xs text-muted-foreground">{user?.phone_number}</div>
                 </div>
               </div>
-              {phoneVerified ? <StatusChip tone="success">Verified</StatusChip> : <StatusChip tone="warning">Pending</StatusChip>}
+              {!PHONE_VERIFICATION_ENABLED ? (
+                <StatusChip tone="neutral">Unavailable</StatusChip>
+              ) : phoneVerified ? (
+                <StatusChip tone="success">Verified</StatusChip>
+              ) : (
+                <StatusChip tone="warning">Pending</StatusChip>
+              )}
             </div>
-            {!phoneVerified ? (
+            {!PHONE_VERIFICATION_ENABLED ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Phone verification is temporarily unavailable. You can continue without it — we'll ask you to
+                verify later.
+              </p>
+            ) : !phoneVerified ? (
               <div className="mt-4 flex flex-wrap items-end gap-3">
                 {!user?.phone_number ? (
                   <>
