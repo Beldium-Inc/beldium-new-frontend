@@ -595,9 +595,16 @@ function StepEnvironment() {
   );
 }
 
+// Matches mining/serializers.py MAX_UPLOAD_SIZE on the backend. Checking here
+// avoids uploading a large file over a slow connection only to have the
+// server reject it minutes later once the transfer finally completes.
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+
 function StepDocuments() {
   const { state, saveApplication } = useMiner();
   const docs = state.application.documents;
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+
   return (
     <ul className="space-y-2">
       {docs.map((doc) => (
@@ -610,6 +617,7 @@ function StepDocuments() {
             <div className="text-muted-foreground">
               {doc.fileName ? `${doc.fileName} · uploaded ${doc.uploadedAt}` : "No file uploaded"}
             </div>
+            {fileErrors[doc.id] ? <div className="mt-1 text-destructive">{fileErrors[doc.id]}</div> : null}
           </div>
           <div className="flex items-center gap-2">
             {doc.fileName ? <StatusChip tone="success">Uploaded</StatusChip> : <StatusChip tone="warning">Missing</StatusChip>}
@@ -620,6 +628,18 @@ function StepDocuments() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+                    setFileErrors((prev) => ({
+                      ...prev,
+                      [doc.id]: `File too large (${(file.size / (1024 * 1024)).toFixed(1)} MB) — the maximum size is 10 MB.`,
+                    }));
+                    e.target.value = "";
+                    return;
+                  }
+                  setFileErrors((prev) => {
+                    const { [doc.id]: _removed, ...rest } = prev;
+                    return rest;
+                  });
                   pendingFiles.set(doc.id, file);
                   saveApplication((d) => ({
                     ...d,
