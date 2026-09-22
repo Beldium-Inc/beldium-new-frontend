@@ -21,14 +21,6 @@ export interface RegisterResponse {
   user: User;
 }
 
-/**
- * Ties every account created or signed into from this app to the miner
- * portal — the API rejects a login whose declared portal doesn't match the
- * one the account registered with, so an account made here can't be used to
- * sign into the compliance app, and vice versa.
- */
-const PORTAL = "miner";
-
 export interface VerifyEmailResponse extends TokenPair {
   message: string;
 }
@@ -40,7 +32,7 @@ export interface VerifyEmailResponse extends TokenPair {
 export function register(input: RegisterInput): Promise<RegisterResponse> {
   return apiFetch<RegisterResponse>("/auth/register/", {
     method: "POST",
-    body: { ...input, portal: PORTAL },
+    body: input,
     auth: false,
   });
 }
@@ -78,7 +70,7 @@ export function resendVerification(email: string): Promise<{ message: string }> 
 export async function login(input: { email: string; password: string }): Promise<TokenPair> {
   const tokens = await apiFetch<TokenPair>("/auth/token/", {
     method: "POST",
-    body: { ...input, portal: PORTAL },
+    body: input,
     auth: false,
   });
   writeTokens(tokens);
