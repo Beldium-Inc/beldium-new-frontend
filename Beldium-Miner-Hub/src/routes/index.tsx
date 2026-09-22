@@ -52,8 +52,8 @@ function Landing() {
 
       <section className="relative overflow-hidden border-b border-border bg-sidebar">
         <div className="absolute inset-0" aria-hidden>
-          <img src={mineralRocks.url} alt="" className="h-full w-full object-cover" />
-        </div>
+            <img src="/leftside-animation.gif" alt="" className="h-full w-full object-cover" />
+          </div>
 
         <div className="absolute inset-0 bg-sidebar/85" aria-hidden />
         <div className="relative mx-auto grid w-full max-w-6xl gap-12 px-6 py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
