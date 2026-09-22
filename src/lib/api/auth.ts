@@ -16,6 +16,14 @@ export interface RegisterInput {
   onboarding_role?: string;
 }
 
+/**
+ * Ties every account created or signed into from this app to the compliance
+ * portal — the API rejects a login whose declared portal doesn't match the
+ * one the account registered with, so an account made here can't be used to
+ * sign into the Miner Hub, and vice versa.
+ */
+const PORTAL = "compliance";
+
 export interface RegisterResponse {
   message: string;
   user: User;
@@ -32,7 +40,7 @@ export interface VerifyEmailResponse extends TokenPair {
 export function register(input: RegisterInput): Promise<RegisterResponse> {
   return apiFetch<RegisterResponse>("/auth/register/", {
     method: "POST",
-    body: input,
+    body: { ...input, portal: PORTAL },
     auth: false,
   });
 }
@@ -70,7 +78,7 @@ export function resendVerification(email: string): Promise<{ message: string }> 
 export async function login(input: { email: string; password: string }): Promise<TokenPair> {
   const tokens = await apiFetch<TokenPair>("/auth/token/", {
     method: "POST",
-    body: input,
+    body: { ...input, portal: PORTAL },
     auth: false,
   });
   writeTokens(tokens);
