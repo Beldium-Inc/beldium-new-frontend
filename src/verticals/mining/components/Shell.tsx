@@ -263,6 +263,18 @@ export function Shell({ children }: { children: ReactNode }) {
           </Popover>
 
           <div className="flex items-center gap-3 border-l border-border pl-3">
+            {user.isStaff ? (
+              // Deliberately not a nav item: only genuine Beldium staff see this,
+              // and it points at a standalone page kept apart from this dashboard
+              // (see /staff/compliance-vetting) so vetting a compliance partner
+              // never sits one click away from the desk any partner account uses.
+              <Link
+                to="/staff/compliance-vetting"
+                className="hidden text-xs font-medium text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground sm:block"
+              >
+                Staff tools
+              </Link>
+            ) : null}
             <div className="hidden text-right sm:block">
               <p className="text-[13px] leading-tight font-semibold">{user.name}</p>
               <p className="text-[11px] leading-tight text-muted-foreground">{user.title}</p>
