@@ -103,7 +103,7 @@ function initialsOf(name: string): string {
 
 interface Ctx {
   role: Role | null;
-  user: { name: string; initials: string; title: string } | null;
+  user: { name: string; initials: string; title: string; isStaff: boolean } | null;
   actorName: string;
   hydrated: boolean;
   isLoading: boolean;
@@ -225,7 +225,7 @@ export function PrototypeStoreProvider({
     const account = currentUser.data;
     if (!account) return null;
     const name = [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
-    return { name, initials: initialsOf(name), title: ROLE_TITLE[effectiveRole] };
+    return { name, initials: initialsOf(name), title: ROLE_TITLE[effectiveRole], isStaff: Boolean(account.is_staff) };
   }, [currentUser.data, effectiveRole]);
 
   const sites = useMemo(

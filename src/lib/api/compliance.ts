@@ -53,6 +53,34 @@ export function updateComplianceApplication(
   });
 }
 
+/**
+ * Approve/reject a compliance-partner application — is_staff only on the
+ * backend (compliance/views.py ComplianceApplicationViewSet.decide). Deciding
+ * "verified" requires 100% progress and every document already verified
+ * (via reviewComplianceDocument below); the backend enforces both and
+ * answers with the same shape as ApplicationProgress on the reject path.
+ */
+export function decideComplianceApplication(
+  id: UUID,
+  input: { status: "verified" | "conditionally_approved" | "action_required" | "rejected"; notes?: string | undefined },
+): Promise<ComplianceApplication> {
+  return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/decide/`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function reviewComplianceDocument(
+  applicationId: UUID,
+  documentId: UUID,
+  input: { status: "verified" | "rejected"; notes?: string | undefined },
+): Promise<ComplianceDocument> {
+  return apiFetch<ComplianceDocument>(
+    `/compliance-applications/${applicationId}/documents/${documentId}/review/`,
+    { method: "POST", body: input },
+  );
+}
+
 // --- sections ---------------------------------------------------------------
 
 /** The seven section slugs, exactly as the backend routes them. */

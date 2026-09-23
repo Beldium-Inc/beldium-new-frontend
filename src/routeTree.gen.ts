@@ -46,6 +46,7 @@ import { Route as MiningInspectionsRouteImport } from './routes/mining.inspectio
 import { Route as MiningInventoryRouteImport } from './routes/mining.inventory'
 import { Route as MiningNonconformitiesRouteImport } from './routes/mining.nonconformities'
 import { Route as MiningOrganisationsRouteImport } from './routes/mining.organisations'
+import { Route as MiningPartnerApplicationsRouteImport } from './routes/mining.partner-applications'
 import { Route as MiningProductionRouteImport } from './routes/mining.production'
 import { Route as MiningReportsRouteImport } from './routes/mining.reports'
 import { Route as MiningReviewsRouteImport } from './routes/mining.reviews'
@@ -338,6 +339,12 @@ const MiningOrganisationsRoute = MiningOrganisationsRouteImport.update({
   path: '/organisations',
   getParentRoute: () => MiningRoute,
 } as any)
+const MiningPartnerApplicationsRoute =
+  MiningPartnerApplicationsRouteImport.update({
+    id: '/partner-applications',
+    path: '/partner-applications',
+    getParentRoute: () => MiningRoute,
+  } as any)
 const MiningProductionRoute = MiningProductionRouteImport.update({
   id: '/production',
   path: '/production',
@@ -941,6 +948,7 @@ export interface FileRoutesByFullPath {
   '/mining/inventory': typeof MiningInventoryRoute
   '/mining/nonconformities': typeof MiningNonconformitiesRoute
   '/mining/organisations': typeof MiningOrganisationsRoute
+  '/mining/partner-applications': typeof MiningPartnerApplicationsRoute
   '/mining/production': typeof MiningProductionRoute
   '/mining/reports': typeof MiningReportsRoute
   '/mining/reviews': typeof MiningReviewsRoute
@@ -1077,6 +1085,7 @@ export interface FileRoutesByTo {
   '/mining/inventory': typeof MiningInventoryRoute
   '/mining/nonconformities': typeof MiningNonconformitiesRoute
   '/mining/organisations': typeof MiningOrganisationsRoute
+  '/mining/partner-applications': typeof MiningPartnerApplicationsRoute
   '/mining/production': typeof MiningProductionRoute
   '/mining/reports': typeof MiningReportsRoute
   '/mining/reviews': typeof MiningReviewsRoute
@@ -1222,6 +1231,7 @@ export interface FileRoutesById {
   '/mining/inventory': typeof MiningInventoryRoute
   '/mining/nonconformities': typeof MiningNonconformitiesRoute
   '/mining/organisations': typeof MiningOrganisationsRoute
+  '/mining/partner-applications': typeof MiningPartnerApplicationsRoute
   '/mining/production': typeof MiningProductionRoute
   '/mining/reports': typeof MiningReportsRoute
   '/mining/reviews': typeof MiningReviewsRoute
@@ -1368,6 +1378,7 @@ export interface FileRouteTypes {
     | '/mining/inventory'
     | '/mining/nonconformities'
     | '/mining/organisations'
+    | '/mining/partner-applications'
     | '/mining/production'
     | '/mining/reports'
     | '/mining/reviews'
@@ -1504,6 +1515,7 @@ export interface FileRouteTypes {
     | '/mining/inventory'
     | '/mining/nonconformities'
     | '/mining/organisations'
+    | '/mining/partner-applications'
     | '/mining/production'
     | '/mining/reports'
     | '/mining/reviews'
@@ -1648,6 +1660,7 @@ export interface FileRouteTypes {
     | '/mining/inventory'
     | '/mining/nonconformities'
     | '/mining/organisations'
+    | '/mining/partner-applications'
     | '/mining/production'
     | '/mining/reports'
     | '/mining/reviews'
@@ -2031,6 +2044,13 @@ declare module '@tanstack/react-router' {
       path: '/organisations'
       fullPath: '/mining/organisations'
       preLoaderRoute: typeof MiningOrganisationsRouteImport
+      parentRoute: typeof MiningRoute
+    }
+    '/mining/partner-applications': {
+      id: '/mining/partner-applications'
+      path: '/partner-applications'
+      fullPath: '/mining/partner-applications'
+      preLoaderRoute: typeof MiningPartnerApplicationsRouteImport
       parentRoute: typeof MiningRoute
     }
     '/mining/production': {
@@ -2926,6 +2946,7 @@ interface MiningRouteChildren {
   MiningInventoryRoute: typeof MiningInventoryRoute
   MiningNonconformitiesRoute: typeof MiningNonconformitiesRoute
   MiningOrganisationsRoute: typeof MiningOrganisationsRoute
+  MiningPartnerApplicationsRoute: typeof MiningPartnerApplicationsRoute
   MiningProductionRoute: typeof MiningProductionRoute
   MiningReportsRoute: typeof MiningReportsRoute
   MiningReviewsRoute: typeof MiningReviewsRoute
@@ -2949,6 +2970,7 @@ const MiningRouteChildren: MiningRouteChildren = {
   MiningInventoryRoute: MiningInventoryRoute,
   MiningNonconformitiesRoute: MiningNonconformitiesRoute,
   MiningOrganisationsRoute: MiningOrganisationsRoute,
+  MiningPartnerApplicationsRoute: MiningPartnerApplicationsRoute,
   MiningProductionRoute: MiningProductionRoute,
   MiningReportsRoute: MiningReportsRoute,
   MiningReviewsRoute: MiningReviewsRoute,

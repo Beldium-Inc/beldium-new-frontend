@@ -5,11 +5,22 @@ export interface NavItem {
   to: string;
   icon: string;
   group: string;
+  /** Genuine Beldium staff only — not shown to a verified compliance-partner
+   * org, since deciding another applicant's compliance-partner status is a
+   * platform-operator action, not something one partner does to another. */
+  staffOnly?: boolean;
 }
 
 export const partnerNav: NavItem[] = [
   { label: "Dashboard", to: "/mining/dashboard", icon: "gauge", group: "Overview" },
   { label: "Applications", to: "/mining/applications", icon: "inbox", group: "Intake" },
+  {
+    label: "Partner Applications",
+    to: "/mining/partner-applications",
+    icon: "building",
+    group: "Intake",
+    staffOnly: true,
+  },
   { label: "Mining Organisations", to: "/mining/organisations", icon: "building", group: "Register" },
   { label: "Mining Sites", to: "/mining/sites", icon: "mountain", group: "Register" },
   { label: "Pending Reviews", to: "/mining/reviews", icon: "clipboard", group: "Review" },
