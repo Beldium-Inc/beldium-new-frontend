@@ -46,7 +46,6 @@ import { Route as MiningInspectionsRouteImport } from './routes/mining.inspectio
 import { Route as MiningInventoryRouteImport } from './routes/mining.inventory'
 import { Route as MiningNonconformitiesRouteImport } from './routes/mining.nonconformities'
 import { Route as MiningOrganisationsRouteImport } from './routes/mining.organisations'
-import { Route as MiningPartnerApplicationsRouteImport } from './routes/mining.partner-applications'
 import { Route as MiningProductionRouteImport } from './routes/mining.production'
 import { Route as MiningReportsRouteImport } from './routes/mining.reports'
 import { Route as MiningReviewsRouteImport } from './routes/mining.reviews'
@@ -83,6 +82,7 @@ import { Route as QualityIndexRouteImport } from './routes/quality.index'
 import { Route as QualityAuditRouteImport } from './routes/quality.audit'
 import { Route as QualityDashboardRouteImport } from './routes/quality.dashboard'
 import { Route as QualityNonconformitiesRouteImport } from './routes/quality.nonconformities'
+import { Route as StaffComplianceVettingRouteImport } from './routes/staff.compliance-vetting'
 import { Route as WarehousingIndexRouteImport } from './routes/warehousing.index'
 import { Route as ExportExportersIndexRouteImport } from './routes/export.exporters.index'
 import { Route as ExportExportersIdRouteImport } from './routes/export.exporters.$id'
@@ -339,12 +339,6 @@ const MiningOrganisationsRoute = MiningOrganisationsRouteImport.update({
   path: '/organisations',
   getParentRoute: () => MiningRoute,
 } as any)
-const MiningPartnerApplicationsRoute =
-  MiningPartnerApplicationsRouteImport.update({
-    id: '/partner-applications',
-    path: '/partner-applications',
-    getParentRoute: () => MiningRoute,
-  } as any)
 const MiningProductionRoute = MiningProductionRouteImport.update({
   id: '/production',
   path: '/production',
@@ -525,6 +519,11 @@ const QualityNonconformitiesRoute = QualityNonconformitiesRouteImport.update({
   id: '/nonconformities',
   path: '/nonconformities',
   getParentRoute: () => QualityRoute,
+} as any)
+const StaffComplianceVettingRoute = StaffComplianceVettingRouteImport.update({
+  id: '/staff/compliance-vetting',
+  path: '/staff/compliance-vetting',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const WarehousingIndexRoute = WarehousingIndexRouteImport.update({
   id: '/',
@@ -948,7 +947,6 @@ export interface FileRoutesByFullPath {
   '/mining/inventory': typeof MiningInventoryRoute
   '/mining/nonconformities': typeof MiningNonconformitiesRoute
   '/mining/organisations': typeof MiningOrganisationsRoute
-  '/mining/partner-applications': typeof MiningPartnerApplicationsRoute
   '/mining/production': typeof MiningProductionRoute
   '/mining/reports': typeof MiningReportsRoute
   '/mining/reviews': typeof MiningReviewsRoute
@@ -982,6 +980,7 @@ export interface FileRoutesByFullPath {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
@@ -1085,7 +1084,6 @@ export interface FileRoutesByTo {
   '/mining/inventory': typeof MiningInventoryRoute
   '/mining/nonconformities': typeof MiningNonconformitiesRoute
   '/mining/organisations': typeof MiningOrganisationsRoute
-  '/mining/partner-applications': typeof MiningPartnerApplicationsRoute
   '/mining/production': typeof MiningProductionRoute
   '/mining/reports': typeof MiningReportsRoute
   '/mining/reviews': typeof MiningReviewsRoute
@@ -1119,6 +1117,7 @@ export interface FileRoutesByTo {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/export': typeof ExportIndexRoute
   '/logistics': typeof LogisticsIndexRoute
   '/marketplace': typeof MarketplaceIndexRoute
@@ -1231,7 +1230,6 @@ export interface FileRoutesById {
   '/mining/inventory': typeof MiningInventoryRoute
   '/mining/nonconformities': typeof MiningNonconformitiesRoute
   '/mining/organisations': typeof MiningOrganisationsRoute
-  '/mining/partner-applications': typeof MiningPartnerApplicationsRoute
   '/mining/production': typeof MiningProductionRoute
   '/mining/reports': typeof MiningReportsRoute
   '/mining/reviews': typeof MiningReviewsRoute
@@ -1265,6 +1263,7 @@ export interface FileRoutesById {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
@@ -1378,7 +1377,6 @@ export interface FileRouteTypes {
     | '/mining/inventory'
     | '/mining/nonconformities'
     | '/mining/organisations'
-    | '/mining/partner-applications'
     | '/mining/production'
     | '/mining/reports'
     | '/mining/reviews'
@@ -1412,6 +1410,7 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/staff/compliance-vetting'
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
@@ -1515,7 +1514,6 @@ export interface FileRouteTypes {
     | '/mining/inventory'
     | '/mining/nonconformities'
     | '/mining/organisations'
-    | '/mining/partner-applications'
     | '/mining/production'
     | '/mining/reports'
     | '/mining/reviews'
@@ -1549,6 +1547,7 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/staff/compliance-vetting'
     | '/export'
     | '/logistics'
     | '/marketplace'
@@ -1660,7 +1659,6 @@ export interface FileRouteTypes {
     | '/mining/inventory'
     | '/mining/nonconformities'
     | '/mining/organisations'
-    | '/mining/partner-applications'
     | '/mining/production'
     | '/mining/reports'
     | '/mining/reviews'
@@ -1694,6 +1692,7 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/staff/compliance-vetting'
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
@@ -1783,6 +1782,7 @@ export interface RootRouteChildren {
   QualityRoute: typeof QualityRouteWithChildren
   SigninRoute: typeof SigninRoute
   WarehousingRoute: typeof WarehousingRouteWithChildren
+  StaffComplianceVettingRoute: typeof StaffComplianceVettingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2046,13 +2046,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MiningOrganisationsRouteImport
       parentRoute: typeof MiningRoute
     }
-    '/mining/partner-applications': {
-      id: '/mining/partner-applications'
-      path: '/partner-applications'
-      fullPath: '/mining/partner-applications'
-      preLoaderRoute: typeof MiningPartnerApplicationsRouteImport
-      parentRoute: typeof MiningRoute
-    }
     '/mining/production': {
       id: '/mining/production'
       path: '/production'
@@ -2304,6 +2297,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/quality/nonconformities'
       preLoaderRoute: typeof QualityNonconformitiesRouteImport
       parentRoute: typeof QualityRoute
+    }
+    '/staff/compliance-vetting': {
+      id: '/staff/compliance-vetting'
+      path: '/staff/compliance-vetting'
+      fullPath: '/staff/compliance-vetting'
+      preLoaderRoute: typeof StaffComplianceVettingRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/warehousing/': {
       id: '/warehousing/'
@@ -2946,7 +2946,6 @@ interface MiningRouteChildren {
   MiningInventoryRoute: typeof MiningInventoryRoute
   MiningNonconformitiesRoute: typeof MiningNonconformitiesRoute
   MiningOrganisationsRoute: typeof MiningOrganisationsRoute
-  MiningPartnerApplicationsRoute: typeof MiningPartnerApplicationsRoute
   MiningProductionRoute: typeof MiningProductionRoute
   MiningReportsRoute: typeof MiningReportsRoute
   MiningReviewsRoute: typeof MiningReviewsRoute
@@ -2970,7 +2969,6 @@ const MiningRouteChildren: MiningRouteChildren = {
   MiningInventoryRoute: MiningInventoryRoute,
   MiningNonconformitiesRoute: MiningNonconformitiesRoute,
   MiningOrganisationsRoute: MiningOrganisationsRoute,
-  MiningPartnerApplicationsRoute: MiningPartnerApplicationsRoute,
   MiningProductionRoute: MiningProductionRoute,
   MiningReportsRoute: MiningReportsRoute,
   MiningReviewsRoute: MiningReviewsRoute,
@@ -3182,6 +3180,7 @@ const rootRouteChildren: RootRouteChildren = {
   QualityRoute: QualityRouteWithChildren,
   SigninRoute: SigninRoute,
   WarehousingRoute: WarehousingRouteWithChildren,
+  StaffComplianceVettingRoute: StaffComplianceVettingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
