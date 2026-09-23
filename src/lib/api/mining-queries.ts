@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 
 import {
   addScoreFactor,
+  claimApplication,
   closeMiningNonConformity,
   createMiningApplication,
   createEnvironmentalRecord,
@@ -36,6 +37,7 @@ import {
   listMiningSamples,
   listSiteActivity,
   recomputeSiteScore,
+  releaseApplication,
   respondToInfoRequest,
   reviewMiningDocument,
   reviewSiteSection,
@@ -250,6 +252,14 @@ export function useMiningEquipment(query: MiningListQuery = FULL_PAGE) {
   });
 }
 
+// Miners submit these from a separate app (the Miner Hub), so nothing in
+// this app's own action stream would otherwise tell a reviewer a new one
+// just arrived — unlike most lists here, this one polls so newly submitted
+// applications and claims made by other reviewers show up without a manual
+// refresh. 15s keeps a multi-reviewer desk from stepping on a claim that
+// just landed.
+const APPLICATIONS_POLL_INTERVAL = 15_000;
+
 export function useMiningApplications(query: MiningListQuery = FULL_PAGE) {
   const hasTokens = useHasTokens();
   return useQuery({
@@ -257,6 +267,23 @@ export function useMiningApplications(query: MiningListQuery = FULL_PAGE) {
     queryFn: () => listMiningApplications(query),
     enabled: hasTokens,
     staleTime: LIST_STALE_TIME,
+    refetchInterval: hasTokens ? APPLICATIONS_POLL_INTERVAL : false,
+  });
+}
+
+export function useClaimApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => claimApplication(id),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useReleaseApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => releaseApplication(id),
+    onSuccess: () => invalidateMining(queryClient),
   });
 }
 
