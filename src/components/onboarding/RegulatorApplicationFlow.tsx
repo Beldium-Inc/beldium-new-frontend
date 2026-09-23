@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Check, Trash2 } from "lucide-react";
 import { AuthShell, InfoRow, ProgressHeader, StepBar } from "@/components/onboarding/ui";
-import { AreaField, ChipToggleGroup, SectionCard, SelectField, TextField, YesNoField } from "@/components/onboarding/fields";
+import { AreaField, ChipToggleGroup, PhoneField, SectionCard, SelectField, TextField, YesNoField } from "@/components/onboarding/fields";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -92,7 +92,7 @@ export function RegulatorApplicationFlow() {
             <TextField label="Country" value={regulator.country} onChange={(v) => updateRegulator({ country: v })} />
             <SelectField label="State" value={regulator.state} onChange={(v) => updateRegulator({ state: v })} options={nigerianStates} />
             <TextField label="Official Email" type="email" value={regulator.officialEmail} onChange={(v) => updateRegulator({ officialEmail: v })} />
-            <TextField label="Official Phone" value={regulator.officialPhone} onChange={(v) => updateRegulator({ officialPhone: v })} />
+            <PhoneField label="Official Phone" value={regulator.officialPhone} onChange={(v) => updateRegulator({ officialPhone: v })} />
             <TextField label="Website" value={regulator.website} onChange={(v) => updateRegulator({ website: v })} />
             <TextField label="Primary Authorised Representative" value={regulator.primaryRepresentative} onChange={(v) => updateRegulator({ primaryRepresentative: v })} />
           </div>
@@ -181,7 +181,7 @@ export function RegulatorApplicationFlow() {
                 <TextField label="Job Title" value={officer.jobTitle} onChange={(v) => setOfficer({ ...officer, jobTitle: v })} />
                 <TextField label="Department" value={officer.department} onChange={(v) => setOfficer({ ...officer, department: v })} />
                 <TextField label="Official Email" type="email" value={officer.email} onChange={(v) => setOfficer({ ...officer, email: v })} />
-                <TextField label="Phone" value={officer.phone} onChange={(v) => setOfficer({ ...officer, phone: v })} />
+                <PhoneField label="Phone" value={officer.phone} onChange={(v) => setOfficer({ ...officer, phone: v })} />
                 <SelectField label="Role" value={officer.position} onChange={(v) => setOfficer({ ...officer, position: v })} options={regulatoryRoleOptions} />
                 <TextField label="Employee / Staff ID" value={officer.staffId} onChange={(v) => setOfficer({ ...officer, staffId: v })} />
                 <SelectField label="Authorisation Level" value={officer.authorisationLevel} onChange={(v) => setOfficer({ ...officer, authorisationLevel: v })} options={authorisationLevels} />
