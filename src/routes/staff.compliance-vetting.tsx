@@ -32,7 +32,11 @@ import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } fro
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/staff/compliance-vetting")({ component: Page });
+// Client-only, like the /mining layout: the JWT pair lives in localStorage, so
+// a server-rendered pass hydrates with useHasTokens() === false, the auth guard
+// below sees "unauthenticated" and bounces to /signin — which then forwards the
+// (perfectly valid) session on to its dashboard instead of this page.
+export const Route = createFileRoute("/staff/compliance-vetting")({ ssr: false, component: Page });
 
 // Organisation types that gate into the shared compliance-partner audience
 // bucket (see organisations/access.py audience()) once verified — the ones
