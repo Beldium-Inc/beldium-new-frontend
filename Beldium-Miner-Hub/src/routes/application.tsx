@@ -186,6 +186,30 @@ function ApplicationPage() {
         await updateSiteSection(siteId, "equipment", { fields });
       }
 
+      // Ownership/safety data the form already collects (step 2 and step 6)
+      // but never sent anywhere — these two sections had no document to
+      // file evidence under, so without this they'd stay empty even though
+      // the miner did answer these questions. Org-level, so applied to
+      // every site the same way.
+      const ownershipFields: ReviewSectionField[] = [
+        { label: "Beneficial owners", value: app.contacts.beneficialOwners || "Not provided", flag: null, note: "" },
+        { label: "Ownership / control structure", value: app.contacts.ownershipStructure || "Not provided", flag: null, note: "" },
+      ];
+      const safetyFields: ReviewSectionField[] = [
+        { label: "Water use permit number", value: app.environment.waterUsePermit || "Not provided", flag: null, note: "" },
+        { label: "Reportable incidents (last 12 months)", value: app.environment.incidentsLast12m || "0", flag: null, note: "" },
+        { label: "Appointed safety officer", value: app.environment.safetyOfficer || "Not provided", flag: null, note: "" },
+      ];
+      const environmentalFields: ReviewSectionField[] = [
+        { label: "Environmental management plan reference", value: app.environment.empNumber || "Not provided", flag: null, note: "" },
+        { label: "Rehabilitation bond value", value: app.environment.rehabBond || "Not provided", flag: null, note: "" },
+      ];
+      for (const backendSiteId of siteIdMap.values()) {
+        await updateSiteSection(backendSiteId, "ownership", { fields: ownershipFields });
+        await updateSiteSection(backendSiteId, "safety", { fields: safetyFields, summary: app.environment.notes });
+        await updateSiteSection(backendSiteId, "environmental", { fields: environmentalFields });
+      }
+
       const documentSite = siteIdMap.values().next().value;
       if (documentSite) {
         for (const doc of app.documents) {
