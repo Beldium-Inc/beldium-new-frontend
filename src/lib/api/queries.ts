@@ -21,6 +21,7 @@ import {
 import {
   createComplianceApplication,
   createPersonnel,
+  decideComplianceApplication,
   deletePersonnel,
   fetchDashboard,
   getComplianceApplication,
@@ -32,6 +33,7 @@ import {
   listPersonnel,
   markMessagesRead,
   postMessage,
+  reviewComplianceDocument,
   saveSection,
   submitApplication,
   updatePersonnel,
@@ -355,6 +357,36 @@ export function useSubmitApplication(id: UUID | null) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
       void queryClient.invalidateQueries({ queryKey: ["organisations"] });
     },
+  });
+}
+
+/** is_staff only on the backend — see compliance/views.py ComplianceApplicationViewSet.decide. */
+export function useDecideComplianceApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: UUID;
+      status: "verified" | "conditionally_approved" | "action_required" | "rejected";
+      notes?: string | undefined;
+    }) => decideComplianceApplication(input.id, { status: input.status, notes: input.notes }),
+    onSuccess: (application) => {
+      queryClient.setQueryData(queryKeys.application(application.id), application);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.applications });
+      void queryClient.invalidateQueries({ queryKey: ["organisations"] });
+    },
+  });
+}
+
+/** is_staff only on the backend, and only a submitted (not yet reviewed) document can be reviewed. */
+export function useReviewComplianceDocument(applicationId: UUID | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { documentId: UUID; status: "verified" | "rejected"; notes?: string | undefined }) =>
+      reviewComplianceDocument(applicationId as UUID, input.documentId, {
+        status: input.status,
+        notes: input.notes,
+      }),
+    onSuccess: () => invalidateApplication(queryClient, applicationId),
   });
 }
 

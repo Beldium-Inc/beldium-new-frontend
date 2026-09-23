@@ -6,6 +6,7 @@ import { AuthShell, InfoRow, ProgressHeader, StepBar } from "@/components/onboar
 import {
   ChipToggleGroup,
   FieldErrorProvider,
+  PhoneField,
   SectionCard,
   SelectField,
   TextField,
@@ -682,7 +683,7 @@ export function OrgApplicationFlow() {
                 value={rep.official_email}
                 onChange={(v) => setRep({ ...rep, official_email: v })}
               />
-              <TextField
+              <PhoneField
                 name="official_phone"
                 label="Official Phone"
                 placeholder="+2348030000000"

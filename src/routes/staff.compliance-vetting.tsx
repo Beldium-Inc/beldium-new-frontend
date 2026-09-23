@@ -1,0 +1,371 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { LogOut } from "lucide-react";
+import { toast } from "sonner";
+import { BeldiumLogo } from "@/components/beldium-logo";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useAuth } from "@/lib/auth";
+import {
+  useComplianceApplications,
+  useDecideComplianceApplication,
+  useReviewComplianceDocument,
+} from "@/lib/api/queries";
+import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/errors";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/staff/compliance-vetting")({ component: Page });
+
+// Organisation types that gate into the shared compliance-partner audience
+// bucket (see organisations/access.py audience()) once verified — the ones
+// this desk exists to vet, as opposed to the miners themselves, who are
+// verified separately on the Mining Organisations register.
+const PARTNER_TYPES = new Set(["compliance_partner", "inspection_body"]);
+
+const statusLabel: Record<ApplicationStatus, string> = {
+  draft: "Draft",
+  under_review: "Under Review",
+  action_required: "Info Requested",
+  conditionally_approved: "Conditionally Approved",
+  verified: "Verified",
+  rejected: "Rejected",
+};
+
+const statusTone: Record<ApplicationStatus, string> = {
+  draft: "bg-muted text-muted-foreground",
+  under_review: "bg-amber-100 text-amber-800",
+  action_required: "bg-orange-100 text-orange-800",
+  conditionally_approved: "bg-blue-100 text-blue-800",
+  verified: "bg-emerald-100 text-emerald-800",
+  rejected: "bg-red-100 text-red-800",
+};
+
+const REVIEWABLE_STATUSES: ApplicationStatus[] = ["under_review", "action_required", "conditionally_approved"];
+
+function Badge({ label, tone }: { label: string; tone: string }) {
+  return (
+    <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", tone)}>
+      {label}
+    </span>
+  );
+}
+
+function DocumentRow({ application, document }: { application: ComplianceApplication; document: ComplianceDocument }) {
+  const review = useReviewComplianceDocument(application.id);
+
+  const act = async (status: "verified" | "rejected") => {
+    try {
+      await review.mutateAsync({ documentId: document.id, status });
+      toast.success(`${document.title} marked ${status}`);
+    } catch (err) {
+      toast.error("Could not review this document", {
+        description: err instanceof ApiError ? err.message : "Please try again.",
+      });
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+      <div className="text-sm">
+        <span className="font-medium">{document.title}</span>{" "}
+        <span className="text-xs text-muted-foreground">({document.document_type})</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge
+          label={document.status === "submitted" ? "Under Review" : (statusLabel[document.status as ApplicationStatus] ?? document.status)}
+          tone={document.status === "verified" ? statusTone.verified : document.status === "rejected" ? statusTone.rejected : statusTone.under_review}
+        />
+        {document.status === "submitted" ? (
+          <>
+            <Button size="sm" variant="outline" disabled={review.isPending} onClick={() => void act("verified")}>
+              Verify
+            </Button>
+            <Button size="sm" variant="outline" disabled={review.isPending} onClick={() => void act("rejected")}>
+              Reject
+            </Button>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ApplicationRow({ application }: { application: ComplianceApplication }) {
+  const [expanded, setExpanded] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+  const decide = useDecideComplianceApplication();
+
+  const canReview = REVIEWABLE_STATUSES.includes(application.status);
+  const documentsPending = application.documents.filter((d) => d.status !== "verified").length;
+  const readyToVerify = application.progress.percent === 100 && documentsPending === 0;
+  const orgType = application.organisation_profile.organisation_type;
+
+  const run = async (status: "verified" | "rejected", notes?: string) => {
+    try {
+      await decide.mutateAsync({ id: application.id, status, notes });
+      toast.success(
+        status === "verified" ? "Compliance partner verified" : "Application rejected",
+        {
+          description:
+            status === "verified"
+              ? "This organisation can now see and claim mining applications."
+              : "The applicant can see the reason and resubmit.",
+        },
+      );
+      setRejecting(false);
+      setReason("");
+    } catch (err) {
+      toast.error("Could not record the decision", {
+        description: err instanceof ApiError ? err.message : "Please try again.",
+      });
+    }
+  };
+
+  return (
+    <>
+      <TableRow>
+        <TableCell className="font-mono text-xs font-medium">{application.reference ?? "—"}</TableCell>
+        <TableCell className="text-sm font-medium">{application.organisation_profile.name ?? "—"}</TableCell>
+        <TableCell className="text-sm text-muted-foreground capitalize">
+          {orgType?.replace("_", " ") ?? "—"}
+        </TableCell>
+        <TableCell>
+          <Badge label={statusLabel[application.status]} tone={statusTone[application.status]} />
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground">{application.progress.percent}%</TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          {application.submitted_at ? new Date(application.submitted_at).toLocaleDateString() : "Not submitted"}
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={() => setExpanded((v) => !v)}>
+              {expanded ? "Hide details" : "Review details"}
+            </Button>
+            {canReview ? (
+              <>
+                <Button
+                  size="sm"
+                  disabled={!readyToVerify || decide.isPending}
+                  title={!readyToVerify ? "Complete every section and verify every document first" : undefined}
+                  onClick={() => void run("verified")}
+                >
+                  Verify
+                </Button>
+                <Button size="sm" variant="outline" disabled={decide.isPending} onClick={() => setRejecting(true)}>
+                  Reject
+                </Button>
+              </>
+            ) : null}
+          </div>
+        </TableCell>
+      </TableRow>
+      {expanded ? (
+        <TableRow>
+          <TableCell colSpan={7} className="bg-muted/30">
+            <div className="space-y-3 py-3 text-sm">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Registration number</p>
+                  <p>{application.organisation_profile.registration_number || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Tax identifier</p>
+                  <p>{application.organisation_profile.tax_identifier || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Website</p>
+                  <p>{application.organisation_profile.website || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Registered address</p>
+                  <p>{application.organisation_profile.registered_address || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Operating address</p>
+                  <p>{application.organisation_profile.operating_address || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">State / LGA</p>
+                  <p>
+                    {application.organisation_profile.state || "—"} / {application.organisation_profile.lga || "—"}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Documents
+                </p>
+                {application.documents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No documents submitted yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {application.documents.map((doc) => (
+                      <DocumentRow key={doc.id} application={application} document={doc} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {application.progress.outstanding_sections.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Outstanding sections: {application.progress.outstanding_sections.join(", ")}
+                </p>
+              ) : null}
+            </div>
+          </TableCell>
+        </TableRow>
+      ) : null}
+
+      <Dialog open={rejecting} onOpenChange={setRejecting}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject this application?</DialogTitle>
+            <DialogDescription>
+              The applicant will see this reason and can revise and resubmit.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Why is this being rejected?"
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejecting(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!reason.trim() || decide.isPending}
+              onClick={() => void run("rejected", reason)}
+            >
+              Reject application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function Page() {
+  const { user, status, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { data, isPending, error } = useComplianceApplications();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      navigate({ to: "/signin" });
+    }
+  }, [status, navigate]);
+
+  if (status === "loading") {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+  }
+
+  if (status === "unauthenticated") {
+    return null;
+  }
+
+  if (!user?.is_staff) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
+        <div className="max-w-sm rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <h1 className="font-display text-lg font-semibold">Staff access only</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This page is for Beldium's own compliance desk. Your account doesn't have staff access.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const applications = (data?.results ?? []).filter((app) =>
+    PARTNER_TYPES.has(app.organisation_profile.organisation_type ?? ""),
+  );
+
+  return (
+    <div className="min-h-screen bg-muted/40">
+      <header className="flex items-center justify-between border-b border-border bg-surface px-6 py-4">
+        <div className="flex items-center gap-3">
+          <BeldiumLogo className="size-9 rounded-2xl" />
+          <div>
+            <p className="font-display text-sm font-semibold">Beldium Staff</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Compliance Partner Vetting</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="hidden text-sm text-muted-foreground sm:block">{user.email}</p>
+          <Button variant="outline" size="sm" onClick={() => void signOut().then(() => navigate({ to: "/signin" }))}>
+            <LogOut className="size-4" /> Log out
+          </Button>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-6">
+          <h1 className="font-display text-2xl font-semibold">Compliance partner applications</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Vet organisations applying to become a compliance partner or inspection body before they join the
+            partner pool and gain visibility into mining applications. This is separate from the compliance
+            dashboard so only Beldium's own desk can act here — keep access limited to one or two staff accounts.
+          </p>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          {isPending ? (
+            <div className="p-6 text-sm text-muted-foreground">Loading applications…</div>
+          ) : error ? (
+            <div className="p-6 text-sm text-destructive">
+              {error instanceof ApiError ? error.message : "Could not load applications."}
+            </div>
+          ) : applications.length === 0 ? (
+            <div className="p-10 text-center text-sm text-muted-foreground">
+              No compliance-partner applications waiting on review.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Reference</TableHead>
+                    <TableHead>Organisation</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Progress</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {applications.map((app) => (
+                    <ApplicationRow key={app.id} application={app} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}

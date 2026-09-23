@@ -306,6 +306,7 @@ export interface Application {
   stage: MiningApplicationStage;
   status: MiningApplicationStatus;
   assigned_to: UUID | null;
+  assigned_to_name: string | null;
   sla_days: number | null;
   created_at: string;
   updated_at: string;
@@ -762,6 +763,20 @@ export function createMiningApplication(
 
 export function updateApplication(id: UUID, patch: Partial<Application>): Promise<Application> {
   return apiFetch<Application>(`${BASE}/applications/${id}/`, { method: "PATCH", body: patch });
+}
+
+/**
+ * First caller to claim an application gets it; the backend rejects anyone
+ * after with a 409 "already_claimed" — assigned_to is read-only on the plain
+ * PATCH above specifically so this is the only way to change it.
+ */
+export function claimApplication(id: UUID): Promise<Application> {
+  return apiFetch<Application>(`${BASE}/applications/${id}/claim/`, { method: "POST" });
+}
+
+/** Only the current claimant or Beldium staff may call this — see the backend action. */
+export function releaseApplication(id: UUID): Promise<Application> {
+  return apiFetch<Application>(`${BASE}/applications/${id}/release/`, { method: "POST" });
 }
 
 export function listPendingReviews(query: MiningListQuery = {}): Promise<Paginated<PendingReview>> {

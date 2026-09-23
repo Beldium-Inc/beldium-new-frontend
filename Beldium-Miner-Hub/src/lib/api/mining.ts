@@ -94,6 +94,45 @@ export function getMineSite(id: UUID): Promise<MineSiteDetail> {
   return apiFetch<MineSiteDetail>(`/mining/sites/${id}/`);
 }
 
+/**
+ * Saves the miner's own answers for one of the ten fixed review sections
+ * (Corporate & Legal Identity, Equipment & Plant, etc.) — this is what the
+ * compliance reviewer's "mine review" page actually reads. Submitting
+ * equipment/documents via their own flat endpoints does NOT populate this;
+ * a section only shows the miner's data if this (or the evidence upload
+ * below) is called for it directly.
+ */
+export function updateSiteSection(
+  siteId: UUID,
+  sectionKey: string,
+  input: { summary?: string; fields?: ReviewSectionField[] },
+): Promise<ReviewSection> {
+  return apiFetch<ReviewSection>(`/mining/sites/${siteId}/sections/${sectionKey}/`, {
+    method: "PATCH",
+    body: input,
+  });
+}
+
+/**
+ * Uploads one file as evidence against a specific review section — the
+ * section-scoped counterpart to `uploadDocument`, and what the "mine
+ * review" page's evidence table actually reads.
+ */
+export function uploadSectionEvidence(
+  siteId: UUID,
+  sectionKey: string,
+  input: { name: string; file: File; kind?: "pdf" | "image" | "certificate" | "spreadsheet" | "report" },
+): Promise<unknown> {
+  const form = new FormData();
+  form.append("name", input.name);
+  form.append("file", input.file);
+  if (input.kind) form.append("kind", input.kind);
+  return apiFetch(`/mining/sites/${siteId}/sections/${sectionKey}/evidence/`, {
+    method: "POST",
+    body: form,
+  });
+}
+
 export type EquipmentStatus = "certified" | "due_inspection" | "out_of_service";
 
 export interface EquipmentInput {

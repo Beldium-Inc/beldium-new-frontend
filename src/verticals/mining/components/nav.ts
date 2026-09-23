@@ -5,6 +5,10 @@ export interface NavItem {
   to: string;
   icon: string;
   group: string;
+  /** Genuine Beldium staff only — not shown to a verified compliance-partner
+   * org, since deciding another applicant's compliance-partner status is a
+   * platform-operator action, not something one partner does to another. */
+  staffOnly?: boolean;
 }
 
 export const partnerNav: NavItem[] = [

@@ -22,12 +22,34 @@ import { APPLICATION_STEPS, type ApplicationEquipment, type ApplicationSite } fr
 import { useMiner } from "@/lib/miner-store";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/errors";
-import { createMineSite, createEquipment, createApplication, uploadDocument } from "@/lib/api/mining";
+import {
+  createMineSite,
+  createEquipment,
+  createApplication,
+  uploadDocument,
+  uploadSectionEvidence,
+  updateSiteSection,
+  type ReviewSectionField,
+} from "@/lib/api/mining";
 import { useCreateOrganisation } from "@/lib/api/queries";
 
 const title = "Mining organisation application - Beldium Miner Hub";
 const description =
   "Eight-step mining organisation verification application: details, ownership, licences, sites, equipment, environment, documents and declaration.";
+
+// Which of the ten fixed review sections (mining/models.py SectionKey) each
+// supporting document belongs to. The compliance reviewer's "mine review"
+// page reads section-scoped evidence, not the flat /mining/documents/ list
+// this form also submits to — without this mapping a submitted document
+// never shows up there at all.
+const DOCUMENT_SECTION_MAP: Record<string, string> = {
+  d1: "corporate", // Certificate of incorporation
+  d2: "licence", // Mining licence / right
+  d3: "corporate", // Tax clearance certificate
+  d4: "environmental", // Environmental management plan
+  d5: "environmental", // Proof of rehabilitation bond
+  d6: "site", // Site survey plan
+};
 
 const searchSchema = z.object({
   organisationName: z.string().optional(),
@@ -142,10 +164,50 @@ function ApplicationPage() {
         siteIdMap.set(site.id, created.id);
       }
 
+      // Equipment created via /mining/equipment/ (the operational record) is
+      // separate from the "Equipment & Plant" review section the compliance
+      // reviewer's mine-review page reads — populate both, keyed by site,
+      // since a site's equipment section should list only its own items.
+      const equipmentFieldsBySite = new Map<string, ReviewSectionField[]>();
       for (const item of app.equipment) {
         const backendSiteId = siteIdMap.get(item.siteId);
         if (!backendSiteId) continue;
         await createEquipment({ site: backendSiteId, name: item.name, serial: item.serial });
+        const fields = equipmentFieldsBySite.get(backendSiteId) ?? [];
+        fields.push({
+          label: item.name,
+          value: item.serial ? `Serial ${item.serial}` : "No serial number recorded",
+          flag: null,
+          note: "",
+        });
+        equipmentFieldsBySite.set(backendSiteId, fields);
+      }
+      for (const [siteId, fields] of equipmentFieldsBySite) {
+        await updateSiteSection(siteId, "equipment", { fields });
+      }
+
+      // Ownership/safety data the form already collects (step 2 and step 6)
+      // but never sent anywhere — these two sections had no document to
+      // file evidence under, so without this they'd stay empty even though
+      // the miner did answer these questions. Org-level, so applied to
+      // every site the same way.
+      const ownershipFields: ReviewSectionField[] = [
+        { label: "Beneficial owners", value: app.contacts.beneficialOwners || "Not provided", flag: null, note: "" },
+        { label: "Ownership / control structure", value: app.contacts.ownershipStructure || "Not provided", flag: null, note: "" },
+      ];
+      const safetyFields: ReviewSectionField[] = [
+        { label: "Water use permit number", value: app.environment.waterUsePermit || "Not provided", flag: null, note: "" },
+        { label: "Reportable incidents (last 12 months)", value: app.environment.incidentsLast12m || "0", flag: null, note: "" },
+        { label: "Appointed safety officer", value: app.environment.safetyOfficer || "Not provided", flag: null, note: "" },
+      ];
+      const environmentalFields: ReviewSectionField[] = [
+        { label: "Environmental management plan reference", value: app.environment.empNumber || "Not provided", flag: null, note: "" },
+        { label: "Rehabilitation bond value", value: app.environment.rehabBond || "Not provided", flag: null, note: "" },
+      ];
+      for (const backendSiteId of siteIdMap.values()) {
+        await updateSiteSection(backendSiteId, "ownership", { fields: ownershipFields });
+        await updateSiteSection(backendSiteId, "safety", { fields: safetyFields, summary: app.environment.notes });
+        await updateSiteSection(backendSiteId, "environmental", { fields: environmentalFields });
       }
 
       const documentSite = siteIdMap.values().next().value;
@@ -153,7 +215,15 @@ function ApplicationPage() {
         for (const doc of app.documents) {
           const file = pendingFiles.get(doc.id);
           if (!file) continue;
+          // Kept for the flat "Documents & Licences" list the compliance
+          // app also shows.
           await uploadDocument({ site: documentSite, name: doc.label, category: "Application document", file });
+          // Also filed against its review section, since that's what the
+          // "mine review" page's evidence table actually reads.
+          const sectionKey = DOCUMENT_SECTION_MAP[doc.id];
+          if (sectionKey) {
+            await uploadSectionEvidence(documentSite, sectionKey, { name: doc.label, file });
+          }
         }
       }
 

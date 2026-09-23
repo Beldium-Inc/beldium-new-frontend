@@ -79,8 +79,8 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [collapsed]);
 
   if (!role) return null;
-  const user = account ?? { name: "", initials: "??", title: "" };
-  const items = navForRole(role);
+  const user = account ?? { name: "", initials: "??", title: "", isStaff: false };
+  const items = navForRole(role).filter((item) => !item.staffOnly || user.isStaff);
   const groups = [...new Set(items.map((i) => i.group))];
   const mine = notifications.filter((n) => n.audience.includes(role));
   const unread = mine.filter((n) => !n.read).length;

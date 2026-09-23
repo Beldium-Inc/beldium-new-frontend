@@ -146,6 +146,72 @@ export function TextField({
   );
 }
 
+/**
+ * Normalizes toward E.164 (+2348012345678, matching every phone regex and
+ * placeholder across this codebase) on blur. The API rejects anything else
+ * with DRF's raw "This value does not match the required pattern." — this
+ * fixes the common cases (leading 0, missing +) instead of making the user
+ * decode that error and retype the number themselves.
+ */
+export function formatPhoneNumber(raw: string, countryCode = "234"): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith("+")) return "+" + trimmed.slice(1).replace(/\D/g, "");
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) return trimmed;
+  if (digits.startsWith("00")) return "+" + digits.slice(2);
+  if (digits.startsWith("0")) return `+${countryCode}${digits.slice(1)}`;
+  if (digits.startsWith(countryCode)) return `+${digits}`;
+  return `+${countryCode}${digits}`;
+}
+
+export function PhoneField({
+  label,
+  value,
+  onChange,
+  placeholder = "+2348030000000",
+  className,
+  name,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+  /** API field name, so a rejected save can point at this input. */
+  name?: string;
+}) {
+  const id = label.toLowerCase().replace(/[^a-z]+/g, "-");
+  const { error, onEdit } = useFieldError(name);
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type="tel"
+        inputMode="tel"
+        value={value}
+        placeholder={placeholder}
+        aria-invalid={Boolean(error)}
+        className={cn(error && ERROR_RING)}
+        onChange={(e) => {
+          onEdit();
+          // Free typing while focused — only digits/+/space/- allowed, no
+          // restructuring yet, since transforming mid-type (e.g. eagerly
+          // rewriting a leading "0") would fight the user's cursor and
+          // compound on every subsequent keystroke.
+          onChange(e.target.value.replace(/[^\d+\s-]/g, ""));
+        }}
+        onBlur={() => {
+          const formatted = formatPhoneNumber(value);
+          if (formatted !== value) onChange(formatted);
+        }}
+      />
+      <FieldMessage error={error} />
+    </div>
+  );
+}
+
 export function AreaField({
   label,
   value,
