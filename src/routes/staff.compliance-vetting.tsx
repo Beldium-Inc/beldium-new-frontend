@@ -27,6 +27,7 @@ import {
   useDecideComplianceApplication,
   useReviewComplianceDocument,
 } from "@/lib/api/queries";
+import { dedupeOrganisations, type DedupeReport } from "@/lib/api/organisations";
 import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
@@ -267,6 +268,105 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
   );
 }
 
+function DedupePanel() {
+  const [report, setReport] = useState<DedupeReport | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  const preview = async () => {
+    setLoading(true);
+    try {
+      setReport(await dedupeOrganisations(false));
+    } catch (err) {
+      toast.error("Could not check for duplicates", {
+        description: err instanceof ApiError ? err.message : "Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const apply = async () => {
+    setApplying(true);
+    try {
+      const result = await dedupeOrganisations(true);
+      setReport(result);
+      toast.success(`Removed ${result.organisations_removed} duplicate organisation(s).`);
+    } catch (err) {
+      toast.error("Could not remove duplicates", {
+        description: err instanceof ApiError ? err.message : "Please try again.",
+      });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="mb-8 overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
+        <div>
+          <h2 className="font-display text-lg font-semibold">Duplicate organisations</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Onboarding used to let the same company end up as several separate organisation records.
+            New duplicates are blocked now — this cleans up ones already in the database. For each
+            group sharing a name and type, one organisation is kept (a verified one if there's exactly
+            one, otherwise the oldest) and the rest are removed along with any mine sites or mining
+            applications only they held.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => void preview()} disabled={loading}>
+          {loading ? "Checking…" : "Check for duplicates"}
+        </Button>
+      </div>
+
+      {report ? (
+        <div className="p-5">
+          {report.groups.length === 0 && report.skipped_ambiguous.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No duplicates found.</p>
+          ) : (
+            <>
+              {report.groups.map((group) => (
+                <div key={`${group.name}-${group.organisation_type}`} className="mb-4 rounded-lg border border-border p-4">
+                  <p className="text-sm font-medium">
+                    {group.name} <span className="text-muted-foreground">({group.organisation_type.replace("_", " ")})</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Keeping {group.keeper_beldium_id ?? group.keeper_id}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {group.removed.map((org) => (
+                      <li key={org.id} className="text-xs text-muted-foreground">
+                        {report.applied ? "Removed" : "Would remove"} {org.beldium_id ?? org.id} — {org.verification_status},{" "}
+                        {org.site_count} site(s), {org.mining_application_count} mining application(s), members:{" "}
+                        {org.member_emails.join(", ") || "none"}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+
+              {report.skipped_ambiguous.map((skipped) => (
+                <div key={`${skipped.name}-${skipped.organisation_type}`} className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-amber-900">
+                    {skipped.name} ({skipped.organisation_type.replace("_", " ")}) — skipped
+                  </p>
+                  <p className="mt-1 text-xs text-amber-800">{skipped.reason}. Resolve this one manually.</p>
+                </div>
+              ))}
+
+              {!report.applied && report.organisations_removed > 0 ? (
+                <Button variant="destructive" onClick={() => void apply()} disabled={applying}>
+                  {applying ? "Removing…" : `Remove ${report.organisations_removed} duplicate(s)`}
+                </Button>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Page() {
   const { user, status, signOut } = useAuth();
   const navigate = useNavigate();
@@ -322,6 +422,8 @@ function Page() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
+        <DedupePanel />
+
         <div className="mb-6">
           <h1 className="font-display text-2xl font-semibold">Compliance partner applications</h1>
           <p className="mt-1 text-sm text-muted-foreground">

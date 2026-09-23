@@ -67,6 +67,48 @@ export function deleteOrganisation(id: UUID): Promise<void> {
   return apiFetch<void>(`/organisations/${id}/`, { method: "DELETE" });
 }
 
+export interface DedupeCandidate {
+  id: UUID;
+  beldium_id: string | null;
+  name: string;
+  organisation_type: OrganisationType;
+  verification_status: VerificationStatus;
+  created_at: string;
+  member_emails: string[];
+  site_count: number;
+  mining_application_count: number;
+}
+
+export interface DedupeGroup {
+  name: string;
+  organisation_type: OrganisationType;
+  keeper_id: UUID;
+  keeper_beldium_id: string | null;
+  removed: DedupeCandidate[];
+}
+
+export interface DedupeReport {
+  groups: DedupeGroup[];
+  skipped_ambiguous: { name: string; organisation_type: OrganisationType; reason: string; organisations: DedupeCandidate[] }[];
+  organisations_removed: number;
+  applied: boolean;
+}
+
+/**
+ * is_staff only on the backend (organisations/views.py
+ * OrganisationViewSet.dedupe_duplicates). Groups organisations by
+ * (name, organisation_type) and, for any group with more than one row,
+ * keeps a single verified organisation if there is exactly one, otherwise
+ * the oldest — apply: true actually deletes the rest (and their orphanable
+ * mine sites / mining applications); omit it (or pass false) for a dry run.
+ */
+export function dedupeOrganisations(apply: boolean): Promise<DedupeReport> {
+  return apiFetch<DedupeReport>("/organisations/dedupe_duplicates/", {
+    method: "POST",
+    body: { apply },
+  });
+}
+
 export function listMembers(id: UUID): Promise<OrganisationMembership[]> {
   return apiFetch<OrganisationMembership[]>(`/organisations/${id}/members/`);
 }
