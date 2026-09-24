@@ -27,6 +27,22 @@ export function listComplianceApplications(): Promise<Paginated<ComplianceApplic
   return apiFetch<Paginated<ComplianceApplication>>("/compliance-applications/");
 }
 
+/**
+ * Staff vetting desk: every application from organisations of these types,
+ * newest first. Filtered server-side — the unfiltered list is one page of
+ * every vertical's applications, which new partner applications fall off.
+ */
+export function listApplicationsByOrganisationType(
+  types: string[],
+): Promise<Paginated<ComplianceApplication>> {
+  const query = new URLSearchParams({
+    organisation__organisation_type__in: types.join(","),
+    ordering: "-created_at",
+    page_size: "100",
+  });
+  return apiFetch<Paginated<ComplianceApplication>>(`/compliance-applications/?${query}`);
+}
+
 export function getComplianceApplication(id: UUID): Promise<ComplianceApplication> {
   return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/`);
 }
