@@ -330,6 +330,8 @@ export interface ComplianceApplication {
   /** Human-readable identifier, `BLD-APP-<year>-<hex>`. Null on rows predating it. */
   reference: string | null;
   organisation: UUID;
+  /** The organisation record's type, set at signup — unlike organisation_profile, always present. */
+  organisation_type: string | null;
   status: ApplicationStatus;
   /** Empty object until the matching section has been saved. */
   organisation_profile: Partial<OrganisationProfileData>;

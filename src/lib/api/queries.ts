@@ -24,6 +24,7 @@ import {
   decideComplianceApplication,
   deletePersonnel,
   fetchDashboard,
+  listApplicationsByOrganisationType,
   getComplianceApplication,
   listComplianceApplications,
   listDocumentRequirements,
@@ -245,6 +246,16 @@ export function useComplianceApplications(options: { enabled?: boolean } = {}) {
     queryKey: queryKeys.applications,
     queryFn: () => listComplianceApplications(),
     enabled: (options.enabled ?? true) && hasTokens,
+  });
+}
+
+/** Keyed under `applications`, so every mutation that invalidates the list refreshes this too. */
+export function useApplicationsByOrganisationType(types: string[]) {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: [...queryKeys.applications, "by-type", types] as const,
+    queryFn: () => listApplicationsByOrganisationType(types),
+    enabled: hasTokens,
   });
 }
 

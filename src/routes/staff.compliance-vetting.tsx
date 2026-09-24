@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/lib/auth";
 import {
-  useComplianceApplications,
+  useApplicationsByOrganisationType,
   useDecideComplianceApplication,
   useReviewComplianceDocument,
 } from "@/lib/api/queries";
@@ -42,7 +42,7 @@ export const Route = createFileRoute("/staff/compliance-vetting")({ ssr: false, 
 // bucket (see organisations/access.py audience()) once verified — the ones
 // this desk exists to vet, as opposed to the miners themselves, who are
 // verified separately on the Mining Organisations register.
-const PARTNER_TYPES = new Set(["compliance_partner", "inspection_body"]);
+const PARTNER_TYPES = ["compliance_partner", "inspection_body"];
 
 const statusLabel: Record<ApplicationStatus, string> = {
   draft: "Draft",
@@ -121,7 +121,7 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
   const canReview = REVIEWABLE_STATUSES.includes(application.status);
   const documentsPending = application.documents.filter((d) => d.status !== "verified").length;
   const readyToVerify = application.progress.percent === 100 && documentsPending === 0;
-  const orgType = application.organisation_profile.organisation_type;
+  const orgType = application.organisation_type ?? application.organisation_profile.organisation_type;
 
   const run = async (status: "verified" | "rejected", notes?: string) => {
     try {
@@ -374,7 +374,7 @@ function DedupePanel() {
 function Page() {
   const { user, status, signOut } = useAuth();
   const navigate = useNavigate();
-  const { data, isPending, error } = useComplianceApplications();
+  const { data, isPending, error } = useApplicationsByOrganisationType(PARTNER_TYPES);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -403,9 +403,9 @@ function Page() {
     );
   }
 
-  const applications = (data?.results ?? []).filter((app) =>
-    PARTNER_TYPES.has(app.organisation_profile.organisation_type ?? ""),
-  );
+  // Filtered server-side on the organisation record's type — the profile's
+  // copy is empty until the applicant saves that section.
+  const applications = data?.results ?? [];
 
   return (
     <div className="min-h-screen bg-muted/40">
