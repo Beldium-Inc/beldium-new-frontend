@@ -52,7 +52,13 @@ export function useProtectedFile(url: string | null, originalName: string) {
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        setError(err instanceof ApiError ? err.message : "The file could not be loaded.");
+        // A network-level failure here is about the file download, not the
+        // API as a whole, so don't reuse networkError's "cannot reach" text.
+        setError(
+          err instanceof ApiError && err.code !== "network_error"
+            ? err.message
+            : "The file could not be downloaded. Close and reopen it to try again.",
+        );
       });
     return () => {
       controller.abort();
