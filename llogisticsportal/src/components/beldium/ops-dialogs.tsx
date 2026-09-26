@@ -63,7 +63,7 @@ export function AssignmentWizard({ movement, open, onClose }: { movement: Moveme
       open={open}
       onClose={close}
       wide
-      title={`Assign resources — ${movement.id}`}
+      title={`Assign resources: ${movement.id}`}
       footer={
         <>
           {step > 0 ? (
@@ -224,7 +224,7 @@ export function StageActionButton({ movement, size = "md" }: { movement: Movemen
 
   return (
     <>
-      <Btn onClick={run} disabled={!!gate} title={gate ?? undefined} className={size === "sm" ? "px-2.5 py-1 text-xs" : ""}>
+      <Btn onClick={run} disabled={!!gate} title={gate ?? undefined} size={size === "sm" ? "sm" : "default"}>
         {act.label}
       </Btn>
       {gate && size === "md" ? <span className="text-xs font-semibold text-destructive">{gate}</span> : null}

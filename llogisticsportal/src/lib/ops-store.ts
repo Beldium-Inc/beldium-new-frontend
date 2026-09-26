@@ -1,5 +1,5 @@
 /**
- * Beldium Logistics demo state — the single shared record chain used by every
+ * Beldium Logistics demo state, the single shared record chain used by every
  * logistics screen: RFQ → Transaction → Mine → Batch → Sample/Quality →
  * Transport Request → Movement → Destination → Invoice. Persisted to localStorage.
  */
@@ -185,18 +185,18 @@ export type Target =
   | { kind: "transaction"; id: string }
   | { kind: "queue"; path: QueuePath; tab?: string | undefined };
 export type QueuePath =
-  | "/transport-requests"
-  | "/active-movements"
-  | "/sample-logistics"
-  | "/bulk-logistics"
-  | "/fleet"
-  | "/drivers"
-  | "/documents"
-  | "/incidents"
-  | "/deliveries"
-  | "/payments"
-  | "/compliance"
-  | "/notifications";
+  | "/portal/transport-requests"
+  | "/portal/active-movements"
+  | "/portal/sample-logistics"
+  | "/portal/bulk-logistics"
+  | "/portal/fleet"
+  | "/portal/drivers"
+  | "/portal/documents"
+  | "/portal/incidents"
+  | "/portal/deliveries"
+  | "/portal/payments"
+  | "/portal/compliance"
+  | "/portal/notifications";
 
 export type Notification = { id: string; at: string; category: string; title: string; body: string; target: Target; read: boolean };
 export type Activity = { id: string; at: string; text: string; sector: string; target: Target };
@@ -322,8 +322,8 @@ function seed(): OpsState {
       mineral: "Lithium (spodumene)", quantity: 60, unitPrice: 1_150_000, destinationId: "PRC-ABJ", portId: "PORT-ONN", stage: "Sampling", qualityRequired: true, quality: "Sample requested",
       timeline: [
         tl(-9 * 1440, "Marketplace", "RFQ RFQ-1188 published by Guangzhou New Energy Materials"),
-        tl(-8 * 1440, "Mining", "Wamba Lithium Miners Ltd accepted RFQ — supply commitment SC-7741"),
-        tl(-2 * 1440, "Mining", "Aggregation completed — BATCH-LI-0417, 60 t"),
+        tl(-8 * 1440, "Mining", "Wamba Lithium Miners Ltd accepted RFQ: supply commitment SC-7741"),
+        tl(-2 * 1440, "Mining", "Aggregation completed: BATCH-LI-0417, 60 t"),
         tl(-40, "Quality", "Sample pickup requested for BATCH-LI-0417", "TR-3101"),
       ],
     },
@@ -355,7 +355,7 @@ function seed(): OpsState {
     {
       id: "TXN-2042", rfqId: "RFQ-1182", buyerId: "BUY-201", minerId: "MIN-101", mineId: "MINE-JOS-01", batchId: "BATCH-SN-0420", commitmentId: "SC-7748",
       mineral: "Tin (cassiterite)", quantity: 20, unitPrice: 14_900_000, destinationId: "WH-JOS", portId: "PORT-APP", stage: "Result Published", qualityRequired: true, quality: "Result published", qualityResult: "Sn 64.1%",
-      timeline: [tl(-10 * 1440, "Marketplace", "RFQ RFQ-1182 published"), tl(-1440, "Quality", "Result published: Sn 64.1% — awaiting buyer decision"), tl(-200, "Mining", "Bulk transport requested ahead of buyer acceptance", "TR-3097")],
+      timeline: [tl(-10 * 1440, "Marketplace", "RFQ RFQ-1182 published"), tl(-1440, "Quality", "Result published: Sn 64.1%: awaiting buyer decision"), tl(-200, "Mining", "Bulk transport requested ahead of buyer acceptance", "TR-3097")],
     },
     {
       id: "TXN-2037", rfqId: "RFQ-1178", buyerId: "BUY-203", minerId: "MIN-103", mineId: "MINE-KAD-03", batchId: "BATCH-CB-0386", commitmentId: "SC-7710",
@@ -383,7 +383,7 @@ function seed(): OpsState {
     {
       id: "MOV-5012", requestId: "TR-3090", txnId: "TXN-2036", kind: "Bulk", movementType: "Mine to Processor", originId: "MINE-JOS-01", destinationId: "PRC-KAD", quantity: 40, unit: "t", stage: "In Transit",
       vehicleId: "TRK-002", driverId: "DRV-01", pickupAt: iso(-420), deliverBy: iso(300), progress: 45, delayed: false, deviated: false, stopped: false, exception: false, etaMin: 170, loaded: 40, createdAt: iso(-1440), rate: 42_000,
-      timeline: [ev(-1440, "Request accepted"), ev(-1400, "Vehicle TRK-002 and driver Musa Abdullahi assigned"), ev(-480, "Driver dispatched"), ev(-420, "Arrived at Bisichi Tin Field", { gps: "9.7981, 8.8592" }), ev(-360, "Loaded tonnage confirmed", { quantity: "40 t" }), ev(-300, "Journey started", { gps: "9.7981, 8.8592" }), ev(-120, "Checkpoint recorded — Kaduna–Jos road, Manchok", { gps: "9.6700, 8.5200", source: "GPS tracker" })],
+      timeline: [ev(-1440, "Request accepted"), ev(-1400, "Vehicle TRK-002 and driver Musa Abdullahi assigned"), ev(-480, "Driver dispatched"), ev(-420, "Arrived at Bisichi Tin Field", { gps: "9.7981, 8.8592" }), ev(-360, "Loaded tonnage confirmed", { quantity: "40 t" }), ev(-300, "Journey started", { gps: "9.7981, 8.8592" }), ev(-120, "Checkpoint recorded: Kaduna–Jos road, Manchok", { gps: "9.6700, 8.5200", source: "GPS tracker" })],
     },
     {
       id: "MOV-5014", requestId: "TR-3092", txnId: "TXN-2038", kind: "Bulk", movementType: "Mine to Warehouse", originId: "MINE-KAD-03", destinationId: "WH-JOS", quantity: 25, unit: "t", stage: "Loading",
@@ -393,12 +393,12 @@ function seed(): OpsState {
     {
       id: "MOV-5010", requestId: "TR-3088", txnId: "TXN-2037", kind: "Bulk", movementType: "Mine to Processor", originId: "MINE-KAD-03", destinationId: "PRC-KAD", quantity: 18, unit: "t", stage: "In Transit",
       vehicleId: "TRK-006", driverId: "DRV-06", pickupAt: iso(-300), deliverBy: iso(120), progress: 60, delayed: true, deviated: false, stopped: true, exception: true, etaMin: 210, loaded: 18, createdAt: iso(-1500), rate: 36_000,
-      timeline: [ev(-1500, "Request accepted"), ev(-330, "Loaded tonnage confirmed", { quantity: "18 t" }), ev(-240, "Journey started"), ev(-70, "Incident INC-701 reported — Vehicle Breakdown (High)", { location: "Kachia junction", gps: "9.8740, 7.9550" }), ev(-65, "Movement placed in Exception")],
+      timeline: [ev(-1500, "Request accepted"), ev(-330, "Loaded tonnage confirmed", { quantity: "18 t" }), ev(-240, "Journey started"), ev(-70, "Incident INC-701 reported: Vehicle Breakdown (High)", { location: "Kachia junction", gps: "9.8740, 7.9550" }), ev(-65, "Movement placed in Exception")],
     },
     {
       id: "MOV-5015", requestId: "TR-3094", txnId: "TXN-2040", kind: "Sample", movementType: "Mine to Laboratory", originId: "MINE-NIG-04", destinationId: "LAB-ABJ", quantity: 2, unit: "kg", stage: "In Transit",
       vehicleId: "VAN-012", driverId: "DRV-08", pickupAt: iso(-150), deliverBy: iso(240), progress: 35, delayed: false, deviated: false, stopped: false, exception: false, etaMin: 95, sampleId: "SAM-281", custodyId: "COC-281", createdAt: iso(-600), rate: 85_000,
-      timeline: [ev(-600, "Request accepted"), ev(-200, "Driver dispatched"), ev(-150, "Arrived at Minna Gold Lease 17", { gps: "9.6139, 6.5569" }), ev(-90, "Sample SAM-281 collected — chain of custody COC-281 opened", { gps: "9.6139, 6.5569", quantity: "2 kg", evidence: "Seal NG-SL-88213" }), ev(-80, "Journey started")],
+      timeline: [ev(-600, "Request accepted"), ev(-200, "Driver dispatched"), ev(-150, "Arrived at Minna Gold Lease 17", { gps: "9.6139, 6.5569" }), ev(-90, "Sample SAM-281 collected: chain of custody COC-281 opened", { gps: "9.6139, 6.5569", quantity: "2 kg", evidence: "Seal NG-SL-88213" }), ev(-80, "Journey started")],
     },
     {
       id: "MOV-5003", requestId: "TR-3080", txnId: "TXN-2029", kind: "Bulk", movementType: "Mine to Processor", originId: "MINE-JOS-01", destinationId: "PRC-KAD", quantity: 30, unit: "t", stage: "Completed",
@@ -411,7 +411,7 @@ function seed(): OpsState {
     { id: "TRK-001", registration: "KDU-481-XA", type: "Tipper", make: "Sinotruk Howo", capacity: 30, year: 2021, tracker: "Online", maintenance: false, compliance: "Cleared", lastService: dateOnly(-40), nextService: dateOnly(50), maintenanceLog: [{ at: iso(-40 * 1440), note: "Full service, brake pads replaced" }] },
     { id: "TRK-002", registration: "PLT-224-JS", type: "Flatbed", make: "MAN TGS", capacity: 40, year: 2020, tracker: "Online", maintenance: false, compliance: "Cleared", movementId: "MOV-5012", lastService: dateOnly(-20), nextService: dateOnly(70), maintenanceLog: [] },
     { id: "TRK-003", registration: "KDU-902-KF", type: "Tipper", make: "Sinotruk Howo", capacity: 30, year: 2022, tracker: "Online", maintenance: false, compliance: "Cleared", movementId: "MOV-5014", lastService: dateOnly(-15), nextService: dateOnly(75), maintenanceLog: [] },
-    { id: "TRK-004", registration: "ABJ-118-GW", type: "Tipper", make: "Mercedes Actros", capacity: 30, year: 2018, tracker: "Online", maintenance: true, compliance: "Cleared", lastService: dateOnly(-1), nextService: dateOnly(2), maintenanceLog: [{ at: iso(-1440), note: "Gearbox overhaul in progress — Kaduna workshop" }] },
+    { id: "TRK-004", registration: "ABJ-118-GW", type: "Tipper", make: "Mercedes Actros", capacity: 30, year: 2018, tracker: "Online", maintenance: true, compliance: "Cleared", lastService: dateOnly(-1), nextService: dateOnly(2), maintenanceLog: [{ at: iso(-1440), note: "Gearbox overhaul in progress: Kaduna workshop" }] },
     { id: "TRK-005", registration: "JOS-551-BK", type: "Flatbed", make: "DAF CF", capacity: 40, year: 2017, tracker: "Online", maintenance: false, compliance: "Restricted", reason: "Roadworthiness certificate expired", lastService: dateOnly(-60), nextService: dateOnly(30), maintenanceLog: [] },
     { id: "TRK-006", registration: "KDU-337-KC", type: "Tipper", make: "Sinotruk Howo", capacity: 30, year: 2019, tracker: "Online", maintenance: false, compliance: "Cleared", movementId: "MOV-5010", lastService: dateOnly(-80), nextService: dateOnly(10), maintenanceLog: [] },
     { id: "TRK-007", registration: "KAN-760-DP", type: "Flatbed", make: "MAN TGS", capacity: 45, year: 2022, tracker: "Online", maintenance: false, compliance: "Cleared", lastService: dateOnly(-10), nextService: dateOnly(80), maintenanceLog: [] },
@@ -446,24 +446,24 @@ function seed(): OpsState {
     doc("HSE Policy", "Safety", "Organisation", "LOG-00412", "Trans Sahel Haulage Ltd", -300, undefined),
     doc("Journey Management Plan", "Safety", "Organisation", "LOG-00412", "Trans Sahel Haulage Ltd", -120, undefined, "Under Review"),
     ...vehicles.flatMap((v) => [
-      doc(`Vehicle Insurance — ${v.registration}`, "Insurance", "Vehicle", v.id, "AIICO Insurance", -300, v.id === "TRK-007" ? 12 : 65 + v.capacity),
-      doc(`Roadworthiness — ${v.registration}`, "Roadworthiness", "Vehicle", v.id, "FRSC / VIO", -330, v.id === "TRK-005" ? -10 : 90 + v.year % 10 * 10),
+      doc(`Vehicle Insurance: ${v.registration}`, "Insurance", "Vehicle", v.id, "AIICO Insurance", -300, v.id === "TRK-007" ? 12 : 65 + v.capacity),
+      doc(`Roadworthiness: ${v.registration}`, "Roadworthiness", "Vehicle", v.id, "FRSC / VIO", -330, v.id === "TRK-005" ? -10 : 90 + v.year % 10 * 10),
     ]),
-    ...drivers.map((dr) => doc(`Driving Licence — ${dr.name}`, "Licence", "Driver", dr.id, "FRSC", -700, Math.round((new Date(dr.licenceExpiry).getTime() - Date.now()) / DAY))),
-    doc("Medical Fitness — Halima Yusuf", "Medical", "Driver", "DRV-09", "Barau Dikko Hospital", -340, 20),
+    ...drivers.map((dr) => doc(`Driving Licence: ${dr.name}`, "Licence", "Driver", dr.id, "FRSC", -700, Math.round((new Date(dr.licenceExpiry).getTime() - Date.now()) / DAY))),
+    doc("Medical Fitness: Halima Yusuf", "Medical", "Driver", "DRV-09", "Barau Dikko Hospital", -340, 20),
     doc("Proof of Delivery POD-5003", "Proof of Delivery", "Movement", "MOV-5003", "Kaduna Tin Smelting & Processing", -5, undefined),
   ];
 
   const incidents: Incident[] = [
     { id: "INC-701", movementId: "MOV-5010", type: "Vehicle Breakdown", severity: "High", description: "Air brake line failure, vehicle stopped on shoulder", location: "Kachia junction, Kaduna", material: "Columbite", quantityAffected: "18 t (secured)", evidence: "Driver photo set, tracker stop log", immediateAction: "Hazard triangles placed, mechanic dispatched from Kaduna", status: "Open", reportedAt: iso(-70) },
-    { id: "INC-688", movementId: "MOV-5003", type: "Quantity Variance", severity: "Low", description: "0.2 t variance between loaded and weighbridge quantity", location: "Kaduna Tin Smelting weighbridge", material: "Tin (cassiterite)", quantityAffected: "0.2 t", evidence: "Weighbridge ticket WB-88120", immediateAction: "Variance acknowledged by processor", status: "Resolved", reportedAt: iso(-5 * 1440), resolvedAt: iso(-5 * 1440 + 90), resolution: "Within 1% tolerance — accepted" },
+    { id: "INC-688", movementId: "MOV-5003", type: "Quantity Variance", severity: "Low", description: "0.2 t variance between loaded and weighbridge quantity", location: "Kaduna Tin Smelting weighbridge", material: "Tin (cassiterite)", quantityAffected: "0.2 t", evidence: "Weighbridge ticket WB-88120", immediateAction: "Variance acknowledged by processor", status: "Resolved", reportedAt: iso(-5 * 1440), resolvedAt: iso(-5 * 1440 + 90), resolution: "Within 1% tolerance: accepted" },
   ];
 
   const invoices: Invoice[] = [{ id: "INV-9003", movementId: "MOV-5003", txnId: "TXN-2029", amount: 30 * 42_000, paid: 30 * 42_000, status: "Paid", updatedAt: iso(-2 * 1440) }];
 
   const nonConformities: NonConformity[] = [
     { id: "NC-114", area: "Vehicle", relatedKind: "Vehicle", relatedId: "TRK-005", detail: "Roadworthiness certificate expired", status: "Open", raisedAt: iso(-10 * 1440) },
-    { id: "NC-117", area: "Driver", relatedKind: "Driver", relatedId: "DRV-05", detail: "Driving licence expired — driver suspended from assignment", status: "Open", raisedAt: iso(-12 * 1440) },
+    { id: "NC-117", area: "Driver", relatedKind: "Driver", relatedId: "DRV-05", detail: "Driving licence expired: driver suspended from assignment", status: "Open", raisedAt: iso(-12 * 1440) },
     { id: "NC-109", area: "Safety", relatedKind: "Organisation", relatedId: "LOG-00412", detail: "Journey management plan missing night-driving rules", action: "Revised JMP uploaded", status: "Corrective Action Submitted", raisedAt: iso(-20 * 1440) },
   ];
 
@@ -474,13 +474,13 @@ function seed(): OpsState {
     { id: "N-3", at: iso(-70), category: "Incident", title: "Incident INC-701 reported", body: "Vehicle Breakdown (High) on MOV-5010", target: { kind: "movement", id: "MOV-5010" }, read: false },
     { id: "N-4", at: iso(-90), category: "Sample", title: "Sample SAM-281 collected", body: "Minna Gold Lease 17 · chain of custody COC-281", target: { kind: "movement", id: "MOV-5015" }, read: true },
     { id: "N-5", at: iso(-10 * 1440), category: "Compliance", title: "Vehicle JOS-551-BK restricted", body: "Roadworthiness certificate expired", target: { kind: "vehicle", id: "TRK-005" }, read: true },
-    { id: "N-6", at: iso(-2 * 1440), category: "Payment", title: "Payment received INV-9003", body: "₦1,260,000 from Afrimet Resources UK", target: q("/payments", "Paid"), read: true },
+    { id: "N-6", at: iso(-2 * 1440), category: "Payment", title: "Payment received INV-9003", body: "₦1,260,000 from Afrimet Resources UK", target: q("/portal/payments", "Paid"), read: true },
   ];
 
   const activity: Activity[] = [
     { id: "A-1", at: iso(-25), sector: "Processing", text: "Transport request TR-3099 received from Kaduna Tin Smelting", target: { kind: "request", id: "TR-3099" } },
     { id: "A-2", at: iso(-40), sector: "Quality", text: "Sample pickup requested for BATCH-LI-0417", target: { kind: "request", id: "TR-3101" } },
-    { id: "A-3", at: iso(-50), sector: "Logistics", text: "Loading started — MOV-5014 at Kafanchan Columbite Site", target: { kind: "movement", id: "MOV-5014" } },
+    { id: "A-3", at: iso(-50), sector: "Logistics", text: "Loading started: MOV-5014 at Kafanchan Columbite Site", target: { kind: "movement", id: "MOV-5014" } },
     { id: "A-4", at: iso(-70), sector: "Logistics", text: "Incident INC-701 reported on MOV-5010", target: { kind: "movement", id: "MOV-5010" } },
     { id: "A-5", at: iso(-90), sector: "Logistics", text: "Sample SAM-281 collected", target: { kind: "movement", id: "MOV-5015" } },
     { id: "A-6", at: iso(-120), sector: "Logistics", text: "MOV-5012 checkpoint recorded at Manchok", target: { kind: "movement", id: "MOV-5012" } },
@@ -494,7 +494,8 @@ function seed(): OpsState {
 
 /* ---------------------------------------------------------------- store */
 
-const KEY = "beldium-ops-demo-v1";
+// v2: queue targets moved under /portal; older saved state would link to dead paths.
+const KEY = "beldium-ops-demo-v2";
 let state: OpsState | null = null;
 const listeners = new Set<() => void>();
 
@@ -711,9 +712,9 @@ export function acceptRequest(id: string): string | undefined {
     };
     mev(m, `Transport request ${r.id} accepted`);
     s.movements.unshift(m);
-    chain(s, r.txnId, "Logistics", `Logistics accepted ${r.id} — movement ${movementId} created`, movementId);
+    chain(s, r.txnId, "Logistics", `Logistics accepted ${r.id}: movement ${movementId} created`, movementId);
     notify(s, "Assignment", `Assignment required for ${movementId}`, `${r.movementType} · ${siteName(s, r.originId)} → ${siteName(s, r.destinationId)}`, { kind: "movement", id: movementId });
-    log(s, "Logistics", `Request ${r.id} accepted — ${movementId} created`, { kind: "movement", id: movementId });
+    log(s, "Logistics", `Request ${r.id} accepted: ${movementId} created`, { kind: "movement", id: movementId });
   });
   return movementId;
 }
@@ -752,11 +753,11 @@ export function assignResources(movementId: string, vehicleId: string, driverId:
     m.vehicleId = v.id;
     m.driverId = d.id;
     m.pickupAt = pickupAt;
-    mev(m, `Vehicle ${v.id} (${v.registration}) assigned — compliance validated`);
-    mev(m, `Driver ${d.name} assigned — licence and compliance validated`);
+    mev(m, `Vehicle ${v.id} (${v.registration}) assigned: compliance validated`);
+    mev(m, `Driver ${d.name} assigned: licence and compliance validated`);
     mev(m, `Pickup scheduled for ${fmt(pickupAt)}`);
     if (m.stage === "Awaiting Assignment") m.stage = "Scheduled";
-    chain(s, m.txnId, "Logistics", `${m.id} scheduled — ${v.registration} / ${d.name}, pickup ${fmt(pickupAt)}`, m.id);
+    chain(s, m.txnId, "Logistics", `${m.id} scheduled: ${v.registration} / ${d.name}, pickup ${fmt(pickupAt)}`, m.id);
     notify(s, "Pickup", `Pickup scheduled ${m.id}`, `${v.registration} · ${d.name} · ${fmt(pickupAt)}`, { kind: "movement", id: m.id });
     log(s, "Logistics", `${v.id} and ${d.name} assigned to ${m.id}`, { kind: "movement", id: m.id });
   });
@@ -822,23 +823,23 @@ export function runAction(movementId: string, action: string, value?: number): s
       case "arrive":
         m.stage = "At Origin";
         mev(m, `Driver arrived at ${org.name}`, { location: org.name, gps: org.gps, source: "Driver app" });
-        notify(s, "Pickup", `Driver arrived — ${m.id}`, `${drv?.name} at ${org.name}`, tgt);
+        notify(s, "Pickup", `Driver arrived: ${m.id}`, `${drv?.name} at ${org.name}`, tgt);
         log(s, "Logistics", `Driver arrived at ${org.name} for ${m.id}`, tgt);
         break;
       case "load":
         m.stage = "Loading";
         mev(m, "Loading started", { location: org.name, gps: org.gps });
         chain(s, m.txnId, "Logistics", `Loading started at ${org.name}`, m.id);
-        log(s, "Logistics", `Loading started — ${m.id}`, tgt);
+        log(s, "Logistics", `Loading started: ${m.id}`, tgt);
         break;
       case "pickup": {
         const tonnes = value ?? m.quantity;
         m.loaded = tonnes;
         m.stage = "Loaded";
-        mev(m, "Loaded tonnage confirmed — pickup timestamp recorded", { quantity: `${tonnes} ${m.unit}`, location: org.name, gps: org.gps, evidence: `Loading ticket LT-${m.id.slice(4)}` });
+        mev(m, "Loaded tonnage confirmed: pickup timestamp recorded", { quantity: `${tonnes} ${m.unit}`, location: org.name, gps: org.gps, evidence: `Loading ticket LT-${m.id.slice(4)}` });
         chain(s, m.txnId, "Logistics", `Pickup confirmed: ${tonnes} ${m.unit} loaded at ${org.name}`, m.id);
         notify(s, "Pickup", `Pickup confirmed ${m.id}`, `${tonnes} ${m.unit} loaded`, tgt);
-        log(s, "Logistics", `${tonnes} ${m.unit} loaded on ${veh?.id} — ${m.id}`, tgt);
+        log(s, "Logistics", `${tonnes} ${m.unit} loaded on ${veh?.id}: ${m.id}`, tgt);
         break;
       }
       case "collect": {
@@ -847,7 +848,7 @@ export function runAction(movementId: string, action: string, value?: number): s
         m.custodyId = `COC-${n}`;
         m.loaded = m.quantity;
         m.stage = "Collected";
-        mev(m, `Sample ${m.sampleId} collected — collection timestamp generated`, { location: org.name, gps: org.gps, quantity: `${m.quantity} ${m.unit}`, evidence: `Seal NG-SL-${88000 + n}` });
+        mev(m, `Sample ${m.sampleId} collected: collection timestamp generated`, { location: org.name, gps: org.gps, quantity: `${m.quantity} ${m.unit}`, evidence: `Seal NG-SL-${88000 + n}` });
         mev(m, `Chain of custody ${m.custodyId} opened`, { source: "Beldium custody ledger" });
         if (t) t.quality = "Sample collected";
         chain(s, m.txnId, "Logistics", `Sample ${m.sampleId} collected at ${org.name} (GPS ${org.gps})`, m.id);
@@ -859,9 +860,9 @@ export function runAction(movementId: string, action: string, value?: number): s
         m.stage = "In Transit";
         m.progress = 0;
         refreshEta(s, m);
-        mev(m, "Journey started — live tracking active", { gps: org.gps, source: "GPS tracker" });
+        mev(m, "Journey started: live tracking active", { gps: org.gps, source: "GPS tracker" });
         chain(s, m.txnId, "Logistics", `${m.id} in transit to ${dst.name}`, m.id);
-        log(s, "Logistics", `${veh?.id} departed ${org.name} — ${m.id}`, tgt);
+        log(s, "Logistics", `${veh?.id} departed ${org.name}: ${m.id}`, tgt);
         break;
       case "advance": {
         m.progress = Math.min(95, m.progress + 20);
@@ -872,35 +873,35 @@ export function runAction(movementId: string, action: string, value?: number): s
         const [da = 0, db = 0] = dst.gps.split(",").map(Number);
         const gps = `${(oa + ((da - oa) * m.progress) / 100).toFixed(4)}, ${(ob + ((db - ob) * m.progress) / 100).toFixed(4)}`;
         void p;
-        mev(m, `Tracking update — ${m.progress}% of route, ETA ${m.etaMin} min`, { gps, source: "GPS tracker" });
+        mev(m, `Tracking update: ${m.progress}% of route, ETA ${m.etaMin} min`, { gps, source: "GPS tracker" });
         log(s, "Logistics", `${m.id} checkpoint recorded (${m.progress}%)`, tgt);
         break;
       }
       case "stop":
         m.stopped = true;
         mev(m, "Unscheduled stop detected", { source: "GPS tracker" });
-        notify(s, "Tracking", `Vehicle stopped — ${m.id}`, `${veh?.registration} stationary`, tgt);
-        log(s, "Logistics", `${veh?.id} stopped — ${m.id}`, tgt);
+        notify(s, "Tracking", `Vehicle stopped: ${m.id}`, `${veh?.registration} stationary`, tgt);
+        log(s, "Logistics", `${veh?.id} stopped: ${m.id}`, tgt);
         break;
       case "delay":
         m.delayed = true;
         refreshEta(s, m);
-        mev(m, `Delay recorded — ETA revised to ${m.etaMin} min`, { source: "Operator" });
-        chain(s, m.txnId, "Logistics", `${m.id} delayed — revised ETA ${m.etaMin} min`, m.id);
-        notify(s, "Tracking", `Movement delayed — ${m.id}`, `Revised ETA ${m.etaMin} min`, tgt);
+        mev(m, `Delay recorded: ETA revised to ${m.etaMin} min`, { source: "Operator" });
+        chain(s, m.txnId, "Logistics", `${m.id} delayed: revised ETA ${m.etaMin} min`, m.id);
+        notify(s, "Tracking", `Movement delayed: ${m.id}`, `Revised ETA ${m.etaMin} min`, tgt);
         log(s, "Logistics", `${m.id} delayed`, tgt);
         break;
       case "clearDelay":
         m.delayed = false;
         m.stopped = false;
         refreshEta(s, m);
-        mev(m, "Delay cleared — movement back on schedule");
+        mev(m, "Delay cleared: movement back on schedule");
         log(s, "Logistics", `${m.id} back on schedule`, tgt);
         break;
       case "deviate":
         m.deviated = true;
-        mev(m, "Route deviation detected — vehicle off approved corridor", { source: "GPS tracker" });
-        notify(s, "Tracking", `Route deviation — ${m.id}`, `${veh?.registration} left the approved route`, tgt);
+        mev(m, "Route deviation detected: vehicle off approved corridor", { source: "GPS tracker" });
+        notify(s, "Tracking", `Route deviation: ${m.id}`, `${veh?.registration} left the approved route`, tgt);
         log(s, "Logistics", `Route deviation on ${m.id}`, tgt);
         break;
       case "rejoin":
@@ -912,9 +913,9 @@ export function runAction(movementId: string, action: string, value?: number): s
         m.progress = 100;
         m.etaMin = 0;
         m.stopped = false;
-        mev(m, `Arrived at ${dst.name} — gate entry recorded`, { location: dst.name, gps: dst.gps, source: "GPS tracker" });
+        mev(m, `Arrived at ${dst.name}: gate entry recorded`, { location: dst.name, gps: dst.gps, source: "GPS tracker" });
         chain(s, m.txnId, "Logistics", `${m.id} arrived at ${dst.name}`, m.id);
-        notify(s, "Delivery", `Arrived at destination — ${m.id}`, `${dst.name} · confirmation required`, tgt);
+        notify(s, "Delivery", `Arrived at destination: ${m.id}`, `${dst.name} · confirmation required`, tgt);
         log(s, "Logistics", `${m.id} arrived at ${dst.name}`, tgt);
         break;
       case "weigh": {
@@ -924,27 +925,27 @@ export function runAction(movementId: string, action: string, value?: number): s
         const variance = +((m.loaded ?? m.quantity) - q).toFixed(2);
         mev(m, "Weighbridge quantity recorded", { quantity: `${q} ${m.unit}`, location: dst.name, evidence: `Weighbridge ticket WB-${m.id.slice(4)}` });
         if (Math.abs(variance) > 0) mev(m, `Quantity variance ${variance} ${m.unit} against loaded tonnage`);
-        log(s, dst.kind, `${dst.name} weighed ${q} ${m.unit} — ${m.id}`, tgt);
+        log(s, dst.kind, `${dst.name} weighed ${q} ${m.unit}: ${m.id}`, tgt);
         break;
       }
       case "labReceipt":
         m.received = m.quantity;
         m.stage = "Delivered";
-        mev(m, `Laboratory receipt confirmed — receipt timestamp generated`, { actor: dst.name, location: dst.name, gps: dst.gps, source: "Laboratory", evidence: `Receipt LR-${m.id.slice(4)}` });
+        mev(m, `Laboratory receipt confirmed: receipt timestamp generated`, { actor: dst.name, location: dst.name, gps: dst.gps, source: "Laboratory", evidence: `Receipt LR-${m.id.slice(4)}` });
         mev(m, `Chain of custody ${m.custodyId} transferred to ${dst.name}`, { source: "Beldium custody ledger" });
         if (t) {
           t.quality = "At laboratory";
           if (t.stage === "Sampling") t.stage = "Quality Testing";
         }
         chain(s, m.txnId, "Quality", `${dst.name} confirmed receipt of sample ${m.sampleId}`, m.id);
-        notify(s, "Sample", `Laboratory confirmed receipt — ${m.sampleId}`, dst.name, tgt);
+        notify(s, "Sample", `Laboratory confirmed receipt: ${m.sampleId}`, dst.name, tgt);
         log(s, "Quality", `${dst.name} confirmed receipt of ${m.sampleId}`, tgt);
         break;
       case "deliver": {
         m.podId = `POD-${m.id.slice(4)}`;
         m.stage = "Delivered";
-        const label = dst.kind === "Processor" ? "DELIVERED TO PROCESSOR" : dst.kind === "Warehouse" ? "Warehouse receipt issued" : dst.kind === "Port" ? "Cargo handed over at port — export clearance pending" : "Delivered";
-        mev(m, `Handover confirmed — ${label}`, { actor: dst.name, quantity: `${m.received ?? m.quantity} ${m.unit}`, location: dst.name, source: dst.kind });
+        const label = dst.kind === "Processor" ? "DELIVERED TO PROCESSOR" : dst.kind === "Warehouse" ? "Warehouse receipt issued" : dst.kind === "Port" ? "Cargo handed over at port: export clearance pending" : "Delivered";
+        mev(m, `Handover confirmed: ${label}`, { actor: dst.name, quantity: `${m.received ?? m.quantity} ${m.unit}`, location: dst.name, source: dst.kind });
         mev(m, `Proof of delivery ${m.podId} generated`, { evidence: m.podId });
         s.documents.unshift({ id: nextId(s, "DOC"), name: `Proof of Delivery ${m.podId}`, type: "Proof of Delivery", relatedKind: "Movement", relatedId: m.id, number: m.podId, authority: dst.name, issueDate: nowIso().slice(0, 10), verification: "Verified", uploadedAt: nowIso() });
         if (t) {
@@ -953,8 +954,8 @@ export function runAction(movementId: string, action: string, value?: number): s
           else if (dst.kind === "Port") t.stage = "At Port";
         }
         chain(s, m.txnId, dst.kind, `${dst.name}: ${label} (${m.received ?? m.quantity} ${m.unit})`, m.id);
-        notify(s, "Delivery", `Delivery completed — ${m.id}`, `${label} · ${m.podId}`, tgt);
-        log(s, dst.kind, `${label} — ${m.id}`, tgt);
+        notify(s, "Delivery", `Delivery completed: ${m.id}`, `${label} · ${m.podId}`, tgt);
+        log(s, dst.kind, `${label}: ${m.id}`, tgt);
         break;
       }
       case "complete": {
@@ -964,12 +965,12 @@ export function runAction(movementId: string, action: string, value?: number): s
         const d = driverOf(s, m.driverId);
         if (v && v.movementId === m.id) v.movementId = undefined;
         if (d && d.movementId === m.id) d.movementId = undefined;
-        mev(m, "Movement completed — vehicle and driver released");
+        mev(m, "Movement completed: vehicle and driver released");
         if (!s.invoices.some((i) => i.movementId === m.id)) {
           s.invoices.unshift({ id: nextId(s, "INV"), movementId: m.id, txnId: m.txnId, amount: (m.received ?? m.quantity) * m.rate * (m.kind === "Sample" ? 1 / m.quantity : 1), paid: 0, status: "Not Invoiced", updatedAt: nowIso() });
         }
         chain(s, m.txnId, "Logistics", `${m.id} completed`, m.id);
-        notify(s, "Payment", `Ready to invoice — ${m.id}`, "Delivery complete, invoice can be generated", { kind: "queue", path: "/payments", tab: "Not Invoiced" });
+        notify(s, "Payment", `Ready to invoice: ${m.id}`, "Delivery complete, invoice can be generated", { kind: "queue", path: "/portal/payments", tab: "Not Invoiced" });
         log(s, "Logistics", `${m.id} completed`, tgt);
         break;
       }
@@ -987,7 +988,7 @@ export function reportIncident(input: Omit<Incident, "id" | "status" | "reported
     s.incidents.unshift({ ...input, id, status: "Open", reportedAt: nowIso() });
     const m = movementOf(s, input.movementId);
     if (m) {
-      mev(m, `Incident ${id} reported — ${input.type} (${input.severity})`, { location: input.location, quantity: input.quantityAffected || undefined, evidence: input.evidence || undefined, source: "Operator" });
+      mev(m, `Incident ${id} reported: ${input.type} (${input.severity})`, { location: input.location, quantity: input.quantityAffected || undefined, evidence: input.evidence || undefined, source: "Operator" });
       if (input.severity === "High" || input.severity === "Critical") {
         m.exception = true;
         mev(m, "Movement placed in Exception");
@@ -1009,12 +1010,12 @@ export function resolveIncident(id: string, resolution: string) {
     i.resolution = resolution;
     const m = movementOf(s, i.movementId);
     if (m) {
-      mev(m, `Incident ${id} resolved — ${resolution}`);
+      mev(m, `Incident ${id} resolved: ${resolution}`);
       const stillOpen = s.incidents.some((x) => x.movementId === m.id && x.status === "Open" && (x.severity === "High" || x.severity === "Critical"));
       if (!stillOpen && m.exception) {
         m.exception = false;
         m.stopped = false;
-        mev(m, "Exception cleared — movement resumed");
+        mev(m, "Exception cleared: movement resumed");
       }
     }
     log(s, "Logistics", `Incident ${id} resolved`, { kind: "movement", id: i.movementId });
@@ -1035,16 +1036,16 @@ export function invoiceAction(id: string, action: "generate" | "submit" | "buyer
     if (action === "partPay") {
       inv.paid = Math.round(inv.amount / 2);
       inv.status = "Partially Paid";
-      notify(s, "Payment", `Part payment received ${inv.id}`, `${naira(inv.paid)} from ${buyer}`, { kind: "queue", path: "/payments", tab: "Partially Paid" });
+      notify(s, "Payment", `Part payment received ${inv.id}`, `${naira(inv.paid)} from ${buyer}`, { kind: "queue", path: "/portal/payments", tab: "Partially Paid" });
     }
     if (action === "pay") {
       inv.paid = inv.amount;
       inv.status = "Paid";
-      notify(s, "Payment", `Payment received ${inv.id}`, `${naira(inv.amount)} from ${buyer}`, { kind: "queue", path: "/payments", tab: "Paid" });
+      notify(s, "Payment", `Payment received ${inv.id}`, `${naira(inv.amount)} from ${buyer}`, { kind: "queue", path: "/portal/payments", tab: "Paid" });
       chain(s, inv.txnId, "Finance", `Logistics invoice ${inv.id} settled`, inv.id);
     }
     if (action !== "pay") chain(s, inv.txnId, "Finance", `Invoice ${inv.id} ${inv.status.toLowerCase()}`, inv.id);
-    log(s, "Finance", `Invoice ${inv.id} — ${inv.status}`, { kind: "queue", path: "/payments", tab: inv.status });
+    log(s, "Finance", `Invoice ${inv.id}: ${inv.status}`, { kind: "queue", path: "/portal/payments", tab: inv.status });
   });
 }
 
@@ -1054,7 +1055,7 @@ export function uploadDocument(input: Pick<Doc, "name" | "type" | "relatedKind" 
   mutate((s) => {
     const id = nextId(s, "DOC");
     s.documents.unshift({ ...input, id, verification: "Under Review", uploadedAt: nowIso() });
-    log(s, "Logistics", `Document ${input.name} uploaded for review`, { kind: "queue", path: "/documents", tab: "Under Review" });
+    log(s, "Logistics", `Document ${input.name} uploaded for review`, { kind: "queue", path: "/portal/documents", tab: "Under Review" });
   });
 }
 export function renewDocument(id: string, expiryDate: string, number: string) {
@@ -1066,7 +1067,7 @@ export function renewDocument(id: string, expiryDate: string, number: string) {
     d.number = number || d.number;
     d.verification = "Under Review";
     d.uploadedAt = nowIso();
-    log(s, "Logistics", `Renewed ${d.name} submitted to Compliance`, { kind: "queue", path: "/documents", tab: "Under Review" });
+    log(s, "Logistics", `Renewed ${d.name} submitted to Compliance`, { kind: "queue", path: "/portal/documents", tab: "Under Review" });
   });
 }
 export function reviewDocument(id: string, decision: "Verified" | "Rejected" | "Action Required") {
@@ -1074,9 +1075,9 @@ export function reviewDocument(id: string, decision: "Verified" | "Rejected" | "
     const d = s.documents.find((x) => x.id === id);
     if (!d) return;
     d.verification = decision;
-    const tgt: Target = d.relatedKind === "Vehicle" ? { kind: "vehicle", id: d.relatedId } : d.relatedKind === "Driver" ? { kind: "driver", id: d.relatedId } : { kind: "queue", path: "/documents", tab: decision };
+    const tgt: Target = d.relatedKind === "Vehicle" ? { kind: "vehicle", id: d.relatedId } : d.relatedKind === "Driver" ? { kind: "driver", id: d.relatedId } : { kind: "queue", path: "/portal/documents", tab: decision };
     notify(s, "Compliance", `Document ${decision.toLowerCase()}: ${d.name}`, "Beldium Logistics Compliance", tgt);
-    log(s, "Compliance", `${d.name} — ${decision}`, tgt);
+    log(s, "Compliance", `${d.name}: ${decision}`, tgt);
     // Verified renewals lift linked auto-restrictions
     if (decision === "Verified") {
       const v = d.relatedKind === "Vehicle" ? vehicleOf(s, d.relatedId) : undefined;
@@ -1113,7 +1114,7 @@ export function setCompliance(kind: "Vehicle" | "Driver", id: string, compliance
       s.nonConformities.filter((n) => n.relatedId === id && n.status !== "Closed").forEach((n) => (n.status = "Closed"));
       notify(s, "Compliance", `${kind} ${label} cleared`, "Restriction lifted by Beldium Logistics Compliance", tgt);
     }
-    log(s, "Compliance", `${kind} ${label} — ${compliance}`, tgt);
+    log(s, "Compliance", `${kind} ${label}: ${compliance}`, tgt);
   });
 }
 export function submitCorrectiveAction(id: string, action: string) {
@@ -1122,7 +1123,7 @@ export function submitCorrectiveAction(id: string, action: string) {
     if (!n) return;
     n.action = action;
     n.status = "Corrective Action Submitted";
-    log(s, "Logistics", `Corrective action submitted for ${n.id}`, { kind: "queue", path: "/compliance" });
+    log(s, "Logistics", `Corrective action submitted for ${n.id}`, { kind: "queue", path: "/portal/compliance" });
   });
 }
 export function closeNonConformity(id: string) {
@@ -1137,8 +1138,8 @@ export function closeNonConformity(id: string) {
         rec.reason = undefined;
       }
     }
-    notify(s, "Compliance", `Non conformity ${n.id} closed`, n.detail, { kind: "queue", path: "/compliance" });
-    log(s, "Compliance", `${n.id} closed by Beldium Logistics Compliance`, { kind: "queue", path: "/compliance" });
+    notify(s, "Compliance", `Non conformity ${n.id} closed`, n.detail, { kind: "queue", path: "/portal/compliance" });
+    log(s, "Compliance", `${n.id} closed by Beldium Logistics Compliance`, { kind: "queue", path: "/portal/compliance" });
   });
 }
 
@@ -1171,7 +1172,7 @@ export function addVehicle(v: Pick<Vehicle, "registration" | "type" | "make" | "
     id = `${v.type === "Sample Van" ? "VAN" : "TRK"}-${String(s.vehicles.length + 1).padStart(3, "0")}`;
     s.vehicles.push({ ...v, id, tracker: "Online", maintenance: false, compliance: "Hold", reason: "Awaiting Vehicle Compliance Review", lastService: nowIso().slice(0, 10), nextService: dateOnly(90), maintenanceLog: [] });
     s.nonConformities.unshift({ id: nextId(s, "NC"), area: "Vehicle", relatedKind: "Vehicle", relatedId: id, detail: "New vehicle awaiting compliance review", status: "Open", raisedAt: nowIso() });
-    log(s, "Logistics", `Vehicle ${v.registration} added — sent to Vehicle Compliance Review`, { kind: "vehicle", id });
+    log(s, "Logistics", `Vehicle ${v.registration} added: sent to Vehicle Compliance Review`, { kind: "vehicle", id });
   });
   return id;
 }
@@ -1181,7 +1182,7 @@ export function addDriver(d: Pick<Driver, "name" | "phone" | "licence" | "licenc
     id = `DRV-${String(s.drivers.length + 1).padStart(2, "0")}`;
     s.drivers.push({ ...d, id, training: [], onDuty: true, compliance: "Hold", reason: "Awaiting Driver Compliance Review", safetyScore: 80 });
     s.nonConformities.unshift({ id: nextId(s, "NC"), area: "Driver", relatedKind: "Driver", relatedId: id, detail: "New driver awaiting compliance review", status: "Open", raisedAt: nowIso() });
-    log(s, "Logistics", `Driver ${d.name} added — sent to Driver Compliance Review`, { kind: "driver", id });
+    log(s, "Logistics", `Driver ${d.name} added: sent to Driver Compliance Review`, { kind: "driver", id });
   });
   return id;
 }
@@ -1211,23 +1212,23 @@ export function actionItems(s: OpsState): ActionItem[] {
   const items: ActionItem[] = [];
   const one = <T,>(list: T[], toTarget: (x: T) => Target, queue: Target) => (list.length === 1 && list[0] !== undefined ? toTarget(list[0]) : queue);
   const pending = s.requests.filter((r) => r.status === "New" || r.status === "Awaiting Decision");
-  if (pending.length) items.push({ id: "req", label: `${pending.length} request${pending.length > 1 ? "s" : ""} need acceptance`, count: pending.length, tone: "primary", target: one(pending, (r) => ({ kind: "request", id: r.id }), { kind: "queue", path: "/transport-requests", tab: "Awaiting Decision" }) });
+  if (pending.length) items.push({ id: "req", label: `${pending.length} request${pending.length > 1 ? "s" : ""} need acceptance`, count: pending.length, tone: "primary", target: one(pending, (r) => ({ kind: "request", id: r.id }), { kind: "queue", path: "/portal/transport-requests", tab: "Awaiting Decision" }) });
   const assign = s.movements.filter((m) => m.stage === "Awaiting Assignment");
-  if (assign.length) items.push({ id: "assign", label: `${assign.length} movement${assign.length > 1 ? "s" : ""} need vehicle assignment`, count: assign.length, tone: "warning", target: one(assign, (m) => ({ kind: "movement", id: m.id }), { kind: "queue", path: "/active-movements", tab: "Awaiting Assignment" }) });
+  if (assign.length) items.push({ id: "assign", label: `${assign.length} movement${assign.length > 1 ? "s" : ""} need vehicle assignment`, count: assign.length, tone: "warning", target: one(assign, (m) => ({ kind: "movement", id: m.id }), { kind: "queue", path: "/portal/active-movements", tab: "Awaiting Assignment" }) });
   const overdue = s.movements.filter((m) => m.stage === "Scheduled" && m.pickupAt && new Date(m.pickupAt).getTime() < Date.now());
-  if (overdue.length) items.push({ id: "overdue", label: `${overdue.length} pickup${overdue.length > 1 ? "s are" : " is"} overdue`, count: overdue.length, tone: "danger", target: one(overdue, (m) => ({ kind: "movement", id: m.id }), { kind: "queue", path: "/active-movements", tab: "Scheduled" }) });
+  if (overdue.length) items.push({ id: "overdue", label: `${overdue.length} pickup${overdue.length > 1 ? "s are" : " is"} overdue`, count: overdue.length, tone: "danger", target: one(overdue, (m) => ({ kind: "movement", id: m.id }), { kind: "queue", path: "/portal/active-movements", tab: "Scheduled" }) });
   const confirm = s.movements.filter((m) => ["At Destination", "Unloading", "Delivered"].includes(m.stage) && !m.exception);
-  if (confirm.length) items.push({ id: "deliv", label: `${confirm.length} deliver${confirm.length > 1 ? "ies need" : "y needs"} confirmation`, count: confirm.length, tone: "warning", target: one(confirm, (m) => ({ kind: "movement", id: m.id }), { kind: "queue", path: "/deliveries", tab: "Awaiting Confirmation" }) });
+  if (confirm.length) items.push({ id: "deliv", label: `${confirm.length} deliver${confirm.length > 1 ? "ies need" : "y needs"} confirmation`, count: confirm.length, tone: "warning", target: one(confirm, (m) => ({ kind: "movement", id: m.id }), { kind: "queue", path: "/portal/deliveries", tab: "Awaiting Confirmation" }) });
   const inc = s.incidents.filter((i) => i.status === "Open");
-  if (inc.length) items.push({ id: "inc", label: `${inc.length} incident${inc.length > 1 ? "s need" : " needs"} resolution`, count: inc.length, tone: "danger", target: { kind: "queue", path: "/incidents", tab: "Open" } });
+  if (inc.length) items.push({ id: "inc", label: `${inc.length} incident${inc.length > 1 ? "s need" : " needs"} resolution`, count: inc.length, tone: "danger", target: { kind: "queue", path: "/portal/incidents", tab: "Open" } });
   const expired = s.documents.filter((d) => docState(d) === "Expired");
-  if (expired.length) items.push({ id: "exp", label: `${expired.length} document${expired.length > 1 ? "s" : ""} expired`, count: expired.length, tone: "danger", target: { kind: "queue", path: "/documents", tab: "Expired" } });
+  if (expired.length) items.push({ id: "exp", label: `${expired.length} document${expired.length > 1 ? "s" : ""} expired`, count: expired.length, tone: "danger", target: { kind: "queue", path: "/portal/documents", tab: "Expired" } });
   const expiring = s.documents.filter((d) => docState(d) === "Expiring");
-  if (expiring.length) items.push({ id: "expg", label: `${expiring.length} document${expiring.length > 1 ? "s" : ""} expiring within 30 days`, count: expiring.length, tone: "warning", target: { kind: "queue", path: "/documents", tab: "Expiring" } });
+  if (expiring.length) items.push({ id: "expg", label: `${expiring.length} document${expiring.length > 1 ? "s" : ""} expiring within 30 days`, count: expiring.length, tone: "warning", target: { kind: "queue", path: "/portal/documents", tab: "Expiring" } });
   const ncs = s.nonConformities.filter((n) => n.status === "Open");
-  if (ncs.length) items.push({ id: "nc", label: `${ncs.length} compliance restriction${ncs.length > 1 ? "s" : ""} to resolve`, count: ncs.length, tone: "danger", target: { kind: "queue", path: "/compliance" } });
+  if (ncs.length) items.push({ id: "nc", label: `${ncs.length} compliance restriction${ncs.length > 1 ? "s" : ""} to resolve`, count: ncs.length, tone: "danger", target: { kind: "queue", path: "/portal/compliance" } });
   const inv = s.invoices.filter((i) => i.status === "Not Invoiced");
-  if (inv.length) items.push({ id: "inv", label: `${inv.length} completed deliver${inv.length > 1 ? "ies" : "y"} ready to invoice`, count: inv.length, tone: "primary", target: { kind: "queue", path: "/payments", tab: "Not Invoiced" } });
+  if (inv.length) items.push({ id: "inv", label: `${inv.length} completed deliver${inv.length > 1 ? "ies" : "y"} ready to invoice`, count: inv.length, tone: "primary", target: { kind: "queue", path: "/portal/payments", tab: "Not Invoiced" } });
   return items;
 }
 
@@ -1264,7 +1265,7 @@ function newRequest(s: OpsState, t: Transaction, kind: MovementKind, movementTyp
   });
   chain(s, t.id, (source.split(" ")[0] ?? source), `${movementType} request ${id} sent to Logistics`, id);
   notify(s, "Request", `New transport request ${id}`, `${movementType} · ${siteName(s, originId)} → ${siteName(s, destinationId)}`, { kind: "request", id });
-  log(s, (source.split(" ")[0] ?? source), `Transport request ${id} received — ${movementType}`, { kind: "request", id });
+  log(s, (source.split(" ")[0] ?? source), `Transport request ${id} received: ${movementType}`, { kind: "request", id });
   return id;
 }
 
@@ -1301,13 +1302,13 @@ export function runSim(eventId: string, txnId?: string): string | null {
           timeline: [{ at: nowIso(), sector: "Marketplace", event: `RFQ ${rfq.id} accepted by ${partyName(s, tpl.minerId)}` }],
         });
         s.seq++;
-        log(s, "Marketplace", `RFQ ${rfq.id} accepted — ${tid} opened`, { kind: "transaction", id: tid });
+        log(s, "Marketplace", `RFQ ${rfq.id} accepted: ${tid} opened`, { kind: "transaction", id: tid });
         result = tid;
         break;
       }
       case "aggregate":
         t!.stage = "Aggregation Complete";
-        chain(s, t!.id, "Mining", `Aggregation completed — ${t!.batchId}, ${t!.quantity} t`);
+        chain(s, t!.id, "Mining", `Aggregation completed: ${t!.batchId}, ${t!.quantity} t`);
         log(s, "Mining", `${partyName(s, t!.minerId)} completed aggregation of ${t!.batchId}`, { kind: "transaction", id: t!.id });
         break;
       case "sample": {
@@ -1339,7 +1340,7 @@ export function runSim(eventId: string, txnId?: string): string | null {
       }
       case "processed":
         t!.stage = "Processing Complete";
-        chain(s, t!.id, "Processing", `Processing completed at ${siteName(s, t!.destinationId)} — output batch ${t!.batchId}-P`);
+        chain(s, t!.id, "Processing", `Processing completed at ${siteName(s, t!.destinationId)}: output batch ${t!.batchId}-P`);
         log(s, "Processing", `Processing completed for ${t!.batchId}`, { kind: "transaction", id: t!.id });
         break;
       case "export": {
@@ -1352,8 +1353,8 @@ export function runSim(eventId: string, txnId?: string): string | null {
       case "buyerReceive":
         t!.stage = "Logistics Completed";
         chain(s, t!.id, "Export", `Export clearance granted and shipment departed ${siteName(s, t!.portId)}`);
-        chain(s, t!.id, "Marketplace", `${partyName(s, t!.buyerId)} confirmed receipt of shipment — logistics lifecycle completed`);
-        notify(s, "Delivery", `Buyer received shipment — ${t!.id}`, partyName(s, t!.buyerId), { kind: "transaction", id: t!.id });
+        chain(s, t!.id, "Marketplace", `${partyName(s, t!.buyerId)} confirmed receipt of shipment: logistics lifecycle completed`);
+        notify(s, "Delivery", `Buyer received shipment: ${t!.id}`, partyName(s, t!.buyerId), { kind: "transaction", id: t!.id });
         log(s, "Marketplace", `${partyName(s, t!.buyerId)} received shipment for ${t!.id}`, { kind: "transaction", id: t!.id });
         break;
     }

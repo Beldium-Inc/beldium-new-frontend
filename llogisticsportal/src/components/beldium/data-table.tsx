@@ -106,7 +106,7 @@ export function RowAction({
         onClick?.();
       }}
       className={cn(
-        "rounded-md border border-border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors",
+        "rounded-full border border-border px-2.5 py-1 text-xs font-medium transition-colors",
         disabled
           ? "cursor-not-allowed border-border/60 text-muted-foreground/60"
           : "text-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary",

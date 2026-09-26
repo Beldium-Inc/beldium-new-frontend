@@ -2,24 +2,16 @@ import { cn } from "@/lib/utils";
 
 type Tone = "default" | "primary" | "accent" | "success" | "warning" | "danger";
 
-const accentBar: Record<Tone, string> = {
-  default: "bg-border",
-  primary: "bg-primary",
-  accent: "bg-accent",
-  success: "bg-success",
-  warning: "bg-warning",
-  danger: "bg-destructive",
-};
-
 const valueColor: Record<Tone, string> = {
-  default: "text-foreground",
+  default: "text-card-foreground",
   primary: "text-primary",
-  accent: "text-colorLink",
+  accent: "text-accent",
   success: "text-success",
-  warning: "text-warning",
+  warning: "text-warning-foreground",
   danger: "text-destructive",
 };
 
+/** Miner Hub stat card; `tone` only tints the value. */
 export function StatCard({
   label,
   value,
@@ -32,13 +24,10 @@ export function StatCard({
   tone?: Tone;
 }) {
   return (
-    <div className="beldium-panel relative overflow-hidden p-4 transition-colors hover:border-primary/50">
-      <span className={cn("absolute inset-y-0 left-0 w-0.5", accentBar[tone])} />
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <p className={cn("mt-2 text-2xl font-bold leading-none", valueColor[tone])}>{value}</p>
-      {hint ? <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p> : null}
+    <div className="rounded-md border border-border bg-card p-4">
+      <div className="text-xs tracking-wide text-muted-foreground uppercase">{label}</div>
+      <div className={cn("mt-1.5 text-2xl font-semibold", valueColor[tone])}>{value}</div>
+      {hint ? <div className="mt-1 text-xs text-muted-foreground">{hint}</div> : null}
     </div>
   );
 }
@@ -57,17 +46,17 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("beldium-panel", className)}>
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
+    <section className={cn("rounded-md border border-border bg-card", className)}>
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-3.5">
         <div>
-          <h2 className="beldium-heading text-base text-foreground">{title}</h2>
+          <h2 className="text-sm font-semibold text-card-foreground">{title}</h2>
           {description ? (
             <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           ) : null}
         </div>
         {action}
       </header>
-      <div className="p-4">{children}</div>
+      <div className="p-5">{children}</div>
     </section>
   );
 }
