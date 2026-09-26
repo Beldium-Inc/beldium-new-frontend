@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ApiError } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { ApiError, getPlatformStats } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { COMPLIANCE_VERTICALS, homeFor, type Vertical, type VerticalSlug } from "@/lib/verticals";
@@ -51,6 +52,8 @@ export const Route = createFileRoute("/signin")({
 const DISCLAIMER =
   "Beldium issues an independent compliance verification record. It is not a government permit, licence, or customs clearance and does not replace any statutory approval.";
 
+const partnerRoleCount = COMPLIANCE_VERTICALS.reduce((n, v) => n + v.roles.length, 0);
+
 const VERTICAL_ICON: Record<VerticalSlug, React.ElementType> = {
   mining: Mountain,
   processing: Factory,
@@ -79,6 +82,11 @@ function SignInPage() {
   const { session, hydrated, signIn: startSession } = useSession();
   const { signIn: authenticate } = useAuth();
   const navigate = useNavigate();
+  const stats = useQuery({
+    queryKey: ["platform-stats"],
+    queryFn: ({ signal }) => getPlatformStats(signal),
+    staleTime: 5 * 60_000,
+  });
 
   const [picked, setPicked] = React.useState<Vertical | null>(null);
   const [roleId, setRoleId] = React.useState<string | null>(null);
@@ -154,9 +162,12 @@ function SignInPage() {
 
           <dl className="grid max-w-lg grid-cols-3 gap-4 border-t border-primary-foreground/15 pt-6">
             {[
-              ["7", "Compliance sectors"],
-              ["24", "Partner roles"],
-              ["1", "Verification standard"],
+              [String(COMPLIANCE_VERTICALS.length), "Compliance sectors"],
+              [String(partnerRoleCount), "Partner roles"],
+              [
+                stats.data ? stats.data.verified_organisations.toLocaleString() : "-",
+                "Verified organisations",
+              ],
             ].map(([v, l]) => (
               <div key={l}>
                 <dt className="font-display text-2xl font-semibold text-accent">{v}</dt>
