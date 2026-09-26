@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { FileSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,8 +18,8 @@ import { GeoPanel } from "@/verticals/mining/components/GeoPanel";
 import { ScoreBreakdown } from "@/verticals/mining/components/ScoreBreakdown";
 import { ReviewActions } from "@/verticals/mining/components/ReviewActions";
 import { RequestInfoDialog } from "@/verticals/mining/components/RequestInfoDialog";
-import { useMiningDocuments, useReviewMiningDocument } from "@/lib/api/mining-queries";
-import { downloadDocumentUrl } from "@/lib/api/mining";
+import { useMiningDocuments } from "@/lib/api/mining-queries";
+import { SiteDocumentViewer } from "@/verticals/mining/components/SiteDocumentViewer";
 
 export const Route = createFileRoute("/mining/sites/$siteId")({ component: SiteDetail });
 
@@ -29,7 +30,7 @@ function SiteDetail() {
   const [tab, setTab] = useState<string>("corporate");
   const [infoFor, setInfoFor] = useState<string | null>(null);
   const documentsQuery = useMiningDocuments({ site: siteId });
-  const reviewDocument = useReviewMiningDocument();
+  const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
 
   if (!site) {
     return (
@@ -111,7 +112,9 @@ function SiteDetail() {
                       Last decision by <span className="font-medium">{s.decidedBy}</span>
                       {s.decidedAt ? ` on ${new Date(s.decidedAt).toLocaleString()}` : ""}
                     </p>
-                    {s.decisionNote ? <p className="mt-1 text-muted-foreground">{s.decisionNote}</p> : null}
+                    {s.decisionNote ? (
+                      <p className="mt-1 text-muted-foreground">{s.decisionNote}</p>
+                    ) : null}
                   </div>
                 ) : null}
                 {s.fields.length ? (
@@ -217,42 +220,40 @@ function SiteDetail() {
                   <p className="text-xs text-muted-foreground">
                     {d.category} · {d.original_name || "no file"} · uploaded by {d.uploaded_by_name}
                   </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {d.file_url ? (
-                      <Button asChild size="sm" variant="ghost">
-                        <a href={downloadDocumentUrl(d.id)} target="_blank" rel="noreferrer">
-                          Download
-                        </a>
-                      </Button>
-                    ) : null}
-                    {d.status === "pending" ? (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={reviewDocument.isPending}
-                          onClick={() => reviewDocument.mutate({ id: d.id, status: "verified" })}
-                        >
-                          Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={reviewDocument.isPending}
-                          onClick={() => reviewDocument.mutate({ id: d.id, status: "rejected" })}
-                        >
-                          Reject
-                        </Button>
-                      </>
-                    ) : null}
+                  <div className="mt-2">
+                    <Button
+                      size="sm"
+                      variant={d.status === "pending" ? "default" : "outline"}
+                      disabled={!d.file_url}
+                      title={!d.file_url ? "No file was uploaded for this document" : undefined}
+                      onClick={() => setOpenDocumentId(d.id)}
+                    >
+                      <FileSearch className="size-3.5" />
+                      {d.status === "pending" ? "Open & review" : "View document"}
+                    </Button>
                   </div>
                 </li>
               ))}
               {documents.length === 0 ? (
-                <li className="px-5 py-6 text-sm text-muted-foreground">No documents uploaded for this site.</li>
+                <li className="px-5 py-6 text-sm text-muted-foreground">
+                  No documents uploaded for this site.
+                </li>
               ) : null}
             </ul>
           </Panel>
+          <SiteDocumentViewer
+            documents={documents}
+            documentId={openDocumentId}
+            context={{
+              siteName: site.name,
+              siteCode: site.code,
+              organisationName: org?.name ?? null,
+              licence: lic ? `${lic.number} (${lic.type})` : null,
+              location: `${site.lga}, ${site.state} State`,
+            }}
+            onNavigate={setOpenDocumentId}
+            onClose={() => setOpenDocumentId(null)}
+          />
           <Panel title="Non-conformities" bodyClassName="p-0">
             <ul className="divide-y divide-border">
               {nonConformities

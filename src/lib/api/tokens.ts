@@ -96,3 +96,40 @@ export function bindCrossTabSync(): void {
     notify();
   });
 }
+
+/**
+ * When the access token stops being accepted, in epoch ms, read from its `exp`
+ * claim. Null if the token can't be decoded; callers treat that as "unknown"
+ * and fall back to the 401 path. No signature check: this only schedules work.
+ */
+export function accessExpiresAt(access: string): number | null {
+  const segment = access.split(".")[1];
+  if (!segment) return null;
+  try {
+    const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    const claims = JSON.parse(atob(padded)) as { exp?: unknown };
+    return typeof claims.exp === "number" ? claims.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+const expiryListeners = new Set<() => void>();
+
+/**
+ * The server refused to extend the session (the access token lapsed while the
+ * user was away, or the refresh token was revoked). Clears the pair and tells
+ * the UI, which signs the person out rather than leaving a half-dead session.
+ */
+export function expireSession(): void {
+  clearTokens();
+  for (const listener of expiryListeners) listener();
+}
+
+export function subscribeSessionExpired(listener: () => void): () => void {
+  expiryListeners.add(listener);
+  return () => {
+    expiryListeners.delete(listener);
+  };
+}

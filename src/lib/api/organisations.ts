@@ -89,7 +89,12 @@ export interface DedupeGroup {
 
 export interface DedupeReport {
   groups: DedupeGroup[];
-  skipped_ambiguous: { name: string; organisation_type: OrganisationType; reason: string; organisations: DedupeCandidate[] }[];
+  skipped_ambiguous: {
+    name: string;
+    organisation_type: OrganisationType;
+    reason: string;
+    organisations: DedupeCandidate[];
+  }[];
   organisations_removed: number;
   applied: boolean;
 }
@@ -163,4 +168,13 @@ export function decideJoinRequest(
   input: { decision: "approved" | "rejected"; notes?: string },
 ): Promise<JoinRequest> {
   return apiFetch<JoinRequest>(`/join-requests/${id}/decide/`, { method: "POST", body: input });
+}
+
+export interface PlatformStats {
+  verified_organisations: number;
+}
+
+/** Public headline counts for the sign-in page; cached for five minutes server-side. */
+export function getPlatformStats(signal?: AbortSignal): Promise<PlatformStats> {
+  return apiFetch<PlatformStats>("/platform-stats/", { auth: false, signal });
 }

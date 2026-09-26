@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "../lib/auth";
 import { SessionProvider } from "../lib/session";
+import { SessionTimeout } from "../components/session-timeout";
 import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -145,6 +146,8 @@ function RootComponent() {
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
           <Toaster position="top-right" />
+          {/* Idle sign-out and proactive token refresh; inert while signed out. */}
+          <SessionTimeout />
         </SessionProvider>
       </AuthProvider>
     </QueryClientProvider>

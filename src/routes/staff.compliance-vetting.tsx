@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LogOut } from "lucide-react";
+import { FileSearch, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { BeldiumLogo } from "@/components/beldium-logo";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ApplicationDetails } from "@/components/staff/application-details";
+import { DocumentStatusBadge, DocumentViewer } from "@/components/staff/document-viewer";
 import { useAuth } from "@/lib/auth";
 import {
   useApplicationsByOrganisationType,
   useDecideComplianceApplication,
-  useReviewComplianceDocument,
 } from "@/lib/api/queries";
 import { dedupeOrganisations, type DedupeReport } from "@/lib/api/organisations";
 import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } from "@/lib/api/types";
@@ -34,12 +35,12 @@ import { cn } from "@/lib/utils";
 
 // Client-only, like the /mining layout: the JWT pair lives in localStorage, so
 // a server-rendered pass hydrates with useHasTokens() === false, the auth guard
-// below sees "unauthenticated" and bounces to /signin — which then forwards the
+// below sees "unauthenticated" and bounces to /signin, which then forwards the
 // (perfectly valid) session on to its dashboard instead of this page.
 export const Route = createFileRoute("/staff/compliance-vetting")({ ssr: false, component: Page });
 
 // Organisation types that gate into the shared compliance-partner audience
-// bucket (see organisations/access.py audience()) once verified — the ones
+// bucket (see organisations/access.py audience()) once verified: the ones
 // this desk exists to vet, as opposed to the miners themselves, who are
 // verified separately on the Mining Organisations register.
 const PARTNER_TYPES = ["compliance_partner", "inspection_body"];
@@ -62,51 +63,44 @@ const statusTone: Record<ApplicationStatus, string> = {
   rejected: "bg-red-100 text-red-800",
 };
 
-const REVIEWABLE_STATUSES: ApplicationStatus[] = ["under_review", "action_required", "conditionally_approved"];
+const REVIEWABLE_STATUSES: ApplicationStatus[] = [
+  "under_review",
+  "action_required",
+  "conditionally_approved",
+];
 
 function Badge({ label, tone }: { label: string; tone: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", tone)}>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+        tone,
+      )}
+    >
       {label}
     </span>
   );
 }
 
-function DocumentRow({ application, document }: { application: ComplianceApplication; document: ComplianceDocument }) {
-  const review = useReviewComplianceDocument(application.id);
-
-  const act = async (status: "verified" | "rejected") => {
-    try {
-      await review.mutateAsync({ documentId: document.id, status });
-      toast.success(`${document.title} marked ${status}`);
-    } catch (err) {
-      toast.error("Could not review this document", {
-        description: err instanceof ApiError ? err.message : "Please try again.",
-      });
-    }
-  };
-
+function DocumentRow({ document, onOpen }: { document: ComplianceDocument; onOpen: () => void }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
-      <div className="text-sm">
+      <button type="button" className="text-left text-sm hover:underline" onClick={onOpen}>
         <span className="font-medium">{document.title}</span>{" "}
-        <span className="text-xs text-muted-foreground">({document.document_type})</span>
-      </div>
+        <span className="text-xs text-muted-foreground">
+          ({document.original_name || document.document_type})
+        </span>
+      </button>
       <div className="flex items-center gap-2">
-        <Badge
-          label={document.status === "submitted" ? "Under Review" : (statusLabel[document.status as ApplicationStatus] ?? document.status)}
-          tone={document.status === "verified" ? statusTone.verified : document.status === "rejected" ? statusTone.rejected : statusTone.under_review}
-        />
-        {document.status === "submitted" ? (
-          <>
-            <Button size="sm" variant="outline" disabled={review.isPending} onClick={() => void act("verified")}>
-              Verify
-            </Button>
-            <Button size="sm" variant="outline" disabled={review.isPending} onClick={() => void act("rejected")}>
-              Reject
-            </Button>
-          </>
-        ) : null}
+        <DocumentStatusBadge status={document.status} />
+        <Button
+          size="sm"
+          variant={document.status === "submitted" ? "default" : "outline"}
+          onClick={onOpen}
+        >
+          <FileSearch className="size-3.5" />
+          {document.status === "submitted" ? "Open & review" : "Open"}
+        </Button>
       </div>
     </div>
   );
@@ -117,11 +111,13 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const decide = useDecideComplianceApplication();
+  const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
 
   const canReview = REVIEWABLE_STATUSES.includes(application.status);
   const documentsPending = application.documents.filter((d) => d.status !== "verified").length;
   const readyToVerify = application.progress.percent === 100 && documentsPending === 0;
-  const orgType = application.organisation_type ?? application.organisation_profile.organisation_type;
+  const orgType =
+    application.organisation_type ?? application.organisation_profile.organisation_type;
 
   const run = async (status: "verified" | "rejected", notes?: string) => {
     try {
@@ -147,17 +143,25 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
   return (
     <>
       <TableRow>
-        <TableCell className="font-mono text-xs font-medium">{application.reference ?? "—"}</TableCell>
-        <TableCell className="text-sm font-medium">{application.organisation_profile.name ?? "—"}</TableCell>
+        <TableCell className="font-mono text-xs font-medium">
+          {application.reference ?? "-"}
+        </TableCell>
+        <TableCell className="text-sm font-medium">
+          {application.organisation_profile.name ?? "-"}
+        </TableCell>
         <TableCell className="text-sm text-muted-foreground capitalize">
-          {orgType?.replace("_", " ") ?? "—"}
+          {orgType?.replace("_", " ") ?? "-"}
         </TableCell>
         <TableCell>
           <Badge label={statusLabel[application.status]} tone={statusTone[application.status]} />
         </TableCell>
-        <TableCell className="text-sm text-muted-foreground">{application.progress.percent}%</TableCell>
         <TableCell className="text-sm text-muted-foreground">
-          {application.submitted_at ? new Date(application.submitted_at).toLocaleDateString() : "Not submitted"}
+          {application.progress.percent}%
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          {application.submitted_at
+            ? new Date(application.submitted_at).toLocaleDateString()
+            : "Not submitted"}
         </TableCell>
         <TableCell className="text-right">
           <div className="flex items-center justify-end gap-2">
@@ -169,12 +173,21 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
                 <Button
                   size="sm"
                   disabled={!readyToVerify || decide.isPending}
-                  title={!readyToVerify ? "Complete every section and verify every document first" : undefined}
+                  title={
+                    !readyToVerify
+                      ? "Complete every section and verify every document first"
+                      : undefined
+                  }
                   onClick={() => void run("verified")}
                 >
                   Verify
                 </Button>
-                <Button size="sm" variant="outline" disabled={decide.isPending} onClick={() => setRejecting(true)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={decide.isPending}
+                  onClick={() => setRejecting(true)}
+                >
                   Reject
                 </Button>
               </>
@@ -186,45 +199,26 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
         <TableRow>
           <TableCell colSpan={7} className="bg-muted/30">
             <div className="space-y-3 py-3 text-sm">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Registration number</p>
-                  <p>{application.organisation_profile.registration_number || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Tax identifier</p>
-                  <p>{application.organisation_profile.tax_identifier || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Website</p>
-                  <p>{application.organisation_profile.website || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Registered address</p>
-                  <p>{application.organisation_profile.registered_address || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Operating address</p>
-                  <p>{application.organisation_profile.operating_address || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">State / LGA</p>
-                  <p>
-                    {application.organisation_profile.state || "—"} / {application.organisation_profile.lga || "—"}
-                  </p>
-                </div>
-              </div>
+              <ApplicationDetails application={application} />
 
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Documents
+                  Documents ({application.documents.length})
+                </p>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Open each document to read it and check its contents against what the applicant
+                  declared.
                 </p>
                 {application.documents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No documents submitted yet.</p>
                 ) : (
                   <div className="space-y-2">
                     {application.documents.map((doc) => (
-                      <DocumentRow key={doc.id} application={application} document={doc} />
+                      <DocumentRow
+                        key={doc.id}
+                        document={doc}
+                        onOpen={() => setOpenDocumentId(doc.id)}
+                      />
                     ))}
                   </div>
                 )}
@@ -239,6 +233,13 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
           </TableCell>
         </TableRow>
       ) : null}
+
+      <DocumentViewer
+        application={application}
+        documentId={openDocumentId}
+        onNavigate={setOpenDocumentId}
+        onClose={() => setOpenDocumentId(null)}
+      />
 
       <Dialog open={rejecting} onOpenChange={setRejecting}>
         <DialogContent>
@@ -312,10 +313,10 @@ function DedupePanel() {
           <h2 className="font-display text-lg font-semibold">Duplicate organisations</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Onboarding used to let the same company end up as several separate organisation records.
-            New duplicates are blocked now — this cleans up ones already in the database. For each
-            group sharing a name and type, one organisation is kept (a verified one if there's exactly
-            one, otherwise the oldest) and the rest are removed along with any mine sites or mining
-            applications only they held.
+            New duplicates are blocked now; this cleans up ones already in the database. For each
+            group sharing a name and type, one organisation is kept (a verified one if there's
+            exactly one, otherwise the oldest) and the rest are removed along with any mine sites or
+            mining applications only they held.
           </p>
         </div>
         <Button variant="outline" onClick={() => void preview()} disabled={loading}>
@@ -330,9 +331,15 @@ function DedupePanel() {
           ) : (
             <>
               {report.groups.map((group) => (
-                <div key={`${group.name}-${group.organisation_type}`} className="mb-4 rounded-lg border border-border p-4">
+                <div
+                  key={`${group.name}-${group.organisation_type}`}
+                  className="mb-4 rounded-lg border border-border p-4"
+                >
                   <p className="text-sm font-medium">
-                    {group.name} <span className="text-muted-foreground">({group.organisation_type.replace("_", " ")})</span>
+                    {group.name}{" "}
+                    <span className="text-muted-foreground">
+                      ({group.organisation_type.replace("_", " ")})
+                    </span>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Keeping {group.keeper_beldium_id ?? group.keeper_id}
@@ -340,8 +347,9 @@ function DedupePanel() {
                   <ul className="mt-2 space-y-1">
                     {group.removed.map((org) => (
                       <li key={org.id} className="text-xs text-muted-foreground">
-                        {report.applied ? "Removed" : "Would remove"} {org.beldium_id ?? org.id} — {org.verification_status},{" "}
-                        {org.site_count} site(s), {org.mining_application_count} mining application(s), members:{" "}
+                        {report.applied ? "Removed" : "Would remove"} {org.beldium_id ?? org.id}:{" "}
+                        {org.verification_status}, {org.site_count} site(s),{" "}
+                        {org.mining_application_count} mining application(s), members:{" "}
                         {org.member_emails.join(", ") || "none"}
                       </li>
                     ))}
@@ -350,11 +358,16 @@ function DedupePanel() {
               ))}
 
               {report.skipped_ambiguous.map((skipped) => (
-                <div key={`${skipped.name}-${skipped.organisation_type}`} className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                <div
+                  key={`${skipped.name}-${skipped.organisation_type}`}
+                  className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4"
+                >
                   <p className="text-sm font-medium text-amber-900">
-                    {skipped.name} ({skipped.organisation_type.replace("_", " ")}) — skipped
+                    {skipped.name} ({skipped.organisation_type.replace("_", " ")}), skipped
                   </p>
-                  <p className="mt-1 text-xs text-amber-800">{skipped.reason}. Resolve this one manually.</p>
+                  <p className="mt-1 text-xs text-amber-800">
+                    {skipped.reason}. Resolve this one manually.
+                  </p>
                 </div>
               ))}
 
@@ -383,7 +396,11 @@ function Page() {
   }, [status, navigate]);
 
   if (status === "loading") {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Loading…
+      </div>
+    );
   }
 
   if (status === "unauthenticated") {
@@ -403,7 +420,7 @@ function Page() {
     );
   }
 
-  // Filtered server-side on the organisation record's type — the profile's
+  // Filtered server-side on the organisation record's type; the profile's
   // copy is empty until the applicant saves that section.
   const applications = data?.results ?? [];
 
@@ -414,12 +431,18 @@ function Page() {
           <BeldiumLogo className="size-9 rounded-2xl" />
           <div>
             <p className="font-display text-sm font-semibold">Beldium Staff</p>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Compliance Partner Vetting</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Compliance Partner Vetting
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <p className="hidden text-sm text-muted-foreground sm:block">{user.email}</p>
-          <Button variant="outline" size="sm" onClick={() => void signOut().then(() => navigate({ to: "/signin" }))}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void signOut().then(() => navigate({ to: "/signin" }))}
+          >
             <LogOut className="size-4" /> Log out
           </Button>
         </div>
@@ -431,9 +454,10 @@ function Page() {
         <div className="mb-6">
           <h1 className="font-display text-2xl font-semibold">Compliance partner applications</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Vet organisations applying to become a compliance partner or inspection body before they join the
-            partner pool and gain visibility into mining applications. This is separate from the compliance
-            dashboard so only Beldium's own desk can act here — keep access limited to one or two staff accounts.
+            Vet organisations applying to become a compliance partner or inspection body before they
+            join the partner pool and gain visibility into mining applications. This is separate
+            from the compliance dashboard so only Beldium's own desk can act here. Keep access
+            limited to one or two staff accounts.
           </p>
         </div>
 
