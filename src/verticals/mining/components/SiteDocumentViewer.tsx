@@ -13,8 +13,8 @@ import {
 import { formatBytes, formatDate, Preview, useProtectedFile } from "@/components/file-preview";
 import { apiUrl } from "@/lib/api/config";
 import { ApiError } from "@/lib/api/errors";
-import { downloadDocumentUrl, type DocumentRecord } from "@/lib/api/mining";
 import { useReviewMiningDocument } from "@/lib/api/mining-queries";
+import { SOURCE_LABEL, type SiteFile } from "../site-files";
 import { StatusChip } from "./chips";
 
 /** What the reviewer compares each document against, taken from the site record. */
@@ -35,7 +35,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function checklistFor(document: DocumentRecord, context: SiteDocumentContext) {
+function checklistFor(document: SiteFile, context: SiteDocumentContext) {
   const items = [
     `The file is legible, complete, and is genuinely a ${document.name}`,
     `It is issued to ${context.organisationName ? `"${context.organisationName}"` : "the site operator"}`,
@@ -43,18 +43,18 @@ function checklistFor(document: DocumentRecord, context: SiteDocumentContext) {
   ];
   if (context.licence) items.push(`Any licence reference matches ${context.licence}`);
   items.push(
-    document.expires_on
-      ? `It is valid until ${document.expires_on} and has not been revoked or superseded`
+    document.expiresOn
+      ? `It is valid until ${document.expiresOn} and has not been revoked or superseded`
       : "It is current: not expired, revoked or superseded",
   );
   return items;
 }
 
 /**
- * Inline reader for a mine site's uploaded documents: the file rendered in the
- * page (PDFs and images), its metadata, a checklist against the site record,
- * and Accept / Reject for pending documents. Accept stays locked until the
- * file has loaded and every check is ticked.
+ * Inline reader for everything a miner submitted for a site: the file rendered
+ * in the page (PDFs and images), its metadata, a checklist against the site
+ * record, and Accept / Reject for pending application documents. Accept stays
+ * locked until the file has loaded and every check is ticked.
  */
 export function SiteDocumentViewer({
   documents,
@@ -63,13 +63,14 @@ export function SiteDocumentViewer({
   onNavigate,
   onClose,
 }: {
-  documents: DocumentRecord[];
+  documents: SiteFile[];
+  /** The `key` of the open file. */
   documentId: string | null;
   context: SiteDocumentContext;
-  onNavigate: (documentId: string) => void;
+  onNavigate: (key: string) => void;
   onClose: () => void;
 }) {
-  const index = documents.findIndex((d) => d.id === documentId);
+  const index = documents.findIndex((d) => d.key === documentId);
   const document = index >= 0 ? documents[index] : null;
   const previous = index > 0 ? documents[index - 1] : undefined;
   const next = index >= 0 && index < documents.length - 1 ? documents[index + 1] : undefined;
@@ -79,12 +80,12 @@ export function SiteDocumentViewer({
       <DialogContent className="flex h-[92vh] max-w-[min(96vw,1400px)] flex-col gap-0 overflow-hidden p-0">
         {document ? (
           <ViewerBody
-            key={document.id}
+            key={document.key}
             document={document}
             context={context}
             position={`${index + 1} of ${documents.length}`}
-            onPrevious={previous ? () => onNavigate(previous.id) : undefined}
-            onNext={next ? () => onNavigate(next.id) : undefined}
+            onPrevious={previous ? () => onNavigate(previous.key) : undefined}
+            onNext={next ? () => onNavigate(next.key) : undefined}
           />
         ) : null}
       </DialogContent>
@@ -99,21 +100,21 @@ function ViewerBody({
   onPrevious,
   onNext,
 }: {
-  document: DocumentRecord;
+  document: SiteFile;
   context: SiteDocumentContext;
   position: string;
   onPrevious: (() => void) | undefined;
   onNext: (() => void) | undefined;
 }) {
-  // The download endpoint streams the stored file behind the bearer token.
-  const fileUrl = document.file_url ? apiUrl(downloadDocumentUrl(document.id)) : null;
-  const { file, error } = useProtectedFile(fileUrl, document.original_name);
+  // The download endpoints stream the stored file behind the bearer token.
+  const fileUrl = document.downloadUrl ? apiUrl(document.downloadUrl) : null;
+  const { file, error } = useProtectedFile(fileUrl, document.originalName);
   const review = useReviewMiningDocument();
   const checklist = useMemo(() => checklistFor(document, context), [document, context]);
   const [checked, setChecked] = useState<boolean[]>(() => checklist.map(() => false));
   const [rejecting, setRejecting] = useState(false);
 
-  const reviewable = document.status === "pending";
+  const reviewable = document.source === "document" && document.status === "pending";
   const allChecked = checked.every(Boolean);
 
   const act = async (status: "verified" | "rejected") => {
@@ -146,18 +147,19 @@ function ViewerBody({
           </div>
         </div>
         <DialogDescription className="text-xs">
-          {context.siteName} · {context.siteCode}
+          {SOURCE_LABEL[document.source]}
+          {document.sectionTitle ? ` · ${document.sectionTitle}` : ""} · {document.siteName}
           {context.organisationName ? ` · ${context.organisationName}` : ""}
         </DialogDescription>
       </DialogHeader>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_360px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[1fr_360px] lg:overflow-hidden">
         <div className="min-h-[50vh] border-b border-border lg:min-h-0 lg:border-b-0 lg:border-r">
           <Preview
             file={file}
             error={error}
             hasUrl={Boolean(fileUrl)}
-            name={document.original_name || document.name}
+            name={document.originalName || document.name}
           />
         </div>
 
@@ -166,15 +168,17 @@ function ViewerBody({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               File details
             </p>
-            <Detail label="File name">{document.original_name || "-"}</Detail>
+            <Detail label="File name">{document.originalName || "-"}</Detail>
             <Detail label="Category">{document.category || "-"}</Detail>
             <div className="grid grid-cols-2 gap-3">
               <Detail label="Format">{file?.type || "-"}</Detail>
               <Detail label="Size">{file ? formatBytes(file.size) : "-"}</Detail>
-              <Detail label="Uploaded">{formatDate(document.created_at)}</Detail>
-              <Detail label="Last updated">{formatDate(document.updated_at)}</Detail>
-              <Detail label="Uploaded by">{document.uploaded_by_name || "-"}</Detail>
-              <Detail label="Expires">{document.expires_on ?? "-"}</Detail>
+              <Detail label="Uploaded">{formatDate(document.createdAt)}</Detail>
+              <Detail label="Last updated">{formatDate(document.updatedAt)}</Detail>
+              <Detail label="Uploaded by">{document.uploadedBy || "-"}</Detail>
+              <Detail label="Expires">{document.expiresOn ?? "-"}</Detail>
+              <Detail label="Filed under">{document.sectionTitle ?? "-"}</Detail>
+              <Detail label="Filed for site">{document.siteName}</Detail>
             </div>
             {file ? (
               <div className="flex gap-2 pt-1">
@@ -184,7 +188,7 @@ function ViewerBody({
                   </a>
                 </Button>
                 <Button size="sm" variant="outline" asChild>
-                  <a href={file.url} download={document.original_name || document.name}>
+                  <a href={file.url} download={document.originalName || document.name}>
                     <Download className="size-3.5" /> Download
                   </a>
                 </Button>
@@ -275,7 +279,11 @@ function ViewerBody({
             </section>
           ) : (
             <p className="text-sm text-muted-foreground">
-              This document has already been marked {document.status}.
+              {document.source === "evidence"
+                ? `Section evidence is decided with the section: use Verify or Reject on "${document.sectionTitle ?? "its section"}" once you have read it.`
+                : document.source === "licence"
+                  ? `This is the licence record on file (status: ${document.status}). Check it against the licence details in the review header.`
+                  : `This document has already been marked ${document.status}.`}
             </p>
           )}
         </aside>

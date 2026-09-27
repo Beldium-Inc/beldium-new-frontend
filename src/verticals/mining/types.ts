@@ -19,6 +19,12 @@ export interface Evidence {
   uploaded: string;
   size: string;
   status: "Verified" | "Pending" | "Rejected" | "Expired";
+  /** API path of the stored file, or null when only a record was created. */
+  fileUrl: string | null;
+  originalName: string;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SectionField {

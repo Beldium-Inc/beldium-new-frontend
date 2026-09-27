@@ -8,6 +8,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
+import { fetchMinerSetup } from "@/lib/setup";
 
 const title = "Sign in - Beldium Miner Hub";
 const description = "Universal sign-in for miners, mining organisation admins and organisation staff.";
@@ -44,6 +45,16 @@ function AuthPage() {
     setSubmitting(true);
     try {
       await signIn({ email: email.trim(), password });
+      // Anyone who stopped part-way through signup goes back to the
+      // application instead of landing on an empty workspace.
+      const setup = await fetchMinerSetup().catch(() => null);
+      if (setup && (setup.stage === "no_organisation" || setup.stage === "unsubmitted")) {
+        navigate({
+          to: "/application",
+          search: { organisationName: setup.organisation?.name },
+        });
+        return;
+      }
       navigate({ to: "/portal" });
     } catch (cause) {
       if (cause instanceof ApiError && cause.code === "email_not_verified") {

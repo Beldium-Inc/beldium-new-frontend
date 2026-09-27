@@ -2,8 +2,15 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Search } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { StatusBadge } from "./status-badge";
 import type { Target, TimelineEvent } from "@/lib/ops-store";
 import { fmt } from "@/lib/ops-store";
@@ -15,33 +22,84 @@ export function useOpenTarget() {
   return (t: Target) => {
     switch (t.kind) {
       case "movement":
-        return navigate({ to: "/movements/$movementId", params: { movementId: t.id } });
+        return navigate({ to: "/portal/movements/$movementId", params: { movementId: t.id } });
       case "request":
-        return navigate({ to: "/transport-requests/$requestId", params: { requestId: t.id } });
+        return navigate({
+          to: "/portal/transport-requests/$requestId",
+          params: { requestId: t.id },
+        });
       case "vehicle":
-        return navigate({ to: "/vehicles/$vehicleId", params: { vehicleId: t.id } });
+        return navigate({ to: "/portal/vehicles/$vehicleId", params: { vehicleId: t.id } });
       case "driver":
-        return navigate({ to: "/drivers/$driverId", params: { driverId: t.id } });
+        return navigate({ to: "/portal/drivers/$driverId", params: { driverId: t.id } });
       case "transaction":
-        return navigate({ to: "/transactions/$txnId", params: { txnId: t.id } });
+        return navigate({ to: "/portal/transactions/$txnId", params: { txnId: t.id } });
       case "queue":
         return navigate({ to: t.path, search: t.tab ? { tab: t.tab } : {} });
     }
   };
 }
 
-export function IdLink({ kind, id, className }: { kind: "movement" | "request" | "vehicle" | "driver" | "transaction"; id?: string | undefined; className?: string | undefined }) {
+export function IdLink({
+  kind,
+  id,
+  className,
+}: {
+  kind: "movement" | "request" | "vehicle" | "driver" | "transaction";
+  id?: string | undefined;
+  className?: string | undefined;
+}) {
   if (!id) return <span className="text-muted-foreground">-</span>;
   const cls = cn("font-semibold text-colorLink hover:underline", className);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
-  if (kind === "movement") return <Link onClick={stop} to="/movements/$movementId" params={{ movementId: id }} className={cls}>{id}</Link>;
-  if (kind === "request") return <Link onClick={stop} to="/transport-requests/$requestId" params={{ requestId: id }} className={cls}>{id}</Link>;
-  if (kind === "vehicle") return <Link onClick={stop} to="/vehicles/$vehicleId" params={{ vehicleId: id }} className={cls}>{id}</Link>;
-  if (kind === "driver") return <Link onClick={stop} to="/drivers/$driverId" params={{ driverId: id }} className={cls}>{id}</Link>;
-  return <Link onClick={stop} to="/transactions/$txnId" params={{ txnId: id }} className={cls}>{id}</Link>;
+  if (kind === "movement")
+    return (
+      <Link
+        onClick={stop}
+        to="/portal/movements/$movementId"
+        params={{ movementId: id }}
+        className={cls}
+      >
+        {id}
+      </Link>
+    );
+  if (kind === "request")
+    return (
+      <Link
+        onClick={stop}
+        to="/portal/transport-requests/$requestId"
+        params={{ requestId: id }}
+        className={cls}
+      >
+        {id}
+      </Link>
+    );
+  if (kind === "vehicle")
+    return (
+      <Link
+        onClick={stop}
+        to="/portal/vehicles/$vehicleId"
+        params={{ vehicleId: id }}
+        className={cls}
+      >
+        {id}
+      </Link>
+    );
+  if (kind === "driver")
+    return (
+      <Link onClick={stop} to="/portal/drivers/$driverId" params={{ driverId: id }} className={cls}>
+        {id}
+      </Link>
+    );
+  return (
+    <Link onClick={stop} to="/portal/transactions/$txnId" params={{ txnId: id }} className={cls}>
+      {id}
+    </Link>
+  );
 }
 
-export const tabSearch = (s: Record<string, unknown>): { tab?: string } => (typeof s["tab"] === "string" ? { tab: s["tab"] } : {});
+export const tabSearch = (s: Record<string, unknown>): { tab?: string } =>
+  typeof s["tab"] === "string" ? { tab: s["tab"] } : {};
 
 /* ------------------------------------------------------------ buttons */
 
@@ -49,6 +107,7 @@ export function Btn({
   children,
   onClick,
   variant = "primary",
+  size = "default",
   disabled,
   title,
   type = "button",
@@ -57,34 +116,36 @@ export function Btn({
   children: React.ReactNode;
   onClick?: (() => unknown) | undefined;
   variant?: "primary" | "outline" | "danger" | "ghost" | undefined;
+  size?: "default" | "sm" | undefined;
   disabled?: boolean | undefined;
   title?: string | undefined;
   type?: "button" | "submit" | undefined;
   className?: string | undefined;
 }) {
+  // Miner Hub's pill Button; the variant names predate it and are mapped here.
   return (
-    <button
+    <Button
       type={type}
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={cn(
-        "inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        variant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
-        variant === "outline" && "border border-border bg-card text-foreground hover:border-primary",
-        variant === "danger" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        variant === "ghost" && "text-colorLink hover:underline",
-        className,
-      )}
+      size={size}
+      variant={variant === "primary" ? "default" : variant === "danger" ? "destructive" : variant}
+      className={className}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
 /* ------------------------------------------------------------ queue view */
 
-export type QCol<T> = { key: string; header: string; render: (r: T) => React.ReactNode; sort?: ((r: T) => string | number) | undefined };
+export type QCol<T> = {
+  key: string;
+  header: string;
+  render: (r: T) => React.ReactNode;
+  sort?: ((r: T) => string | number) | undefined;
+};
 export type QTab<T> = { label: string; test: (r: T) => boolean };
 export type QFilter<T> = { label: string; get: (r: T) => string };
 
@@ -113,7 +174,9 @@ export function QueueView<T>({
   empty?: string | undefined;
   toolbar?: React.ReactNode | undefined;
 }) {
-  const [tab, setTab] = useState(initialTab && tabs?.some((t) => t.label === initialTab) ? initialTab : tabs?.[0]?.label);
+  const [tab, setTab] = useState(
+    initialTab && tabs?.some((t) => t.label === initialTab) ? initialTab : tabs?.[0]?.label,
+  );
   useEffect(() => {
     if (initialTab && tabs?.some((t) => t.label === initialTab)) setTab(initialTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,7 +214,8 @@ export function QueueView<T>({
   return (
     <div className="space-y-3">
       {tabs ? (
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
+        <div className="max-w-full overflow-x-auto">
+          <div className="inline-flex h-9 items-center rounded-full bg-muted p-1 text-muted-foreground">
           {tabs.map((t) => {
             const n = rows.filter(t.test).length;
             return (
@@ -160,15 +224,23 @@ export function QueueView<T>({
                 type="button"
                 onClick={() => setTab(t.label)}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
-                  tab === t.label ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:border-primary",
+                  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-all",
+                  tab === t.label ? "bg-background text-foreground shadow" : "hover:text-foreground",
                 )}
               >
                 {t.label}
-                <span className={cn("rounded-full px-1.5 text-[10px]", tab === t.label ? "bg-primary-foreground/20" : "bg-secondary text-secondary-foreground")}>{n}</span>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 text-[10px]",
+                    tab === t.label ? "bg-primary text-primary-foreground" : "bg-background/70",
+                  )}
+                >
+                  {n}
+                </span>
               </button>
             );
           })}
+          </div>
         </div>
       ) : null}
 
@@ -179,17 +251,19 @@ export function QueueView<T>({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search"
-            className="w-full rounded-lg border border-border bg-card py-2 pl-8 pr-3 text-sm outline-none focus:border-primary"
+            className={cn(fieldCls, "pl-8")}
           />
         </label>
         {filters.map((f) => {
-          const opts = Array.from(new Set(rows.map(f.get))).filter(Boolean).sort();
+          const opts = Array.from(new Set(rows.map(f.get)))
+            .filter(Boolean)
+            .sort();
           return (
             <select
               key={f.label}
               value={fv[f.label] ?? ""}
               onChange={(e) => setFv({ ...fv, [f.label]: e.target.value })}
-              className="rounded-lg border border-border bg-card px-2.5 py-2 text-xs text-foreground outline-none focus:border-primary"
+              className={cn(fieldCls, "w-auto")}
               aria-label={f.label}
             >
               <option value="">{f.label}: All</option>
@@ -212,28 +286,50 @@ export function QueueView<T>({
           <thead>
             <tr className="border-b border-border">
               {columns.map((c) => (
-                <th key={c.key} className="whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <th
+                  key={c.key}
+                  className="whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                >
                   {c.sort ? (
                     <button
                       type="button"
                       className="inline-flex items-center gap-1 uppercase hover:text-primary"
-                      onClick={() => setSort(sort?.key === c.key ? { key: c.key, dir: sort.dir === 1 ? -1 : 1 } : { key: c.key, dir: 1 })}
+                      onClick={() =>
+                        setSort(
+                          sort?.key === c.key
+                            ? { key: c.key, dir: sort.dir === 1 ? -1 : 1 }
+                            : { key: c.key, dir: 1 },
+                        )
+                      }
                     >
                       {c.header}
-                      {sort?.key === c.key ? sort.dir === 1 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" /> : null}
+                      {sort?.key === c.key ? (
+                        sort.dir === 1 ? (
+                          <ArrowUp className="size-3" />
+                        ) : (
+                          <ArrowDown className="size-3" />
+                        )
+                      ) : null}
                     </button>
                   ) : (
                     c.header
                   )}
                 </th>
               ))}
-              {actions ? <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th> : null}
+              {actions ? (
+                <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Actions
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td
+                  colSpan={columns.length + (actions ? 1 : 0)}
+                  className="px-3 py-8 text-center text-sm text-muted-foreground"
+                >
                   {empty}
                 </td>
               </tr>
@@ -242,7 +338,10 @@ export function QueueView<T>({
                 <tr
                   key={getKey(r)}
                   onClick={onOpen ? () => onOpen(r) : undefined}
-                  className={cn("border-b border-border/60 last:border-0 hover:bg-secondary/40", onOpen && "cursor-pointer")}
+                  className={cn(
+                    "border-b border-border/60 last:border-0 hover:bg-secondary/40",
+                    onOpen && "cursor-pointer",
+                  )}
                 >
                   {columns.map((c) => (
                     <td key={c.key} className="whitespace-nowrap px-3 py-2.5 align-middle">
@@ -283,9 +382,11 @@ export function Modal({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className={cn("max-h-[90vh] overflow-y-auto", wide ? "sm:max-w-2xl" : "sm:max-w-lg")}>
+      <DialogContent
+        className={cn("max-h-[90vh] overflow-y-auto", wide ? "sm:max-w-2xl" : "sm:max-w-lg")}
+      >
         <DialogHeader>
-          <DialogTitle className="text-primary">{title}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {children}
         {footer ? <DialogFooter className="gap-2">{footer}</DialogFooter> : null}
@@ -296,17 +397,25 @@ export function Modal({
 
 export function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+    <label className="flex flex-col gap-2">
+      <span className="text-sm font-medium leading-none text-foreground">{label}</span>
       {children}
     </label>
   );
 }
-export const fieldCls = "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary";
+/** Matches components/ui/input, for native inputs and selects. */
+export const fieldCls =
+  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm";
 
 /* ------------------------------------------------------------ timeline */
 
-export function Timeline({ events, newestFirst = true }: { events: TimelineEvent[]; newestFirst?: boolean }) {
+export function Timeline({
+  events,
+  newestFirst = true,
+}: {
+  events: TimelineEvent[];
+  newestFirst?: boolean;
+}) {
   const list = newestFirst ? [...events].reverse() : events;
   if (!list.length) return <p className="text-sm text-muted-foreground">No events yet.</p>;
   return (
@@ -319,7 +428,16 @@ export function Timeline({ events, newestFirst = true }: { events: TimelineEvent
             <span className="text-sm font-medium text-foreground">{e.event}</span>
           </div>
           <p className="beldium-small">
-            {[e.actor, e.location, e.gps ? `GPS ${e.gps}` : null, e.quantity, e.evidence, `via ${e.source}`].filter(Boolean).join(" · ")}
+            {[
+              e.actor,
+              e.location,
+              e.gps ? `GPS ${e.gps}` : null,
+              e.quantity,
+              e.evidence,
+              `via ${e.source}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </li>
       ))}
@@ -352,22 +470,33 @@ export function Badge({ v }: { v: string }) {
   return <StatusBadge value={v} />;
 }
 
-export function WorkspaceTabs({ tabs, value, onChange }: { tabs: string[]; value: string; onChange: (t: string) => void }) {
+export function WorkspaceTabs({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: string[];
+  value: string;
+  onChange: (t: string) => void;
+}) {
+  // Same look as components/ui/tabs (Miner Hub's pill tab list).
   return (
-    <div className="-mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border px-1">
-      {tabs.map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => onChange(t)}
-          className={cn(
-            "shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition-colors",
-            value === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-primary",
-          )}
-        >
-          {t}
-        </button>
-      ))}
+    <div className="mb-4 max-w-full overflow-x-auto">
+      <div className="inline-flex h-9 items-center rounded-full bg-muted p-1 text-muted-foreground">
+        {tabs.map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onChange(t)}
+            className={cn(
+              "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-all",
+              value === t ? "bg-background text-foreground shadow" : "hover:text-foreground",
+            )}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

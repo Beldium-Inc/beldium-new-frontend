@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
 import {
   addScoreFactor,
@@ -335,6 +341,43 @@ export function useMiningDocuments(query: MiningListQuery = FULL_PAGE) {
     enabled: hasTokens,
     staleTime: LIST_STALE_TIME,
   });
+}
+
+/**
+ * Every document and licence filed against any of these sites. A miner's
+ * application files organisation-level papers (incorporation, tax, EMP…)
+ * against its first site only, so a reviewer looking at any one site needs
+ * the whole organisation's set to see what was submitted.
+ */
+export function useSiteFiles(siteIds: UUID[]) {
+  const hasTokens = useHasTokens();
+  const documents = useQueries({
+    queries: siteIds.map((site) => {
+      const query = { ...FULL_PAGE, site };
+      return {
+        queryKey: miningKeys.documents(query),
+        queryFn: () => listMiningDocuments(query),
+        enabled: hasTokens,
+        staleTime: LIST_STALE_TIME,
+      };
+    }),
+  });
+  const licences = useQueries({
+    queries: siteIds.map((site) => {
+      const query = { ...FULL_PAGE, site };
+      return {
+        queryKey: miningKeys.licences(query),
+        queryFn: () => listLicences(query),
+        enabled: hasTokens,
+        staleTime: LIST_STALE_TIME,
+      };
+    }),
+  });
+  return {
+    documents: documents.flatMap((q) => q.data?.results ?? []),
+    licences: licences.flatMap((q) => q.data?.results ?? []),
+    isLoading: [...documents, ...licences].some((q) => q.isPending && hasTokens),
+  };
 }
 
 export function useMiningAudit(query: MiningListQuery = FULL_PAGE) {

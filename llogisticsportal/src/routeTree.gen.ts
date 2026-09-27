@@ -10,39 +10,58 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as OpsRouteRouteImport } from './routes/_ops/route'
+import { Route as ApplicationRouteImport } from './routes/application'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PortalRouteRouteImport } from './routes/portal/route'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
-import { Route as OpsActiveMovementsRouteImport } from './routes/_ops/active-movements'
-import { Route as OpsBulkLogisticsRouteImport } from './routes/_ops/bulk-logistics'
-import { Route as OpsComplianceRouteImport } from './routes/_ops/compliance'
-import { Route as OpsDeliveriesRouteImport } from './routes/_ops/deliveries'
-import { Route as OpsDocumentsRouteImport } from './routes/_ops/documents'
-import { Route as OpsDriversRouteImport } from './routes/_ops/drivers'
-import { Route as OpsFleetRouteImport } from './routes/_ops/fleet'
-import { Route as OpsIncidentsRouteImport } from './routes/_ops/incidents'
-import { Route as OpsNotificationsRouteImport } from './routes/_ops/notifications'
-import { Route as OpsPaymentsRouteImport } from './routes/_ops/payments'
-import { Route as OpsReportsRouteImport } from './routes/_ops/reports'
-import { Route as OpsRoutesTrackingRouteImport } from './routes/_ops/routes-tracking'
-import { Route as OpsSampleLogisticsRouteImport } from './routes/_ops/sample-logistics'
-import { Route as OpsSettingsRouteImport } from './routes/_ops/settings'
-import { Route as OpsTransactionsRouteImport } from './routes/_ops/transactions'
-import { Route as OpsTransportRequestsRouteImport } from './routes/_ops/transport-requests'
-import { Route as OpsVehiclesRouteImport } from './routes/_ops/vehicles'
-import { Route as OpsDriversDriverIdRouteImport } from './routes/_ops/drivers_.$driverId'
-import { Route as OpsMovementsMovementIdRouteImport } from './routes/_ops/movements.$movementId'
-import { Route as OpsTransactionsTxnIdRouteImport } from './routes/_ops/transactions_.$txnId'
-import { Route as OpsTransportRequestsRequestIdRouteImport } from './routes/_ops/transport-requests_.$requestId'
-import { Route as OpsVehiclesVehicleIdRouteImport } from './routes/_ops/vehicles_.$vehicleId'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SubmittedRouteImport } from './routes/submitted'
+import { Route as VerifyRouteImport } from './routes/verify'
+import { Route as PortalIndexRouteImport } from './routes/portal/index'
+import { Route as PortalActiveMovementsRouteImport } from './routes/portal/active-movements'
+import { Route as PortalApplicationRecordRouteImport } from './routes/portal/application-record'
+import { Route as PortalBulkLogisticsRouteImport } from './routes/portal/bulk-logistics'
+import { Route as PortalComplianceRouteImport } from './routes/portal/compliance'
+import { Route as PortalDeliveriesRouteImport } from './routes/portal/deliveries'
+import { Route as PortalDocumentsRouteImport } from './routes/portal/documents'
+import { Route as PortalDriversRouteImport } from './routes/portal/drivers'
+import { Route as PortalFleetRouteImport } from './routes/portal/fleet'
+import { Route as PortalIncidentsRouteImport } from './routes/portal/incidents'
+import { Route as PortalNotificationsRouteImport } from './routes/portal/notifications'
+import { Route as PortalPaymentsRouteImport } from './routes/portal/payments'
+import { Route as PortalReportsRouteImport } from './routes/portal/reports'
+import { Route as PortalRequestsRouteImport } from './routes/portal/requests'
+import { Route as PortalRoutesTrackingRouteImport } from './routes/portal/routes-tracking'
+import { Route as PortalSampleLogisticsRouteImport } from './routes/portal/sample-logistics'
+import { Route as PortalSettingsRouteImport } from './routes/portal/settings'
+import { Route as PortalTransactionsRouteImport } from './routes/portal/transactions'
+import { Route as PortalTransportRequestsRouteImport } from './routes/portal/transport-requests'
+import { Route as PortalVehiclesRouteImport } from './routes/portal/vehicles'
+import { Route as PortalDriversDriverIdRouteImport } from './routes/portal/drivers_.$driverId'
+import { Route as PortalMovementsMovementIdRouteImport } from './routes/portal/movements.$movementId'
+import { Route as PortalTransactionsTxnIdRouteImport } from './routes/portal/transactions_.$txnId'
+import { Route as PortalTransportRequestsRequestIdRouteImport } from './routes/portal/transport-requests_.$requestId'
+import { Route as PortalVehiclesVehicleIdRouteImport } from './routes/portal/vehicles_.$vehicleId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OpsRouteRoute = OpsRouteRouteImport.update({
-  id: '/_ops',
+const ApplicationRoute = ApplicationRouteImport.update({
+  id: '/application',
+  path: '/application',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalRouteRoute = PortalRouteRouteImport.update({
+  id: '/portal',
+  path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -55,291 +74,377 @@ const SignUpRoute = SignUpRouteImport.update({
   path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OpsActiveMovementsRoute = OpsActiveMovementsRouteImport.update({
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubmittedRoute = SubmittedRouteImport.update({
+  id: '/submitted',
+  path: '/submitted',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalIndexRoute = PortalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
+const PortalActiveMovementsRoute = PortalActiveMovementsRouteImport.update({
   id: '/active-movements',
   path: '/active-movements',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsBulkLogisticsRoute = OpsBulkLogisticsRouteImport.update({
+const PortalApplicationRecordRoute = PortalApplicationRecordRouteImport.update({
+  id: '/application-record',
+  path: '/application-record',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
+const PortalBulkLogisticsRoute = PortalBulkLogisticsRouteImport.update({
   id: '/bulk-logistics',
   path: '/bulk-logistics',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsComplianceRoute = OpsComplianceRouteImport.update({
+const PortalComplianceRoute = PortalComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsDeliveriesRoute = OpsDeliveriesRouteImport.update({
+const PortalDeliveriesRoute = PortalDeliveriesRouteImport.update({
   id: '/deliveries',
   path: '/deliveries',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsDocumentsRoute = OpsDocumentsRouteImport.update({
+const PortalDocumentsRoute = PortalDocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsDriversRoute = OpsDriversRouteImport.update({
+const PortalDriversRoute = PortalDriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsFleetRoute = OpsFleetRouteImport.update({
+const PortalFleetRoute = PortalFleetRouteImport.update({
   id: '/fleet',
   path: '/fleet',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsIncidentsRoute = OpsIncidentsRouteImport.update({
+const PortalIncidentsRoute = PortalIncidentsRouteImport.update({
   id: '/incidents',
   path: '/incidents',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsNotificationsRoute = OpsNotificationsRouteImport.update({
+const PortalNotificationsRoute = PortalNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsPaymentsRoute = OpsPaymentsRouteImport.update({
+const PortalPaymentsRoute = PortalPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsReportsRoute = OpsReportsRouteImport.update({
+const PortalReportsRoute = PortalReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsRoutesTrackingRoute = OpsRoutesTrackingRouteImport.update({
+const PortalRequestsRoute = PortalRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
+const PortalRoutesTrackingRoute = PortalRoutesTrackingRouteImport.update({
   id: '/routes-tracking',
   path: '/routes-tracking',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsSampleLogisticsRoute = OpsSampleLogisticsRouteImport.update({
+const PortalSampleLogisticsRoute = PortalSampleLogisticsRouteImport.update({
   id: '/sample-logistics',
   path: '/sample-logistics',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsSettingsRoute = OpsSettingsRouteImport.update({
+const PortalSettingsRoute = PortalSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsTransactionsRoute = OpsTransactionsRouteImport.update({
+const PortalTransactionsRoute = PortalTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsTransportRequestsRoute = OpsTransportRequestsRouteImport.update({
+const PortalTransportRequestsRoute = PortalTransportRequestsRouteImport.update({
   id: '/transport-requests',
   path: '/transport-requests',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsVehiclesRoute = OpsVehiclesRouteImport.update({
+const PortalVehiclesRoute = PortalVehiclesRouteImport.update({
   id: '/vehicles',
   path: '/vehicles',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsDriversDriverIdRoute = OpsDriversDriverIdRouteImport.update({
+const PortalDriversDriverIdRoute = PortalDriversDriverIdRouteImport.update({
   id: '/drivers_/$driverId',
   path: '/drivers/$driverId',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsMovementsMovementIdRoute = OpsMovementsMovementIdRouteImport.update({
-  id: '/movements/$movementId',
-  path: '/movements/$movementId',
-  getParentRoute: () => OpsRouteRoute,
-} as any)
-const OpsTransactionsTxnIdRoute = OpsTransactionsTxnIdRouteImport.update({
+const PortalMovementsMovementIdRoute =
+  PortalMovementsMovementIdRouteImport.update({
+    id: '/movements/$movementId',
+    path: '/movements/$movementId',
+    getParentRoute: () => PortalRouteRoute,
+  } as any)
+const PortalTransactionsTxnIdRoute = PortalTransactionsTxnIdRouteImport.update({
   id: '/transactions_/$txnId',
   path: '/transactions/$txnId',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
-const OpsTransportRequestsRequestIdRoute =
-  OpsTransportRequestsRequestIdRouteImport.update({
+const PortalTransportRequestsRequestIdRoute =
+  PortalTransportRequestsRequestIdRouteImport.update({
     id: '/transport-requests_/$requestId',
     path: '/transport-requests/$requestId',
-    getParentRoute: () => OpsRouteRoute,
+    getParentRoute: () => PortalRouteRoute,
   } as any)
-const OpsVehiclesVehicleIdRoute = OpsVehiclesVehicleIdRouteImport.update({
+const PortalVehiclesVehicleIdRoute = PortalVehiclesVehicleIdRouteImport.update({
   id: '/vehicles_/$vehicleId',
   path: '/vehicles/$vehicleId',
-  getParentRoute: () => OpsRouteRoute,
+  getParentRoute: () => PortalRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/portal': typeof PortalRouteRouteWithChildren
+  '/application': typeof ApplicationRoute
+  '/auth': typeof AuthRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/active-movements': typeof OpsActiveMovementsRoute
-  '/bulk-logistics': typeof OpsBulkLogisticsRoute
-  '/compliance': typeof OpsComplianceRoute
-  '/deliveries': typeof OpsDeliveriesRoute
-  '/documents': typeof OpsDocumentsRoute
-  '/drivers': typeof OpsDriversRoute
-  '/fleet': typeof OpsFleetRoute
-  '/incidents': typeof OpsIncidentsRoute
-  '/notifications': typeof OpsNotificationsRoute
-  '/payments': typeof OpsPaymentsRoute
-  '/reports': typeof OpsReportsRoute
-  '/routes-tracking': typeof OpsRoutesTrackingRoute
-  '/sample-logistics': typeof OpsSampleLogisticsRoute
-  '/settings': typeof OpsSettingsRoute
-  '/transactions': typeof OpsTransactionsRoute
-  '/transport-requests': typeof OpsTransportRequestsRoute
-  '/vehicles': typeof OpsVehiclesRoute
-  '/drivers/$driverId': typeof OpsDriversDriverIdRoute
-  '/movements/$movementId': typeof OpsMovementsMovementIdRoute
-  '/transactions/$txnId': typeof OpsTransactionsTxnIdRoute
-  '/transport-requests/$requestId': typeof OpsTransportRequestsRequestIdRoute
-  '/vehicles/$vehicleId': typeof OpsVehiclesVehicleIdRoute
+  '/signup': typeof SignupRoute
+  '/submitted': typeof SubmittedRoute
+  '/verify': typeof VerifyRoute
+  '/portal/active-movements': typeof PortalActiveMovementsRoute
+  '/portal/application-record': typeof PortalApplicationRecordRoute
+  '/portal/bulk-logistics': typeof PortalBulkLogisticsRoute
+  '/portal/compliance': typeof PortalComplianceRoute
+  '/portal/deliveries': typeof PortalDeliveriesRoute
+  '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/drivers': typeof PortalDriversRoute
+  '/portal/fleet': typeof PortalFleetRoute
+  '/portal/incidents': typeof PortalIncidentsRoute
+  '/portal/notifications': typeof PortalNotificationsRoute
+  '/portal/payments': typeof PortalPaymentsRoute
+  '/portal/reports': typeof PortalReportsRoute
+  '/portal/requests': typeof PortalRequestsRoute
+  '/portal/routes-tracking': typeof PortalRoutesTrackingRoute
+  '/portal/sample-logistics': typeof PortalSampleLogisticsRoute
+  '/portal/settings': typeof PortalSettingsRoute
+  '/portal/transactions': typeof PortalTransactionsRoute
+  '/portal/transport-requests': typeof PortalTransportRequestsRoute
+  '/portal/vehicles': typeof PortalVehiclesRoute
+  '/portal/': typeof PortalIndexRoute
+  '/portal/drivers/$driverId': typeof PortalDriversDriverIdRoute
+  '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
+  '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
+  '/portal/transport-requests/$requestId': typeof PortalTransportRequestsRequestIdRoute
+  '/portal/vehicles/$vehicleId': typeof PortalVehiclesVehicleIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/application': typeof ApplicationRoute
+  '/auth': typeof AuthRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/active-movements': typeof OpsActiveMovementsRoute
-  '/bulk-logistics': typeof OpsBulkLogisticsRoute
-  '/compliance': typeof OpsComplianceRoute
-  '/deliveries': typeof OpsDeliveriesRoute
-  '/documents': typeof OpsDocumentsRoute
-  '/drivers': typeof OpsDriversRoute
-  '/fleet': typeof OpsFleetRoute
-  '/incidents': typeof OpsIncidentsRoute
-  '/notifications': typeof OpsNotificationsRoute
-  '/payments': typeof OpsPaymentsRoute
-  '/reports': typeof OpsReportsRoute
-  '/routes-tracking': typeof OpsRoutesTrackingRoute
-  '/sample-logistics': typeof OpsSampleLogisticsRoute
-  '/settings': typeof OpsSettingsRoute
-  '/transactions': typeof OpsTransactionsRoute
-  '/transport-requests': typeof OpsTransportRequestsRoute
-  '/vehicles': typeof OpsVehiclesRoute
-  '/drivers/$driverId': typeof OpsDriversDriverIdRoute
-  '/movements/$movementId': typeof OpsMovementsMovementIdRoute
-  '/transactions/$txnId': typeof OpsTransactionsTxnIdRoute
-  '/transport-requests/$requestId': typeof OpsTransportRequestsRequestIdRoute
-  '/vehicles/$vehicleId': typeof OpsVehiclesVehicleIdRoute
+  '/signup': typeof SignupRoute
+  '/submitted': typeof SubmittedRoute
+  '/verify': typeof VerifyRoute
+  '/portal/active-movements': typeof PortalActiveMovementsRoute
+  '/portal/application-record': typeof PortalApplicationRecordRoute
+  '/portal/bulk-logistics': typeof PortalBulkLogisticsRoute
+  '/portal/compliance': typeof PortalComplianceRoute
+  '/portal/deliveries': typeof PortalDeliveriesRoute
+  '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/drivers': typeof PortalDriversRoute
+  '/portal/fleet': typeof PortalFleetRoute
+  '/portal/incidents': typeof PortalIncidentsRoute
+  '/portal/notifications': typeof PortalNotificationsRoute
+  '/portal/payments': typeof PortalPaymentsRoute
+  '/portal/reports': typeof PortalReportsRoute
+  '/portal/requests': typeof PortalRequestsRoute
+  '/portal/routes-tracking': typeof PortalRoutesTrackingRoute
+  '/portal/sample-logistics': typeof PortalSampleLogisticsRoute
+  '/portal/settings': typeof PortalSettingsRoute
+  '/portal/transactions': typeof PortalTransactionsRoute
+  '/portal/transport-requests': typeof PortalTransportRequestsRoute
+  '/portal/vehicles': typeof PortalVehiclesRoute
+  '/portal': typeof PortalIndexRoute
+  '/portal/drivers/$driverId': typeof PortalDriversDriverIdRoute
+  '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
+  '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
+  '/portal/transport-requests/$requestId': typeof PortalTransportRequestsRequestIdRoute
+  '/portal/vehicles/$vehicleId': typeof PortalVehiclesVehicleIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_ops': typeof OpsRouteRouteWithChildren
+  '/portal': typeof PortalRouteRouteWithChildren
+  '/application': typeof ApplicationRoute
+  '/auth': typeof AuthRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/_ops/active-movements': typeof OpsActiveMovementsRoute
-  '/_ops/bulk-logistics': typeof OpsBulkLogisticsRoute
-  '/_ops/compliance': typeof OpsComplianceRoute
-  '/_ops/deliveries': typeof OpsDeliveriesRoute
-  '/_ops/documents': typeof OpsDocumentsRoute
-  '/_ops/drivers': typeof OpsDriversRoute
-  '/_ops/fleet': typeof OpsFleetRoute
-  '/_ops/incidents': typeof OpsIncidentsRoute
-  '/_ops/notifications': typeof OpsNotificationsRoute
-  '/_ops/payments': typeof OpsPaymentsRoute
-  '/_ops/reports': typeof OpsReportsRoute
-  '/_ops/routes-tracking': typeof OpsRoutesTrackingRoute
-  '/_ops/sample-logistics': typeof OpsSampleLogisticsRoute
-  '/_ops/settings': typeof OpsSettingsRoute
-  '/_ops/transactions': typeof OpsTransactionsRoute
-  '/_ops/transport-requests': typeof OpsTransportRequestsRoute
-  '/_ops/vehicles': typeof OpsVehiclesRoute
-  '/_ops/drivers_/$driverId': typeof OpsDriversDriverIdRoute
-  '/_ops/movements/$movementId': typeof OpsMovementsMovementIdRoute
-  '/_ops/transactions_/$txnId': typeof OpsTransactionsTxnIdRoute
-  '/_ops/transport-requests_/$requestId': typeof OpsTransportRequestsRequestIdRoute
-  '/_ops/vehicles_/$vehicleId': typeof OpsVehiclesVehicleIdRoute
+  '/signup': typeof SignupRoute
+  '/submitted': typeof SubmittedRoute
+  '/verify': typeof VerifyRoute
+  '/portal/active-movements': typeof PortalActiveMovementsRoute
+  '/portal/application-record': typeof PortalApplicationRecordRoute
+  '/portal/bulk-logistics': typeof PortalBulkLogisticsRoute
+  '/portal/compliance': typeof PortalComplianceRoute
+  '/portal/deliveries': typeof PortalDeliveriesRoute
+  '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/drivers': typeof PortalDriversRoute
+  '/portal/fleet': typeof PortalFleetRoute
+  '/portal/incidents': typeof PortalIncidentsRoute
+  '/portal/notifications': typeof PortalNotificationsRoute
+  '/portal/payments': typeof PortalPaymentsRoute
+  '/portal/reports': typeof PortalReportsRoute
+  '/portal/requests': typeof PortalRequestsRoute
+  '/portal/routes-tracking': typeof PortalRoutesTrackingRoute
+  '/portal/sample-logistics': typeof PortalSampleLogisticsRoute
+  '/portal/settings': typeof PortalSettingsRoute
+  '/portal/transactions': typeof PortalTransactionsRoute
+  '/portal/transport-requests': typeof PortalTransportRequestsRoute
+  '/portal/vehicles': typeof PortalVehiclesRoute
+  '/portal/': typeof PortalIndexRoute
+  '/portal/drivers_/$driverId': typeof PortalDriversDriverIdRoute
+  '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
+  '/portal/transactions_/$txnId': typeof PortalTransactionsTxnIdRoute
+  '/portal/transport-requests_/$requestId': typeof PortalTransportRequestsRequestIdRoute
+  '/portal/vehicles_/$vehicleId': typeof PortalVehiclesVehicleIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/portal'
+    | '/application'
+    | '/auth'
     | '/sign-in'
     | '/sign-up'
-    | '/active-movements'
-    | '/bulk-logistics'
-    | '/compliance'
-    | '/deliveries'
-    | '/documents'
-    | '/drivers'
-    | '/fleet'
-    | '/incidents'
-    | '/notifications'
-    | '/payments'
-    | '/reports'
-    | '/routes-tracking'
-    | '/sample-logistics'
-    | '/settings'
-    | '/transactions'
-    | '/transport-requests'
-    | '/vehicles'
-    | '/drivers/$driverId'
-    | '/movements/$movementId'
-    | '/transactions/$txnId'
-    | '/transport-requests/$requestId'
-    | '/vehicles/$vehicleId'
+    | '/signup'
+    | '/submitted'
+    | '/verify'
+    | '/portal/active-movements'
+    | '/portal/application-record'
+    | '/portal/bulk-logistics'
+    | '/portal/compliance'
+    | '/portal/deliveries'
+    | '/portal/documents'
+    | '/portal/drivers'
+    | '/portal/fleet'
+    | '/portal/incidents'
+    | '/portal/notifications'
+    | '/portal/payments'
+    | '/portal/reports'
+    | '/portal/requests'
+    | '/portal/routes-tracking'
+    | '/portal/sample-logistics'
+    | '/portal/settings'
+    | '/portal/transactions'
+    | '/portal/transport-requests'
+    | '/portal/vehicles'
+    | '/portal/'
+    | '/portal/drivers/$driverId'
+    | '/portal/movements/$movementId'
+    | '/portal/transactions/$txnId'
+    | '/portal/transport-requests/$requestId'
+    | '/portal/vehicles/$vehicleId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/application'
+    | '/auth'
     | '/sign-in'
     | '/sign-up'
-    | '/active-movements'
-    | '/bulk-logistics'
-    | '/compliance'
-    | '/deliveries'
-    | '/documents'
-    | '/drivers'
-    | '/fleet'
-    | '/incidents'
-    | '/notifications'
-    | '/payments'
-    | '/reports'
-    | '/routes-tracking'
-    | '/sample-logistics'
-    | '/settings'
-    | '/transactions'
-    | '/transport-requests'
-    | '/vehicles'
-    | '/drivers/$driverId'
-    | '/movements/$movementId'
-    | '/transactions/$txnId'
-    | '/transport-requests/$requestId'
-    | '/vehicles/$vehicleId'
+    | '/signup'
+    | '/submitted'
+    | '/verify'
+    | '/portal/active-movements'
+    | '/portal/application-record'
+    | '/portal/bulk-logistics'
+    | '/portal/compliance'
+    | '/portal/deliveries'
+    | '/portal/documents'
+    | '/portal/drivers'
+    | '/portal/fleet'
+    | '/portal/incidents'
+    | '/portal/notifications'
+    | '/portal/payments'
+    | '/portal/reports'
+    | '/portal/requests'
+    | '/portal/routes-tracking'
+    | '/portal/sample-logistics'
+    | '/portal/settings'
+    | '/portal/transactions'
+    | '/portal/transport-requests'
+    | '/portal/vehicles'
+    | '/portal'
+    | '/portal/drivers/$driverId'
+    | '/portal/movements/$movementId'
+    | '/portal/transactions/$txnId'
+    | '/portal/transport-requests/$requestId'
+    | '/portal/vehicles/$vehicleId'
   id:
     | '__root__'
     | '/'
-    | '/_ops'
+    | '/portal'
+    | '/application'
+    | '/auth'
     | '/sign-in'
     | '/sign-up'
-    | '/_ops/active-movements'
-    | '/_ops/bulk-logistics'
-    | '/_ops/compliance'
-    | '/_ops/deliveries'
-    | '/_ops/documents'
-    | '/_ops/drivers'
-    | '/_ops/fleet'
-    | '/_ops/incidents'
-    | '/_ops/notifications'
-    | '/_ops/payments'
-    | '/_ops/reports'
-    | '/_ops/routes-tracking'
-    | '/_ops/sample-logistics'
-    | '/_ops/settings'
-    | '/_ops/transactions'
-    | '/_ops/transport-requests'
-    | '/_ops/vehicles'
-    | '/_ops/drivers_/$driverId'
-    | '/_ops/movements/$movementId'
-    | '/_ops/transactions_/$txnId'
-    | '/_ops/transport-requests_/$requestId'
-    | '/_ops/vehicles_/$vehicleId'
+    | '/signup'
+    | '/submitted'
+    | '/verify'
+    | '/portal/active-movements'
+    | '/portal/application-record'
+    | '/portal/bulk-logistics'
+    | '/portal/compliance'
+    | '/portal/deliveries'
+    | '/portal/documents'
+    | '/portal/drivers'
+    | '/portal/fleet'
+    | '/portal/incidents'
+    | '/portal/notifications'
+    | '/portal/payments'
+    | '/portal/reports'
+    | '/portal/requests'
+    | '/portal/routes-tracking'
+    | '/portal/sample-logistics'
+    | '/portal/settings'
+    | '/portal/transactions'
+    | '/portal/transport-requests'
+    | '/portal/vehicles'
+    | '/portal/'
+    | '/portal/drivers_/$driverId'
+    | '/portal/movements/$movementId'
+    | '/portal/transactions_/$txnId'
+    | '/portal/transport-requests_/$requestId'
+    | '/portal/vehicles_/$vehicleId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  OpsRouteRoute: typeof OpsRouteRouteWithChildren
+  PortalRouteRoute: typeof PortalRouteRouteWithChildren
+  ApplicationRoute: typeof ApplicationRoute
+  AuthRoute: typeof AuthRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  SignupRoute: typeof SignupRoute
+  SubmittedRoute: typeof SubmittedRoute
+  VerifyRoute: typeof VerifyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -351,11 +456,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_ops': {
-      id: '/_ops'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof OpsRouteRouteImport
+    '/application': {
+      id: '/application'
+      path: '/application'
+      fullPath: '/application'
+      preLoaderRoute: typeof ApplicationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -372,222 +491,275 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_ops/active-movements': {
-      id: '/_ops/active-movements'
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/submitted': {
+      id: '/submitted'
+      path: '/submitted'
+      fullPath: '/submitted'
+      preLoaderRoute: typeof SubmittedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal/': {
+      id: '/portal/'
+      path: '/'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof PortalIndexRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
+    '/portal/active-movements': {
+      id: '/portal/active-movements'
       path: '/active-movements'
-      fullPath: '/active-movements'
-      preLoaderRoute: typeof OpsActiveMovementsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/active-movements'
+      preLoaderRoute: typeof PortalActiveMovementsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/bulk-logistics': {
-      id: '/_ops/bulk-logistics'
+    '/portal/application-record': {
+      id: '/portal/application-record'
+      path: '/application-record'
+      fullPath: '/portal/application-record'
+      preLoaderRoute: typeof PortalApplicationRecordRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
+    '/portal/bulk-logistics': {
+      id: '/portal/bulk-logistics'
       path: '/bulk-logistics'
-      fullPath: '/bulk-logistics'
-      preLoaderRoute: typeof OpsBulkLogisticsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/bulk-logistics'
+      preLoaderRoute: typeof PortalBulkLogisticsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/compliance': {
-      id: '/_ops/compliance'
+    '/portal/compliance': {
+      id: '/portal/compliance'
       path: '/compliance'
-      fullPath: '/compliance'
-      preLoaderRoute: typeof OpsComplianceRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/compliance'
+      preLoaderRoute: typeof PortalComplianceRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/deliveries': {
-      id: '/_ops/deliveries'
+    '/portal/deliveries': {
+      id: '/portal/deliveries'
       path: '/deliveries'
-      fullPath: '/deliveries'
-      preLoaderRoute: typeof OpsDeliveriesRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/deliveries'
+      preLoaderRoute: typeof PortalDeliveriesRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/documents': {
-      id: '/_ops/documents'
+    '/portal/documents': {
+      id: '/portal/documents'
       path: '/documents'
-      fullPath: '/documents'
-      preLoaderRoute: typeof OpsDocumentsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/documents'
+      preLoaderRoute: typeof PortalDocumentsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/drivers': {
-      id: '/_ops/drivers'
+    '/portal/drivers': {
+      id: '/portal/drivers'
       path: '/drivers'
-      fullPath: '/drivers'
-      preLoaderRoute: typeof OpsDriversRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/drivers'
+      preLoaderRoute: typeof PortalDriversRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/fleet': {
-      id: '/_ops/fleet'
+    '/portal/fleet': {
+      id: '/portal/fleet'
       path: '/fleet'
-      fullPath: '/fleet'
-      preLoaderRoute: typeof OpsFleetRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/fleet'
+      preLoaderRoute: typeof PortalFleetRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/incidents': {
-      id: '/_ops/incidents'
+    '/portal/incidents': {
+      id: '/portal/incidents'
       path: '/incidents'
-      fullPath: '/incidents'
-      preLoaderRoute: typeof OpsIncidentsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/incidents'
+      preLoaderRoute: typeof PortalIncidentsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/notifications': {
-      id: '/_ops/notifications'
+    '/portal/notifications': {
+      id: '/portal/notifications'
       path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof OpsNotificationsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/notifications'
+      preLoaderRoute: typeof PortalNotificationsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/payments': {
-      id: '/_ops/payments'
+    '/portal/payments': {
+      id: '/portal/payments'
       path: '/payments'
-      fullPath: '/payments'
-      preLoaderRoute: typeof OpsPaymentsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/payments'
+      preLoaderRoute: typeof PortalPaymentsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/reports': {
-      id: '/_ops/reports'
+    '/portal/reports': {
+      id: '/portal/reports'
       path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof OpsReportsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/reports'
+      preLoaderRoute: typeof PortalReportsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/routes-tracking': {
-      id: '/_ops/routes-tracking'
+    '/portal/requests': {
+      id: '/portal/requests'
+      path: '/requests'
+      fullPath: '/portal/requests'
+      preLoaderRoute: typeof PortalRequestsRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
+    '/portal/routes-tracking': {
+      id: '/portal/routes-tracking'
       path: '/routes-tracking'
-      fullPath: '/routes-tracking'
-      preLoaderRoute: typeof OpsRoutesTrackingRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/routes-tracking'
+      preLoaderRoute: typeof PortalRoutesTrackingRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/sample-logistics': {
-      id: '/_ops/sample-logistics'
+    '/portal/sample-logistics': {
+      id: '/portal/sample-logistics'
       path: '/sample-logistics'
-      fullPath: '/sample-logistics'
-      preLoaderRoute: typeof OpsSampleLogisticsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/sample-logistics'
+      preLoaderRoute: typeof PortalSampleLogisticsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/settings': {
-      id: '/_ops/settings'
+    '/portal/settings': {
+      id: '/portal/settings'
       path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof OpsSettingsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/settings'
+      preLoaderRoute: typeof PortalSettingsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/transactions': {
-      id: '/_ops/transactions'
+    '/portal/transactions': {
+      id: '/portal/transactions'
       path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof OpsTransactionsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/transactions'
+      preLoaderRoute: typeof PortalTransactionsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/transport-requests': {
-      id: '/_ops/transport-requests'
+    '/portal/transport-requests': {
+      id: '/portal/transport-requests'
       path: '/transport-requests'
-      fullPath: '/transport-requests'
-      preLoaderRoute: typeof OpsTransportRequestsRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/transport-requests'
+      preLoaderRoute: typeof PortalTransportRequestsRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/vehicles': {
-      id: '/_ops/vehicles'
+    '/portal/vehicles': {
+      id: '/portal/vehicles'
       path: '/vehicles'
-      fullPath: '/vehicles'
-      preLoaderRoute: typeof OpsVehiclesRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/vehicles'
+      preLoaderRoute: typeof PortalVehiclesRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/drivers_/$driverId': {
-      id: '/_ops/drivers_/$driverId'
+    '/portal/drivers_/$driverId': {
+      id: '/portal/drivers_/$driverId'
       path: '/drivers/$driverId'
-      fullPath: '/drivers/$driverId'
-      preLoaderRoute: typeof OpsDriversDriverIdRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/drivers/$driverId'
+      preLoaderRoute: typeof PortalDriversDriverIdRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/movements/$movementId': {
-      id: '/_ops/movements/$movementId'
+    '/portal/movements/$movementId': {
+      id: '/portal/movements/$movementId'
       path: '/movements/$movementId'
-      fullPath: '/movements/$movementId'
-      preLoaderRoute: typeof OpsMovementsMovementIdRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/movements/$movementId'
+      preLoaderRoute: typeof PortalMovementsMovementIdRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/transactions_/$txnId': {
-      id: '/_ops/transactions_/$txnId'
+    '/portal/transactions_/$txnId': {
+      id: '/portal/transactions_/$txnId'
       path: '/transactions/$txnId'
-      fullPath: '/transactions/$txnId'
-      preLoaderRoute: typeof OpsTransactionsTxnIdRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/transactions/$txnId'
+      preLoaderRoute: typeof PortalTransactionsTxnIdRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/transport-requests_/$requestId': {
-      id: '/_ops/transport-requests_/$requestId'
+    '/portal/transport-requests_/$requestId': {
+      id: '/portal/transport-requests_/$requestId'
       path: '/transport-requests/$requestId'
-      fullPath: '/transport-requests/$requestId'
-      preLoaderRoute: typeof OpsTransportRequestsRequestIdRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/transport-requests/$requestId'
+      preLoaderRoute: typeof PortalTransportRequestsRequestIdRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
-    '/_ops/vehicles_/$vehicleId': {
-      id: '/_ops/vehicles_/$vehicleId'
+    '/portal/vehicles_/$vehicleId': {
+      id: '/portal/vehicles_/$vehicleId'
       path: '/vehicles/$vehicleId'
-      fullPath: '/vehicles/$vehicleId'
-      preLoaderRoute: typeof OpsVehiclesVehicleIdRouteImport
-      parentRoute: typeof OpsRouteRoute
+      fullPath: '/portal/vehicles/$vehicleId'
+      preLoaderRoute: typeof PortalVehiclesVehicleIdRouteImport
+      parentRoute: typeof PortalRouteRoute
     }
   }
 }
 
-interface OpsRouteRouteChildren {
-  OpsActiveMovementsRoute: typeof OpsActiveMovementsRoute
-  OpsBulkLogisticsRoute: typeof OpsBulkLogisticsRoute
-  OpsComplianceRoute: typeof OpsComplianceRoute
-  OpsDeliveriesRoute: typeof OpsDeliveriesRoute
-  OpsDocumentsRoute: typeof OpsDocumentsRoute
-  OpsDriversRoute: typeof OpsDriversRoute
-  OpsFleetRoute: typeof OpsFleetRoute
-  OpsIncidentsRoute: typeof OpsIncidentsRoute
-  OpsNotificationsRoute: typeof OpsNotificationsRoute
-  OpsPaymentsRoute: typeof OpsPaymentsRoute
-  OpsReportsRoute: typeof OpsReportsRoute
-  OpsRoutesTrackingRoute: typeof OpsRoutesTrackingRoute
-  OpsSampleLogisticsRoute: typeof OpsSampleLogisticsRoute
-  OpsSettingsRoute: typeof OpsSettingsRoute
-  OpsTransactionsRoute: typeof OpsTransactionsRoute
-  OpsTransportRequestsRoute: typeof OpsTransportRequestsRoute
-  OpsVehiclesRoute: typeof OpsVehiclesRoute
-  OpsDriversDriverIdRoute: typeof OpsDriversDriverIdRoute
-  OpsMovementsMovementIdRoute: typeof OpsMovementsMovementIdRoute
-  OpsTransactionsTxnIdRoute: typeof OpsTransactionsTxnIdRoute
-  OpsTransportRequestsRequestIdRoute: typeof OpsTransportRequestsRequestIdRoute
-  OpsVehiclesVehicleIdRoute: typeof OpsVehiclesVehicleIdRoute
+interface PortalRouteRouteChildren {
+  PortalActiveMovementsRoute: typeof PortalActiveMovementsRoute
+  PortalApplicationRecordRoute: typeof PortalApplicationRecordRoute
+  PortalBulkLogisticsRoute: typeof PortalBulkLogisticsRoute
+  PortalComplianceRoute: typeof PortalComplianceRoute
+  PortalDeliveriesRoute: typeof PortalDeliveriesRoute
+  PortalDocumentsRoute: typeof PortalDocumentsRoute
+  PortalDriversRoute: typeof PortalDriversRoute
+  PortalFleetRoute: typeof PortalFleetRoute
+  PortalIncidentsRoute: typeof PortalIncidentsRoute
+  PortalNotificationsRoute: typeof PortalNotificationsRoute
+  PortalPaymentsRoute: typeof PortalPaymentsRoute
+  PortalReportsRoute: typeof PortalReportsRoute
+  PortalRequestsRoute: typeof PortalRequestsRoute
+  PortalRoutesTrackingRoute: typeof PortalRoutesTrackingRoute
+  PortalSampleLogisticsRoute: typeof PortalSampleLogisticsRoute
+  PortalSettingsRoute: typeof PortalSettingsRoute
+  PortalTransactionsRoute: typeof PortalTransactionsRoute
+  PortalTransportRequestsRoute: typeof PortalTransportRequestsRoute
+  PortalVehiclesRoute: typeof PortalVehiclesRoute
+  PortalIndexRoute: typeof PortalIndexRoute
+  PortalDriversDriverIdRoute: typeof PortalDriversDriverIdRoute
+  PortalMovementsMovementIdRoute: typeof PortalMovementsMovementIdRoute
+  PortalTransactionsTxnIdRoute: typeof PortalTransactionsTxnIdRoute
+  PortalTransportRequestsRequestIdRoute: typeof PortalTransportRequestsRequestIdRoute
+  PortalVehiclesVehicleIdRoute: typeof PortalVehiclesVehicleIdRoute
 }
 
-const OpsRouteRouteChildren: OpsRouteRouteChildren = {
-  OpsActiveMovementsRoute: OpsActiveMovementsRoute,
-  OpsBulkLogisticsRoute: OpsBulkLogisticsRoute,
-  OpsComplianceRoute: OpsComplianceRoute,
-  OpsDeliveriesRoute: OpsDeliveriesRoute,
-  OpsDocumentsRoute: OpsDocumentsRoute,
-  OpsDriversRoute: OpsDriversRoute,
-  OpsFleetRoute: OpsFleetRoute,
-  OpsIncidentsRoute: OpsIncidentsRoute,
-  OpsNotificationsRoute: OpsNotificationsRoute,
-  OpsPaymentsRoute: OpsPaymentsRoute,
-  OpsReportsRoute: OpsReportsRoute,
-  OpsRoutesTrackingRoute: OpsRoutesTrackingRoute,
-  OpsSampleLogisticsRoute: OpsSampleLogisticsRoute,
-  OpsSettingsRoute: OpsSettingsRoute,
-  OpsTransactionsRoute: OpsTransactionsRoute,
-  OpsTransportRequestsRoute: OpsTransportRequestsRoute,
-  OpsVehiclesRoute: OpsVehiclesRoute,
-  OpsDriversDriverIdRoute: OpsDriversDriverIdRoute,
-  OpsMovementsMovementIdRoute: OpsMovementsMovementIdRoute,
-  OpsTransactionsTxnIdRoute: OpsTransactionsTxnIdRoute,
-  OpsTransportRequestsRequestIdRoute: OpsTransportRequestsRequestIdRoute,
-  OpsVehiclesVehicleIdRoute: OpsVehiclesVehicleIdRoute,
+const PortalRouteRouteChildren: PortalRouteRouteChildren = {
+  PortalActiveMovementsRoute: PortalActiveMovementsRoute,
+  PortalApplicationRecordRoute: PortalApplicationRecordRoute,
+  PortalBulkLogisticsRoute: PortalBulkLogisticsRoute,
+  PortalComplianceRoute: PortalComplianceRoute,
+  PortalDeliveriesRoute: PortalDeliveriesRoute,
+  PortalDocumentsRoute: PortalDocumentsRoute,
+  PortalDriversRoute: PortalDriversRoute,
+  PortalFleetRoute: PortalFleetRoute,
+  PortalIncidentsRoute: PortalIncidentsRoute,
+  PortalNotificationsRoute: PortalNotificationsRoute,
+  PortalPaymentsRoute: PortalPaymentsRoute,
+  PortalReportsRoute: PortalReportsRoute,
+  PortalRequestsRoute: PortalRequestsRoute,
+  PortalRoutesTrackingRoute: PortalRoutesTrackingRoute,
+  PortalSampleLogisticsRoute: PortalSampleLogisticsRoute,
+  PortalSettingsRoute: PortalSettingsRoute,
+  PortalTransactionsRoute: PortalTransactionsRoute,
+  PortalTransportRequestsRoute: PortalTransportRequestsRoute,
+  PortalVehiclesRoute: PortalVehiclesRoute,
+  PortalIndexRoute: PortalIndexRoute,
+  PortalDriversDriverIdRoute: PortalDriversDriverIdRoute,
+  PortalMovementsMovementIdRoute: PortalMovementsMovementIdRoute,
+  PortalTransactionsTxnIdRoute: PortalTransactionsTxnIdRoute,
+  PortalTransportRequestsRequestIdRoute: PortalTransportRequestsRequestIdRoute,
+  PortalVehiclesVehicleIdRoute: PortalVehiclesVehicleIdRoute,
 }
 
-const OpsRouteRouteWithChildren = OpsRouteRoute._addFileChildren(
-  OpsRouteRouteChildren,
+const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(
+  PortalRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  OpsRouteRoute: OpsRouteRouteWithChildren,
+  PortalRouteRoute: PortalRouteRouteWithChildren,
+  ApplicationRoute: ApplicationRoute,
+  AuthRoute: AuthRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  SignupRoute: SignupRoute,
+  SubmittedRoute: SubmittedRoute,
+  VerifyRoute: VerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

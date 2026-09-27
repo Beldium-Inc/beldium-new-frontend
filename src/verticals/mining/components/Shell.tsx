@@ -31,6 +31,7 @@ import { useStore } from "@/verticals/mining/store";
 import { navForRole } from "./nav";
 import { Chip } from "./chips";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { SetupBanner } from "@/components/setup-banner";
 
 const icons: Record<string, typeof Gauge> = {
   gauge: Gauge,
@@ -288,7 +289,10 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">
+          <SetupBanner />
+          {children}
+        </main>
       </div>
     </div>
   );

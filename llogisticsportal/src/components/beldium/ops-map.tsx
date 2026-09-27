@@ -64,7 +64,7 @@ export function OpsMap({ focusId, compact }: { focusId?: string; compact?: boole
           return (
             <Link
               key={m.id}
-              to="/movements/$movementId"
+              to="/portal/movements/$movementId"
               params={{ movementId: m.id }}
               className="group absolute z-10 -translate-x-1/2 -translate-y-1/2"
               style={{ left: `${p.x}%`, top: `${p.y}%` }}
@@ -90,7 +90,7 @@ export function OpsMap({ focusId, compact }: { focusId?: string; compact?: boole
           {live.length === 0 ? <li className="text-sm text-muted-foreground">No vehicles on the move.</li> : null}
           {live.map((m) => (
             <li key={m.id}>
-              <Link to="/movements/$movementId" params={{ movementId: m.id }} className="block rounded-lg border border-border px-3 py-2 hover:border-primary">
+              <Link to="/portal/movements/$movementId" params={{ movementId: m.id }} className="block rounded-lg border border-border px-3 py-2 hover:border-primary">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold text-primary">
                     {m.id} · {m.vehicleId ?? "-"}

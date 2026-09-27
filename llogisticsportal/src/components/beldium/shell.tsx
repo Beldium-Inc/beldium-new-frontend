@@ -1,205 +1,228 @@
-import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard,
-  Inbox,
-  Truck,
-  FlaskConical,
-  Boxes,
-  Map,
-  Container,
-  CarFront,
-  Users,
-  PackageCheck,
-  Receipt,
   AlertTriangle,
-  FileText,
-  ShieldCheck,
-  Wallet,
   BarChart3,
   Bell,
+  Boxes,
+  CarFront,
+  ClipboardCheck,
+  Container,
+  FileText,
+  FlaskConical,
+  Inbox,
+  LayoutDashboard,
+  LogOut,
+  Map,
+  PackageCheck,
+  Receipt,
   Settings,
-  Menu,
-  X,
-
+  ShieldCheck,
+  Truck,
+  Users,
+  Wallet,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { BeldiumLockup } from "@/components/beldium-logo";
+import { StatusChip, type ChipTone } from "@/components/status-chip";
+import { Button } from "@/components/ui/button";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { fullName } from "@/lib/api/types";
+import { useAuth } from "@/lib/auth";
+import { isDemoMode } from "@/lib/data-mode";
 import { useOps } from "@/lib/ops-store";
-import { NetworkSimulator } from "./network-sim";
+import { STAGE_LABELS, isVerified, useWorkspace, type WorkspaceStage } from "@/lib/workspace";
 import { GlobalSearch } from "./global-search";
-import { BeldiumLogo } from "@/components/beldium/auth-layout";
-import { setState, useOperator } from "@/lib/onboarding-store";
+import { NetworkSimulator } from "./network-sim";
 
-const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/transport-requests", label: "Transport Requests", icon: Inbox },
-  { to: "/active-movements", label: "Active Movements", icon: Truck },
-  { to: "/sample-logistics", label: "Sample Logistics", icon: FlaskConical },
-  { to: "/bulk-logistics", label: "Bulk Logistics", icon: Boxes },
-  { to: "/routes-tracking", label: "Routes & Tracking", icon: Map },
-  { to: "/fleet", label: "Fleet", icon: Container },
-  { to: "/vehicles", label: "Vehicles", icon: CarFront },
-  { to: "/drivers", label: "Drivers", icon: Users },
-  { to: "/deliveries", label: "Deliveries", icon: PackageCheck },
-  { to: "/transactions", label: "Transactions", icon: Receipt },
-  { to: "/incidents", label: "Incidents", icon: AlertTriangle },
-  { to: "/documents", label: "Documents", icon: FileText },
-  { to: "/compliance", label: "Compliance", icon: ShieldCheck },
-  { to: "/payments", label: "Payments", icon: Wallet },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/notifications", label: "Notifications", icon: Bell },
-  { to: "/settings", label: "Settings", icon: Settings },
-] as const;
+type NavItem = { title: string; url: string; icon: typeof LayoutDashboard };
+
+const reviewNav: NavItem[] = [
+  { title: "Review overview", url: "/portal", icon: LayoutDashboard },
+  { title: "Information requests", url: "/portal/requests", icon: ClipboardCheck },
+  { title: "Submitted application", url: "/portal/application-record", icon: FileText },
+  { title: "Notifications", url: "/portal/notifications", icon: Bell },
+  { title: "Settings", url: "/portal/settings", icon: Settings },
+];
+
+const verifiedNav: { group: string; items: NavItem[] }[] = [
+  {
+    group: "Overview",
+    items: [{ title: "Command Centre", url: "/portal", icon: LayoutDashboard }],
+  },
+  {
+    group: "Movements",
+    items: [
+      { title: "Transport Requests", url: "/portal/transport-requests", icon: Inbox },
+      { title: "Active Movements", url: "/portal/active-movements", icon: Truck },
+      { title: "Sample Logistics", url: "/portal/sample-logistics", icon: FlaskConical },
+      { title: "Bulk Logistics", url: "/portal/bulk-logistics", icon: Boxes },
+      { title: "Routes & Tracking", url: "/portal/routes-tracking", icon: Map },
+      { title: "Deliveries", url: "/portal/deliveries", icon: PackageCheck },
+    ],
+  },
+  {
+    group: "Fleet & people",
+    items: [
+      { title: "Fleet", url: "/portal/fleet", icon: Container },
+      { title: "Vehicles", url: "/portal/vehicles", icon: CarFront },
+      { title: "Drivers", url: "/portal/drivers", icon: Users },
+    ],
+  },
+  {
+    group: "Commercial",
+    items: [
+      { title: "Transactions", url: "/portal/transactions", icon: Receipt },
+      { title: "Payments", url: "/portal/payments", icon: Wallet },
+    ],
+  },
+  {
+    group: "Governance",
+    items: [
+      { title: "Incidents", url: "/portal/incidents", icon: AlertTriangle },
+      { title: "Compliance", url: "/portal/compliance", icon: ShieldCheck },
+      { title: "Documents", url: "/portal/documents", icon: FileText },
+      { title: "Reports", url: "/portal/reports", icon: BarChart3 },
+      { title: "Notifications", url: "/portal/notifications", icon: Bell },
+      { title: "Settings", url: "/portal/settings", icon: Settings },
+    ],
+  },
+];
+
+const stageTone: Record<WorkspaceStage, ChipTone> = {
+  none: "neutral",
+  draft: "neutral",
+  under_review: "warning",
+  information_required: "danger",
+  verified: "success",
+  rejected: "danger",
+  suspended: "danger",
+};
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const { record } = useWorkspace();
   const ops = useOps();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const stage = record?.stage ?? "none";
+  const verified = isVerified(stage);
+  const groups = verified ? verifiedNav : [{ group: "Verification", items: reviewNav }];
   const unread = ops.notifications.filter((n) => !n.read).length;
-  const op = useOperator();
-  const acc = op.signedIn ? op.account : undefined;
-  const orgName = acc ? op.organisation?.name || "My organisation" : "Trans Sahel Ops";
-  const initials = acc ? `${acc.firstName[0] ?? ""}${acc.lastName[0] ?? ""}`.toUpperCase() : "TS";
-  const roleLabel = acc
-    ? op.application?.status === "Approved"
-      ? "Verified Logistics Operator"
-      : `Application ${op.application?.status ?? "draft"}`
-    : "Logistics Operator";
 
   return (
-    <div className="min-h-screen bg-background">
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-sidebar text-sidebar-foreground transition-transform lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex items-center justify-between px-5 py-5">
-          <Link to="/" className="flex items-center gap-2.5">
-            <BeldiumLogo className="size-9" />
-            <span>
-              <span className="block text-sm font-semibold leading-none text-white">Beldium</span>
-              <span className="mt-1 block text-[11px] leading-none text-sidebar-foreground/70">
-                Logistics Operator
-              </span>
-            </span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="rounded-md p-1 text-sidebar-foreground/80 lg:hidden"
-            aria-label="Close menu"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <Sidebar collapsible="icon">
+          <SidebarHeader className="border-b border-sidebar-border p-4">
+            <BeldiumLockup tone="light" />
+          </SidebarHeader>
+          <SidebarContent>
+            {groups.map((g) => (
+              <SidebarGroup key={g.group}>
+                <SidebarGroupLabel>{g.group}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {g.items.map((item) => (
+                      <SidebarMenuItem key={item.url}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={
+                            item.url === "/portal"
+                              ? pathname === "/portal" || pathname === "/portal/"
+                              : pathname.startsWith(item.url)
+                          }
+                          tooltip={item.title}
+                        >
+                          <Link to={item.url}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                        {item.url === "/portal/notifications" && unread > 0 ? (
+                          <SidebarMenuBadge className="text-sidebar-primary">
+                            {unread}
+                          </SidebarMenuBadge>
+                        ) : null}
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+          </SidebarContent>
+        </Sidebar>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-6">
-          {nav.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              activeOptions={{ exact: item.to === "/" }}
-              activeProps={{
-                className: "bg-sidebar-primary text-sidebar-primary-foreground font-semibold",
-              }}
-              inactiveProps={{
-                className: "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-white",
-              }}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors"
-            >
-              <item.icon className="size-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
-              {item.label === "Notifications" && unread > 0 ? (
-                <span className="ml-auto rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-bold text-warning-foreground">
-                  {unread}
-                </span>
-              ) : null}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-
-      {open ? (
-        <button
-          type="button"
-          aria-label="Close menu overlay"
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-primary/40 lg:hidden"
-        />
-      ) : null}
-
-      <div className="lg:pl-[260px]">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur md:px-6">
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="rounded-md border border-border p-1.5 text-foreground lg:hidden"
-            aria-label="Open menu"
-          >
-            <Menu className="size-5" />
-          </button>
-
-          <GlobalSearch />
-
-          <div className="ml-auto flex items-center gap-3">
-            <NetworkSimulator />
-            <Link
-              to="/notifications"
-              className="relative rounded-md border border-border p-1.5 text-foreground hover:border-primary"
-              aria-label="Notifications"
-            >
-              <Bell className="size-4" />
-              {unread > 0 ? (
-                <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {unread}
-                </span>
-              ) : null}
-            </Link>
-            <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
-              <span className="grid size-7 place-items-center rounded-full bg-secondary text-[11px] font-bold text-secondary-foreground">
-                {initials}
-              </span>
-              <span className="hidden leading-tight sm:block">
-                <span className="block text-xs font-semibold">{orgName}</span>
-                <span className="beldium-small block">{roleLabel}</span>
-              </span>
+        <SidebarInset className="flex min-w-0 flex-1 flex-col">
+          <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card px-4">
+            <SidebarTrigger />
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium text-foreground">
+                {record?.organisationName || (user ? fullName(user) : "Logistics workspace")}
+              </div>
+              <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
             </div>
-            {acc ? (
-              <Link to="/sign-in" onClick={() => setState({ signedIn: false })} className="text-xs font-semibold text-colorLink">
-                Sign out
-              </Link>
-            ) : (
-              <Link to="/sign-in" className="text-xs font-semibold text-colorLink">
-                Sign in
-              </Link>
-            )}
-          </div>
-        </header>
-
-        <main className="px-4 py-5 md:px-6 md:py-6">{children}</main>
+            {verified ? <GlobalSearch /> : null}
+            <div className="ml-auto flex items-center gap-2">
+              {verified && isDemoMode ? <NetworkSimulator /> : null}
+              <StatusChip tone={stageTone[stage]} className="hidden sm:inline-flex">
+                {STAGE_LABELS[stage]}
+              </StatusChip>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  void signOut();
+                  navigate({ to: "/auth" });
+                }}
+              >
+                <LogOut className="mr-1.5 h-4 w-4" />{" "}
+                <span className="hidden sm:inline">Sign out</span>
+              </Button>
+            </div>
+          </header>
+          <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 
 export function PageHeader({
   title,
   description,
+  actions,
   children,
 }: {
   title: string;
   description?: string;
+  actions?: React.ReactNode;
+  /** Same as `actions`; kept for screens written before the Miner Hub alignment. */
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-primary md:text-2xl">{title}</h1>
-        {description ? <p className="beldium-small mt-1 max-w-3xl">{description}</p> : null}
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
+        {description ? (
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>
+        ) : null}
       </div>
-      {children}
+      {actions ?? children}
     </div>
   );
 }

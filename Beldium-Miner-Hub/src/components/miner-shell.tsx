@@ -43,6 +43,8 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useMyOrganisations } from "@/lib/api/queries";
 import { fullName } from "@/lib/api/types";
+import { useMinerSetup } from "@/lib/setup";
+import { AlertTriangle } from "lucide-react";
 
 const reviewNav = [
   { title: "Review overview", url: "/portal", icon: LayoutDashboard },
@@ -153,10 +155,55 @@ export function MinerShell({ children }: { children: React.ReactNode }) {
               </Button>
             </div>
           </header>
-          <main className="min-w-0 flex-1 p-6">{children}</main>
+          <main className="min-w-0 flex-1 p-6">
+            <SetupBanner />
+            {children}
+          </main>
         </SidebarInset>
       </div>
     </SidebarProvider>
+  );
+}
+
+/** Shown across the workspace while the account's onboarding is unfinished. */
+function SetupBanner() {
+  const setup = useMinerSetup();
+  const stage = setup.data?.stage;
+  if (!stage || stage === "complete") return null;
+
+  const copy =
+    stage === "join_pending"
+      ? {
+          title: "Waiting for your organisation",
+          body: "Your request to join an organisation is waiting for its administrator's approval.",
+        }
+      : stage === "unsubmitted"
+        ? {
+            title: "Your application wasn't submitted",
+            body: "Your organisation was created but the application did not finish sending. Review it and submit again.",
+          }
+        : {
+            title: "Your account setup isn't finished",
+            body: "Complete your organisation application to be verified and unlock your workspace.",
+          };
+
+  return (
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-warning/40 bg-warning/10 px-4 py-3">
+      <div className="flex min-w-0 items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">{copy.title}</p>
+          <p className="text-sm text-muted-foreground">{copy.body}</p>
+        </div>
+      </div>
+      {stage !== "join_pending" ? (
+        <Button asChild size="sm">
+          <Link to="/application" search={{ organisationName: setup.data?.organisation?.name }}>
+            Continue application
+          </Link>
+        </Button>
+      ) : null}
+    </div>
   );
 }
 

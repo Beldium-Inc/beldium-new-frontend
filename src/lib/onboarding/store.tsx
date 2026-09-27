@@ -273,6 +273,21 @@ interface Ctx extends OnboardingState {
   log: (entry: Omit<OnboardingTimelineEntry, "id" | "at">) => void;
 }
 
+/**
+ * Record the sector someone is resuming onboarding in, before the flow's
+ * provider mounts. A person who signs in on a new device has no saved
+ * onboarding state, and the application copy is scoped by sector.
+ */
+export function rememberOnboardingSector(sector: VerticalSlug) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const saved = raw ? (JSON.parse(raw) as Partial<OnboardingState>) : {};
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, sector }));
+  } catch {
+    /* ignore */
+  }
+}
+
 const OnboardingContext = createContext<Ctx | null>(null);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {

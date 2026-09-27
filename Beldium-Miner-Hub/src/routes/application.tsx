@@ -26,12 +26,29 @@ import {
   createMineSite,
   createEquipment,
   createApplication,
+  createLicence,
+  listApplications,
+  listDocuments,
+  listLicences,
+  listMineSites,
   uploadDocument,
   uploadSectionEvidence,
   updateSiteSection,
   type ReviewSectionField,
 } from "@/lib/api/mining";
+import { listOrganisations } from "@/lib/api/organisations";
 import { useCreateOrganisation } from "@/lib/api/queries";
+import type { Paginated } from "@/lib/api/types";
+import { useAuth } from "@/lib/auth";
+
+const rows = <T,>(page: Paginated<T> | T[]): T[] => (Array.isArray(page) ? page : page.results);
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const field = (label: string, value: string): ReviewSectionField => ({
+  label,
+  value: value.trim() || "Not provided",
+  flag: null,
+  note: "",
+});
 
 const title = "Mining organisation application - Beldium Miner Hub";
 const description =
@@ -96,6 +113,7 @@ const pendingFiles = new Map<string, File>();
 
 function ApplicationPage() {
   const { state, saveApplication } = useMiner();
+  const { status: authStatus } = useAuth();
   const { organisationName } = Route.useSearch();
   const navigate = useNavigate();
   const app = state.application;
@@ -142,17 +160,30 @@ function ApplicationPage() {
     setSubmitting(true);
     setError("");
     try {
-      const organisation = await createOrganisation.mutateAsync({
-        name: app.org.legalName,
-        organisation_type: "mining_company",
-        registration_number: app.org.registrationNo,
-        tax_identifier: app.org.taxId,
-        address: app.org.address,
-        country: app.org.country,
-      });
+      // Submission is several calls in a row. If an earlier attempt stopped
+      // part-way, pick up the records it already created instead of failing
+      // on duplicates, so a miner can always come back and finish.
+      const mine = await listOrganisations();
+      const organisation =
+        mine.results.find((o) => o.organisation_type === "mining_company") ??
+        (await createOrganisation.mutateAsync({
+          name: app.org.legalName,
+          organisation_type: "mining_company",
+          registration_number: app.org.registrationNo,
+          tax_identifier: app.org.taxId,
+          address: app.org.address,
+          country: app.org.country,
+        }));
 
+      const existingSites = rows(await listMineSites()).filter((s) => s.organisation === organisation.id);
       const siteIdMap = new Map<string, string>();
+      const newSites = new Set<string>();
       for (const site of app.sites) {
+        const existing = existingSites.find((s) => same(s.name, site.name));
+        if (existing) {
+          siteIdMap.set(site.id, existing.id);
+          continue;
+        }
         const created = await createMineSite({
           organisation: organisation.id,
           name: site.name,
@@ -162,6 +193,7 @@ function ApplicationPage() {
           workforce: site.workforce ? Number(site.workforce) : undefined,
         });
         siteIdMap.set(site.id, created.id);
+        newSites.add(created.id);
       }
 
       // Equipment created via /mining/equipment/ (the operational record) is
@@ -172,7 +204,10 @@ function ApplicationPage() {
       for (const item of app.equipment) {
         const backendSiteId = siteIdMap.get(item.siteId);
         if (!backendSiteId) continue;
-        await createEquipment({ site: backendSiteId, name: item.name, serial: item.serial });
+        // A site reused from an earlier attempt already has its equipment.
+        if (newSites.has(backendSiteId)) {
+          await createEquipment({ site: backendSiteId, name: item.name, serial: item.serial });
+        }
         const fields = equipmentFieldsBySite.get(backendSiteId) ?? [];
         fields.push({
           label: item.name,
@@ -204,6 +239,49 @@ function ApplicationPage() {
         { label: "Environmental management plan reference", value: app.environment.empNumber || "Not provided", flag: null, note: "" },
         { label: "Rehabilitation bond value", value: app.environment.rehabBond || "Not provided", flag: null, note: "" },
       ];
+      // The reviewer's Corporate, Licence and Site sections read these
+      // answers; without them each shows "not submitted any answers".
+      const corporateFields: ReviewSectionField[] = [
+        field("Registered legal name", app.org.legalName),
+        field("Trading name", app.org.tradingName),
+        field("Registration number", app.org.registrationNo),
+        field("Tax identification number", app.org.taxId),
+        field("Entity type", app.org.entityType),
+        field("Date of incorporation", app.org.incorporatedOn),
+        field("Registered address", app.org.address),
+        field("Country", app.org.country),
+        field("Primary contact", [app.contacts.primaryName, app.contacts.primaryRole].filter(Boolean).join(", ")),
+        field("Contact email", app.contacts.primaryEmail),
+        field("Contact phone", app.contacts.primaryPhone),
+      ];
+      const licenceFields: ReviewSectionField[] = [
+        field("Licence number", app.licences.licenceNumber),
+        field("Licence type", app.licences.licenceType),
+        field("Issuing authority", app.licences.issuingAuthority),
+        field("Issued on", app.licences.issuedOn),
+        field("Expires on", app.licences.expiresOn),
+        field("Minerals covered", app.licences.minerals),
+      ];
+      for (const site of app.sites) {
+        const backendSiteId = siteIdMap.get(site.id);
+        if (!backendSiteId) continue;
+        await updateSiteSection(backendSiteId, "corporate", { fields: corporateFields });
+        await updateSiteSection(backendSiteId, "licence", {
+          fields: site.licenceNo ? [...licenceFields, field("Licence held for this site", site.licenceNo)] : licenceFields,
+        });
+        await updateSiteSection(backendSiteId, "site", {
+          fields: [
+            field("Site name", site.name),
+            field("Region / state", site.region),
+            field("Mineral", site.mineral),
+            field("Mining method", site.method),
+            field("Area (hectares)", site.hectares),
+            field("Workforce", site.workforce),
+            field("Operating status", site.status),
+          ],
+        });
+      }
+
       for (const backendSiteId of siteIdMap.values()) {
         await updateSiteSection(backendSiteId, "ownership", { fields: ownershipFields });
         await updateSiteSection(backendSiteId, "safety", { fields: safetyFields, summary: app.environment.notes });
@@ -212,9 +290,11 @@ function ApplicationPage() {
 
       const documentSite = siteIdMap.values().next().value;
       if (documentSite) {
+        const alreadyFiled = rows(await listDocuments()).filter((d) => d.site === documentSite);
         for (const doc of app.documents) {
           const file = pendingFiles.get(doc.id);
           if (!file) continue;
+          if (alreadyFiled.some((d) => same(d.name, doc.label))) continue;
           // Kept for the flat "Documents & Licences" list the compliance
           // app also shows.
           await uploadDocument({ site: documentSite, name: doc.label, category: "Application document", file });
@@ -227,12 +307,38 @@ function ApplicationPage() {
         }
       }
 
-      await createApplication({
-        organisation: organisation.id,
-        type: "admission",
-        mineral: app.licences.minerals,
-        submitted_on: new Date().toISOString().slice(0, 10),
-      });
+      // A licence record per site, so the reviewer's header shows the
+      // licence the site operates under; the licence file itself is attached
+      // once, to the site the other documents are filed against.
+      if (app.licences.licenceNumber) {
+        const licences = rows(await listLicences());
+        const licenceFile = pendingFiles.get("d2");
+        for (const site of app.sites) {
+          const backendSiteId = siteIdMap.get(site.id);
+          if (!backendSiteId) continue;
+          const number = site.licenceNo || app.licences.licenceNumber;
+          if (licences.some((l) => l.site === backendSiteId && same(l.number, number))) continue;
+          await createLicence({
+            site: backendSiteId,
+            number,
+            type: app.licences.licenceType || "Mining licence",
+            authority: app.licences.issuingAuthority,
+            ...(app.licences.issuedOn ? { issued_on: app.licences.issuedOn } : {}),
+            ...(app.licences.expiresOn ? { expires_on: app.licences.expiresOn } : {}),
+            ...(licenceFile && backendSiteId === documentSite ? { file: licenceFile } : {}),
+          });
+        }
+      }
+
+      const filed = rows(await listApplications()).some((a) => a.organisation === organisation.id);
+      if (!filed) {
+        await createApplication({
+          organisation: organisation.id,
+          type: "admission",
+          mineral: app.licences.minerals,
+          submitted_on: new Date().toISOString().slice(0, 10),
+        });
+      }
 
       pendingFiles.clear();
       navigate({ to: "/submitted" });
@@ -273,7 +379,7 @@ function ApplicationPage() {
           <div className="flex items-center gap-3">
             <StatusChip tone="info">Draft saved locally</StatusChip>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/auth">Save &amp; exit</Link>
+              <Link to={authStatus === "authenticated" ? "/portal" : "/auth"}>Save &amp; exit</Link>
             </Button>
           </div>
         </div>
