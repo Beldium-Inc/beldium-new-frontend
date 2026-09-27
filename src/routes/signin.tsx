@@ -16,10 +16,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, getPlatformStats } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
+import { fetchAccountSetup, needsComplianceSetup } from "@/lib/onboarding/setup";
+import { rememberOnboardingSector } from "@/lib/onboarding/store";
 import { COMPLIANCE_VERTICALS, homeFor, type Vertical, type VerticalSlug } from "@/lib/verticals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +84,7 @@ function SignInPage() {
   const { session, hydrated, signIn: startSession } = useSession();
   const { signIn: authenticate } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const stats = useQuery({
     queryKey: ["platform-stats"],
     queryFn: ({ signal }) => getPlatformStats(signal),
@@ -121,7 +124,27 @@ function SignInPage() {
 
     setSubmitting(true);
     try {
-      await authenticate({ email: address, password });
+      const user = await authenticate({ email: address, password });
+
+      // A compliance desk is only open to an account whose organisation
+      // application has been submitted. Anyone who stopped part-way through
+      // signup is taken back to where they left off instead.
+      if (!user.is_staff && needsComplianceSetup(picked.slug, roleId)) {
+        const setup = await fetchAccountSetup(queryClient);
+        if (setup.stage !== "complete") {
+          rememberOnboardingSector(picked.slug);
+          toast.info(
+            setup.stage === "join_pending"
+              ? "Your request to join an organisation is still waiting for its administrator."
+              : setup.stage === "draft"
+                ? `Your registration is ${setup.percent}% complete. Finish and submit it to open your workspace.`
+                : "Finish setting up your organisation to open your workspace.",
+          );
+          navigate({ to: setup.resumeTo });
+          return;
+        }
+      }
+
       startSession(picked.slug, roleId);
       navigate({ to: homeFor(picked.slug, roleId) });
     } catch (error) {

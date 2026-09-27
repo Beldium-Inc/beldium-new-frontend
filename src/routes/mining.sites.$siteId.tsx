@@ -1,16 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { FileSearch } from "lucide-react";
+import { useMemo, useState } from "react";
+import { FileSearch, FileX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useSiteDetail, useStore } from "@/verticals/mining/store";
 import { Field, PageHeader, Panel } from "@/verticals/mining/components/primitives";
 import { RiskChip, ScorePill, StatusChip } from "@/verticals/mining/components/chips";
@@ -18,19 +10,94 @@ import { GeoPanel } from "@/verticals/mining/components/GeoPanel";
 import { ScoreBreakdown } from "@/verticals/mining/components/ScoreBreakdown";
 import { ReviewActions } from "@/verticals/mining/components/ReviewActions";
 import { RequestInfoDialog } from "@/verticals/mining/components/RequestInfoDialog";
-import { useMiningDocuments } from "@/lib/api/mining-queries";
+import { useSiteFiles } from "@/lib/api/mining-queries";
 import { SiteDocumentViewer } from "@/verticals/mining/components/SiteDocumentViewer";
+import { buildSiteFiles, SOURCE_LABEL, type SiteFile } from "@/verticals/mining/site-files";
+
+const statusLabel = (status: string) =>
+  status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** One submitted file, with the action that opens it in the viewer. */
+function FileRow({
+  file,
+  showSection,
+  onOpen,
+}: {
+  file: SiteFile;
+  showSection: boolean;
+  onOpen: () => void;
+}) {
+  const awaiting = file.source === "document" && file.status === "pending";
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          className="text-left text-sm font-medium hover:underline disabled:no-underline"
+          disabled={!file.downloadUrl}
+          onClick={onOpen}
+        >
+          {file.name}
+        </button>
+        <p className="break-words text-xs text-muted-foreground">
+          {SOURCE_LABEL[file.source]}
+          {showSection && file.sectionTitle ? ` · ${file.sectionTitle}` : ""}
+          {` · ${file.siteName}`}
+          {file.originalName ? ` · ${file.originalName}` : ""}
+          {file.uploadedBy ? ` · by ${file.uploadedBy}` : ""}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <StatusChip value={statusLabel(file.status)} />
+        {file.downloadUrl ? (
+          <Button size="sm" variant={awaiting ? "default" : "outline"} onClick={onOpen}>
+            <FileSearch className="size-3.5" />
+            {awaiting ? "Open & review" : "Open"}
+          </Button>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <FileX className="size-3.5" /> No file attached
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
 
 export const Route = createFileRoute("/mining/sites/$siteId")({ component: SiteDetail });
 
 function SiteDetail() {
   const { siteId } = Route.useParams();
-  const { nonConformities, inspections, organisations, licences, samples } = useStore();
+  const { nonConformities, inspections, organisations, licences, samples, sites } = useStore();
   const { site, isLoading } = useSiteDetail(siteId);
   const [tab, setTab] = useState<string>("corporate");
   const [infoFor, setInfoFor] = useState<string | null>(null);
-  const documentsQuery = useMiningDocuments({ site: siteId });
   const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
+
+  // Organisation-level papers are filed against one site only, so read the
+  // files of every site this organisation operates.
+  const orgId = site?.orgId ?? "";
+  const orgSites = useMemo(
+    () => (orgId ? sites.filter((s) => s.orgId === orgId) : []),
+    [sites, orgId],
+  );
+  const siteIds = useMemo(() => {
+    const ids = new Set(orgSites.map((s) => s.id));
+    ids.add(siteId);
+    return [...ids].sort();
+  }, [orgSites, siteId]);
+  const siteFiles = useSiteFiles(siteIds);
+  const files = useMemo(() => {
+    if (!site) return [];
+    const siteNames = new Map(orgSites.map((s) => [s.id, s.name]));
+    siteNames.set(site.id, site.name);
+    return buildSiteFiles({
+      site,
+      siteNames,
+      documents: siteFiles.documents,
+      licences: siteFiles.licences,
+    });
+  }, [site, orgSites, siteFiles.documents, siteFiles.licences]);
 
   if (!site) {
     return (
@@ -49,7 +116,8 @@ function SiteDetail() {
 
   const org = organisations.find((o) => o.id === site.orgId);
   const lic = licences.find((l) => l.siteId === site.id);
-  const documents = documentsQuery.data?.results ?? [];
+  const awaitingReview = files.filter((f) => f.source === "document" && f.status === "pending");
+  const unfiled = files.filter((f) => f.section === null);
 
   return (
     <>
@@ -76,6 +144,31 @@ function SiteDetail() {
             <StatusChip value={site.status === "Operational" ? "Verified" : site.status} />
           </Field>
         </div>
+      </Panel>
+
+      <Panel
+        title={`Submitted documents (${files.length})`}
+        description={
+          awaitingReview.length
+            ? `${awaitingReview.length} awaiting your review. Everything the operator filed for ${org?.name ?? "this organisation"}, across all of its sites.`
+            : `Everything the operator filed for ${org?.name ?? "this organisation"}, across all of its sites.`
+        }
+        className="mt-5"
+        bodyClassName="p-0"
+      >
+        {siteFiles.isLoading && files.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-muted-foreground">Loading submitted documents…</p>
+        ) : files.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-muted-foreground">
+            The operator has not uploaded any documents yet.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {files.map((f) => (
+              <FileRow key={f.key} file={f} showSection onOpen={() => setOpenDocumentId(f.key)} />
+            ))}
+          </ul>
+        )}
       </Panel>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -129,36 +222,31 @@ function SiteDetail() {
                   </p>
                 )}
                 <div className="rounded-md border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Evidence</TableHead>
-                        <TableHead>Reference</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {s.evidence.map((e) => (
-                        <TableRow key={e.id}>
-                          <TableCell className="text-sm font-medium">
-                            {e.name}
-                            <p className="text-xs text-muted-foreground">{e.kind}</p>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">{e.uploaded}</TableCell>
-                          <TableCell>
-                            <StatusChip value={e.status} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {s.evidence.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-sm text-muted-foreground">
-                            No evidence uploaded for this section.
-                          </TableCell>
-                        </TableRow>
-                      ) : null}
-                    </TableBody>
-                  </Table>
+                  <p className="border-b border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Documents for this section
+                  </p>
+                  {(() => {
+                    const sectionFiles = files.filter((f) => f.section === s.key);
+                    return sectionFiles.length ? (
+                      <ul className="divide-y divide-border">
+                        {sectionFiles.map((f) => (
+                          <FileRow
+                            key={f.key}
+                            file={f}
+                            showSection={false}
+                            onOpen={() => setOpenDocumentId(f.key)}
+                          />
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="px-4 py-3 text-sm text-muted-foreground">
+                        No documents were filed under this section.
+                        {unfiled.length
+                          ? ` ${unfiled.length} other document${unfiled.length > 1 ? "s are" : " is"} listed under Submitted documents above.`
+                          : ""}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <ReviewActions
                   siteId={site.id}
@@ -209,40 +297,8 @@ function SiteDetail() {
                 ))}
             </ul>
           </Panel>
-          <Panel title="Uploaded documents" bodyClassName="p-0">
-            <ul className="divide-y divide-border">
-              {documents.map((d) => (
-                <li key={d.id} className="px-5 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">{d.name}</span>
-                    <StatusChip value={d.status} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {d.category} · {d.original_name || "no file"} · uploaded by {d.uploaded_by_name}
-                  </p>
-                  <div className="mt-2">
-                    <Button
-                      size="sm"
-                      variant={d.status === "pending" ? "default" : "outline"}
-                      disabled={!d.file_url}
-                      title={!d.file_url ? "No file was uploaded for this document" : undefined}
-                      onClick={() => setOpenDocumentId(d.id)}
-                    >
-                      <FileSearch className="size-3.5" />
-                      {d.status === "pending" ? "Open & review" : "View document"}
-                    </Button>
-                  </div>
-                </li>
-              ))}
-              {documents.length === 0 ? (
-                <li className="px-5 py-6 text-sm text-muted-foreground">
-                  No documents uploaded for this site.
-                </li>
-              ) : null}
-            </ul>
-          </Panel>
           <SiteDocumentViewer
-            documents={documents}
+            documents={files}
             documentId={openDocumentId}
             context={{
               siteName: site.name,

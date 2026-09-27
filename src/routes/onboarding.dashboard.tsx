@@ -145,9 +145,14 @@ function OnboardingDashboard() {
         description="Start your organisation application to open the verification workspace."
         width="lg"
       >
-        <Button asChild>
-          <Link to="/onboarding/application">Start application</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link to="/onboarding/application">Start application</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/onboarding/join">Join an existing organisation</Link>
+          </Button>
+        </div>
       </AuthShell>
     );
   }
@@ -193,6 +198,13 @@ function OnboardingDashboard() {
         {status === "verified" && (
           <Button className="mt-4" onClick={() => navigate({ to: "/onboarding/welcome" })}>
             Open my workspace
+          </Button>
+        )}
+        {(status === "draft" || status === "action_required" || status === "rejected") && (
+          <Button className="mt-4" asChild>
+            <Link to="/onboarding/application">
+              {status === "draft" ? `Continue application (${pct}% done)` : "Update application"}
+            </Link>
           </Button>
         )}
       </div>

@@ -276,6 +276,11 @@ export function toEvidence(row: ApiEvidence): Evidence {
     uploaded: isoDate(row.created_at),
     size: "",
     status: evidenceStatusToUi[row.status],
+    fileUrl: row.file_url,
+    originalName: row.original_name,
+    uploadedBy: row.uploaded_by_name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
