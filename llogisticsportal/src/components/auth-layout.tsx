@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { BeldiumLockup } from "@/components/beldium-logo";
-import { isDemoMode } from "@/lib/data-mode";
 
 export function AuthLayout({
   title,
@@ -43,9 +42,7 @@ export function AuthLayout({
               <li>* Live review timeline and evidence responses</li>
             </ul>
           </div>
-          <p className="relative text-xs text-sidebar-foreground/50">
-            {isDemoMode ? "Demo mode: data stays in this browser." : " "}
-          </p>
+          <p className="relative text-xs text-sidebar-foreground/50">Beldium Logistics Hub</p>
         </aside>
 
         <main className="flex w-full flex-1 items-center justify-center p-6 sm:p-10">

@@ -65,8 +65,7 @@ const roles: { id: SignupRole; icon: typeof Building2; title: string; body: stri
   },
 ];
 
-// The last participant type is the "authorised employee" path, which is the join role.
-const operatorTypes = participantTypes.slice(0, -1);
+const operatorTypes = participantTypes;
 
 function SignupPage() {
   const { signUp } = useAuth();
@@ -195,7 +194,7 @@ function SignupPage() {
               id="fullName"
               value={form.fullName}
               onChange={set("fullName")}
-              placeholder="Amina Bello"
+              placeholder="Your full name"
             />
           </div>
           <div className="space-y-2">
@@ -257,7 +256,7 @@ function SignupPage() {
               id="organisationName"
               value={form.organisationName}
               onChange={set("organisationName")}
-              placeholder="Trans Sahel Haulage Ltd"
+              placeholder="As on your CAC certificate"
             />
             {role === "org_staff" ? (
               <p className="text-xs text-muted-foreground">

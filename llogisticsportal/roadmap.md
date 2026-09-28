@@ -8,7 +8,8 @@
 - [x] Movement detail page with live timeline, tracking, warehouse/processor/export connections
 - [x] Compliance gating on vehicle/driver assignment and quality-pending pickups
 - [x] Head metadata per route
-- [ ] Optional next step: connect Lovable Cloud so events persist and update other sectors live
+- [x] Connected to the Beldium Django API (auth, onboarding, operations); demo data removed
 - [x] Logo across site + auth background image
-- [x] Logistics Operator sign-up / onboarding wizard (demo, saved in browser) → submit → sign in → dashboard application status, info requests, approval
-- [ ] Real accounts & SMS verification (user chose demo for now)
+- [x] Logistics Operator sign-up → email verification → application wizard → submit to API → review workspace
+- [x] Real accounts and email verification via the API
+- [ ] SMS verification (disabled on the backend until a Termii sender ID is approved)

@@ -71,7 +71,8 @@ export function useRespondToRequest(applicationId: UUID | null) {
       if (input.file && applicationId) {
         const doc = await uploadLogisticsApplicationDocument(applicationId, {
           domain: "operational",
-          document_type: "information_request_evidence",
+          // One document per request: a shared type would make responses versions of each other.
+          document_type: `information_request_evidence:${input.requestId}`,
           title: input.file.name,
           file: input.file,
         });

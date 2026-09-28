@@ -1,82 +1,100 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
 
+import {
+  FilterSelect,
+  PillTabs,
+  ResourceTable,
+  SearchBox,
+  fmtDateTime,
+  pretty,
+  useListQuery,
+  type Column,
+} from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
-import { RowAction } from "@/components/beldium/data-table";
 import { StatusBadge } from "@/components/beldium/status-badge";
-import { QueueView, IdLink, tabSearch, type QCol } from "@/components/beldium/ops-ui";
-import { acceptRequest, fmt, partyName, requestStatus, siteName, txnOf, useOps, type TransportRequest } from "@/lib/ops-store";
+import { listTransportRequests, type TransportRequest } from "@/lib/api/operations";
+import { useOperationsDashboard, useOpsList } from "@/lib/api/operations-queries";
 
 export const Route = createFileRoute("/portal/transport-requests")({
-  validateSearch: tabSearch,
-  head: () => ({
-    meta: [
-      { title: "Transport Requests - Beldium Logistics Hub" },
-      { name: "description", content: "Transport request queue: new, awaiting decision, accepted, scheduled, active, completed and declined jobs." },
-      { property: "og:title", content: "Transport Requests - Beldium Logistics Hub" },
-      { property: "og:description", content: "Accept, assign and schedule every inbound Beldium transport request." },
-    ],
-  }),
-  component: Page,
+  head: () => ({ meta: [{ title: "Transport Requests - Beldium Logistics Hub" }] }),
+  component: TransportRequestsPage,
 });
 
-const tabs = ["New", "Awaiting Decision", "Accepted", "Scheduled", "Active", "Completed", "Declined"] as const;
+const STATUS_TABS = [
+  { value: "", label: "All" },
+  { value: "new", label: "New" },
+  { value: "accepted", label: "Accepted" },
+  { value: "assigned", label: "Assigned" },
+  { value: "blocked", label: "Blocked" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
-function Page() {
-  const s = useOps();
-  const { tab } = Route.useSearch();
+const columns: Column<TransportRequest>[] = [
+  {
+    header: "Request",
+    cell: (r) => <span className="font-medium text-primary">{r.reference}</span>,
+  },
+  { header: "Type", cell: (r) => r.movement_type },
+  { header: "Mineral", cell: (r) => r.mineral || "-" },
+  { header: "Route", cell: (r) => `${r.origin} → ${r.destination}` },
+  { header: "Quantity", cell: (r) => r.quantity_display },
+  { header: "Requester", cell: (r) => r.requester },
+  { header: "Pickup by", cell: (r) => fmtDateTime(r.required_pickup_at) },
+  { header: "Status", cell: (r) => <StatusBadge value={pretty(r.status)} /> },
+];
+
+function TransportRequestsPage() {
   const navigate = useNavigate();
-  const cols: QCol<TransportRequest>[] = [
-    { key: "id", header: "Request", render: (r) => <IdLink kind="request" id={r.id} />, sort: (r) => r.id },
-    { key: "txn", header: "RFQ / Transaction", render: (r) => <span className="beldium-mono">{txnOf(s, r.txnId)?.rfqId} · {r.txnId}</span>, sort: (r) => r.txnId },
-    { key: "type", header: "Movement type", render: (r) => r.movementType, sort: (r) => r.movementType },
-    { key: "src", header: "Source", render: (r) => r.source },
-    { key: "miner", header: "Miner", render: (r) => partyName(s, txnOf(s, r.txnId)?.minerId) },
-    { key: "mat", header: "Material / Batch", render: (r) => `${txnOf(s, r.txnId)?.mineral} · ${txnOf(s, r.txnId)?.batchId}` },
-    { key: "qty", header: "Quantity", render: (r) => `${r.quantity} ${r.unit}`, sort: (r) => r.quantity },
-    { key: "route", header: "Pickup → Destination", render: (r) => `${siteName(s, r.originId)} → ${siteName(s, r.destinationId)}` },
-    { key: "pickup", header: "Pickup by", render: (r) => fmt(r.pickupBy), sort: (r) => r.pickupBy },
-    { key: "deadline", header: "Delivery deadline", render: (r) => fmt(r.deliverBy), sort: (r) => r.deliverBy },
-    { key: "quality", header: "Quality", render: (r) => <StatusBadge value={txnOf(s, r.txnId)?.quality ?? "-"} /> },
-    { key: "status", header: "Status", render: (r) => <StatusBadge value={requestStatus(s, r)} />, sort: (r) => requestStatus(s, r) },
-  ];
-  const open = (r: TransportRequest) => navigate({ to: "/portal/transport-requests/$requestId", params: { requestId: r.id } });
+  const list = useListQuery({ status: "new" });
+  const filters = useOperationsDashboard().data?.filters;
+  const requests = useOpsList("transport-requests", listTransportRequests, list.query);
+
   return (
     <>
-      <PageHeader title="Transport Requests" />
-      <Panel title="Request Queue">
-        <QueueView
-          rows={s.requests}
-          columns={cols}
-          getKey={(r) => r.id}
-          tabs={[{ label: "All", test: () => true }, ...tabs.map((t) => ({ label: t, test: (r: TransportRequest) => requestStatus(s, r) === t }))]}
-          initialTab={tab ?? "All"}
-          searchText={(r) => `${r.id} ${r.txnId} ${txnOf(s, r.txnId)?.rfqId} ${txnOf(s, r.txnId)?.batchId} ${r.requestedBy} ${siteName(s, r.originId)} ${siteName(s, r.destinationId)}`}
-          filters={[
-            { label: "Movement type", get: (r) => r.movementType },
-            { label: "Source", get: (r) => r.source },
-            { label: "Mineral", get: (r) => txnOf(s, r.txnId)?.mineral ?? "" },
-          ]}
-          onOpen={open}
-          actions={(r) =>
-            r.status === "New" || r.status === "Awaiting Decision" ? (
-              <>
-                <RowAction onClick={() => open(r)}>View</RowAction>
-                <RowAction
-                  onClick={() => {
-                    const id = acceptRequest(r.id);
-                    toast.success(`${r.id} accepted: ${id} created`);
-                  }}
-                >
-                  Accept
-                </RowAction>
-              </>
-            ) : (
-              <RowAction onClick={() => open(r)}>View</RowAction>
-            )
-          }
-        />
+      <PageHeader
+        title="Transport Requests"
+        description="Requests from miners, buyers and other sectors to move samples and minerals. Accept a request to take the job on."
+      />
+      <Panel title="Request queue">
+        <div className="space-y-4">
+          <PillTabs
+            tabs={STATUS_TABS}
+            value={list.filters["status"] ?? ""}
+            onChange={(v) => list.setFilter("status", v)}
+          />
+          <div className="flex flex-wrap gap-2">
+            <SearchBox
+              value={list.search}
+              onChange={list.setSearch}
+              placeholder="Reference, RFQ, transaction, route"
+            />
+            <FilterSelect
+              label="Type"
+              value={list.filters["movement_type"] ?? ""}
+              options={filters?.movement_types ?? []}
+              onChange={(v) => list.setFilter("movement_type", v)}
+            />
+            <FilterSelect
+              label="Mineral"
+              value={list.filters["mineral"] ?? ""}
+              options={filters?.minerals ?? []}
+              onChange={(v) => list.setFilter("mineral", v)}
+            />
+          </div>
+          <ResourceTable
+            columns={columns}
+            data={requests.data}
+            isLoading={requests.isLoading}
+            error={requests.error}
+            page={list.page}
+            onPage={list.setPage}
+            onRowClick={(r) =>
+              navigate({ to: "/portal/transport-requests/$requestId", params: { requestId: r.id } })
+            }
+            empty="No transport requests match."
+          />
+        </div>
       </Panel>
     </>
   );

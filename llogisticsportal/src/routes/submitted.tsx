@@ -45,8 +45,7 @@ function Submitted() {
             {record ? (
               <>
                 Reference <span className="font-medium text-foreground">{record.reference}</span> ·{" "}
-                {record.organisationName}
-                {record.organisationRef !== "-" ? ` (${record.organisationRef})` : ""}.
+                {record.organisationName}.
               </>
             ) : (
               "Your application reference will appear in your workspace."

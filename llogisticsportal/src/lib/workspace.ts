@@ -1,6 +1,6 @@
 import type {
-  LogisticsApplicationStatus,
   DomainReviewStatus,
+  LogisticsApplicationStatus,
   LogisticsDomainKey,
 } from "./api/logistics";
 import {
@@ -10,60 +10,55 @@ import {
   useLogisticsDashboard,
   useRespondToRequest,
 } from "./api/logistics-queries";
-import { isDemoMode } from "./data-mode";
-import {
-  respondToRequest as respondInDemo,
-  useOperator,
-  type ApplicationStatus,
-} from "./onboarding-store";
+import { useMyJoinRequests } from "./api/queries";
 
-// The operator's onboarding application, normalised so the shell and review
-// screens read one shape in both data modes. Like Miner Hub, the workspace
-// shows a reduced "under review" navigation until the organisation is verified.
+// The operator's company and onboarding application, normalised for the shell
+// and review screens. Like Miner Hub, the workspace shows a reduced "under
+// review" navigation until the application is approved.
 
 export type WorkspaceStage =
   | "none"
+  | "join_pending"
   | "draft"
   | "under_review"
   | "information_required"
   | "verified"
-  | "rejected"
-  | "suspended";
+  | "rejected";
 
 export type RecordRequest = {
   id: string;
   area: string;
   message: string;
+  items: string[];
   requestedAt: string;
+  dueDate: string;
+  overdue: boolean;
   status: "Open" | "Responded" | "Closed";
   response?: string | undefined;
-  evidence?: string | undefined;
 };
 
 export type ApplicationRecord = {
   stage: WorkspaceStage;
   statusLabel: string;
+  companyId: string;
+  applicationId: string | null;
   reference: string;
   organisationName: string;
-  organisationRef: string;
   submittedAt: string;
+  progress: number;
   reviews: { label: string; status: string }[];
   requests: RecordRequest[];
   timeline: { at: string; by: string; event: string }[];
-  approval?:
-    | {
-        logisticsId: string;
-        services: string[];
-        vehicleCategories: string;
-        coverage: string;
-        capabilities: string[];
-      }
-    | undefined;
+  permittedScopes: string[];
+  restrictedScopes: string[];
 };
 
 export type WorkspaceState = {
   loading: boolean;
+  error: unknown;
   record: ApplicationRecord | null;
+  /** Set when the account is waiting on a join request instead of owning a company. */
+  pendingJoin: { organisationName: string; requestedAt: string } | null;
   respond: (input: {
     requestId: string;
     message: string;
@@ -73,79 +68,21 @@ export type WorkspaceState = {
 
 export const STAGE_LABELS: Record<WorkspaceStage, string> = {
   none: "Not started",
+  join_pending: "Join request pending",
   draft: "Draft",
   under_review: "Under review",
   information_required: "Information required",
   verified: "Verified",
   rejected: "Rejected",
-  suspended: "Suspended",
 };
 
-export function isVerified(stage: WorkspaceStage | undefined) {
-  return stage === "verified";
-}
+export const isVerified = (stage: WorkspaceStage | undefined) => stage === "verified";
 
-// --- demo ------------------------------------------------------------------
+/** Stages in which the backend accepts edits and (re)submission. */
+export const isEditable = (stage: WorkspaceStage | undefined) =>
+  stage === "none" || stage === "draft" || stage === "information_required" || stage === "rejected";
 
-function demoStage(status: ApplicationStatus | undefined): WorkspaceStage {
-  switch (status) {
-    case undefined:
-      return "none";
-    case "Approved":
-    case "Conditionally Approved":
-      return "verified";
-    case "Information Required":
-      return "information_required";
-    case "Rejected":
-      return "rejected";
-    case "Suspended":
-      return "suspended";
-    default:
-      return "under_review";
-  }
-}
-
-function useDemoWorkspace(): WorkspaceState {
-  const s = useOperator();
-  const a = s.application;
-  const record: ApplicationRecord | null = a
-    ? {
-        stage: demoStage(a.status),
-        statusLabel: a.status,
-        reference: a.applicationId,
-        organisationName: s.organisation?.name ?? "My organisation",
-        organisationRef: a.organisationId,
-        submittedAt: a.submittedAt,
-        reviews: Object.entries(a.reviews).map(([label, status]) => ({ label, status })),
-        requests: a.infoRequests,
-        timeline: a.timeline,
-        approval: a.approval,
-      }
-    : s.organisation?.name
-      ? {
-          stage: "draft",
-          statusLabel: "Draft",
-          reference: "Not submitted",
-          organisationName: s.organisation.name,
-          organisationRef: "-",
-          submittedAt: "-",
-          reviews: [],
-          requests: [],
-          timeline: [],
-        }
-      : null;
-
-  return {
-    loading: false,
-    record,
-    respond: async ({ requestId, message, file }) =>
-      respondInDemo(requestId, message, file?.name ?? ""),
-  };
-}
-
-// --- api -------------------------------------------------------------------
-
-function apiStage(status: LogisticsApplicationStatus | "not_started" | undefined): WorkspaceStage {
+function stageFor(status: LogisticsApplicationStatus | "not_started" | undefined): WorkspaceStage {
   switch (status) {
     case undefined:
     case "not_started":
@@ -165,14 +102,14 @@ function apiStage(status: LogisticsApplicationStatus | "not_started" | undefined
 }
 
 const DOMAIN_LABELS: Record<LogisticsDomainKey, string> = {
-  corporate: "Organisation",
+  corporate: "Corporate",
   regulatory: "Regulatory",
   fleet: "Fleet",
   driver: "Driver",
   insurance: "Insurance",
   hs: "Health & safety",
   operational: "Operational",
-  mineral: "Mineral handling",
+  mineral: "Mineral transport",
   data: "Data & tracking",
 };
 
@@ -187,26 +124,30 @@ const pretty = (value: string) => value.replace(/_/g, " ").replace(/^\w/, (c) =>
 const when = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "-";
 
-function useApiWorkspace(): WorkspaceState {
+export function useWorkspace(): WorkspaceState {
   const dashboard = useLogisticsDashboard();
   const company = dashboard.data?.companies[0] ?? null;
+  const joins = useMyJoinRequests({ enabled: dashboard.isSuccess && !company });
   const applicationId = company?.application_id ?? null;
   const application = useLogisticsApplication(applicationId);
   const requests = useApplicationRequests(applicationId);
   const activity = useApplicationActivity(applicationId);
   const respond = useRespondToRequest(applicationId);
 
-  const stage = apiStage(company?.status);
+  const stage = stageFor(company?.status);
   const app = application.data;
+  const pending = joins.data?.results.find((j) => j.status === "pending") ?? null;
 
   const record: ApplicationRecord | null = company
     ? {
         stage,
         statusLabel: STAGE_LABELS[stage],
-        reference: applicationId ?? "Not submitted",
+        companyId: company.company_id,
+        applicationId,
+        reference: company.reference,
         organisationName: company.name,
-        organisationRef: company.reference,
         submittedAt: when(app?.submitted_at),
+        progress: company.progress?.percent ?? 0,
         reviews: (app?.sections ?? [])
           .filter((section) => section.applicable)
           .map((section) => ({
@@ -217,7 +158,10 @@ function useApiWorkspace(): WorkspaceState {
           id: r.id,
           area: pretty(r.reason),
           message: r.message,
+          items: r.items,
           requestedAt: when(r.created_at),
+          dueDate: r.due_date,
+          overdue: r.is_overdue,
           status: r.status === "open" ? "Open" : r.status === "responded" ? "Responded" : "Closed",
           response: r.responses.at(-1)?.message,
         })),
@@ -226,27 +170,21 @@ function useApiWorkspace(): WorkspaceState {
           by: e.actor_id ? "Beldium" : "System",
           event: pretty(e.event_type),
         })),
-        approval:
-          stage === "verified"
-            ? {
-                logisticsId: company.reference,
-                services: company.permitted_scopes,
-                vehicleCategories: `${company.fleet_count} vehicle(s)`,
-                coverage: "-",
-                capabilities: [],
-              }
-            : undefined,
+        permittedScopes: company.permitted_scopes,
+        restrictedScopes: company.restricted_scopes,
       }
     : null;
 
   return {
-    loading: dashboard.isLoading,
+    loading: dashboard.isLoading || (dashboard.isSuccess && !company && joins.isLoading),
+    error: dashboard.error,
     record,
+    pendingJoin:
+      !company && pending
+        ? { organisationName: pending.organisation_name, requestedAt: when(pending.created_at) }
+        : null,
     respond: async (input) => {
       await respond.mutateAsync(input);
     },
   };
 }
-
-/** The signed-in operator's application and verification stage. */
-export const useWorkspace: () => WorkspaceState = isDemoMode ? useDemoWorkspace : useApiWorkspace;

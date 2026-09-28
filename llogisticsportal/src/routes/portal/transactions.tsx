@@ -1,68 +1,68 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
+import {
+  ResourceTable,
+  SearchBox,
+  naira,
+  useListQuery,
+  type Column,
+} from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
 import { StatusBadge } from "@/components/beldium/status-badge";
-import { IdLink, QueueView, tabSearch } from "@/components/beldium/ops-ui";
-import { naira, partyName, siteName, useOps, type Transaction } from "@/lib/ops-store";
+import { listTransactions, type LogisticsTransaction } from "@/lib/api/operations";
+import { useOpsList } from "@/lib/api/operations-queries";
 
 export const Route = createFileRoute("/portal/transactions")({
-  validateSearch: tabSearch,
-  head: () => ({
-    meta: [
-      { title: "Transactions - Beldium Logistics Hub" },
-      { name: "description", content: "Every RFQ and transaction with buyer, miner, mine, batch, quantity, origin and destination." },
-      { property: "og:title", content: "Transactions - Beldium Logistics Hub" },
-      { property: "og:description", content: "The shared Beldium transaction chain behind every movement." },
-    ],
-  }),
-  component: Page,
+  head: () => ({ meta: [{ title: "Transactions - Beldium Logistics Hub" }] }),
+  component: TransactionsPage,
 });
 
-const done = (t: Transaction) => t.stage === "Logistics Completed";
+const columns: Column<LogisticsTransaction>[] = [
+  {
+    header: "Transaction",
+    cell: (t) => <span className="font-medium text-primary">{t.transaction_id}</span>,
+  },
+  { header: "RFQ", cell: (t) => t.rfq_id || "-" },
+  { header: "Material", cell: (t) => `${t.material} · ${t.quantity} ${t.quantity_unit}` },
+  { header: "Miner → buyer", cell: (t) => `${t.miner} → ${t.buyer}` },
+  { header: "Stage", cell: (t) => t.stage },
+  { header: "Delivery", cell: (t) => <StatusBadge value={t.delivery_status} /> },
+  { header: "Payment", cell: (t) => <StatusBadge value={t.payment_status} /> },
+  { header: "Transport fee", cell: (t) => naira(t.transport_fee) },
+];
 
-function Page() {
-  const s = useOps();
-  const { tab } = Route.useSearch();
+function TransactionsPage() {
   const navigate = useNavigate();
+  const list = useListQuery();
+  const transactions = useOpsList("transactions", listTransactions, list.query);
+
   return (
     <>
-      <PageHeader title="Transactions" />
-      <Panel title="Transaction Register">
-        <QueueView
-          rows={s.transactions}
-          getKey={(t) => t.id}
-          initialTab={tab ?? "Open"}
-          tabs={[
-            { label: "Open", test: (t) => !done(t) },
-            { label: "Quality Pending", test: (t) => t.quality !== "Buyer accepted" },
-            { label: "In Movement", test: (t) => s.movements.some((m) => m.txnId === t.id && m.stage !== "Completed") },
-            { label: "Completed", test: done },
-            { label: "All", test: () => true },
-          ]}
-          columns={[
-            { key: "id", header: "Transaction", render: (t) => <IdLink kind="transaction" id={t.id} />, sort: (t) => t.id },
-            { key: "rfq", header: "RFQ", render: (t) => <span className="beldium-mono">{t.rfqId}</span> },
-            { key: "buyer", header: "Buyer", render: (t) => partyName(s, t.buyerId), sort: (t) => partyName(s, t.buyerId) },
-            { key: "miner", header: "Miner", render: (t) => partyName(s, t.minerId) },
-            { key: "mine", header: "Mine", render: (t) => siteName(s, t.mineId) },
-            { key: "batch", header: "Batch", render: (t) => <span className="beldium-mono">{t.batchId}</span> },
-            { key: "mineral", header: "Mineral", render: (t) => t.mineral },
-            { key: "qty", header: "Quantity", render: (t) => `${t.quantity} t`, sort: (t) => t.quantity },
-            { key: "dest", header: "Destination", render: (t) => siteName(s, t.destinationId) },
-            { key: "moves", header: "Movements", render: (t) => s.movements.filter((m) => m.txnId === t.id).length },
-            { key: "value", header: "Value", render: (t) => naira(t.quantity * t.unitPrice), sort: (t) => t.quantity * t.unitPrice },
-            { key: "quality", header: "Quality", render: (t) => <StatusBadge value={t.quality} /> },
-            { key: "stage", header: "Stage", render: (t) => <StatusBadge value={t.stage} />, sort: (t) => t.stage },
-          ]}
-          searchText={(t) => `${t.id} ${t.rfqId} ${t.batchId} ${t.mineral} ${partyName(s, t.buyerId)} ${partyName(s, t.minerId)}`}
-          filters={[
-            { label: "Buyer", get: (t) => partyName(s, t.buyerId) },
-            { label: "Miner", get: (t) => partyName(s, t.minerId) },
-            { label: "Mineral", get: (t) => t.mineral },
-          ]}
-          onOpen={(t) => navigate({ to: "/portal/transactions/$txnId", params: { txnId: t.id } })}
-        />
+      <PageHeader
+        title="Transactions"
+        description="Marketplace transactions your company is moving, with delivery and payment progress."
+      />
+      <Panel title="Transaction register">
+        <div className="space-y-4">
+          <SearchBox
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder="Transaction, RFQ, origin, destination"
+          />
+          <ResourceTable
+            columns={columns}
+            data={transactions.data}
+            isLoading={transactions.isLoading}
+            error={transactions.error}
+            page={list.page}
+            onPage={list.setPage}
+            onRowClick={(t) =>
+              navigate({ to: "/portal/transactions/$txnId", params: { txnId: t.id } })
+            }
+            empty="No transactions yet."
+          />
+        </div>
       </Panel>
     </>
   );

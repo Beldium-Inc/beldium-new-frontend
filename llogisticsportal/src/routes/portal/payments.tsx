@@ -1,83 +1,99 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
+import {
+  ResourceTable,
+  SearchBox,
+  fmtDate,
+  naira,
+  useListQuery,
+  type Column,
+} from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel, StatCard } from "@/components/beldium/stat-card";
 import { StatusBadge } from "@/components/beldium/status-badge";
-import { RowAction } from "@/components/beldium/data-table";
-import { IdLink, QueueView, tabSearch } from "@/components/beldium/ops-ui";
-import { fmt, invoiceAction, invoiceStatuses, naira, partyName, txnOf, useOps, type Invoice } from "@/lib/ops-store";
+import { listPayments, type LogisticsPayment } from "@/lib/api/operations";
+import { useOperationsDashboard, useOpsList } from "@/lib/api/operations-queries";
 
 export const Route = createFileRoute("/portal/payments")({
-  validateSearch: tabSearch,
-  head: () => ({
-    meta: [
-      { title: "Payments - Beldium Logistics Hub" },
-      { name: "description", content: "Logistics invoices from completed deliveries through submission and settlement." },
-      { property: "og:title", content: "Payments - Beldium Logistics Hub" },
-      { property: "og:description", content: "Invoice and payment state for every completed Beldium movement." },
-    ],
-  }),
-  component: Page,
+  head: () => ({ meta: [{ title: "Payments - Beldium Logistics Hub" }] }),
+  component: PaymentsPage,
 });
 
-const next: Partial<Record<Invoice["status"], { label: string; a: Parameters<typeof invoiceAction>[1] }[]>> = {
-  "Not Invoiced": [{ label: "Generate Invoice", a: "generate" }],
-  "Invoice Generated": [{ label: "Submit", a: "submit" }],
-  Submitted: [{ label: "Buyer Acknowledges", a: "buyerAck" }],
-  Pending: [
-    { label: "Record Part Payment", a: "partPay" },
-    { label: "Record Payment", a: "pay" },
-  ],
-  "Partially Paid": [{ label: "Record Balance", a: "pay" }],
-};
+const columns: Column<LogisticsPayment>[] = [
+  { header: "Payment", cell: (p) => <span className="font-medium">{p.reference}</span> },
+  { header: "Invoice", cell: (p) => p.invoice_reference || "-" },
+  {
+    header: "Transaction",
+    cell: (p) =>
+      p.transaction ? (
+        <Link
+          to="/portal/transactions/$txnId"
+          params={{ txnId: p.transaction }}
+          className="text-primary hover:underline"
+        >
+          {p.transaction_id}
+        </Link>
+      ) : (
+        "-"
+      ),
+  },
+  { header: "Movement", cell: (p) => p.movement_reference ?? "-" },
+  { header: "Job value", cell: (p) => naira(p.job_value) },
+  { header: "Due", cell: (p) => naira(p.due_amount) },
+  { header: "Paid", cell: (p) => naira(p.paid_amount) },
+  {
+    header: "Outstanding",
+    cell: (p) => (
+      <span className={Number(p.outstanding_amount) > 0 ? "font-medium text-destructive" : ""}>
+        {naira(p.outstanding_amount)}
+      </span>
+    ),
+  },
+  { header: "Status", cell: (p) => <StatusBadge value={p.status} /> },
+  { header: "Paid on", cell: (p) => fmtDate(p.payment_date) },
+];
 
-function Page() {
-  const s = useOps();
-  const { tab } = Route.useSearch();
-  const total = s.invoices.reduce((a, i) => a + i.amount, 0);
-  const paid = s.invoices.reduce((a, i) => a + i.paid, 0);
+function PaymentsPage() {
+  const list = useListQuery();
+  const payments = useOpsList("payments", listPayments, list.query);
+  const stats = useOperationsDashboard().data?.stats;
+
   return (
     <>
-      <PageHeader title="Payments" />
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Invoiced value" value={naira(total)} tone="primary" />
-        <StatCard label="Received" value={naira(paid)} tone="success" />
-        <StatCard label="Outstanding" value={naira(total - paid)} tone="warning" />
-        <StatCard label="Ready to invoice" value={String(s.invoices.filter((i) => i.status === "Not Invoiced").length)} tone="accent" />
-      </div>
-      <Panel title="Invoices">
-        <QueueView
-          rows={s.invoices}
-          getKey={(i) => i.id}
-          initialTab={tab ?? "Not Invoiced"}
-          tabs={[{ label: "All", test: () => true }, ...invoiceStatuses.map((st) => ({ label: st, test: (i: Invoice) => i.status === st }))]}
-          columns={[
-            { key: "id", header: "Invoice", render: (i) => <span className="font-semibold text-primary">{i.id}</span>, sort: (i) => i.id },
-            { key: "mov", header: "Movement", render: (i) => <IdLink kind="movement" id={i.movementId} /> },
-            { key: "txn", header: "Transaction", render: (i) => <IdLink kind="transaction" id={i.txnId} /> },
-            { key: "buyer", header: "Payer", render: (i) => partyName(s, txnOf(s, i.txnId)?.buyerId) },
-            { key: "amt", header: "Amount", render: (i) => naira(i.amount), sort: (i) => i.amount },
-            { key: "paid", header: "Paid", render: (i) => naira(i.paid), sort: (i) => i.paid },
-            { key: "upd", header: "Updated", render: (i) => fmt(i.updatedAt), sort: (i) => i.updatedAt },
-            { key: "status", header: "Status", render: (i) => <StatusBadge value={i.status} /> },
-          ]}
-          searchText={(i) => `${i.id} ${i.movementId} ${i.txnId} ${partyName(s, txnOf(s, i.txnId)?.buyerId)}`}
-          filters={[{ label: "Payer", get: (i) => partyName(s, txnOf(s, i.txnId)?.buyerId) }]}
-          actions={(i) =>
-            (next[i.status] ?? []).map((n) => (
-              <RowAction
-                key={n.a}
-                onClick={() => {
-                  invoiceAction(i.id, n.a);
-                  toast.success(`${i.id}: ${n.label}`);
-                }}
-              >
-                {n.label}
-              </RowAction>
-            ))
-          }
+      <PageHeader
+        title="Payments"
+        description="Transport fees owed to your company and what has been paid."
+      />
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        <StatCard
+          label="Outstanding"
+          value={naira(stats?.outstanding_payments)}
+          tone="danger"
+          hint="Due minus paid, all jobs"
         />
+        <StatCard
+          label="Tonnes moved"
+          value={Number(stats?.tonnes_moved ?? 0).toLocaleString()}
+          hint="Across all movements"
+        />
+      </div>
+      <Panel title="Payment register">
+        <div className="space-y-4">
+          <SearchBox
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder="Payment, invoice, transaction, movement"
+          />
+          <ResourceTable
+            columns={columns}
+            data={payments.data}
+            isLoading={payments.isLoading}
+            error={payments.error}
+            page={list.page}
+            onPage={list.setPage}
+            empty="No payments yet."
+          />
+        </div>
       </Panel>
     </>
   );

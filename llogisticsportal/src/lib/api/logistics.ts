@@ -36,10 +36,10 @@ export type DomainReviewStatus = "pending" | "passed" | "attention" | "failed";
 export type CredentialValidity = "current" | "expiring" | "expired";
 
 export interface LogisticsListQuery {
-  page?: number;
-  page_size?: number;
-  search?: string;
-  ordering?: string;
+  page?: number | undefined;
+  page_size?: number | undefined;
+  search?: string | undefined;
+  ordering?: string | undefined;
   [key: string]: string | number | boolean | null | undefined;
 }
 
@@ -73,7 +73,9 @@ export interface NewCompanyInput {
   services: string[];
 }
 
-export function listCompanies(query: LogisticsListQuery = {}): Promise<Paginated<LogisticsCompany>> {
+export function listCompanies(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<LogisticsCompany>> {
   return apiFetch<Paginated<LogisticsCompany>>(`${BASE}/companies/`, { query });
 }
 
@@ -107,7 +109,9 @@ export interface OperatingLocation {
   updated_at: string;
 }
 
-export function listLocations(query: LogisticsListQuery = {}): Promise<Paginated<OperatingLocation>> {
+export function listLocations(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<OperatingLocation>> {
   return apiFetch<Paginated<OperatingLocation>>(`${BASE}/locations/`, { query });
 }
 
@@ -186,10 +190,7 @@ export interface Driver {
   updated_at: string;
 }
 
-export type NewDriverInput = Omit<
-  Driver,
-  "id" | "credential_status" | "created_at" | "updated_at"
->;
+export type NewDriverInput = Omit<Driver, "id" | "credential_status" | "created_at" | "updated_at">;
 
 export function listDrivers(query: LogisticsListQuery = {}): Promise<Paginated<Driver>> {
   return apiFetch<Paginated<Driver>>(`${BASE}/drivers/`, { query });
@@ -293,7 +294,9 @@ export interface NewLogisticsApplicationInput {
   company: UUID;
 }
 
-export function listApplications(query: LogisticsListQuery = {}): Promise<Paginated<LogisticsApplication>> {
+export function listApplications(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<LogisticsApplication>> {
   return apiFetch<Paginated<LogisticsApplication>>(`${BASE}/applications/`, { query });
 }
 
@@ -301,7 +304,9 @@ export function getApplication(id: UUID): Promise<LogisticsApplication> {
   return apiFetch<LogisticsApplication>(`${BASE}/applications/${id}/`);
 }
 
-export function createApplication(input: NewLogisticsApplicationInput): Promise<LogisticsApplication> {
+export function createApplication(
+  input: NewLogisticsApplicationInput,
+): Promise<LogisticsApplication> {
   return apiFetch<LogisticsApplication>(`${BASE}/applications/`, { method: "POST", body: input });
 }
 
@@ -321,7 +326,12 @@ export function saveLogisticsApplicationSection(
 export function reviewLogisticsApplicationSection(
   id: UUID,
   key: LogisticsDomainKey,
-  input: { status: "passed" | "attention" | "failed"; score: number; notes: string; applicable?: boolean | undefined },
+  input: {
+    status: "passed" | "attention" | "failed";
+    score: number;
+    notes: string;
+    applicable?: boolean | undefined;
+  },
 ): Promise<DomainReview> {
   return apiFetch<DomainReview>(`${BASE}/applications/${id}/sections/${key}/review/`, {
     method: "POST",
@@ -352,7 +362,12 @@ export function decideApplication(
     status: "approved" | "conditionally_approved" | "rejected";
     rationale: string;
     conditions?:
-      | { title: string; description: string; due_date: string; service_scope?: string | undefined }[]
+      | {
+          title: string;
+          description: string;
+          due_date: string;
+          service_scope?: string | undefined;
+        }[]
       | undefined;
   },
 ): Promise<LogisticsApplication> {
@@ -369,7 +384,9 @@ export interface LogisticsAuditEvent {
   actor_id: UUID | null;
 }
 
-export function listLogisticsApplicationActivity(id: UUID): Promise<{ events: LogisticsAuditEvent[] }> {
+export function listLogisticsApplicationActivity(
+  id: UUID,
+): Promise<{ events: LogisticsAuditEvent[] }> {
   return apiFetch<{ events: LogisticsAuditEvent[] }>(`${BASE}/applications/${id}/activity/`);
 }
 
@@ -441,7 +458,9 @@ export function uploadLogisticsApplicationDocument(
   });
 }
 
-export function listLogisticsDocuments(query: LogisticsListQuery = {}): Promise<Paginated<LogisticsDocument>> {
+export function listLogisticsDocuments(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<LogisticsDocument>> {
   return apiFetch<Paginated<LogisticsDocument>>(`${BASE}/documents/`, { query });
 }
 
@@ -521,7 +540,9 @@ export function createInformationRequest(
   });
 }
 
-export function listRequests(query: LogisticsListQuery = {}): Promise<Paginated<InformationRequest>> {
+export function listRequests(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<InformationRequest>> {
   return apiFetch<Paginated<InformationRequest>>(`${BASE}/requests/`, { query });
 }
 
@@ -553,7 +574,12 @@ export function listApplicationConditions(id: UUID): Promise<ApprovalCondition[]
 
 export function createCondition(
   id: UUID,
-  input: { title: string; description: string; due_date: string; service_scope?: string | undefined },
+  input: {
+    title: string;
+    description: string;
+    due_date: string;
+    service_scope?: string | undefined;
+  },
 ): Promise<ApprovalCondition> {
   return apiFetch<ApprovalCondition>(`${BASE}/applications/${id}/conditions/`, {
     method: "POST",
@@ -561,7 +587,9 @@ export function createCondition(
   });
 }
 
-export function listConditions(query: LogisticsListQuery = {}): Promise<Paginated<ApprovalCondition>> {
+export function listConditions(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<ApprovalCondition>> {
   return apiFetch<Paginated<ApprovalCondition>>(`${BASE}/conditions/`, { query });
 }
 
@@ -584,10 +612,7 @@ export function submitConditionEvidence(
   });
 }
 
-export function reviewCondition(
-  id: UUID,
-  input: { notes: string },
-): Promise<ApprovalCondition> {
+export function reviewCondition(id: UUID, input: { notes: string }): Promise<ApprovalCondition> {
   return apiFetch<ApprovalCondition>(`${BASE}/conditions/${id}/review/`, {
     method: "POST",
     body: input,
@@ -612,7 +637,9 @@ export interface ScopeRestriction {
   updated_at: string;
 }
 
-export function listRestrictions(query: LogisticsListQuery = {}): Promise<Paginated<ScopeRestriction>> {
+export function listRestrictions(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<ScopeRestriction>> {
   return apiFetch<Paginated<ScopeRestriction>>(`${BASE}/restrictions/`, { query });
 }
 
@@ -624,10 +651,7 @@ export function createRestriction(input: {
   return apiFetch<ScopeRestriction>(`${BASE}/restrictions/`, { method: "POST", body: input });
 }
 
-export function resolveRestriction(
-  id: UUID,
-  input: { notes: string },
-): Promise<ScopeRestriction> {
+export function resolveRestriction(id: UUID, input: { notes: string }): Promise<ScopeRestriction> {
   return apiFetch<ScopeRestriction>(`${BASE}/restrictions/${id}/resolve/`, {
     method: "POST",
     body: input,
@@ -645,7 +669,9 @@ export interface Notification {
   created_at: string;
 }
 
-export function listNotifications(query: LogisticsListQuery = {}): Promise<Paginated<Notification>> {
+export function listNotifications(
+  query: LogisticsListQuery = {},
+): Promise<Paginated<Notification>> {
   return apiFetch<Paginated<Notification>>(`${BASE}/notifications/`, { query });
 }
 

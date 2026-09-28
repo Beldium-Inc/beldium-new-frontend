@@ -3,12 +3,9 @@ import {
   AlertTriangle,
   BarChart3,
   Bell,
-  Boxes,
   CarFront,
   ClipboardCheck,
-  Container,
   FileText,
-  FlaskConical,
   Inbox,
   LayoutDashboard,
   LogOut,
@@ -42,11 +39,8 @@ import {
 } from "@/components/ui/sidebar";
 import { fullName } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth";
-import { isDemoMode } from "@/lib/data-mode";
-import { useOps } from "@/lib/ops-store";
+import { useOperationsDashboard } from "@/lib/api/operations-queries";
 import { STAGE_LABELS, isVerified, useWorkspace, type WorkspaceStage } from "@/lib/workspace";
-import { GlobalSearch } from "./global-search";
-import { NetworkSimulator } from "./network-sim";
 
 type NavItem = { title: string; url: string; icon: typeof LayoutDashboard };
 
@@ -67,17 +61,14 @@ const verifiedNav: { group: string; items: NavItem[] }[] = [
     group: "Movements",
     items: [
       { title: "Transport Requests", url: "/portal/transport-requests", icon: Inbox },
-      { title: "Active Movements", url: "/portal/active-movements", icon: Truck },
-      { title: "Sample Logistics", url: "/portal/sample-logistics", icon: FlaskConical },
-      { title: "Bulk Logistics", url: "/portal/bulk-logistics", icon: Boxes },
-      { title: "Routes & Tracking", url: "/portal/routes-tracking", icon: Map },
+      { title: "Movements", url: "/portal/movements", icon: Truck },
+      { title: "Tracking", url: "/portal/tracking", icon: Map },
       { title: "Deliveries", url: "/portal/deliveries", icon: PackageCheck },
     ],
   },
   {
     group: "Fleet & people",
     items: [
-      { title: "Fleet", url: "/portal/fleet", icon: Container },
       { title: "Vehicles", url: "/portal/vehicles", icon: CarFront },
       { title: "Drivers", url: "/portal/drivers", icon: Users },
     ],
@@ -104,25 +95,25 @@ const verifiedNav: { group: string; items: NavItem[] }[] = [
 
 const stageTone: Record<WorkspaceStage, ChipTone> = {
   none: "neutral",
+  join_pending: "warning",
   draft: "neutral",
   under_review: "warning",
   information_required: "danger",
   verified: "success",
   rejected: "danger",
-  suspended: "danger",
 };
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
-  const { record } = useWorkspace();
-  const ops = useOps();
+  const { record, pendingJoin } = useWorkspace();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const stage = record?.stage ?? "none";
+  const stage = record?.stage ?? (pendingJoin ? "join_pending" : "none");
   const verified = isVerified(stage);
   const groups = verified ? verifiedNav : [{ group: "Verification", items: reviewNav }];
-  const unread = ops.notifications.filter((n) => !n.read).length;
+  const dashboard = useOperationsDashboard({ enabled: verified });
+  const unread = verified ? (dashboard.data?.stats.unread_notifications ?? 0) : 0;
 
   return (
     <SidebarProvider>
@@ -176,9 +167,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
             </div>
-            {verified ? <GlobalSearch /> : null}
             <div className="ml-auto flex items-center gap-2">
-              {verified && isDemoMode ? <NetworkSimulator /> : null}
               <StatusChip tone={stageTone[stage]} className="hidden sm:inline-flex">
                 {STAGE_LABELS[stage]}
               </StatusChip>

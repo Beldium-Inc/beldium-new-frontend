@@ -1,110 +1,97 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { Field, FieldGrid, errorMessage } from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
-import { Switch } from "@/components/ui/switch";
-import { Btn, FormField, Modal, fieldCls } from "@/components/beldium/ops-ui";
-import { resetOps, setPref, useOps } from "@/lib/ops-store";
-import { setState, useOperator } from "@/lib/onboarding-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { useUpdateCurrentUser } from "@/lib/api/queries";
+import { useAuth } from "@/lib/auth";
+import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
+import { useWorkspace } from "@/lib/workspace";
 
 export const Route = createFileRoute("/portal/settings")({
-  head: () => ({
-    meta: [
-      { title: "Settings - Beldium Logistics Hub" },
-      { name: "description", content: "Logistics operator profile, notification preferences and demo data controls." },
-      { property: "og:title", content: "Settings - Beldium Logistics Hub" },
-      { property: "og:description", content: "Configure your Beldium logistics workspace." },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Settings - Beldium Logistics Hub" }] }),
   component: SettingsPage,
 });
 
 function SettingsPage() {
-  const s = useOps();
-  const op = useOperator();
-  const [confirm, setConfirm] = useState(false);
-  const [profile, setProfile] = useState({
-    name: op.organisation?.name || "Trans Sahel Haulage Ltd",
-    email: op.organisation?.email || "ops@transsahel.ng",
-    phone: op.organisation?.phone || "+234 803 000 4412",
-    address: op.organisation?.operatingAddress || "14 Ahmadu Bello Way, Kaduna",
-  });
+  const { user } = useAuth();
+  const { record } = useWorkspace();
+  const update = useUpdateCurrentUser();
+  const [form, setForm] = useState({ first_name: "", last_name: "", phone_number: "" });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user)
+      setForm({
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone_number: user.phone_number,
+      });
+  }, [user]);
+
+  function save() {
+    setError("");
+    const phone = formatPhoneNumber(form.phone_number);
+    if (form.phone_number && !isValidPhoneNumber(phone))
+      return setError("Enter a complete phone number.");
+    update.mutate(
+      { ...form, phone_number: phone },
+      {
+        onSuccess: () => toast.success("Profile saved"),
+        onError: (e) => setError(errorMessage(e)),
+      },
+    );
+  }
 
   return (
     <>
-      <PageHeader title="Settings" />
-      <div className="space-y-5">
+      <PageHeader title="Settings" description="Your profile and organisation record." />
+      <div className="space-y-4">
+        <Panel title="Your profile">
+          <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+            <Field label="First name">
+              <Input
+                value={form.first_name}
+                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+              />
+            </Field>
+            <Field label="Last name">
+              <Input
+                value={form.last_name}
+                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+              />
+            </Field>
+            <Field label="Mobile number">
+              <PhoneInput
+                value={form.phone_number}
+                onChange={(v) => setForm({ ...form, phone_number: v })}
+              />
+            </Field>
+            <Field label="Email">
+              <Input value={user?.email ?? ""} disabled />
+            </Field>
+          </div>
+          {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
+          <Button className="mt-5" onClick={save} disabled={update.isPending}>
+            {update.isPending ? "Saving…" : "Save profile"}
+          </Button>
+        </Panel>
         <Panel title="Organisation">
-          <form
-            className="grid gap-4 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (op.organisation) setState({ organisation: { ...op.organisation, name: profile.name, email: profile.email, phone: profile.phone, operatingAddress: profile.address } });
-              toast.success("Organisation profile saved");
-            }}
-          >
-            <FormField label="Organisation name">
-              <input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={fieldCls} />
-            </FormField>
-            <FormField label="Operations email">
-              <input value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={fieldCls} />
-            </FormField>
-            <FormField label="Phone">
-              <input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={fieldCls} />
-            </FormField>
-            <FormField label="Operating address">
-              <input value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} className={fieldCls} />
-            </FormField>
-            <div className="sm:col-span-2">
-              <Btn type="submit">Save</Btn>
-            </div>
-          </form>
-        </Panel>
-
-        <Panel title="Notification Preferences">
-          <ul className="divide-y divide-border">
-            {Object.entries(s.prefs).map(([k, v]) => (
-              <li key={k} className="flex items-center justify-between py-2.5 text-sm">
-                {k}
-                <Switch checked={v} onCheckedChange={(c) => setPref(k, c)} />
-              </li>
-            ))}
-          </ul>
-        </Panel>
-
-        <Panel title="Demo Data">
-          <Btn variant="danger" onClick={() => setConfirm(true)}>
-            Reset Demo Data
-          </Btn>
+          <FieldGrid
+            items={[
+              ["Organisation", record?.organisationName],
+              ["Beldium Logistics ID", record?.reference],
+              ["Verification", record?.statusLabel],
+              ["Permitted services", record?.permittedScopes.join(", ")],
+            ]}
+          />
         </Panel>
       </div>
-
-      <Modal
-        open={confirm}
-        onClose={() => setConfirm(false)}
-        title="Reset demo data"
-        footer={
-          <>
-            <Btn variant="outline" onClick={() => setConfirm(false)}>
-              Cancel
-            </Btn>
-            <Btn
-              variant="danger"
-              onClick={() => {
-                resetOps();
-                setConfirm(false);
-                toast.success("Demo data restored to the seeded scenario");
-              }}
-            >
-              Reset
-            </Btn>
-          </>
-        }
-      >
-        <p className="text-sm">All requests, movements, incidents, invoices and notifications return to the seeded scenario.</p>
-      </Modal>
     </>
   );
 }
