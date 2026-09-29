@@ -344,8 +344,11 @@ export interface InfoRequest {
   priority: Priority;
   status: InfoRequestStatus;
   response_message: string;
+  response_by_name: string | null;
   response_at: string | null;
   response_attachments: Record<string, unknown>[];
+  /** Files attached to the response, filed as reviewable site documents. */
+  response_documents: DocumentRecord[];
   created_at: string;
   updated_at: string;
 }
@@ -779,6 +782,22 @@ export function releaseApplication(id: UUID): Promise<Application> {
   return apiFetch<Application>(`${BASE}/applications/${id}/release/`, { method: "POST" });
 }
 
+/**
+ * Verifies a claimed application. The backend refuses (409
+ * `application_not_ready`) until every submitted document is verified, and
+ * verifies the organisation too once nothing else is outstanding.
+ */
+export function approveApplication(id: UUID): Promise<Application> {
+  return apiFetch<Application>(`${BASE}/applications/${id}/approve/`, { method: "POST" });
+}
+
+export function rejectApplication(id: UUID, reason: string): Promise<Application> {
+  return apiFetch<Application>(`${BASE}/applications/${id}/reject/`, {
+    method: "POST",
+    body: { reason },
+  });
+}
+
 export function listPendingReviews(query: MiningListQuery = {}): Promise<Paginated<PendingReview>> {
   return apiFetch<Paginated<PendingReview>>(`${BASE}/pending-reviews/`, { query });
 }
@@ -822,6 +841,11 @@ export function respondToInfoRequest(id: UUID, input: { message: string }): Prom
     method: "POST",
     body: input,
   });
+}
+
+/** The desk accepts the response and closes the request. */
+export function closeInfoRequest(id: UUID): Promise<InfoRequest> {
+  return apiFetch<InfoRequest>(`${BASE}/info-requests/${id}/close/`, { method: "POST" });
 }
 
 // --- licences & documents -------------------------------------------------------

@@ -8,7 +8,9 @@ import {
 
 import {
   addScoreFactor,
+  approveApplication,
   claimApplication,
+  closeInfoRequest,
   closeMiningNonConformity,
   createMiningApplication,
   createEnvironmentalRecord,
@@ -43,6 +45,7 @@ import {
   listMiningSamples,
   listSiteActivity,
   recomputeSiteScore,
+  rejectApplication,
   releaseApplication,
   respondToInfoRequest,
   reviewMiningDocument,
@@ -289,6 +292,25 @@ export function useReleaseApplication() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: UUID) => releaseApplication(id),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useApproveApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => approveApplication(id),
+    onSuccess: () => {
+      invalidateMining(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ["organisations"] });
+    },
+  });
+}
+
+export function useRejectApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; reason: string }) => rejectApplication(input.id, input.reason),
     onSuccess: () => invalidateMining(queryClient),
   });
 }
@@ -701,6 +723,14 @@ export function useRespondToInfoRequest() {
   return useMutation({
     mutationFn: (input: { id: UUID; message: string }) =>
       respondToInfoRequest(input.id, { message: input.message }),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useCloseInfoRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => closeInfoRequest(id),
     onSuccess: () => invalidateMining(queryClient),
   });
 }

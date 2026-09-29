@@ -121,7 +121,11 @@ export function updateSiteSection(
 export function uploadSectionEvidence(
   siteId: UUID,
   sectionKey: string,
-  input: { name: string; file: File; kind?: "pdf" | "image" | "certificate" | "spreadsheet" | "report" },
+  input: {
+    name: string;
+    file: File;
+    kind?: "pdf" | "image" | "certificate" | "spreadsheet" | "report";
+  },
 ): Promise<unknown> {
   const form = new FormData();
   form.append("name", input.name);
@@ -290,7 +294,16 @@ export function createLicence(input: {
 }
 
 export function listExpiringLicences(): Promise<
-  { id: UUID; number: string; type: string; site_name: string; authority: string; expires_on: string; days_to_expiry: number; status: LicenceStatus }[]
+  {
+    id: UUID;
+    number: string;
+    type: string;
+    site_name: string;
+    authority: string;
+    expires_on: string;
+    days_to_expiry: number;
+    status: LicenceStatus;
+  }[]
 > {
   return apiFetch("/mining/licences/expiring/");
 }
@@ -306,7 +319,8 @@ export interface ApplicationInput {
   sla_days?: number | undefined;
 }
 
-export type MiningApplicationStatus = "pending" | "under_review" | "approved" | "rejected" | "info_requested";
+export type MiningApplicationStatus =
+  "pending" | "under_review" | "approved" | "rejected" | "info_requested";
 
 export interface MiningApplication extends ApplicationInput {
   id: UUID;
@@ -325,7 +339,8 @@ export function createApplication(input: ApplicationInput): Promise<MiningApplic
 }
 
 export type NonConformitySeverity = "minor" | "major" | "critical";
-export type NonConformityStatus = "open" | "in_progress" | "awaiting_review" | "closed" | "escalated";
+export type NonConformityStatus =
+  "open" | "in_progress" | "awaiting_review" | "closed" | "escalated";
 
 export interface NonConformity {
   id: UUID;
@@ -366,15 +381,20 @@ export function submitCorrectiveEvidence(
   const form = new FormData();
   form.append("message", input.message);
   if (input.file) form.append("file", input.file);
-  return apiFetch<CorrectiveSubmission>(`/mining/non-conformities/${nonConformityId}/submissions/`, {
-    method: "POST",
-    body: form,
-  });
+  return apiFetch<CorrectiveSubmission>(
+    `/mining/non-conformities/${nonConformityId}/submissions/`,
+    {
+      method: "POST",
+      body: form,
+    },
+  );
 }
 
 export interface InfoRequest {
   id: UUID;
+  site: UUID;
   site_name: string;
+  section: string;
   requested_by_name: string;
   subject: string;
   details: string;
@@ -382,7 +402,10 @@ export interface InfoRequest {
   priority: "low" | "normal" | "high";
   status: "open" | "responded" | "closed";
   response_message: string;
+  response_by_name: string | null;
   response_at: string | null;
+  /** Files sent with the response, filed as site documents the desk reviews. */
+  response_documents: DocumentRecord[];
   created_at: string;
   updated_at: string;
 }
@@ -391,11 +414,43 @@ export function listInfoRequests(): Promise<Paginated<InfoRequest> | InfoRequest
   return apiFetch("/mining/info-requests/");
 }
 
-export function respondToInfoRequest(id: UUID, message: string): Promise<InfoRequest> {
+/**
+ * Answers a reviewer's request. Attached files are filed as pending site
+ * documents, so they go back to the compliance desk's review queue.
+ */
+export function respondToInfoRequest(
+  id: UUID,
+  input: { message: string; files?: File[] },
+): Promise<InfoRequest> {
+  const form = new FormData();
+  form.append("message", input.message);
+  for (const file of input.files ?? []) form.append("files", file);
   return apiFetch<InfoRequest>(`/mining/info-requests/${id}/respond/`, {
     method: "POST",
-    body: { message },
+    body: form,
   });
+}
+
+export type InspectionStatus = "requested" | "scheduled" | "completed" | "overdue";
+
+/** Read-only here: the desk schedules and records inspections. */
+export interface Inspection {
+  id: UUID;
+  reference: string;
+  site: UUID;
+  site_name: string;
+  type: "pre_approval" | "routine" | "follow_up" | "incident_triggered";
+  scheduled_for: string | null;
+  inspector_name: string;
+  status: InspectionStatus;
+  result: "pass" | "pass_with_observations" | "fail" | "";
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function listInspections(): Promise<Paginated<Inspection> | Inspection[]> {
+  return apiFetch("/mining/inspections/");
 }
 
 export interface MiningDashboard {
@@ -441,7 +496,8 @@ export interface MiningDashboard {
     title: string;
     body: string;
     at: string;
-    kind: "info" | "error" | "warn";
+    kind: "info" | "error" | "warn" | "success";
+    tone?: "neutral" | "positive" | "warning" | "negative";
     entity: string;
     entity_id: string;
     reference: string;

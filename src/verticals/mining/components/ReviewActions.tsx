@@ -36,7 +36,8 @@ const meta: Record<
   },
   Flag: {
     title: "Flag for escalation",
-    prompt: "Flagging moves the site to Suspended and notifies oversight.",
+    prompt:
+      "Flagging keeps the site under review and notifies the miner. They see this note on their dashboard and must address it.",
     cta: "Flag section",
   },
 };

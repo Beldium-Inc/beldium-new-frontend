@@ -36,7 +36,6 @@ import { Route as MarketplaceOffersRouteImport } from './routes/marketplace.offe
 import { Route as MarketplaceOrdersRouteImport } from './routes/marketplace.orders'
 import { Route as MiningIndexRouteImport } from './routes/mining.index'
 import { Route as MiningActionsRouteImport } from './routes/mining.actions'
-import { Route as MiningApplicationsRouteImport } from './routes/mining.applications'
 import { Route as MiningAuditRouteImport } from './routes/mining.audit'
 import { Route as MiningComplianceRouteImport } from './routes/mining.compliance'
 import { Route as MiningDashboardRouteImport } from './routes/mining.dashboard'
@@ -118,6 +117,8 @@ import { Route as MarketplaceComplianceIndexRouteImport } from './routes/marketp
 import { Route as MarketplaceComplianceIdRouteImport } from './routes/marketplace.compliance.$id'
 import { Route as MarketplaceRfqsIndexRouteImport } from './routes/marketplace.rfqs.index'
 import { Route as MarketplaceRfqsIdRouteImport } from './routes/marketplace.rfqs.$id'
+import { Route as MiningApplicationsIndexRouteImport } from './routes/mining.applications.index'
+import { Route as MiningApplicationsApplicationIdRouteImport } from './routes/mining.applications.$applicationId'
 import { Route as MiningSitesIndexRouteImport } from './routes/mining.sites.index'
 import { Route as MiningSitesSiteIdRouteImport } from './routes/mining.sites.$siteId'
 import { Route as ProcessingApplicationsIdRouteImport } from './routes/processing.applications.$id'
@@ -287,11 +288,6 @@ const MiningIndexRoute = MiningIndexRouteImport.update({
 const MiningActionsRoute = MiningActionsRouteImport.update({
   id: '/actions',
   path: '/actions',
-  getParentRoute: () => MiningRoute,
-} as any)
-const MiningApplicationsRoute = MiningApplicationsRouteImport.update({
-  id: '/applications',
-  path: '/applications',
   getParentRoute: () => MiningRoute,
 } as any)
 const MiningAuditRoute = MiningAuditRouteImport.update({
@@ -717,6 +713,17 @@ const MarketplaceRfqsIdRoute = MarketplaceRfqsIdRouteImport.update({
   path: '/rfqs/$id',
   getParentRoute: () => MarketplaceRoute,
 } as any)
+const MiningApplicationsIndexRoute = MiningApplicationsIndexRouteImport.update({
+  id: '/applications/',
+  path: '/applications/',
+  getParentRoute: () => MiningRoute,
+} as any)
+const MiningApplicationsApplicationIdRoute =
+  MiningApplicationsApplicationIdRouteImport.update({
+    id: '/applications/$applicationId',
+    path: '/applications/$applicationId',
+    getParentRoute: () => MiningRoute,
+  } as any)
 const MiningSitesIndexRoute = MiningSitesIndexRouteImport.update({
   id: '/sites/',
   path: '/sites/',
@@ -937,7 +944,6 @@ export interface FileRoutesByFullPath {
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
   '/mining/actions': typeof MiningActionsRoute
-  '/mining/applications': typeof MiningApplicationsRoute
   '/mining/audit': typeof MiningAuditRoute
   '/mining/compliance': typeof MiningComplianceRoute
   '/mining/dashboard': typeof MiningDashboardRoute
@@ -1015,6 +1021,7 @@ export interface FileRoutesByFullPath {
   '/logistics/regulator/reports': typeof LogisticsRegulatorReportsRoute
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
+  '/mining/applications/$applicationId': typeof MiningApplicationsApplicationIdRoute
   '/mining/sites/$siteId': typeof MiningSitesSiteIdRoute
   '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
   '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
@@ -1047,6 +1054,7 @@ export interface FileRoutesByFullPath {
   '/logistics/regulator/': typeof LogisticsRegulatorIndexRoute
   '/marketplace/compliance/': typeof MarketplaceComplianceIndexRoute
   '/marketplace/rfqs/': typeof MarketplaceRfqsIndexRoute
+  '/mining/applications/': typeof MiningApplicationsIndexRoute
   '/mining/sites/': typeof MiningSitesIndexRoute
   '/quality/applications/': typeof QualityApplicationsIndexRoute
   '/quality/certificates/': typeof QualityCertificatesIndexRoute
@@ -1074,7 +1082,6 @@ export interface FileRoutesByTo {
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
   '/mining/actions': typeof MiningActionsRoute
-  '/mining/applications': typeof MiningApplicationsRoute
   '/mining/audit': typeof MiningAuditRoute
   '/mining/compliance': typeof MiningComplianceRoute
   '/mining/dashboard': typeof MiningDashboardRoute
@@ -1152,6 +1159,7 @@ export interface FileRoutesByTo {
   '/logistics/regulator/reports': typeof LogisticsRegulatorReportsRoute
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
+  '/mining/applications/$applicationId': typeof MiningApplicationsApplicationIdRoute
   '/mining/sites/$siteId': typeof MiningSitesSiteIdRoute
   '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
   '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
@@ -1184,6 +1192,7 @@ export interface FileRoutesByTo {
   '/logistics/regulator': typeof LogisticsRegulatorIndexRoute
   '/marketplace/compliance': typeof MarketplaceComplianceIndexRoute
   '/marketplace/rfqs': typeof MarketplaceRfqsIndexRoute
+  '/mining/applications': typeof MiningApplicationsIndexRoute
   '/mining/sites': typeof MiningSitesIndexRoute
   '/quality/applications': typeof QualityApplicationsIndexRoute
   '/quality/certificates': typeof QualityCertificatesIndexRoute
@@ -1220,7 +1229,6 @@ export interface FileRoutesById {
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
   '/mining/actions': typeof MiningActionsRoute
-  '/mining/applications': typeof MiningApplicationsRoute
   '/mining/audit': typeof MiningAuditRoute
   '/mining/compliance': typeof MiningComplianceRoute
   '/mining/dashboard': typeof MiningDashboardRoute
@@ -1298,6 +1306,7 @@ export interface FileRoutesById {
   '/logistics/regulator/reports': typeof LogisticsRegulatorReportsRoute
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
+  '/mining/applications/$applicationId': typeof MiningApplicationsApplicationIdRoute
   '/mining/sites/$siteId': typeof MiningSitesSiteIdRoute
   '/processing/applications/$id': typeof ProcessingApplicationsIdRoute
   '/processing/processors/$id': typeof ProcessingProcessorsIdRoute
@@ -1330,6 +1339,7 @@ export interface FileRoutesById {
   '/logistics/regulator/': typeof LogisticsRegulatorIndexRoute
   '/marketplace/compliance/': typeof MarketplaceComplianceIndexRoute
   '/marketplace/rfqs/': typeof MarketplaceRfqsIndexRoute
+  '/mining/applications/': typeof MiningApplicationsIndexRoute
   '/mining/sites/': typeof MiningSitesIndexRoute
   '/quality/applications/': typeof QualityApplicationsIndexRoute
   '/quality/certificates/': typeof QualityCertificatesIndexRoute
@@ -1367,7 +1377,6 @@ export interface FileRouteTypes {
     | '/marketplace/offers'
     | '/marketplace/orders'
     | '/mining/actions'
-    | '/mining/applications'
     | '/mining/audit'
     | '/mining/compliance'
     | '/mining/dashboard'
@@ -1445,6 +1454,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/reports'
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
+    | '/mining/applications/$applicationId'
     | '/mining/sites/$siteId'
     | '/processing/applications/$id'
     | '/processing/processors/$id'
@@ -1477,6 +1487,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/'
     | '/marketplace/compliance/'
     | '/marketplace/rfqs/'
+    | '/mining/applications/'
     | '/mining/sites/'
     | '/quality/applications/'
     | '/quality/certificates/'
@@ -1504,7 +1515,6 @@ export interface FileRouteTypes {
     | '/marketplace/offers'
     | '/marketplace/orders'
     | '/mining/actions'
-    | '/mining/applications'
     | '/mining/audit'
     | '/mining/compliance'
     | '/mining/dashboard'
@@ -1582,6 +1592,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/reports'
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
+    | '/mining/applications/$applicationId'
     | '/mining/sites/$siteId'
     | '/processing/applications/$id'
     | '/processing/processors/$id'
@@ -1614,6 +1625,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator'
     | '/marketplace/compliance'
     | '/marketplace/rfqs'
+    | '/mining/applications'
     | '/mining/sites'
     | '/quality/applications'
     | '/quality/certificates'
@@ -1649,7 +1661,6 @@ export interface FileRouteTypes {
     | '/marketplace/offers'
     | '/marketplace/orders'
     | '/mining/actions'
-    | '/mining/applications'
     | '/mining/audit'
     | '/mining/compliance'
     | '/mining/dashboard'
@@ -1727,6 +1738,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/reports'
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
+    | '/mining/applications/$applicationId'
     | '/mining/sites/$siteId'
     | '/processing/applications/$id'
     | '/processing/processors/$id'
@@ -1759,6 +1771,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/'
     | '/marketplace/compliance/'
     | '/marketplace/rfqs/'
+    | '/mining/applications/'
     | '/mining/sites/'
     | '/quality/applications/'
     | '/quality/certificates/'
@@ -1974,13 +1987,6 @@ declare module '@tanstack/react-router' {
       path: '/actions'
       fullPath: '/mining/actions'
       preLoaderRoute: typeof MiningActionsRouteImport
-      parentRoute: typeof MiningRoute
-    }
-    '/mining/applications': {
-      id: '/mining/applications'
-      path: '/applications'
-      fullPath: '/mining/applications'
-      preLoaderRoute: typeof MiningApplicationsRouteImport
       parentRoute: typeof MiningRoute
     }
     '/mining/audit': {
@@ -2550,6 +2556,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketplaceRfqsIdRouteImport
       parentRoute: typeof MarketplaceRoute
     }
+    '/mining/applications/': {
+      id: '/mining/applications/'
+      path: '/applications'
+      fullPath: '/mining/applications/'
+      preLoaderRoute: typeof MiningApplicationsIndexRouteImport
+      parentRoute: typeof MiningRoute
+    }
+    '/mining/applications/$applicationId': {
+      id: '/mining/applications/$applicationId'
+      path: '/applications/$applicationId'
+      fullPath: '/mining/applications/$applicationId'
+      preLoaderRoute: typeof MiningApplicationsApplicationIdRouteImport
+      parentRoute: typeof MiningRoute
+    }
     '/mining/sites/': {
       id: '/mining/sites/'
       path: '/sites'
@@ -2936,7 +2956,6 @@ const MarketplaceRouteWithChildren = MarketplaceRoute._addFileChildren(
 
 interface MiningRouteChildren {
   MiningActionsRoute: typeof MiningActionsRoute
-  MiningApplicationsRoute: typeof MiningApplicationsRoute
   MiningAuditRoute: typeof MiningAuditRoute
   MiningComplianceRoute: typeof MiningComplianceRoute
   MiningDashboardRoute: typeof MiningDashboardRoute
@@ -2953,13 +2972,14 @@ interface MiningRouteChildren {
   MiningSamplingRoute: typeof MiningSamplingRoute
   MiningTransactionsRoute: typeof MiningTransactionsRoute
   MiningIndexRoute: typeof MiningIndexRoute
+  MiningApplicationsApplicationIdRoute: typeof MiningApplicationsApplicationIdRoute
   MiningSitesSiteIdRoute: typeof MiningSitesSiteIdRoute
+  MiningApplicationsIndexRoute: typeof MiningApplicationsIndexRoute
   MiningSitesIndexRoute: typeof MiningSitesIndexRoute
 }
 
 const MiningRouteChildren: MiningRouteChildren = {
   MiningActionsRoute: MiningActionsRoute,
-  MiningApplicationsRoute: MiningApplicationsRoute,
   MiningAuditRoute: MiningAuditRoute,
   MiningComplianceRoute: MiningComplianceRoute,
   MiningDashboardRoute: MiningDashboardRoute,
@@ -2976,7 +2996,9 @@ const MiningRouteChildren: MiningRouteChildren = {
   MiningSamplingRoute: MiningSamplingRoute,
   MiningTransactionsRoute: MiningTransactionsRoute,
   MiningIndexRoute: MiningIndexRoute,
+  MiningApplicationsApplicationIdRoute: MiningApplicationsApplicationIdRoute,
   MiningSitesSiteIdRoute: MiningSitesSiteIdRoute,
+  MiningApplicationsIndexRoute: MiningApplicationsIndexRoute,
   MiningSitesIndexRoute: MiningSitesIndexRoute,
 }
 
