@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from "react";
 
+import type { LogisticsDomainKey } from "./api/logistics";
+
 /**
- * Demo store for the Logistics Operator application.
- * One record set (organisation, vehicles, drivers, documents) is shared by
- * onboarding, the operator dashboard and the Logistics Compliance review,
- * nothing is copied between them.
+ * The operator application draft, kept in the browser until it is submitted
+ * to the API (lib/api/onboarding.ts). Records the API has already created are
+ * remembered in `server`, so a failed submission resumes instead of creating
+ * duplicates.
  */
 
 export const participantTypes = [
@@ -13,8 +15,9 @@ export const participantTypes = [
   "Sample / Courier Logistics Provider",
   "Mineral Haulage Operator",
   "Freight / Cargo Operator",
-  "Authorised Employee of Existing Logistics Organisation",
 ] as const;
+
+export type SignupRole = "org_admin" | "org_staff" | "independent";
 
 export const roles = [
   "Organisation Administrator",
@@ -27,8 +30,6 @@ export const roles = [
   "Safety / HSE Officer",
   "Compliance Officer",
   "Finance Officer",
-  "Driver",
-  "Read Only User",
   "Other",
 ];
 
@@ -47,87 +48,118 @@ export const services = [
   "Other",
 ];
 
-export const documentGroups: { group: string; related: "Organisation" | "Vehicle" | "Driver"; items: string[] }[] = [
+/**
+ * Evidence groups, one per backend review domain. The API refuses submission
+ * until every applicable domain has at least one current, unexpired document.
+ */
+export const documentGroups: {
+  group: string;
+  domain: LogisticsDomainKey;
+  related: "Organisation" | "Vehicle" | "Driver";
+  items: string[];
+}[] = [
   {
-    group: "Organisation documents",
+    group: "Corporate documents",
+    domain: "corporate",
     related: "Organisation",
     items: [
       "CAC Certificate / Business Registration",
       "TIN / Tax Registration",
       "Company Profile",
-      "Operating / Transport Licence (where applicable)",
-      "Relevant Regulatory Registration",
       "Proof of Registered Address",
       "Authorised Representative Evidence",
     ],
   },
   {
-    group: "Vehicle documents",
+    group: "Regulatory licences",
+    domain: "regulatory",
+    related: "Organisation",
+    items: [
+      "Operating / Transport Licence",
+      "Relevant Regulatory Registration",
+      "Relevant Transport Permit",
+      "Regulatory / Transport Compliance Evidence",
+    ],
+  },
+  {
+    group: "Fleet documents",
+    domain: "fleet",
     related: "Vehicle",
     items: [
       "Vehicle Registration",
       "Proof of Ownership / Lease",
       "Roadworthiness Certificate",
       "Vehicle Inspection Certificate / Report",
-      "Vehicle Insurance",
-      "Relevant Transport Permit",
       "Maintenance / Service Evidence",
-      "Tracker / Telematics Evidence (where applicable)",
     ],
   },
   {
     group: "Driver documents",
+    domain: "driver",
     related: "Driver",
     items: [
       "Driver's Licence",
       "Driver Identification",
       "Driver Training / Competency Evidence",
-      "Safety Training Evidence",
-      "Medical / Fitness Evidence (where required)",
-      "Other relevant driver authorisations",
-    ],
-  },
-  {
-    group: "Safety & operations documents",
-    related: "Organisation",
-    items: [
-      "HSE Policy",
-      "Transport Safety Policy",
-      "Journey Management Procedure",
-      "Emergency Response Procedure",
-      "Incident Reporting Procedure",
-      "Vehicle Maintenance Procedure",
-      "Driver Management Procedure",
-      "Cargo / Mineral Handling Procedure",
-      "Sample Handling Procedure (where applicable)",
-      "Chain of Custody Procedure (where applicable)",
-      "Security / Cargo Protection Procedure",
-    ],
-  },
-  {
-    group: "Compliance documents",
-    related: "Organisation",
-    items: [
-      "Fleet Compliance Records",
-      "Vehicle Inspection Records",
-      "Driver Verification Records",
-      "Safety Inspection Records",
-      "Incident Records (where applicable)",
-      "Corrective Action Records (where applicable)",
-      "Regulatory / Transport Compliance Evidence",
-      "Mineral Movement Compliance Evidence (where applicable)",
+      "Medical / Fitness Evidence",
     ],
   },
   {
     group: "Insurance",
+    domain: "insurance",
     related: "Organisation",
     items: [
       "Vehicle Insurance",
-      "Goods In Transit Insurance (where applicable)",
-      "Public Liability / Relevant Business Insurance (where applicable)",
+      "Goods In Transit Insurance",
+      "Public Liability / Business Insurance",
     ],
   },
+  {
+    group: "Health & safety",
+    domain: "hs",
+    related: "Organisation",
+    items: [
+      "HSE Policy",
+      "Transport Safety Policy",
+      "Emergency Response Procedure",
+      "Incident Reporting Procedure",
+    ],
+  },
+  {
+    group: "Operational procedures",
+    domain: "operational",
+    related: "Organisation",
+    items: [
+      "Journey Management Procedure",
+      "Vehicle Maintenance Procedure",
+      "Driver Management Procedure",
+      "Security / Cargo Protection Procedure",
+    ],
+  },
+  {
+    group: "Mineral transport",
+    domain: "mineral",
+    related: "Organisation",
+    items: [
+      "Cargo / Mineral Handling Procedure",
+      "Sample Handling Procedure",
+      "Chain of Custody Procedure",
+      "Mineral Movement Compliance Evidence",
+    ],
+  },
+  {
+    group: "Data & tracking",
+    domain: "data",
+    related: "Organisation",
+    items: ["Tracker / Telematics Evidence", "Data Protection Policy"],
+  },
 ];
+
+/** The backend makes the mineral domain applicable when any service mentions minerals. */
+export function requiredDomains(servicesChosen: string[]): LogisticsDomainKey[] {
+  const mineral = servicesChosen.some((s) => s.toLowerCase().includes("mineral"));
+  return documentGroups.map((g) => g.domain).filter((d) => d !== "mineral" || mineral);
+}
 
 export const complianceQuestions = [
   "Do vehicles have active tracking?",
@@ -151,32 +183,6 @@ export const declarations = [
   "The organisation agrees to Beldium compliance and audit requirements",
 ];
 
-export const applicationStatuses = [
-  "Submitted",
-  "Under Review",
-  "Information Required",
-  "Enhanced Review Required",
-  "Inspection Required",
-  "Conditionally Approved",
-  "Approved",
-  "Rejected",
-  "Suspended",
-] as const;
-export type ApplicationStatus = (typeof applicationStatuses)[number];
-
-export const docStatuses = [
-  "Uploaded",
-  "Under Review",
-  "Verified",
-  "Information Required",
-  "Rejected",
-  "Expiring",
-  "Expired",
-] as const;
-
-// Field names follow the draft form; lib/api/onboarding.ts maps them onto the
-// backend's Vehicle/Driver serializers, which is why the expiry dates and VIN
-// are collected even though the demo doesn't need them.
 export type VehicleRecord = {
   id: string;
   registration: string;
@@ -193,32 +199,27 @@ export type VehicleRecord = {
   insurer: string;
   insuranceExpiry: string;
   roadworthinessExpiry: string;
-  inspection: string;
-  maintenance: string;
-  reviewStatus: string;
 };
 
 export type DriverRecord = {
   id: string;
   name: string;
   phone: string;
-  driverId: string;
+  nationalId: string;
   licenceNumber: string;
   licenceClass: string;
-  issueDate: string;
   expiryDate: string;
-  nationalId: string;
   medicalExpiry: string;
   yearsExperience: string;
   assignedVehicle: string;
   training: string;
   safetyStatus: string;
-  reviewStatus: string;
 };
 
 export type DocumentRecord = {
   id: string;
   group: string;
+  domain: LogisticsDomainKey;
   type: string;
   number: string;
   issuingAuthority: string;
@@ -226,40 +227,9 @@ export type DocumentRecord = {
   expiryDate: string;
   related: string;
   fileName: string;
-  status: (typeof docStatuses)[number];
-};
-
-export type InfoRequest = {
-  id: string;
-  area: string;
-  message: string;
-  requestedAt: string;
-  response?: string;
-  evidence?: string;
-  respondedAt?: string;
-  status: "Open" | "Responded" | "Closed";
-};
-
-/** How the person is joining; decides the onboarding path after verification. */
-export type SignupRole = "org_admin" | "org_staff" | "independent";
-
-export type Account = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string;
-  password: string;
-  participantType: string;
-  signupRole?: string | undefined;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  createdAt?: string | undefined;
 };
 
 export type Organisation = {
-  mode: "register" | "join";
-  joinOrgId?: string;
   requestedRole: string;
   name: string;
   registrationNumber: string;
@@ -274,9 +244,11 @@ export type Organisation = {
   website: string;
   primaryContact: string;
   yearEstablished: string;
+  employees: string;
 };
 
 export type Capability = {
+  participantType: string;
   services: string[];
   operatingStates: string;
   routesCovered: string;
@@ -289,46 +261,32 @@ export type Capability = {
   sampleCustody: string;
 };
 
-export type Application = {
-  applicationId: string;
-  organisationId: string;
-  submittedAt: string;
-  status: ApplicationStatus;
-  reviews: Record<"Organisation" | "Fleet" | "Driver" | "Document" | "Compliance", string>;
-  timeline: { at: string; by: string; event: string }[];
-  infoRequests: InfoRequest[];
-  approval?: {
-    logisticsId: string;
-    services: string[];
-    vehicleCategories: string;
-    coverage: string;
-    capabilities: string[];
-  };
+/** Ids of records the API already holds for this draft, keyed by local id. */
+export type ServerIds = {
+  organisation?: string | undefined;
+  company?: string | undefined;
+  application?: string | undefined;
+  sections: string[];
+  vehicles: Record<string, string>;
+  drivers: Record<string, string>;
+  documents: Record<string, string>;
 };
 
-export type OperatorState = {
-  account?: Account;
-  organisation?: Organisation;
-  capability?: Capability;
+export type DraftState = {
+  /** The account this draft belongs to; a different sign-in starts afresh. */
+  owner?: string | undefined;
+  organisation?: Organisation | undefined;
+  capability?: Capability | undefined;
   vehicles: VehicleRecord[];
   drivers: DriverRecord[];
   documents: DocumentRecord[];
   compliance: Record<string, string>;
   declarations: string[];
-  application?: Application;
-  /** Wizard position, so a half-finished application resumes where it stopped. */
   wizard?: { current: number; completed: number[] } | undefined;
-  signedIn: boolean;
+  server: ServerIds;
 };
 
-export const existingOrganisations = [
-  { id: "BLD-LOG-00412", name: "Trans Sahel Haulage Ltd", reg: "RC 1482231" },
-  { id: "BLD-LOG-00388", name: "Jos Plateau Mineral Movers", reg: "RC 1320945" },
-  { id: "BLD-LOG-00455", name: "Kaduna Courier & Sample Logistics", reg: "RC 1598810" },
-];
-
 export const emptyOrganisation: Organisation = {
-  mode: "register",
   requestedRole: "Organisation Administrator",
   name: "",
   registrationNumber: "",
@@ -343,9 +301,11 @@ export const emptyOrganisation: Organisation = {
   website: "",
   primaryContact: "",
   yearEstablished: "",
+  employees: "",
 };
 
 export const emptyCapability: Capability = {
+  participantType: participantTypes[0],
   services: [],
   operatingStates: "",
   routesCovered: "",
@@ -358,20 +318,17 @@ export const emptyCapability: Capability = {
   sampleCustody: "",
 };
 
-/** Every demo verification code. Demo mode only; the API emails real ones. */
-export const DEMO_CODE = "123456";
-
-const KEY = "beldium-logistics-operator";
-const empty: OperatorState = {
+const KEY = "beldium-logistics-application-draft";
+const empty = (): DraftState => ({
   vehicles: [],
   drivers: [],
   documents: [],
   compliance: {},
   declarations: [],
-  signedIn: false,
-};
+  server: { sections: [], vehicles: {}, drivers: {}, documents: {} },
+});
 
-let state: OperatorState = empty;
+let state: DraftState = empty();
 let loaded = false;
 const listeners = new Set<() => void>();
 
@@ -380,10 +337,20 @@ function load() {
   loaded = true;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) state = { ...empty, ...JSON.parse(raw) };
+    if (raw) state = { ...empty(), ...JSON.parse(raw) };
   } catch {
-    /* ignore */
+    /* A corrupt or blocked draft just starts empty. */
   }
+}
+
+function commit(next: DraftState) {
+  state = next;
+  try {
+    if (typeof window !== "undefined") window.localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    /* Private mode: the draft lives for this tab only. */
+  }
+  listeners.forEach((l) => l());
 }
 
 export function getState() {
@@ -391,92 +358,20 @@ export function getState() {
   return state;
 }
 
-function commit(next: OperatorState) {
-  state = next;
-  if (typeof window !== "undefined") window.localStorage.setItem(KEY, JSON.stringify(state));
-  listeners.forEach((l) => l());
-}
-
-export function setState(update: Partial<OperatorState> | ((s: OperatorState) => Partial<OperatorState>)) {
+export function setState(update: Partial<DraftState> | ((s: DraftState) => Partial<DraftState>)) {
   load();
   const patch = typeof update === "function" ? update(state) : update;
   commit({ ...state, ...patch });
 }
 
-/** Replaces, rather than merges: optional keys (account, application…) must not survive. */
-export function resetState() {
+/** Replaces rather than merges, so optional keys don't survive. */
+export function resetState(owner?: string) {
   load();
-  commit({ ...empty });
+  commit({ ...empty(), owner });
 }
 
-/**
- * Sign in as an already-approved operator, so the full workspace can be
- * explored without walking through onboarding. Demo mode only.
- */
-export function startDemoWorkspace() {
-  const at = now();
-  resetState();
-  setState({
-    signedIn: true,
-    account: {
-      firstName: "Amina",
-      lastName: "Bello",
-      email: "ops@transsahel.demo",
-      phone: "+2348012345678",
-      country: "Nigeria",
-      password: "demo-password",
-      participantType: participantTypes[0],
-      signupRole: "org_admin",
-      emailVerified: true,
-      phoneVerified: true,
-      createdAt: new Date().toISOString(),
-    },
-    organisation: {
-      mode: "register",
-      requestedRole: "Organisation Administrator",
-      name: "Trans Sahel Haulage Ltd",
-      registrationNumber: "RC 1482231",
-      tin: "18420913-0001",
-      orgType: "Limited Liability Company",
-      registeredAddress: "14 Ahmadu Bello Way, Kaduna",
-      operatingAddress: "Kakuri Industrial Estate, Kaduna",
-      state: "Kaduna",
-      lga: "Kaduna South",
-      email: "ops@transsahel.demo",
-      phone: "+2348012345678",
-      website: "",
-      primaryContact: "Amina Bello",
-      yearEstablished: "2014",
-    },
-    capability: {
-      services: ["Sample Transportation", "Mineral Haulage", "Mine to Warehouse", "Mine to Processor"],
-      operatingStates: "Kaduna, Plateau, Nasarawa, Kano",
-      routesCovered: "North-central mineral corridor",
-      minerals: "Tin, Columbite, Lithium",
-      vehicleCategories: "Tipper, Flatbed, Pickup / Van",
-      fleetSize: "12",
-      maxCapacity: "30",
-      tracking: "Yes",
-      security: "Yes",
-      sampleCustody: "Yes",
-    },
-    application: {
-      applicationId: `BLD-LAPP-${new Date().getFullYear()}-0412`,
-      organisationId: "BLD-LOG-00412",
-      submittedAt: at,
-      status: "Approved",
-      reviews: { Organisation: "Approved", Fleet: "Approved", Driver: "Approved", Document: "Verified", Compliance: "Approved" },
-      timeline: [{ at, by: "Beldium Logistics Compliance", event: "Organisation approved (demo workspace)" }],
-      infoRequests: [],
-      approval: {
-        logisticsId: "BLD-LOG-00412",
-        services: ["Sample Transportation", "Mineral Haulage", "Mine to Warehouse", "Mine to Processor"],
-        vehicleCategories: "Tipper, Flatbed, Pickup / Van",
-        coverage: "Kaduna, Plateau, Nasarawa, Kano",
-        capabilities: ["GPS tracking", "Cargo security", "Sample chain of custody"],
-      },
-    },
-  });
+export function recordServerId(patch: Partial<ServerIds>) {
+  setState((s) => ({ server: { ...s.server, ...patch } }));
 }
 
 function subscribe(l: () => void) {
@@ -484,134 +379,9 @@ function subscribe(l: () => void) {
   return () => listeners.delete(l);
 }
 
-export function useOperator() {
-  return useSyncExternalStore(subscribe, getState, () => empty);
+const serverSnapshot = empty();
+export function useDraft() {
+  return useSyncExternalStore(subscribe, getState, () => serverSnapshot);
 }
 
-export const now = () => new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
-export const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-
-export function submitApplication() {
-  const s = getState();
-  const at = now();
-  const year = new Date().getFullYear();
-  const orgId =
-    s.organisation?.mode === "join" && s.organisation.joinOrgId
-      ? s.organisation.joinOrgId
-      : `BLD-ORG-${Math.floor(10000 + Math.random() * 89999)}`;
-  setState({
-    vehicles: s.vehicles.map((v) => ({ ...v, reviewStatus: "Under Review" })),
-    drivers: s.drivers.map((d) => ({ ...d, reviewStatus: "Under Review" })),
-    documents: s.documents.map((d) => ({ ...d, status: "Under Review" })),
-    application: {
-      applicationId: `BLD-LAPP-${year}-${Math.floor(1000 + Math.random() * 8999)}`,
-      organisationId: orgId,
-      submittedAt: at,
-      status: "Under Review",
-      reviews: {
-        Organisation: "Under Review",
-        Fleet: "Under Review",
-        Driver: "Under Review",
-        Document: "Under Review",
-        Compliance: "Under Review",
-      },
-      timeline: [
-        { at, by: `${s.account?.firstName ?? ""} ${s.account?.lastName ?? ""}`.trim(), event: "Application submitted" },
-        { at, by: "Beldium Logistics Compliance", event: "Added to Compliance Review Queue" },
-      ],
-      infoRequests: [],
-    },
-  });
-}
-
-/**
- * Demo join request: the organisation must be one of the seeded ones. The
- * request is reviewed like an application, so it lands in the review queue.
- */
-export function requestToJoin(name: string): boolean {
-  const match = existingOrganisations.find((o) => o.name.trim().toLowerCase() === name.trim().toLowerCase());
-  if (!match) return false;
-  setState({
-    organisation: {
-      ...emptyOrganisation,
-      mode: "join",
-      joinOrgId: match.id,
-      name: match.name,
-      registrationNumber: match.reg,
-      requestedRole: "Read Only User",
-    },
-    declarations: [...declarations],
-  });
-  submitApplication();
-  return true;
-}
-
-/** Simulated actions performed by Beldium Logistics Compliance on the same records. */
-export function complianceRequestInfo() {
-  const s = getState();
-  if (!s.application) return;
-  const at = now();
-  const req: InfoRequest = {
-    id: uid("IR"),
-    area: "Vehicle documents",
-    message: `Please upload a current Roadworthiness Certificate for ${s.vehicles[0]?.registration ?? "your first vehicle"}. The uploaded copy is not legible.`,
-    requestedAt: at,
-    status: "Open",
-  };
-  setState({
-    documents: s.documents.map((d, i) => (i === 0 ? { ...d, status: "Information Required" } : d)),
-    application: {
-      ...s.application,
-      status: "Information Required",
-      reviews: { ...s.application.reviews, Fleet: "Information Required" },
-      infoRequests: [req, ...s.application.infoRequests],
-      timeline: [{ at, by: "Beldium Logistics Compliance", event: "Information requested: Vehicle documents" }, ...s.application.timeline],
-    },
-  });
-}
-
-export function respondToRequest(id: string, response: string, evidence: string) {
-  const s = getState();
-  if (!s.application) return;
-  const at = now();
-  setState({
-    application: {
-      ...s.application,
-      status: "Under Review",
-      reviews: { ...s.application.reviews, Fleet: "Under Review" },
-      infoRequests: s.application.infoRequests.map((r) =>
-        r.id === id ? { ...r, response, evidence, respondedAt: at, status: "Responded" } : r,
-      ),
-      timeline: [{ at, by: "Operator", event: "Response submitted: returned to Compliance Review Queue" }, ...s.application.timeline],
-    },
-  });
-}
-
-export function complianceApprove() {
-  const s = getState();
-  if (!s.application) return;
-  const at = now();
-  setState({
-    vehicles: s.vehicles.map((v) => ({ ...v, reviewStatus: "Verified" })),
-    drivers: s.drivers.map((d) => ({ ...d, reviewStatus: "Verified" })),
-    documents: s.documents.map((d) => ({ ...d, status: "Verified" })),
-    application: {
-      ...s.application,
-      status: "Approved",
-      reviews: { Organisation: "Approved", Fleet: "Approved", Driver: "Approved", Document: "Verified", Compliance: "Approved" },
-      infoRequests: s.application.infoRequests.map((r) => ({ ...r, status: "Closed" })),
-      approval: {
-        logisticsId: `BLD-LOG-${Math.floor(10000 + Math.random() * 89999)}`,
-        services: s.capability?.services ?? [],
-        vehicleCategories: s.capability?.vehicleCategories || "-",
-        coverage: s.capability?.operatingStates || "-",
-        capabilities: [
-          s.capability?.tracking === "Yes" ? "GPS tracking" : "",
-          s.capability?.security === "Yes" ? "Cargo security" : "",
-          s.capability?.sampleCustody === "Yes" ? "Sample chain of custody" : "",
-        ].filter(Boolean),
-      },
-      timeline: [{ at, by: "Beldium Logistics Compliance", event: "Organisation approved: account upgraded to Verified Logistics Operator" }, ...s.application.timeline],
-    },
-  });
-}
+export const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;

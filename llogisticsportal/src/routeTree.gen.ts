@@ -19,30 +19,25 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SubmittedRouteImport } from './routes/submitted'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as PortalIndexRouteImport } from './routes/portal/index'
-import { Route as PortalActiveMovementsRouteImport } from './routes/portal/active-movements'
 import { Route as PortalApplicationRecordRouteImport } from './routes/portal/application-record'
-import { Route as PortalBulkLogisticsRouteImport } from './routes/portal/bulk-logistics'
 import { Route as PortalComplianceRouteImport } from './routes/portal/compliance'
 import { Route as PortalDeliveriesRouteImport } from './routes/portal/deliveries'
 import { Route as PortalDocumentsRouteImport } from './routes/portal/documents'
 import { Route as PortalDriversRouteImport } from './routes/portal/drivers'
-import { Route as PortalFleetRouteImport } from './routes/portal/fleet'
 import { Route as PortalIncidentsRouteImport } from './routes/portal/incidents'
+import { Route as PortalMovementsRouteImport } from './routes/portal/movements'
 import { Route as PortalNotificationsRouteImport } from './routes/portal/notifications'
 import { Route as PortalPaymentsRouteImport } from './routes/portal/payments'
 import { Route as PortalReportsRouteImport } from './routes/portal/reports'
 import { Route as PortalRequestsRouteImport } from './routes/portal/requests'
-import { Route as PortalRoutesTrackingRouteImport } from './routes/portal/routes-tracking'
-import { Route as PortalSampleLogisticsRouteImport } from './routes/portal/sample-logistics'
 import { Route as PortalSettingsRouteImport } from './routes/portal/settings'
+import { Route as PortalTrackingRouteImport } from './routes/portal/tracking'
 import { Route as PortalTransactionsRouteImport } from './routes/portal/transactions'
 import { Route as PortalTransportRequestsRouteImport } from './routes/portal/transport-requests'
 import { Route as PortalVehiclesRouteImport } from './routes/portal/vehicles'
-import { Route as PortalDriversDriverIdRouteImport } from './routes/portal/drivers_.$driverId'
-import { Route as PortalMovementsMovementIdRouteImport } from './routes/portal/movements.$movementId'
+import { Route as PortalMovementsMovementIdRouteImport } from './routes/portal/movements_.$movementId'
 import { Route as PortalTransactionsTxnIdRouteImport } from './routes/portal/transactions_.$txnId'
 import { Route as PortalTransportRequestsRequestIdRouteImport } from './routes/portal/transport-requests_.$requestId'
-import { Route as PortalVehiclesVehicleIdRouteImport } from './routes/portal/vehicles_.$vehicleId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,19 +89,9 @@ const PortalIndexRoute = PortalIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PortalRouteRoute,
 } as any)
-const PortalActiveMovementsRoute = PortalActiveMovementsRouteImport.update({
-  id: '/active-movements',
-  path: '/active-movements',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
 const PortalApplicationRecordRoute = PortalApplicationRecordRouteImport.update({
   id: '/application-record',
   path: '/application-record',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
-const PortalBulkLogisticsRoute = PortalBulkLogisticsRouteImport.update({
-  id: '/bulk-logistics',
-  path: '/bulk-logistics',
   getParentRoute: () => PortalRouteRoute,
 } as any)
 const PortalComplianceRoute = PortalComplianceRouteImport.update({
@@ -129,14 +114,14 @@ const PortalDriversRoute = PortalDriversRouteImport.update({
   path: '/drivers',
   getParentRoute: () => PortalRouteRoute,
 } as any)
-const PortalFleetRoute = PortalFleetRouteImport.update({
-  id: '/fleet',
-  path: '/fleet',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
 const PortalIncidentsRoute = PortalIncidentsRouteImport.update({
   id: '/incidents',
   path: '/incidents',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
+const PortalMovementsRoute = PortalMovementsRouteImport.update({
+  id: '/movements',
+  path: '/movements',
   getParentRoute: () => PortalRouteRoute,
 } as any)
 const PortalNotificationsRoute = PortalNotificationsRouteImport.update({
@@ -159,19 +144,14 @@ const PortalRequestsRoute = PortalRequestsRouteImport.update({
   path: '/requests',
   getParentRoute: () => PortalRouteRoute,
 } as any)
-const PortalRoutesTrackingRoute = PortalRoutesTrackingRouteImport.update({
-  id: '/routes-tracking',
-  path: '/routes-tracking',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
-const PortalSampleLogisticsRoute = PortalSampleLogisticsRouteImport.update({
-  id: '/sample-logistics',
-  path: '/sample-logistics',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
 const PortalSettingsRoute = PortalSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
+const PortalTrackingRoute = PortalTrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
   getParentRoute: () => PortalRouteRoute,
 } as any)
 const PortalTransactionsRoute = PortalTransactionsRouteImport.update({
@@ -189,14 +169,9 @@ const PortalVehiclesRoute = PortalVehiclesRouteImport.update({
   path: '/vehicles',
   getParentRoute: () => PortalRouteRoute,
 } as any)
-const PortalDriversDriverIdRoute = PortalDriversDriverIdRouteImport.update({
-  id: '/drivers_/$driverId',
-  path: '/drivers/$driverId',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
 const PortalMovementsMovementIdRoute =
   PortalMovementsMovementIdRouteImport.update({
-    id: '/movements/$movementId',
+    id: '/movements_/$movementId',
     path: '/movements/$movementId',
     getParentRoute: () => PortalRouteRoute,
   } as any)
@@ -211,11 +186,6 @@ const PortalTransportRequestsRequestIdRoute =
     path: '/transport-requests/$requestId',
     getParentRoute: () => PortalRouteRoute,
   } as any)
-const PortalVehiclesVehicleIdRoute = PortalVehiclesVehicleIdRouteImport.update({
-  id: '/vehicles_/$vehicleId',
-  path: '/vehicles/$vehicleId',
-  getParentRoute: () => PortalRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -227,31 +197,26 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
-  '/portal/active-movements': typeof PortalActiveMovementsRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
-  '/portal/bulk-logistics': typeof PortalBulkLogisticsRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/drivers': typeof PortalDriversRoute
-  '/portal/fleet': typeof PortalFleetRoute
   '/portal/incidents': typeof PortalIncidentsRoute
+  '/portal/movements': typeof PortalMovementsRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/payments': typeof PortalPaymentsRoute
   '/portal/reports': typeof PortalReportsRoute
   '/portal/requests': typeof PortalRequestsRoute
-  '/portal/routes-tracking': typeof PortalRoutesTrackingRoute
-  '/portal/sample-logistics': typeof PortalSampleLogisticsRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/tracking': typeof PortalTrackingRoute
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
   '/portal/': typeof PortalIndexRoute
-  '/portal/drivers/$driverId': typeof PortalDriversDriverIdRoute
   '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
   '/portal/transport-requests/$requestId': typeof PortalTransportRequestsRequestIdRoute
-  '/portal/vehicles/$vehicleId': typeof PortalVehiclesVehicleIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -262,31 +227,26 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
-  '/portal/active-movements': typeof PortalActiveMovementsRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
-  '/portal/bulk-logistics': typeof PortalBulkLogisticsRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/drivers': typeof PortalDriversRoute
-  '/portal/fleet': typeof PortalFleetRoute
   '/portal/incidents': typeof PortalIncidentsRoute
+  '/portal/movements': typeof PortalMovementsRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/payments': typeof PortalPaymentsRoute
   '/portal/reports': typeof PortalReportsRoute
   '/portal/requests': typeof PortalRequestsRoute
-  '/portal/routes-tracking': typeof PortalRoutesTrackingRoute
-  '/portal/sample-logistics': typeof PortalSampleLogisticsRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/tracking': typeof PortalTrackingRoute
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
   '/portal': typeof PortalIndexRoute
-  '/portal/drivers/$driverId': typeof PortalDriversDriverIdRoute
   '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
   '/portal/transport-requests/$requestId': typeof PortalTransportRequestsRequestIdRoute
-  '/portal/vehicles/$vehicleId': typeof PortalVehiclesVehicleIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -299,31 +259,26 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
-  '/portal/active-movements': typeof PortalActiveMovementsRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
-  '/portal/bulk-logistics': typeof PortalBulkLogisticsRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/drivers': typeof PortalDriversRoute
-  '/portal/fleet': typeof PortalFleetRoute
   '/portal/incidents': typeof PortalIncidentsRoute
+  '/portal/movements': typeof PortalMovementsRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/payments': typeof PortalPaymentsRoute
   '/portal/reports': typeof PortalReportsRoute
   '/portal/requests': typeof PortalRequestsRoute
-  '/portal/routes-tracking': typeof PortalRoutesTrackingRoute
-  '/portal/sample-logistics': typeof PortalSampleLogisticsRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/tracking': typeof PortalTrackingRoute
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
   '/portal/': typeof PortalIndexRoute
-  '/portal/drivers_/$driverId': typeof PortalDriversDriverIdRoute
-  '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
+  '/portal/movements_/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions_/$txnId': typeof PortalTransactionsTxnIdRoute
   '/portal/transport-requests_/$requestId': typeof PortalTransportRequestsRequestIdRoute
-  '/portal/vehicles_/$vehicleId': typeof PortalVehiclesVehicleIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -337,31 +292,26 @@ export interface FileRouteTypes {
     | '/signup'
     | '/submitted'
     | '/verify'
-    | '/portal/active-movements'
     | '/portal/application-record'
-    | '/portal/bulk-logistics'
     | '/portal/compliance'
     | '/portal/deliveries'
     | '/portal/documents'
     | '/portal/drivers'
-    | '/portal/fleet'
     | '/portal/incidents'
+    | '/portal/movements'
     | '/portal/notifications'
     | '/portal/payments'
     | '/portal/reports'
     | '/portal/requests'
-    | '/portal/routes-tracking'
-    | '/portal/sample-logistics'
     | '/portal/settings'
+    | '/portal/tracking'
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
     | '/portal/'
-    | '/portal/drivers/$driverId'
     | '/portal/movements/$movementId'
     | '/portal/transactions/$txnId'
     | '/portal/transport-requests/$requestId'
-    | '/portal/vehicles/$vehicleId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -372,31 +322,26 @@ export interface FileRouteTypes {
     | '/signup'
     | '/submitted'
     | '/verify'
-    | '/portal/active-movements'
     | '/portal/application-record'
-    | '/portal/bulk-logistics'
     | '/portal/compliance'
     | '/portal/deliveries'
     | '/portal/documents'
     | '/portal/drivers'
-    | '/portal/fleet'
     | '/portal/incidents'
+    | '/portal/movements'
     | '/portal/notifications'
     | '/portal/payments'
     | '/portal/reports'
     | '/portal/requests'
-    | '/portal/routes-tracking'
-    | '/portal/sample-logistics'
     | '/portal/settings'
+    | '/portal/tracking'
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
     | '/portal'
-    | '/portal/drivers/$driverId'
     | '/portal/movements/$movementId'
     | '/portal/transactions/$txnId'
     | '/portal/transport-requests/$requestId'
-    | '/portal/vehicles/$vehicleId'
   id:
     | '__root__'
     | '/'
@@ -408,31 +353,26 @@ export interface FileRouteTypes {
     | '/signup'
     | '/submitted'
     | '/verify'
-    | '/portal/active-movements'
     | '/portal/application-record'
-    | '/portal/bulk-logistics'
     | '/portal/compliance'
     | '/portal/deliveries'
     | '/portal/documents'
     | '/portal/drivers'
-    | '/portal/fleet'
     | '/portal/incidents'
+    | '/portal/movements'
     | '/portal/notifications'
     | '/portal/payments'
     | '/portal/reports'
     | '/portal/requests'
-    | '/portal/routes-tracking'
-    | '/portal/sample-logistics'
     | '/portal/settings'
+    | '/portal/tracking'
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
     | '/portal/'
-    | '/portal/drivers_/$driverId'
-    | '/portal/movements/$movementId'
+    | '/portal/movements_/$movementId'
     | '/portal/transactions_/$txnId'
     | '/portal/transport-requests_/$requestId'
-    | '/portal/vehicles_/$vehicleId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -519,25 +459,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalIndexRouteImport
       parentRoute: typeof PortalRouteRoute
     }
-    '/portal/active-movements': {
-      id: '/portal/active-movements'
-      path: '/active-movements'
-      fullPath: '/portal/active-movements'
-      preLoaderRoute: typeof PortalActiveMovementsRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
     '/portal/application-record': {
       id: '/portal/application-record'
       path: '/application-record'
       fullPath: '/portal/application-record'
       preLoaderRoute: typeof PortalApplicationRecordRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
-    '/portal/bulk-logistics': {
-      id: '/portal/bulk-logistics'
-      path: '/bulk-logistics'
-      fullPath: '/portal/bulk-logistics'
-      preLoaderRoute: typeof PortalBulkLogisticsRouteImport
       parentRoute: typeof PortalRouteRoute
     }
     '/portal/compliance': {
@@ -568,18 +494,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalDriversRouteImport
       parentRoute: typeof PortalRouteRoute
     }
-    '/portal/fleet': {
-      id: '/portal/fleet'
-      path: '/fleet'
-      fullPath: '/portal/fleet'
-      preLoaderRoute: typeof PortalFleetRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
     '/portal/incidents': {
       id: '/portal/incidents'
       path: '/incidents'
       fullPath: '/portal/incidents'
       preLoaderRoute: typeof PortalIncidentsRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
+    '/portal/movements': {
+      id: '/portal/movements'
+      path: '/movements'
+      fullPath: '/portal/movements'
+      preLoaderRoute: typeof PortalMovementsRouteImport
       parentRoute: typeof PortalRouteRoute
     }
     '/portal/notifications': {
@@ -610,25 +536,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalRequestsRouteImport
       parentRoute: typeof PortalRouteRoute
     }
-    '/portal/routes-tracking': {
-      id: '/portal/routes-tracking'
-      path: '/routes-tracking'
-      fullPath: '/portal/routes-tracking'
-      preLoaderRoute: typeof PortalRoutesTrackingRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
-    '/portal/sample-logistics': {
-      id: '/portal/sample-logistics'
-      path: '/sample-logistics'
-      fullPath: '/portal/sample-logistics'
-      preLoaderRoute: typeof PortalSampleLogisticsRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
     '/portal/settings': {
       id: '/portal/settings'
       path: '/settings'
       fullPath: '/portal/settings'
       preLoaderRoute: typeof PortalSettingsRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
+    '/portal/tracking': {
+      id: '/portal/tracking'
+      path: '/tracking'
+      fullPath: '/portal/tracking'
+      preLoaderRoute: typeof PortalTrackingRouteImport
       parentRoute: typeof PortalRouteRoute
     }
     '/portal/transactions': {
@@ -652,15 +571,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalVehiclesRouteImport
       parentRoute: typeof PortalRouteRoute
     }
-    '/portal/drivers_/$driverId': {
-      id: '/portal/drivers_/$driverId'
-      path: '/drivers/$driverId'
-      fullPath: '/portal/drivers/$driverId'
-      preLoaderRoute: typeof PortalDriversDriverIdRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
-    '/portal/movements/$movementId': {
-      id: '/portal/movements/$movementId'
+    '/portal/movements_/$movementId': {
+      id: '/portal/movements_/$movementId'
       path: '/movements/$movementId'
       fullPath: '/portal/movements/$movementId'
       preLoaderRoute: typeof PortalMovementsMovementIdRouteImport
@@ -680,70 +592,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalTransportRequestsRequestIdRouteImport
       parentRoute: typeof PortalRouteRoute
     }
-    '/portal/vehicles_/$vehicleId': {
-      id: '/portal/vehicles_/$vehicleId'
-      path: '/vehicles/$vehicleId'
-      fullPath: '/portal/vehicles/$vehicleId'
-      preLoaderRoute: typeof PortalVehiclesVehicleIdRouteImport
-      parentRoute: typeof PortalRouteRoute
-    }
   }
 }
 
 interface PortalRouteRouteChildren {
-  PortalActiveMovementsRoute: typeof PortalActiveMovementsRoute
   PortalApplicationRecordRoute: typeof PortalApplicationRecordRoute
-  PortalBulkLogisticsRoute: typeof PortalBulkLogisticsRoute
   PortalComplianceRoute: typeof PortalComplianceRoute
   PortalDeliveriesRoute: typeof PortalDeliveriesRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalDriversRoute: typeof PortalDriversRoute
-  PortalFleetRoute: typeof PortalFleetRoute
   PortalIncidentsRoute: typeof PortalIncidentsRoute
+  PortalMovementsRoute: typeof PortalMovementsRoute
   PortalNotificationsRoute: typeof PortalNotificationsRoute
   PortalPaymentsRoute: typeof PortalPaymentsRoute
   PortalReportsRoute: typeof PortalReportsRoute
   PortalRequestsRoute: typeof PortalRequestsRoute
-  PortalRoutesTrackingRoute: typeof PortalRoutesTrackingRoute
-  PortalSampleLogisticsRoute: typeof PortalSampleLogisticsRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
+  PortalTrackingRoute: typeof PortalTrackingRoute
   PortalTransactionsRoute: typeof PortalTransactionsRoute
   PortalTransportRequestsRoute: typeof PortalTransportRequestsRoute
   PortalVehiclesRoute: typeof PortalVehiclesRoute
   PortalIndexRoute: typeof PortalIndexRoute
-  PortalDriversDriverIdRoute: typeof PortalDriversDriverIdRoute
   PortalMovementsMovementIdRoute: typeof PortalMovementsMovementIdRoute
   PortalTransactionsTxnIdRoute: typeof PortalTransactionsTxnIdRoute
   PortalTransportRequestsRequestIdRoute: typeof PortalTransportRequestsRequestIdRoute
-  PortalVehiclesVehicleIdRoute: typeof PortalVehiclesVehicleIdRoute
 }
 
 const PortalRouteRouteChildren: PortalRouteRouteChildren = {
-  PortalActiveMovementsRoute: PortalActiveMovementsRoute,
   PortalApplicationRecordRoute: PortalApplicationRecordRoute,
-  PortalBulkLogisticsRoute: PortalBulkLogisticsRoute,
   PortalComplianceRoute: PortalComplianceRoute,
   PortalDeliveriesRoute: PortalDeliveriesRoute,
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalDriversRoute: PortalDriversRoute,
-  PortalFleetRoute: PortalFleetRoute,
   PortalIncidentsRoute: PortalIncidentsRoute,
+  PortalMovementsRoute: PortalMovementsRoute,
   PortalNotificationsRoute: PortalNotificationsRoute,
   PortalPaymentsRoute: PortalPaymentsRoute,
   PortalReportsRoute: PortalReportsRoute,
   PortalRequestsRoute: PortalRequestsRoute,
-  PortalRoutesTrackingRoute: PortalRoutesTrackingRoute,
-  PortalSampleLogisticsRoute: PortalSampleLogisticsRoute,
   PortalSettingsRoute: PortalSettingsRoute,
+  PortalTrackingRoute: PortalTrackingRoute,
   PortalTransactionsRoute: PortalTransactionsRoute,
   PortalTransportRequestsRoute: PortalTransportRequestsRoute,
   PortalVehiclesRoute: PortalVehiclesRoute,
   PortalIndexRoute: PortalIndexRoute,
-  PortalDriversDriverIdRoute: PortalDriversDriverIdRoute,
   PortalMovementsMovementIdRoute: PortalMovementsMovementIdRoute,
   PortalTransactionsTxnIdRoute: PortalTransactionsTxnIdRoute,
   PortalTransportRequestsRequestIdRoute: PortalTransportRequestsRequestIdRoute,
-  PortalVehiclesVehicleIdRoute: PortalVehiclesVehicleIdRoute,
 }
 
 const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(

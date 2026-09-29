@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,9 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ApiError } from "@/lib/api/errors";
-import { pendingDocumentFiles, submitOperatorApplication } from "@/lib/api/onboarding";
+import {
+  missingFiles,
+  pendingDocumentFiles,
+  submitOperatorApplication,
+} from "@/lib/api/onboarding";
 import { useAuth } from "@/lib/auth";
-import { isDemoMode } from "@/lib/data-mode";
 import {
   complianceQuestions,
   declarations,
@@ -21,12 +25,14 @@ import {
   emptyCapability,
   emptyOrganisation,
   getState,
+  participantTypes,
+  requiredDomains,
+  resetState,
   roles,
   services,
   setState,
-  submitApplication,
   uid,
-  useOperator,
+  useDraft,
   type Capability,
   type DocumentRecord,
   type DriverRecord,
@@ -34,6 +40,7 @@ import {
   type VehicleRecord,
 } from "@/lib/onboarding-store";
 import { cn } from "@/lib/utils";
+import { isEditable, useWorkspace } from "@/lib/workspace";
 
 const title = "Operator application - Beldium Logistics Hub";
 const description =
@@ -133,11 +140,28 @@ function YesNo({ value, onChange }: { value?: string | undefined; onChange: (v: 
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+/** The API's incompleteness error carries which domains are missing; name them. */
+function submissionError(error: ApiError) {
+  const details = error.details as {
+    missing_sections?: string[];
+    missing_document_domains?: string[];
+  } | null;
+  const parts = [
+    details?.missing_sections?.length ? `sections: ${details.missing_sections.join(", ")}` : "",
+    details?.missing_document_domains?.length
+      ? `documents: ${details.missing_document_domains.join(", ")}`
+      : "",
+  ].filter(Boolean);
+  return parts.length ? `${error.message} Missing ${parts.join("; ")}.` : error.message;
+}
+
 function ApplicationPage() {
-  const { status } = useAuth();
-  const s = useOperator();
+  const { status, user } = useAuth();
+  const workspace = useWorkspace();
+  const s = useDraft();
   const { organisationName, operatorType } = Route.useSearch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -147,16 +171,21 @@ function ApplicationPage() {
   const cap = s.capability ?? emptyCapability;
 
   useEffect(() => {
+    if (!user) return;
+    // A draft left by another account on this browser is not this user's.
+    if (getState().owner !== user.email) resetState(user.email);
     // Pre-fill once from what was captured at signup.
     if (organisationName && !getState().organisation?.name) {
       setState({ organisation: { ...emptyOrganisation, name: organisationName } });
     }
-    const account = getState().account;
-    if (operatorType && account && !account.participantType) {
-      setState({ account: { ...account, participantType: operatorType } });
+    if (operatorType && !getState().capability) {
+      setState({ capability: { ...emptyCapability, participantType: operatorType } });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organisationName, operatorType]);
+  }, [user, organisationName, operatorType]);
+
+  if (status === "loading" || workspace.loading) {
+    return <div className="p-10 text-sm text-muted-foreground">Loading your application…</div>;
+  }
 
   if (status === "unauthenticated") {
     return (
@@ -174,11 +203,13 @@ function ApplicationPage() {
     );
   }
 
-  if (s.application) {
+  if (workspace.pendingJoin || (workspace.record && !isEditable(workspace.record.stage))) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-6">
         <div className="max-w-sm text-center">
-          <h1 className="text-lg font-semibold text-foreground">Application already submitted</h1>
+          <h1 className="text-lg font-semibold text-foreground">
+            {workspace.pendingJoin ? "Join request pending" : "Application already submitted"}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Track its review from your workspace.
           </p>
@@ -237,8 +268,16 @@ function ApplicationPage() {
           return "Every driver needs a name, licence number, licence expiry and medical expiry.";
         }
         return "";
-      case 5:
-        return s.documents.length === 0 ? "Upload at least one document." : "";
+      case 5: {
+        const have = new Set(s.documents.map((d) => d.domain));
+        const missing = documentGroups.filter(
+          (g) => requiredDomains(cap.services).includes(g.domain) && !have.has(g.domain),
+        );
+        if (missing.length)
+          return `Upload at least one document for: ${missing.map((g) => g.group).join(", ")}.`;
+        const lost = missingFiles(s);
+        return lost.length ? `Re-attach the file for: ${lost.map((d) => d.type).join(", ")}.` : "";
+      }
       case 6:
         return complianceQuestions.some((q) => !s.compliance[q])
           ? "Answer every compliance question."
@@ -253,20 +292,20 @@ function ApplicationPage() {
   }
 
   async function submit() {
+    if (!user) return;
     setSubmitting(true);
     try {
-      if (isDemoMode) {
-        submitApplication();
-      } else {
-        await submitOperatorApplication(getState());
-      }
-      setState({ wizard: undefined });
+      await submitOperatorApplication(user);
+      await queryClient.invalidateQueries();
+      resetState(user.email);
       navigate({ to: "/submitted" });
     } catch (cause) {
       setError(
         cause instanceof ApiError
-          ? cause.message
-          : "Could not submit the application. Your draft is saved; try again.",
+          ? submissionError(cause)
+          : cause instanceof Error
+            ? cause.message
+            : "Could not submit the application. Your draft is saved; try again.",
       );
     } finally {
       setSubmitting(false);
@@ -369,6 +408,7 @@ function ApplicationPage() {
                 vehicles={s.vehicles}
                 drivers={s.drivers}
                 orgName={org.name}
+                servicesChosen={cap.services}
               />
             ) : null}
             {step === 6 ? <StepCompliance answers={s.compliance} /> : null}
@@ -405,7 +445,7 @@ function StepOrganisation({ org }: { org: Organisation }) {
   const set = (k: keyof Organisation) => (v: string) =>
     setState({ organisation: { ...org, [k]: v } });
   const text: [keyof Organisation, string, string?][] = [
-    ["name", "Organisation legal name", "Trans Sahel Haulage Ltd"],
+    ["name", "Organisation legal name", "As on your CAC certificate"],
     ["registrationNumber", "CAC / registration number", "RC 1482231"],
     ["tin", "Tax identification number"],
     ["yearEstablished", "Year established", "2014"],
@@ -417,6 +457,7 @@ function StepOrganisation({ org }: { org: Organisation }) {
     ["phone", "Company phone", "08012345678"],
     ["website", "Website"],
     ["primaryContact", "Primary contact"],
+    ["employees", "Number of employees"],
   ];
   return (
     <div className="grid gap-5 sm:grid-cols-2">
@@ -453,6 +494,13 @@ function StepCapability({ cap }: { cap: Capability }) {
   const set = (p: Partial<Capability>) => setState({ capability: { ...cap, ...p } });
   return (
     <div className="space-y-6">
+      <Field label="Operator type">
+        <Choice
+          value={cap.participantType}
+          options={participantTypes}
+          onChange={(v) => set({ participantType: v })}
+        />
+      </Field>
       <div className="space-y-2">
         <Label>Services</Label>
         <div className="flex flex-wrap gap-2">
@@ -531,8 +579,6 @@ const vehicleFields: [keyof VehicleRecord, string, (readonly string[] | "date")?
   ["insurer", "Insurer"],
   ["insuranceExpiry", "Insurance expiry", "date"],
   ["roadworthinessExpiry", "Roadworthiness expiry", "date"],
-  ["inspection", "Inspection status", ["Valid", "Due", "Expired"]],
-  ["maintenance", "Maintenance status", ["Current", "Due", "Overdue"]],
 ];
 
 function StepFleet({ vehicles }: { vehicles: VehicleRecord[] }) {
@@ -543,7 +589,6 @@ function StepFleet({ vehicles }: { vehicles: VehicleRecord[] }) {
         Object.fromEntries([
           ...vehicleFields.map(([k, , o]) => [k, Array.isArray(o) ? o[0] : ""]),
           ["id", uid("VEH")],
-          ["reviewStatus", "Draft"],
         ]) as VehicleRecord,
       ],
     });
@@ -584,11 +629,9 @@ function StepDrivers({
   const fields: [keyof DriverRecord, string, string?][] = [
     ["name", "Full name"],
     ["phone", "Phone"],
-    ["driverId", "Driver ID"],
     ["nationalId", "National ID (NIN)"],
     ["licenceNumber", "Licence number"],
     ["licenceClass", "Licence class"],
-    ["issueDate", "Licence issue date", "date"],
     ["expiryDate", "Licence expiry date", "date"],
     ["medicalExpiry", "Medical fitness expiry", "date"],
     ["yearsExperience", "Years of experience"],
@@ -602,18 +645,15 @@ function StepDrivers({
           id: uid("DRV"),
           name: "",
           phone: "",
-          driverId: "",
           nationalId: "",
           licenceNumber: "",
           licenceClass: "E",
-          issueDate: "",
           expiryDate: "",
           medicalExpiry: "",
           yearsExperience: "",
           assignedVehicle: "",
           training: "",
           safetyStatus: "Cleared",
-          reviewStatus: "Draft",
         },
       ],
     });
@@ -706,12 +746,16 @@ function StepDocuments({
   vehicles,
   drivers,
   orgName,
+  servicesChosen,
 }: {
   docs: DocumentRecord[];
   vehicles: VehicleRecord[];
   drivers: DriverRecord[];
   orgName: string;
+  servicesChosen: string[];
 }) {
+  const required = requiredDomains(servicesChosen);
+  const [, force] = useState(0);
   const blank = {
     number: "",
     issuingAuthority: "",
@@ -727,120 +771,177 @@ function StepDocuments({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Uploading a document does not verify it: Beldium Logistics Compliance reviews every upload.
+        Each section needs at least one current document. Uploading does not verify a document:
+        Beldium Logistics Compliance reviews every upload. Files are sent when you submit, so keep
+        this tab open until then.
       </p>
-      {documentGroups.map((g) => {
-        const relatedOpts =
-          g.related === "Vehicle"
-            ? vehicles.map((v) => v.registration || v.id)
-            : g.related === "Driver"
-              ? drivers.map((d) => d.name || d.id)
-              : [orgName || "Organisation"];
-        return (
-          <div key={g.group} className="overflow-hidden rounded-md border border-border">
-            <div className="border-b border-border bg-muted px-4 py-2 text-sm font-medium text-foreground">
-              {g.group}
-            </div>
-            <ul className="divide-y divide-border">
-              {g.items.map((item) => {
-                const key = `${g.group}:${item}`;
-                const uploaded = docs.filter((d) => d.group === g.group && d.type === item);
-                return (
-                  <li key={item} className="px-4 py-2.5 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span>{item}</span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {uploaded.map((u) => (
-                          <StatusBadge key={u.id} value={`${u.status} · ${u.related}`} />
-                        ))}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setOpen(open === key ? null : key);
-                            setDraft({ ...blank, related: relatedOpts[0] ?? "" });
-                            setFile(null);
-                          }}
-                        >
-                          Upload
-                        </Button>
-                      </div>
-                    </div>
-                    {open === key ? (
-                      <div className="mt-3 grid gap-4 rounded-md bg-muted p-4 sm:grid-cols-2">
-                        <Field label="Document number">
-                          <Input
-                            value={draft.number}
-                            onChange={(e) => setDraft({ ...draft, number: e.target.value })}
-                          />
-                        </Field>
-                        <Field label="Issuing authority">
-                          <Input
-                            value={draft.issuingAuthority}
-                            onChange={(e) =>
-                              setDraft({ ...draft, issuingAuthority: e.target.value })
-                            }
-                          />
-                        </Field>
-                        <Field label="Issue date">
-                          <Input
-                            type="date"
-                            max={today()}
-                            value={draft.issueDate}
-                            onChange={(e) => setDraft({ ...draft, issueDate: e.target.value })}
-                          />
-                        </Field>
-                        <Field label="Expiry date">
-                          <Input
-                            type="date"
-                            value={draft.expiryDate}
-                            onChange={(e) => setDraft({ ...draft, expiryDate: e.target.value })}
-                          />
-                        </Field>
-                        <Field label={`Related ${g.related.toLowerCase()}`}>
-                          <Choice
-                            value={draft.related}
-                            options={relatedOpts}
-                            onChange={(v) => setDraft({ ...draft, related: v })}
-                          />
-                        </Field>
-                        <Field label="File">
-                          <input
-                            type="file"
-                            className="block text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0] ?? null;
-                              setFile(f);
-                              setDraft({ ...draft, fileName: f?.name ?? "" });
+      {documentGroups
+        .filter((g) => required.includes(g.domain))
+        .map((g) => {
+          const covered = docs.some((d) => d.domain === g.domain);
+          const relatedOpts =
+            g.related === "Vehicle"
+              ? vehicles.map((v) => v.registration || v.id)
+              : g.related === "Driver"
+                ? drivers.map((d) => d.name || d.id)
+                : [orgName || "Organisation"];
+          return (
+            <div key={g.group} className="overflow-hidden rounded-md border border-border">
+              <div className="flex items-center justify-between border-b border-border bg-muted px-4 py-2 text-sm font-medium text-foreground">
+                {g.group}
+                <StatusBadge
+                  value={covered ? "Provided" : "Required"}
+                  tone={covered ? "success" : "warning"}
+                />
+              </div>
+              <ul className="divide-y divide-border">
+                {g.items.map((item) => {
+                  const key = `${g.group}:${item}`;
+                  const uploaded = docs.filter((d) => d.group === g.group && d.type === item);
+                  return (
+                    <li key={item} className="px-4 py-2.5 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span>{item}</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {uploaded.map((u) => {
+                            const sent = Boolean(getState().server.documents[u.id]);
+                            const ready = sent || pendingDocumentFiles.has(u.id);
+                            return (
+                              <span key={u.id} className="inline-flex items-center gap-1">
+                                <StatusBadge
+                                  value={
+                                    sent
+                                      ? `Uploaded · ${u.related}`
+                                      : ready
+                                        ? `${u.fileName} · ${u.related}`
+                                        : "File missing"
+                                  }
+                                  tone={sent ? "success" : ready ? "primary" : "danger"}
+                                />
+                                {!ready ? (
+                                  <label className="cursor-pointer text-xs font-medium text-primary hover:underline">
+                                    Re-attach
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const f = e.target.files?.[0];
+                                        if (!f) return;
+                                        pendingDocumentFiles.set(u.id, f);
+                                        setState({
+                                          documents: docs.map((d) =>
+                                            d.id === u.id ? { ...d, fileName: f.name } : d,
+                                          ),
+                                        });
+                                        force((n) => n + 1);
+                                      }}
+                                    />
+                                  </label>
+                                ) : null}
+                                {sent ? null : (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    aria-label={`Remove ${u.type}`}
+                                    onClick={() => {
+                                      pendingDocumentFiles.delete(u.id);
+                                      setState({ documents: docs.filter((d) => d.id !== u.id) });
+                                    }}
+                                  >
+                                    <Trash2 className="text-destructive" />
+                                  </Button>
+                                )}
+                              </span>
+                            );
+                          })}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setOpen(open === key ? null : key);
+                              setDraft({ ...blank, related: relatedOpts[0] ?? "" });
+                              setFile(null);
                             }}
-                          />
-                        </Field>
-                        <Button
-                          className="sm:col-span-2"
-                          disabled={!file || !draft.number}
-                          onClick={() => {
-                            const id = uid("DOC");
-                            if (file) pendingDocumentFiles.set(id, file);
-                            setState({
-                              documents: [
-                                ...docs,
-                                { id, group: g.group, type: item, status: "Uploaded", ...draft },
-                              ],
-                            });
-                            setOpen(null);
-                          }}
-                        >
-                          Save document
-                        </Button>
+                          >
+                            Upload
+                          </Button>
+                        </div>
                       </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        );
-      })}
+                      {open === key ? (
+                        <div className="mt-3 grid gap-4 rounded-md bg-muted p-4 sm:grid-cols-2">
+                          <Field label="Document number">
+                            <Input
+                              value={draft.number}
+                              onChange={(e) => setDraft({ ...draft, number: e.target.value })}
+                            />
+                          </Field>
+                          <Field label="Issuing authority">
+                            <Input
+                              value={draft.issuingAuthority}
+                              onChange={(e) =>
+                                setDraft({ ...draft, issuingAuthority: e.target.value })
+                              }
+                            />
+                          </Field>
+                          <Field label="Issue date">
+                            <Input
+                              type="date"
+                              max={today()}
+                              value={draft.issueDate}
+                              onChange={(e) => setDraft({ ...draft, issueDate: e.target.value })}
+                            />
+                          </Field>
+                          <Field label="Expiry date">
+                            <Input
+                              type="date"
+                              value={draft.expiryDate}
+                              onChange={(e) => setDraft({ ...draft, expiryDate: e.target.value })}
+                            />
+                          </Field>
+                          <Field label={`Related ${g.related.toLowerCase()}`}>
+                            <Choice
+                              value={draft.related}
+                              options={relatedOpts}
+                              onChange={(v) => setDraft({ ...draft, related: v })}
+                            />
+                          </Field>
+                          <Field label="File">
+                            <input
+                              type="file"
+                              className="block text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0] ?? null;
+                                setFile(f);
+                                setDraft({ ...draft, fileName: f?.name ?? "" });
+                              }}
+                            />
+                          </Field>
+                          <Button
+                            className="sm:col-span-2"
+                            disabled={!file || !draft.number}
+                            onClick={() => {
+                              const id = uid("DOC");
+                              if (file) pendingDocumentFiles.set(id, file);
+                              setState({
+                                documents: [
+                                  ...docs,
+                                  { id, group: g.group, domain: g.domain, type: item, ...draft },
+                                ],
+                              });
+                              setOpen(null);
+                            }}
+                          >
+                            Save document
+                          </Button>
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
     </div>
   );
 }
@@ -862,7 +963,8 @@ function StepCompliance({ answers }: { answers: Record<string, string> }) {
 }
 
 function StepDeclaration() {
-  const s = useOperator();
+  const s = useDraft();
+  const { user } = useAuth();
   const org = s.organisation ?? emptyOrganisation;
   const cap = s.capability ?? emptyCapability;
   const yes = Object.values(s.compliance).filter((v) => v === "Yes").length;
@@ -870,9 +972,9 @@ function StepDeclaration() {
     [
       "Account",
       [
-        `${s.account?.firstName ?? ""} ${s.account?.lastName ?? ""}`.trim(),
-        s.account?.email ?? "",
-        s.account?.participantType ?? "",
+        user ? `${user.first_name} ${user.last_name}`.trim() : "",
+        user?.email ?? "",
+        cap.participantType,
       ],
     ],
     ["Organisation", [org.name, org.registrationNumber, `Role: ${org.requestedRole}`]],

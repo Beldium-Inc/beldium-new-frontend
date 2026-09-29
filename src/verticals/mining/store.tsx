@@ -389,11 +389,11 @@ export function PrototypeStoreProvider({
           inspector_name: "Unassigned",
         });
       }
-      if (decision === "Flag") {
-        await updateSite.mutateAsync({ id: siteId, patch: { status: "suspended", risk: "high" } });
-      }
+      // A flag is a section verdict: the backend keeps the site under review
+      // and surfaces the flag and note to the miner. It no longer suspends the
+      // whole site.
     },
-    [reviewSection, createInspectionFor, updateSite],
+    [reviewSection, createInspectionFor],
   );
 
   const requestInformation = useCallback<Ctx["requestInformation"]>(

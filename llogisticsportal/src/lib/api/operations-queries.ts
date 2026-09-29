@@ -1,109 +1,131 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { isDemoMode } from "../data-mode";
 import {
   acceptTransportRequest,
   assignMovement,
-  declineTransportRequest,
+  completeActionItem,
+  completeDelivery,
+  fetchOperationsDashboard,
   getMovement,
-  listIncidents,
-  listInvoices,
-  listMovements,
-  listTransportRequests,
-  runMovementAction,
+  getTransaction,
+  getTransportRequest,
+  markEventRead,
+  reportIncident,
+  resolveIncident,
+  setMovementStatus,
+  updateFinding,
+  type MovementStatusInput,
+  type NewIncidentInput,
   type OpsListQuery,
 } from "./operations";
 import { useHasTokens } from "./queries";
-import type { UUID } from "./types";
+import type { Paginated, UUID } from "./types";
 
-// Hooks over the proposed operations contract (operations.ts). Disabled in demo
-// mode, so a page can adopt them before the backend exists without firing
-// requests at endpoints that 404.
+// Every operations record lives under the "ops" key, so any mutation can
+// refresh the whole workspace with one invalidation: records are linked
+// (a movement status change moves the dashboard, deliveries and payments).
 
 export const opsKeys = {
-  requests: (q: OpsListQuery = {}) => ["ops", "transport-requests", q] as const,
-  movements: (q: OpsListQuery = {}) => ["ops", "movements", q] as const,
-  movement: (id: UUID) => ["ops", "movements", "detail", id] as const,
-  incidents: (q: OpsListQuery = {}) => ["ops", "incidents", q] as const,
-  invoices: (q: OpsListQuery = {}) => ["ops", "invoices", q] as const,
+  all: ["ops"] as const,
+  list: (resource: string, query: OpsListQuery) => ["ops", resource, "list", query] as const,
+  detail: (resource: string, id: UUID) => ["ops", resource, "detail", id] as const,
+  dashboard: ["ops", "dashboard"] as const,
 };
 
-function useLive() {
-  return useHasTokens() && !isDemoMode;
-}
-
-export function useTransportRequests(query: OpsListQuery = {}) {
-  const live = useLive();
+/** A paginated list from any operations endpoint, keyed by resource name. */
+export function useOpsList<T>(
+  resource: string,
+  fetcher: (query: OpsListQuery) => Promise<Paginated<T>>,
+  query: OpsListQuery = {},
+  options: { enabled?: boolean; refetchInterval?: number } = {},
+) {
+  const hasTokens = useHasTokens();
   return useQuery({
-    queryKey: opsKeys.requests(query),
-    queryFn: () => listTransportRequests(query),
-    enabled: live,
+    queryKey: opsKeys.list(resource, query),
+    queryFn: () => fetcher(query),
+    enabled: hasTokens && (options.enabled ?? true),
+    placeholderData: keepPreviousData,
+    ...(options.refetchInterval ? { refetchInterval: options.refetchInterval } : {}),
   });
 }
 
-export function useMovements(query: OpsListQuery = {}) {
-  const live = useLive();
+export function useOperationsDashboard(options: { enabled?: boolean } = {}) {
+  const hasTokens = useHasTokens();
   return useQuery({
-    queryKey: opsKeys.movements(query),
-    queryFn: () => listMovements(query),
-    enabled: live,
+    queryKey: opsKeys.dashboard,
+    queryFn: ({ signal }) => fetchOperationsDashboard(signal),
+    enabled: hasTokens && (options.enabled ?? true),
+    refetchInterval: 30_000,
   });
 }
 
-export function useMovement(id: UUID | null) {
-  const live = useLive();
+export function useTransportRequest(id: UUID) {
   return useQuery({
-    queryKey: opsKeys.movement(id ?? "none"),
-    queryFn: () => getMovement(id as UUID),
-    enabled: live && Boolean(id),
-    refetchInterval: 15_000,
+    queryKey: opsKeys.detail("transport-requests", id),
+    queryFn: () => getTransportRequest(id),
   });
 }
 
-export function useIncidents(query: OpsListQuery = {}) {
-  const live = useLive();
+export function useMovement(id: UUID) {
   return useQuery({
-    queryKey: opsKeys.incidents(query),
-    queryFn: () => listIncidents(query),
-    enabled: live,
+    queryKey: opsKeys.detail("movements", id),
+    queryFn: () => getMovement(id),
+    // Live position and status while the movement is on the road.
+    refetchInterval: 20_000,
   });
 }
 
-export function useInvoices(query: OpsListQuery = {}) {
-  const live = useLive();
+export function useTransaction(id: UUID) {
   return useQuery({
-    queryKey: opsKeys.invoices(query),
-    queryFn: () => listInvoices(query),
-    enabled: live,
+    queryKey: opsKeys.detail("transactions", id),
+    queryFn: () => getTransaction(id),
   });
 }
 
-function useOpsMutation<I, O>(fn: (input: I) => Promise<O>) {
+export function useOpsMutation<I, O>(fn: (input: I) => Promise<O>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ops"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: opsKeys.all }),
   });
 }
 
 export const useAcceptTransportRequest = () =>
   useOpsMutation((id: UUID) => acceptTransportRequest(id));
 
-export const useDeclineTransportRequest = () =>
-  useOpsMutation((input: { id: UUID; reason: string }) =>
-    declineTransportRequest(input.id, input.reason),
-  );
-
 export const useAssignMovement = () =>
-  useOpsMutation((input: { id: UUID; vehicle: UUID; driver: UUID; pickup_at: string }) =>
-    assignMovement(input.id, {
-      vehicle: input.vehicle,
-      driver: input.driver,
-      pickup_at: input.pickup_at,
-    }),
+  useOpsMutation((input: { id: UUID; vehicle?: UUID | undefined; driver?: UUID | undefined }) =>
+    assignMovement(input.id, { vehicle: input.vehicle, driver: input.driver }),
   );
 
-export const useRunMovementAction = () =>
-  useOpsMutation((input: { id: UUID; action: string; value?: number | undefined }) =>
-    runMovementAction(input.id, { action: input.action, value: input.value }),
+export const useSetMovementStatus = () =>
+  useOpsMutation((input: { id: UUID } & MovementStatusInput) => {
+    const { id, ...body } = input;
+    return setMovementStatus(id, body);
+  });
+
+export const useCompleteDelivery = () =>
+  useOpsMutation(
+    (input: { id: UUID; received_quantity: string; receipt_reference?: string | undefined }) =>
+      completeDelivery(input.id, {
+        received_quantity: input.received_quantity,
+        receipt_reference: input.receipt_reference,
+      }),
   );
+
+export const useReportIncident = () =>
+  useOpsMutation((input: NewIncidentInput) => reportIncident(input));
+
+export const useResolveIncident = () =>
+  useOpsMutation((input: { id: UUID; resolution: string }) =>
+    resolveIncident(input.id, { resolution: input.resolution }),
+  );
+
+export const useUpdateFinding = () =>
+  useOpsMutation((input: { id: UUID; action: string; status: string }) =>
+    updateFinding(input.id, { action: input.action, status: input.status }),
+  );
+
+export const useMarkEventRead = () => useOpsMutation((id: UUID) => markEventRead(id));
+
+export const useCompleteActionItem = () => useOpsMutation((id: UUID) => completeActionItem(id));

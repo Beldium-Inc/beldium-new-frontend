@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-  DemoComplianceControls,
-  InformationRequests,
-} from "@/components/beldium/application-status";
+import { InformationRequests } from "@/components/beldium/application-status";
 import { PageHeader } from "@/components/beldium/shell";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -35,7 +32,6 @@ function RequestsPage() {
       ) : (
         <InformationRequests workspace={workspace} />
       )}
-      <DemoComplianceControls />
     </>
   );
 }

@@ -18,6 +18,7 @@ import {
   listEquipment,
   listExpiringLicences,
   listInfoRequests,
+  listInspections,
   listInventory,
   listLicences,
   listMineSites,
@@ -47,6 +48,7 @@ export const miningKeys = {
   applications: ["mining", "applications"] as const,
   nonConformities: ["mining", "non-conformities"] as const,
   infoRequests: ["mining", "info-requests"] as const,
+  inspections: ["mining", "inspections"] as const,
 };
 
 export function useMiningDashboard() {
@@ -177,7 +179,11 @@ export function useCreateLicence() {
 
 export function useMiningApplications() {
   const hasTokens = useHasTokens();
-  return useQuery({ queryKey: miningKeys.applications, queryFn: listApplications, enabled: hasTokens });
+  return useQuery({
+    queryKey: miningKeys.applications,
+    queryFn: listApplications,
+    enabled: hasTokens,
+  });
 }
 
 export function useCreateMiningApplication() {
@@ -208,13 +214,35 @@ export function useSubmitCorrectiveEvidence() {
 
 export function useInfoRequests() {
   const hasTokens = useHasTokens();
-  return useQuery({ queryKey: miningKeys.infoRequests, queryFn: listInfoRequests, enabled: hasTokens });
+  return useQuery({
+    queryKey: miningKeys.infoRequests,
+    queryFn: listInfoRequests,
+    enabled: hasTokens,
+  });
 }
 
 export function useRespondToInfoRequest() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; message: string }) => respondToInfoRequest(input.id, input.message),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: miningKeys.infoRequests }),
+    mutationFn: (input: { id: UUID; message: string; files?: File[] }) =>
+      respondToInfoRequest(input.id, {
+        message: input.message,
+        ...(input.files ? { files: input.files } : {}),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: miningKeys.infoRequests });
+      void queryClient.invalidateQueries({ queryKey: miningKeys.documents });
+      void queryClient.invalidateQueries({ queryKey: miningKeys.dashboard });
+      void queryClient.invalidateQueries({ queryKey: miningKeys.sites });
+    },
+  });
+}
+
+export function useInspections() {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: miningKeys.inspections,
+    queryFn: listInspections,
+    enabled: hasTokens,
   });
 }

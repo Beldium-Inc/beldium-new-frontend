@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,7 @@ import type { Application, MiningApplicationStatus } from "@/lib/api/mining";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
 
-export const Route = createFileRoute("/mining/applications")({ component: Page });
+export const Route = createFileRoute("/mining/applications/")({ component: Page });
 
 const statusLabel: Record<MiningApplicationStatus, string> = {
   pending: "Pending",
@@ -37,6 +37,7 @@ function ClaimCell({ application }: { application: Application }) {
   const canDecide = Boolean(capabilities.data?.can_decide);
   const claim = useClaimApplication();
   const release = useReleaseApplication();
+  const navigate = useNavigate();
 
   const claimedByMe = Boolean(user && application.assigned_to === user.id);
   const claimedByOther = Boolean(application.assigned_to && !claimedByMe);
@@ -45,6 +46,10 @@ function ClaimCell({ application }: { application: Application }) {
     try {
       await claim.mutateAsync(application.id);
       toast.success(`Claimed ${application.reference}`);
+      void navigate({
+        to: "/mining/applications/$applicationId",
+        params: { applicationId: application.id },
+      });
     } catch (err) {
       // Another reviewer can win the race between this list loading and the
       // click — the backend is the one actually enforcing exclusivity, this
@@ -80,11 +85,30 @@ function ClaimCell({ application }: { application: Application }) {
   if (claimedByMe) {
     return (
       <div className="flex items-center justify-end gap-2">
-        <span className="text-sm text-muted-foreground">Assigned to you</span>
-        <Button size="sm" variant="outline" disabled={release.isPending} onClick={() => void onRelease()}>
+        <Button asChild size="sm">
+          <Link to="/mining/applications/$applicationId" params={{ applicationId: application.id }}>
+            Open review
+          </Link>
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={release.isPending}
+          onClick={() => void onRelease()}
+        >
           Release
         </Button>
       </div>
+    );
+  }
+
+  if (application.status === "approved" || application.status === "rejected") {
+    return (
+      <Button asChild size="sm" variant="ghost">
+        <Link to="/mining/applications/$applicationId" params={{ applicationId: application.id }}>
+          View history
+        </Link>
+      </Button>
     );
   }
 
@@ -107,7 +131,7 @@ function Page() {
     <>
       <PageHeader
         title="Applications"
-        description="Mine site admission and amendment applications. The first reviewer to claim one locks out every other compliance partner."
+        description="Mine site admission and amendment applications. Claim one to open its application, mining site and mining organisation for review. The first reviewer to claim it locks out every other compliance partner."
       />
       <Panel title="Applications" bodyClassName="p-0">
         {isPending ? (
@@ -138,20 +162,16 @@ function Page() {
               <TableBody>
                 {applications.map((app) => (
                   <TableRow key={app.id}>
-                    <TableCell className="font-mono text-xs font-medium">{app.reference}</TableCell>
-                    <TableCell className="text-sm">
-                      {app.site ? (
-                        <Link
-                          to="/mining/sites/$siteId"
-                          params={{ siteId: app.site }}
-                          className="underline-offset-2 hover:underline"
-                        >
-                          {app.site_name || "—"}
-                        </Link>
-                      ) : (
-                        app.site_name || "—"
-                      )}
+                    <TableCell className="font-mono text-xs font-medium">
+                      <Link
+                        to="/mining/applications/$applicationId"
+                        params={{ applicationId: app.id }}
+                        className="underline-offset-2 hover:underline"
+                      >
+                        {app.reference}
+                      </Link>
                     </TableCell>
+                    <TableCell className="text-sm">{app.site_name || "—"}</TableCell>
                     <TableCell className="text-sm capitalize">{app.type || "—"}</TableCell>
                     <TableCell className="text-sm">{app.mineral || "—"}</TableCell>
                     <TableCell>

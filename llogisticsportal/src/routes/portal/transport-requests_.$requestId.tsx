@@ -1,199 +1,145 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  FieldGrid,
+  ResourceTable,
+  errorMessage,
+  fmtDateTime,
+  pretty,
+  type Column,
+  withResults,
+} from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
-import { FieldGrid } from "@/components/beldium/data-table";
 import { StatusBadge } from "@/components/beldium/status-badge";
-import { AssignmentWizard } from "@/components/beldium/ops-dialogs";
-import { Btn, FormField, IdLink, Modal, fieldCls } from "@/components/beldium/ops-ui";
+import { Button } from "@/components/ui/button";
+import { listMovements, type Movement } from "@/lib/api/operations";
 import {
-  acceptRequest,
-  declineRequest,
-  driverOf,
-  fmt,
-  movementOf,
-  partyName,
-  qualityGate,
-  requestStatus,
-  runAction,
-  siteName,
-  txnOf,
-  useOps,
-  vehicleOf,
-  viewRequest,
-} from "@/lib/ops-store";
+  useAcceptTransportRequest,
+  useOpsList,
+  useTransportRequest,
+} from "@/lib/api/operations-queries";
 
 export const Route = createFileRoute("/portal/transport-requests_/$requestId")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `${params.requestId} | Transport Request - Beldium Logistics Hub` },
-      { name: "description", content: `Transport request ${params.requestId}: route, cargo, linked transaction and decision.` },
-      { property: "og:title", content: `${params.requestId} - Beldium Logistics Hub` },
-      { property: "og:description", content: "Transport request detail and assignment." },
-    ],
-  }),
-  component: RequestDetail,
+  head: () => ({ meta: [{ title: "Transport Request - Beldium Logistics Hub" }] }),
+  component: TransportRequestPage,
 });
 
-function RequestDetail() {
-  const { requestId } = Route.useParams();
-  const s = useOps();
-  const navigate = useNavigate();
-  const r = s.requests.find((x) => x.id === requestId);
-  const [decline, setDecline] = useState(false);
-  const [reason, setReason] = useState("");
-  const [wizard, setWizard] = useState(false);
-  useEffect(() => {
-    if (r?.status === "New") viewRequest(r.id);
-  }, [r?.id, r?.status]);
+const movementColumns: Column<Movement>[] = [
+  {
+    header: "Movement",
+    cell: (m) => (
+      <Link
+        to="/portal/movements/$movementId"
+        params={{ movementId: m.id }}
+        className="font-medium text-primary hover:underline"
+      >
+        {m.reference}
+      </Link>
+    ),
+  },
+  { header: "Vehicle", cell: (m) => m.vehicle_registration ?? "-" },
+  { header: "Driver", cell: (m) => m.driver_name ?? "-" },
+  { header: "Pickup", cell: (m) => fmtDateTime(m.pickup_at) },
+  { header: "Status", cell: (m) => <StatusBadge value={pretty(m.status)} /> },
+];
 
-  if (!r) {
+function TransportRequestPage() {
+  const { requestId } = Route.useParams();
+  const request = useTransportRequest(requestId);
+  // The movements endpoint can't filter by request yet, so match on the page.
+  const movements = useOpsList(
+    "movements",
+    listMovements,
+    { page_size: 100, search: request.data?.transaction_id || undefined },
+    { enabled: Boolean(request.data) },
+  );
+  const linked = movements.data
+    ? withResults(
+        movements.data,
+        movements.data.results.filter((m) => m.request === requestId),
+      )
+    : undefined;
+  const accept = useAcceptTransportRequest();
+  const r = request.data;
+
+  if (request.isLoading) return <p className="text-sm text-muted-foreground">Loading request…</p>;
+  if (request.error || !r)
     return (
-      <Panel title="Request not found">
-        <Link to="/portal/transport-requests" className="text-sm font-semibold text-colorLink">
-          Back to Transport Requests
-        </Link>
-      </Panel>
+      <p className="text-sm text-destructive">
+        {errorMessage(request.error, "Could not load this request.")}
+      </p>
     );
-  }
-  const t = txnOf(s, r.txnId);
-  const m = movementOf(s, r.movementId);
-  const status = requestStatus(s, r);
-  const pending = r.status === "New" || r.status === "Awaiting Decision";
-  const gate = m ? qualityGate(s, m) : null;
 
   return (
     <>
-      <PageHeader title={`Transport Request ${r.id}`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge value={status} />
-          {pending ? (
-            <>
-              <Btn variant="outline" onClick={() => setDecline(true)}>
-                Decline
-              </Btn>
-              <Btn
-                onClick={() => {
-                  const id = acceptRequest(r.id);
-                  toast.success(`Accepted: ${id} created`);
-                  setWizard(true);
-                }}
+      <Link
+        to="/portal/transport-requests"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" /> Transport requests
+      </Link>
+      <PageHeader
+        title={`${r.reference} · ${r.movement_type}`}
+        description={`${r.origin} → ${r.destination}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <StatusBadge value={pretty(r.status)} />
+            {r.status === "new" ? (
+              <Button
+                disabled={accept.isPending}
+                onClick={() =>
+                  accept.mutate(r.id, {
+                    onSuccess: () => toast.success(`${r.reference} accepted`),
+                    onError: (e) => toast.error(errorMessage(e)),
+                  })
+                }
               >
-                Accept
-              </Btn>
-            </>
-          ) : null}
-          {m && m.stage === "Awaiting Assignment" ? (
-            <>
-              <Btn variant="outline" onClick={() => setWizard(true)}>
-                Assign Vehicle
-              </Btn>
-              <Btn variant="outline" onClick={() => setWizard(true)}>
-                Assign Driver
-              </Btn>
-              <Btn onClick={() => setWizard(true)}>Schedule Pickup</Btn>
-            </>
-          ) : null}
-          {m && m.stage === "Scheduled" ? (
-            <Btn
-              onClick={() => {
-                runAction(m.id, "dispatch");
-                toast.success(`${m.id} started: driver dispatched`);
-                navigate({ to: "/portal/movements/$movementId", params: { movementId: m.id } });
-              }}
-            >
-              Start Movement
-            </Btn>
-          ) : null}
-          {m && m.stage !== "Awaiting Assignment" && m.stage !== "Scheduled" ? (
-            <Link to="/portal/movements/$movementId" params={{ movementId: m.id }}>
-              <Btn>Open Movement</Btn>
-            </Link>
-          ) : null}
-        </div>
-      </PageHeader>
+                {accept.isPending ? "Accepting…" : "Accept request"}
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
 
-      <div className="space-y-5">
+      {r.status === "blocked" && r.blocked_reason ? (
+        <div className="mb-6 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          Blocked: {r.blocked_reason}
+        </div>
+      ) : null}
+
+      <div className="space-y-4">
         <Panel title="Request">
           <FieldGrid
             items={[
-              { label: "Request ID", value: r.id },
-              { label: "RFQ ID", value: t?.rfqId },
-              { label: "Transaction ID", value: <IdLink kind="transaction" id={r.txnId} /> },
-              { label: "Movement type", value: r.movementType },
-              { label: "Source", value: r.source },
-              { label: "Requesting organisation", value: r.requestedBy },
-              { label: "Miner", value: partyName(s, t?.minerId) },
-              { label: "Mining site", value: siteName(s, t?.mineId) },
-              { label: "Buyer", value: partyName(s, t?.buyerId) },
-              { label: "Material", value: t?.mineral },
-              { label: "Batch ID", value: t?.batchId },
-              { label: "Quantity", value: `${r.quantity} ${r.unit}` },
-              { label: "Pickup location", value: siteName(s, r.originId) },
-              { label: "Destination", value: siteName(s, r.destinationId) },
-              { label: "Required pickup", value: fmt(r.pickupBy) },
-              { label: "Delivery deadline", value: fmt(r.deliverBy) },
-              { label: "Special handling", value: r.handling },
-              { label: "Quality status", value: <StatusBadge value={t?.quality ?? "-"} /> },
-              { label: "Compliance status", value: <StatusBadge value={gate ? "Pickup blocked" : "Cleared"} /> },
-              { label: "Payment terms", value: r.paymentTerms },
-              { label: "Received", value: fmt(r.createdAt) },
-              ...(r.declineReason ? [{ label: "Decline reason", value: r.declineReason }] : []),
+              ["Requester", r.requester],
+              ["Miner", r.miner],
+              ["Buyer", r.buyer],
+              ["Mineral", r.mineral],
+              ["Quantity", r.quantity_display],
+              ["Required pickup", fmtDateTime(r.required_pickup_at)],
+              ["RFQ", r.rfq_id],
+              ["Transaction", r.transaction_id],
+              ["Received", fmtDateTime(r.created_at)],
             ]}
           />
         </Panel>
-
-        {m ? (
-          <Panel title="Movement">
-            <FieldGrid
-              items={[
-                { label: "Movement", value: <IdLink kind="movement" id={m.id} /> },
-                { label: "Stage", value: <StatusBadge value={m.stage} /> },
-                { label: "Vehicle", value: m.vehicleId ? `${m.vehicleId} · ${vehicleOf(s, m.vehicleId)?.registration}` : "-" },
-                { label: "Driver", value: driverOf(s, m.driverId)?.name ?? "-" },
-                { label: "Pickup scheduled", value: fmt(m.pickupAt) },
-              ]}
-            />
-          </Panel>
-        ) : null}
+        <Panel title="Movements for this request">
+          <ResourceTable
+            columns={movementColumns}
+            data={linked}
+            isLoading={movements.isLoading}
+            error={movements.error}
+            empty={
+              r.status === "new"
+                ? "Accept the request to schedule a movement."
+                : "No movement has been created for this request yet."
+            }
+          />
+        </Panel>
       </div>
-
-      {m && wizard ? <AssignmentWizard movement={m} open={wizard} onClose={() => setWizard(false)} /> : null}
-      <Modal
-        open={decline}
-        onClose={() => setDecline(false)}
-        title={`Decline ${r.id}`}
-        footer={
-          <>
-            <Btn variant="outline" onClick={() => setDecline(false)}>
-              Cancel
-            </Btn>
-            <Btn
-              variant="danger"
-              disabled={!reason.trim()}
-              onClick={() => {
-                declineRequest(r.id, reason.trim());
-                setDecline(false);
-                toast.success(`${r.id} declined`);
-              }}
-            >
-              Decline Request
-            </Btn>
-          </>
-        }
-      >
-        <FormField label="Reason">
-          <select value={reason} onChange={(e) => setReason(e.target.value)} className={fieldCls}>
-            <option value="">Select reason</option>
-            <option>No eligible vehicle in required window</option>
-            <option>Route outside operating coverage</option>
-            <option>Cargo type not supported</option>
-            <option>Security conditions on route</option>
-          </select>
-        </FormField>
-      </Modal>
     </>
   );
 }

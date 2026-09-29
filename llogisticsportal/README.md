@@ -21,6 +21,11 @@ npm i
 npm run dev
 ```
 
+The portal talks to the Beldium Django API. Copy `.env.example` to `.env` and set
+`VITE_API_URL` to the API origin (defaults to `http://localhost:8000`). The API must
+list this portal's origin in its portal and CORS allow-lists, or sign-in fails with
+`portal_undetermined`. See `src/lib/api/README.md`.
+
 ## Built with
 
 - TanStack Start

@@ -9,12 +9,25 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api/errors";
-import { isDemoMode } from "@/lib/data-mode";
-import { complianceApprove, complianceRequestInfo } from "@/lib/onboarding-store";
 import type { ApplicationRecord, RecordRequest, WorkspaceState } from "@/lib/workspace";
 
 // Screens an operator sees while their organisation is being verified, laid
 // out like Miner Hub's under-review workspace.
+
+export function JoinPending({
+  organisationName,
+  requestedAt,
+}: {
+  organisationName: string;
+  requestedAt: string;
+}) {
+  return (
+    <PageHeader
+      title="Join request pending"
+      description={`You asked to join ${organisationName} on ${requestedAt}. An administrator of that organisation has to approve it before its workspace opens to you.`}
+    />
+  );
+}
 
 export function StartApplication() {
   return (
@@ -34,11 +47,11 @@ export function UnderReviewDashboard({ record }: { record: ApplicationRecord }) 
   const open = record.requests.filter((r) => r.status === "Open");
   const done = record.reviews.filter((r) => /approved|verified/i.test(r.status)).length;
 
-  if (record.stage === "draft") {
+  if (record.stage === "draft" || record.stage === "none") {
     return (
       <PageHeader
         title={record.organisationName}
-        description="Your application is saved as a draft. Finish and submit it to start verification."
+        description={`Your application is ${record.progress}% complete. Finish and submit it to start verification.`}
         actions={
           <Button asChild>
             <Link to="/application">Continue application</Link>
@@ -76,6 +89,20 @@ export function UnderReviewDashboard({ record }: { record: ApplicationRecord }) 
         />
         <StatCard label="Info requests" value={String(open.length)} hint="Awaiting your response" />
       </div>
+
+      {record.stage === "rejected" ? (
+        <div className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 p-5">
+          <div className="text-sm font-medium text-destructive">
+            Your application was not approved
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Review the timeline for the reason, update your application and submit it again.
+          </p>
+          <Button asChild size="sm" className="mt-4">
+            <Link to="/application">Update and resubmit</Link>
+          </Button>
+        </div>
+      ) : null}
 
       {open.length ? (
         <div className="mt-6 rounded-md border border-warning/40 bg-warning/10 p-5">
@@ -121,8 +148,6 @@ export function UnderReviewDashboard({ record }: { record: ApplicationRecord }) 
           </p>
         </div>
       </div>
-
-      <DemoComplianceControls />
     </>
   );
 }
@@ -207,6 +232,21 @@ function RequestCard({
         <StatusBadge value={request.status} />
       </div>
       <p className="mt-3 text-sm text-foreground">{request.message}</p>
+      {request.items.length ? (
+        <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground">
+          {request.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : null}
+      {request.dueDate ? (
+        <p
+          className={`mt-2 text-xs ${request.overdue ? "text-destructive" : "text-muted-foreground"}`}
+        >
+          Due {request.dueDate}
+          {request.overdue ? " (overdue)" : ""}
+        </p>
+      ) : null}
       {request.status === "Open" ? (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
           <div className="space-y-2">
@@ -233,10 +273,7 @@ function RequestCard({
           </Button>
         </div>
       ) : request.response ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          Your response: {request.response}
-          {request.evidence ? ` · Evidence: ${request.evidence}` : ""}
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">Your response: {request.response}</p>
       ) : null}
     </div>
   );
@@ -244,44 +281,24 @@ function RequestCard({
 
 /** Shown on the command centre once the organisation is approved. */
 export function VerifiedBanner({ record }: { record: ApplicationRecord }) {
-  if (!record.approval) return null;
-  const a = record.approval;
   return (
     <div className="mb-6 rounded-md border border-success/30 bg-success/10 p-5">
       <div className="flex items-center gap-2 text-sm font-medium text-success">
         <BadgeCheck className="h-4 w-4" /> Verified Logistics Operator · Beldium Logistics ID{" "}
-        {a.logisticsId}
+        {record.reference}
       </div>
-      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs text-muted-foreground">Approved services</dt>
-          <dd className="text-foreground">{a.services.join(", ") || "-"}</dd>
+          <dt className="text-xs text-muted-foreground">Permitted services</dt>
+          <dd className="text-foreground">{record.permittedScopes.join(", ") || "-"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Vehicle categories</dt>
-          <dd className="text-foreground">{a.vehicleCategories}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">Coverage</dt>
-          <dd className="text-foreground">{a.coverage}</dd>
+          <dt className="text-xs text-muted-foreground">Restricted services</dt>
+          <dd className={record.restrictedScopes.length ? "text-destructive" : "text-foreground"}>
+            {record.restrictedScopes.join(", ") || "None"}
+          </dd>
         </div>
       </dl>
-    </div>
-  );
-}
-
-/** Demo mode only: act as Beldium Logistics Compliance on the same records. */
-export function DemoComplianceControls() {
-  if (!isDemoMode) return null;
-  return (
-    <div className="mt-6 flex flex-wrap items-center gap-2 rounded-md border border-dashed border-border p-4 text-xs text-muted-foreground">
-      <span>Demo only: simulate Beldium Logistics Compliance acting on this application.</span>
-      <Button size="sm" variant="outline" onClick={complianceRequestInfo}>
-        Request information
-      </Button>
-      <Button size="sm" variant="outline" onClick={complianceApprove}>
-        Approve organisation
-      </Button>
     </div>
   );
 }

@@ -82,13 +82,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Beldium Logistics Hub" },
       {
         name: "description",
-        content: "Beldium Logistics Hub - logistics operator onboarding, fleet verification and mineral movement workspace.",
+        content:
+          "Beldium Logistics Hub - logistics operator onboarding, fleet verification and mineral movement workspace.",
       },
       { name: "author", content: "Beldium" },
       { property: "og:title", content: "Beldium Logistics Hub" },
       {
         property: "og:description",
-        content: "Logistics operator onboarding, fleet verification and mineral movement workspace.",
+        content:
+          "Logistics operator onboarding, fleet verification and mineral movement workspace.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

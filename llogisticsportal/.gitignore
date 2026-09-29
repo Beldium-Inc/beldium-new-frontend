@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local environment (keep the example, ignore real values)
+.env
+.env.*
+!.env.example

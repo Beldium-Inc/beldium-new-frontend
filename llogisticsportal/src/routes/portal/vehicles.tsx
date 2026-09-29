@@ -1,109 +1,255 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  Field,
+  FilterSelect,
+  FormDialog,
+  PillTabs,
+  ResourceTable,
+  SearchBox,
+  errorMessage,
+  fieldCls,
+  fmtDate,
+  pretty,
+  useListQuery,
+  type Column,
+} from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
 import { StatusBadge } from "@/components/beldium/status-badge";
-import { Btn, FormField, IdLink, Modal, QueueView, fieldCls, tabSearch } from "@/components/beldium/ops-ui";
-import { addVehicle, docState, useOps, vehicleAvailability, type Vehicle } from "@/lib/ops-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createVehicle, listVehicles, updateVehicle, type Vehicle } from "@/lib/api/logistics";
+import { useOpsList, useOpsMutation } from "@/lib/api/operations-queries";
+import { isEditable, useWorkspace } from "@/lib/workspace";
 
 export const Route = createFileRoute("/portal/vehicles")({
-  validateSearch: tabSearch,
-  head: () => ({
-    meta: [
-      { title: "Vehicles - Beldium Logistics Hub" },
-      { name: "description", content: "Vehicle register with insurance, roadworthiness and compliance documents per vehicle." },
-      { property: "og:title", content: "Vehicles - Beldium Logistics Hub" },
-      { property: "og:description", content: "Register and review every vehicle in the Beldium fleet." },
-    ],
-  }),
-  component: Page,
+  head: () => ({ meta: [{ title: "Vehicles - Beldium Logistics Hub" }] }),
+  component: VehiclesPage,
 });
 
-const types = ["Tipper", "Flatbed", "Container Truck", "Sample Van"] as const;
+const validityTone = (v: string) =>
+  v === "current" ? "success" : v === "expiring" ? "warning" : "danger";
 
-function Page() {
-  const s = useOps();
-  const { tab } = Route.useSearch();
-  const navigate = useNavigate();
-  const [add, setAdd] = useState(false);
-  const [f, setF] = useState({ registration: "", type: "Tipper" as Vehicle["type"], make: "", capacity: "30", year: "2022" });
-  const docOf = (v: Vehicle, type: string) => {
-    const d = s.documents.find((x) => x.relatedKind === "Vehicle" && x.relatedId === v.id && x.type === type);
-    return d ? docState(d) : "Missing";
-  };
+function VehiclesPage() {
+  // The API only accepts fleet changes while the application is editable
+  // (draft, awaiting information, rejected); approved registers are read-only.
+  const editable = isEditable(useWorkspace().record?.stage);
+  const list = useListQuery({ is_active: "true" });
+  const vehicles = useOpsList("vehicles", listVehicles, list.query);
+  const toggle = useOpsMutation((v: Vehicle) => updateVehicle(v.id, { is_active: !v.is_active }));
+  const [adding, setAdding] = useState(false);
+
+  const columns: Column<Vehicle>[] = [
+    { header: "Registration", cell: (v) => <span className="font-medium">{v.registration}</span> },
+    { header: "Type", cell: (v) => v.vehicle_type },
+    { header: "Make / model", cell: (v) => `${v.make} ${v.model} (${v.year})` },
+    { header: "Capacity", cell: (v) => `${v.capacity} ${v.capacity_unit}` },
+    { header: "Insurance", cell: (v) => fmtDate(v.insurance_expiry) },
+    { header: "Roadworthiness", cell: (v) => fmtDate(v.roadworthiness_expiry) },
+    { header: "GPS", cell: (v) => pretty(v.gps_status) },
+    {
+      header: "Credentials",
+      cell: (v) => (
+        <StatusBadge value={pretty(v.credential_status)} tone={validityTone(v.credential_status)} />
+      ),
+    },
+    {
+      header: "",
+      cell: (v) =>
+        !editable ? null : (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={toggle.isPending}
+            onClick={() => toggle.mutate(v, { onError: (e) => toast.error(errorMessage(e)) })}
+          >
+            {v.is_active ? "Deactivate" : "Reactivate"}
+          </Button>
+        ),
+    },
+  ];
+
   return (
     <>
-      <PageHeader title="Vehicles">
-        <Btn onClick={() => setAdd(true)}>Add Vehicle</Btn>
-      </PageHeader>
-      <Panel title="Vehicle Register">
-        <QueueView
-          rows={s.vehicles}
-          getKey={(v) => v.id}
-          initialTab={tab ?? "All"}
-          tabs={[{ label: "All", test: () => true }, ...types.map((t) => ({ label: t, test: (v: Vehicle) => v.type === t }))]}
-          columns={[
-            { key: "id", header: "Vehicle", render: (v) => <IdLink kind="vehicle" id={v.id} />, sort: (v) => v.id },
-            { key: "reg", header: "Registration", render: (v) => v.registration, sort: (v) => v.registration },
-            { key: "make", header: "Make", render: (v) => `${v.make} (${v.year})`, sort: (v) => v.year },
-            { key: "cap", header: "Capacity", render: (v) => `${v.capacity} t`, sort: (v) => v.capacity },
-            { key: "ins", header: "Insurance", render: (v) => <StatusBadge value={docOf(v, "Insurance")} /> },
-            { key: "rw", header: "Roadworthiness", render: (v) => <StatusBadge value={docOf(v, "Roadworthiness")} /> },
-            { key: "comp", header: "Compliance", render: (v) => <StatusBadge value={v.compliance} />, sort: (v) => v.compliance },
-            { key: "av", header: "Availability", render: (v) => <StatusBadge value={vehicleAvailability(v, s)} /> },
-          ]}
-          searchText={(v) => `${v.id} ${v.registration} ${v.make}`}
-          filters={[{ label: "Compliance", get: (v) => v.compliance }]}
-          onOpen={(v) => navigate({ to: "/portal/vehicles/$vehicleId", params: { vehicleId: v.id } })}
-        />
-      </Panel>
-      <Modal
-        open={add}
-        onClose={() => setAdd(false)}
-        title="Add Vehicle"
-        footer={
-          <>
-            <Btn variant="outline" onClick={() => setAdd(false)}>
-              Cancel
-            </Btn>
-            <Btn
-              disabled={!f.registration.trim() || !f.make.trim()}
-              onClick={() => {
-                const id = addVehicle({ registration: f.registration.trim().toUpperCase(), type: f.type, make: f.make.trim(), capacity: Number(f.capacity), year: Number(f.year) });
-                toast.success(`${id} submitted for Vehicle Compliance Review`);
-                setAdd(false);
-                navigate({ to: "/portal/vehicles/$vehicleId", params: { vehicleId: id } });
-              }}
-            >
-              Submit Vehicle
-            </Btn>
-          </>
+      <PageHeader
+        title="Vehicles"
+        description="Your registered fleet. Vehicles with expired insurance or roadworthiness can't be assigned to movements."
+        actions={
+          editable ? <Button onClick={() => setAdding(true)}>Add vehicle</Button> : undefined
         }
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FormField label="Registration">
-            <input value={f.registration} onChange={(e) => setF({ ...f, registration: e.target.value })} className={fieldCls} placeholder="KDU-000-XX" />
-          </FormField>
-          <FormField label="Type">
-            <select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as Vehicle["type"] })} className={fieldCls}>
-              {types.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label="Make / model">
-            <input value={f.make} onChange={(e) => setF({ ...f, make: e.target.value })} className={fieldCls} />
-          </FormField>
-          <FormField label="Capacity (t)">
-            <input type="number" value={f.capacity} onChange={(e) => setF({ ...f, capacity: e.target.value })} className={fieldCls} />
-          </FormField>
-          <FormField label="Year">
-            <input type="number" value={f.year} onChange={(e) => setF({ ...f, year: e.target.value })} className={fieldCls} />
-          </FormField>
+      />
+      {!editable ? (
+        <div className="mb-4 rounded-md border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
+          Your application is approved, so this register is locked. To add, change or retire a
+          vehicle, contact Beldium Logistics Compliance.
         </div>
-      </Modal>
+      ) : null}
+      <Panel title="Fleet register">
+        <div className="space-y-4">
+          <PillTabs
+            tabs={[
+              { value: "true", label: "Active" },
+              { value: "false", label: "Inactive" },
+              { value: "", label: "All" },
+            ]}
+            value={list.filters["is_active"] ?? ""}
+            onChange={(v) => list.setFilter("is_active", v)}
+          />
+          <div className="flex flex-wrap gap-2">
+            <SearchBox
+              value={list.search}
+              onChange={list.setSearch}
+              placeholder="Registration, VIN, make, model"
+            />
+            <FilterSelect
+              label="GPS"
+              value={list.filters["gps_status"] ?? ""}
+              options={["active", "intermittent", "inactive", "unknown"]}
+              onChange={(v) => list.setFilter("gps_status", v)}
+            />
+          </div>
+          <ResourceTable
+            columns={columns}
+            data={vehicles.data}
+            isLoading={vehicles.isLoading}
+            error={vehicles.error}
+            page={list.page}
+            onPage={list.setPage}
+            empty="No vehicles."
+          />
+        </div>
+      </Panel>
+      {adding ? <AddVehicleDialog onClose={() => setAdding(false)} /> : null}
     </>
+  );
+}
+
+function AddVehicleDialog({ onClose }: { onClose: () => void }) {
+  const { record } = useWorkspace();
+  const create = useOpsMutation(createVehicle);
+  const [f, setF] = useState({
+    registration: "",
+    vin: "",
+    vehicle_type: "Tipper",
+    make: "",
+    model: "",
+    year: "",
+    capacity: "",
+    ownership: "owned" as Vehicle["ownership"],
+    insurer: "",
+    insurance_expiry: "",
+    roadworthiness_expiry: "",
+    gps_status: "unknown" as Vehicle["gps_status"],
+  });
+  const [error, setError] = useState("");
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setF({ ...f, [k]: e.target.value });
+
+  return (
+    <FormDialog
+      open
+      onClose={onClose}
+      title="Add vehicle"
+      submitLabel="Add vehicle"
+      busy={create.isPending}
+      error={error}
+      onSubmit={() => {
+        if (!record) return setError("Your company record isn't loaded yet.");
+        if (
+          !f.registration ||
+          !f.vin ||
+          !f.year ||
+          !f.capacity ||
+          !f.insurance_expiry ||
+          !f.roadworthiness_expiry
+        ) {
+          return setError("Registration, VIN, year, capacity and both expiry dates are required.");
+        }
+        create.mutate(
+          {
+            ...f,
+            company: record.companyId,
+            year: Number(f.year),
+            capacity_unit: "tonnes",
+            location: "",
+            is_active: true,
+          },
+          {
+            onSuccess: (v) => {
+              toast.success(`${v.registration} added`);
+              onClose();
+            },
+            onError: (e) => setError(errorMessage(e)),
+          },
+        );
+      }}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Registration">
+          <Input value={f.registration} onChange={set("registration")} />
+        </Field>
+        <Field label="VIN / chassis">
+          <Input value={f.vin} onChange={set("vin")} />
+        </Field>
+        <Field label="Type">
+          <select className={fieldCls} value={f.vehicle_type} onChange={set("vehicle_type")}>
+            {[
+              "Tipper",
+              "Flatbed",
+              "Tanker",
+              "Container truck",
+              "Pickup / Van",
+              "Motorcycle courier",
+            ].map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Ownership">
+          <select className={fieldCls} value={f.ownership} onChange={set("ownership")}>
+            <option value="owned">Owned</option>
+            <option value="leased">Leased</option>
+            <option value="contracted">Contracted</option>
+          </select>
+        </Field>
+        <Field label="Make">
+          <Input value={f.make} onChange={set("make")} />
+        </Field>
+        <Field label="Model">
+          <Input value={f.model} onChange={set("model")} />
+        </Field>
+        <Field label="Year">
+          <Input inputMode="numeric" value={f.year} onChange={set("year")} />
+        </Field>
+        <Field label="Capacity (t)">
+          <Input inputMode="decimal" value={f.capacity} onChange={set("capacity")} />
+        </Field>
+        <Field label="Insurer">
+          <Input value={f.insurer} onChange={set("insurer")} />
+        </Field>
+        <Field label="GPS">
+          <select className={fieldCls} value={f.gps_status} onChange={set("gps_status")}>
+            {["unknown", "active", "intermittent", "inactive"].map((g) => (
+              <option key={g} value={g}>
+                {pretty(g)}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Insurance expiry">
+          <Input type="date" value={f.insurance_expiry} onChange={set("insurance_expiry")} />
+        </Field>
+        <Field label="Roadworthiness expiry">
+          <Input
+            type="date"
+            value={f.roadworthiness_expiry}
+            onChange={set("roadworthiness_expiry")}
+          />
+        </Field>
+      </div>
+    </FormDialog>
   );
 }

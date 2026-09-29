@@ -1,198 +1,331 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 
+import {
+  JoinPending,
+  StartApplication,
+  UnderReviewDashboard,
+  VerifiedBanner,
+} from "@/components/beldium/application-status";
+import { errorMessage, fmtDateTime, naira, pretty } from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
-import { StartApplication, UnderReviewDashboard, VerifiedBanner } from "@/components/beldium/application-status";
-import { Panel } from "@/components/beldium/stat-card";
-import { OpsMap } from "@/components/beldium/ops-map";
+import { Panel, StatCard } from "@/components/beldium/stat-card";
 import { StatusBadge } from "@/components/beldium/status-badge";
-import { StageActionButton } from "@/components/beldium/ops-dialogs";
-import { useOpenTarget, IdLink } from "@/components/beldium/ops-ui";
+import { Button } from "@/components/ui/button";
+import {
+  useCompleteActionItem,
+  useMarkEventRead,
+  useOperationsDashboard,
+} from "@/lib/api/operations-queries";
 import { cn } from "@/lib/utils";
 import { isVerified, useWorkspace, type ApplicationRecord } from "@/lib/workspace";
-import {
-  actionItems,
-  fmt,
-  fmtTime,
-  markRead,
-  movementStatus,
-  requestStatus,
-  siteName,
-  useOps,
-  vehicleAvailability,
-  driverAvailability,
-  type Target,
-} from "@/lib/ops-store";
 
 export const Route = createFileRoute("/portal/")({
   ssr: false,
   head: () => ({
     meta: [
       { title: "Command Centre - Beldium Logistics Hub" },
-      { name: "description", content: "Beldium logistics command centre: KPIs, action queue, new requests, active movements, exceptions and live operations map." },
-      { property: "og:title", content: "Command Centre - Beldium Logistics Hub" },
-      { property: "og:description", content: "Run sample and bulk mineral movements across the Beldium network." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      {
+        name: "description",
+        content: "Live logistics operations: requests, movements, exceptions, fleet and payments.",
+      },
     ],
   }),
   component: PortalHome,
 });
 
 function PortalHome() {
-  const { loading, record } = useWorkspace();
+  const { loading, error, record, pendingJoin } = useWorkspace();
   if (loading) return <p className="text-sm text-muted-foreground">Loading your workspace…</p>;
+  if (error)
+    return (
+      <p className="text-sm text-destructive">
+        {errorMessage(error, "Could not load your workspace.")}
+      </p>
+    );
+  if (!record && pendingJoin) return <JoinPending {...pendingJoin} />;
   if (!record) return <StartApplication />;
   if (!isVerified(record.stage)) return <UnderReviewDashboard record={record} />;
   return <CommandCentre record={record} />;
 }
 
 function CommandCentre({ record }: { record: ApplicationRecord }) {
-  const s = useOps();
-  const open = useOpenTarget();
-  const actions = actionItems(s);
-  const newReqs = s.requests.filter((r) => r.status === "New" || r.status === "Awaiting Decision");
-  const active = s.movements.filter((m) => m.stage !== "Completed");
-  const exceptions = active.filter((m) => m.exception || m.delayed || m.deviated);
-  const today = new Date().toDateString();
-  const kpis: { label: string; value: number; tone: string; target: Target }[] = [
-    { label: "New requests", value: newReqs.length, tone: "text-colorLink", target: { kind: "queue", path: "/portal/transport-requests", tab: "Awaiting Decision" } },
-    { label: "Active movements", value: active.filter((m) => m.stage !== "Awaiting Assignment").length, tone: "text-primary", target: { kind: "queue", path: "/portal/active-movements" } },
-    { label: "In transit", value: active.filter((m) => m.stage === "In Transit").length, tone: "text-colorLink", target: { kind: "queue", path: "/portal/active-movements", tab: "In Transit" } },
-    { label: "Exceptions", value: exceptions.length, tone: "text-destructive", target: { kind: "queue", path: "/portal/active-movements", tab: "Exceptions" } },
-    { label: "Delivered today", value: s.movements.filter((m) => m.completedAt && new Date(m.completedAt).toDateString() === today).length, tone: "text-success", target: { kind: "queue", path: "/portal/deliveries", tab: "Completed" } },
-    { label: "Available vehicles", value: s.vehicles.filter((v) => vehicleAvailability(v, s) === "Available").length, tone: "text-success", target: { kind: "queue", path: "/portal/fleet", tab: "Available" } },
-    { label: "Available drivers", value: s.drivers.filter((d) => driverAvailability(d, s) === "Available").length, tone: "text-success", target: { kind: "queue", path: "/portal/drivers", tab: "Available" } },
-    { label: "Open incidents", value: s.incidents.filter((i) => i.status === "Open").length, tone: "text-warning", target: { kind: "queue", path: "/portal/incidents", tab: "Open" } },
+  const navigate = useNavigate();
+  const dashboard = useOperationsDashboard();
+  const completeItem = useCompleteActionItem();
+  const markRead = useMarkEventRead();
+  const d = dashboard.data;
+
+  if (dashboard.isLoading)
+    return <p className="text-sm text-muted-foreground">Loading operations…</p>;
+  if (dashboard.error || !d) {
+    return (
+      <p className="text-sm text-destructive">
+        {errorMessage(dashboard.error, "Could not load operations.")}
+      </p>
+    );
+  }
+
+  const s = d.stats;
+  const kpis: {
+    label: string;
+    value: string;
+    hint?: string;
+    tone?: "danger" | "warning" | "success" | "primary" | undefined;
+    to: string;
+  }[] = [
+    {
+      label: "New requests",
+      value: String(s.new_transport_requests),
+      hint: "Awaiting acceptance",
+      tone: "primary",
+      to: "/portal/transport-requests",
+    },
+    {
+      label: "Active jobs",
+      value: String(s.active_jobs),
+      hint: `${s.awaiting_pickup} awaiting pickup`,
+      to: "/portal/movements",
+    },
+    {
+      label: "In transit",
+      value: String(s.in_transit),
+      hint: `${s.loading} loading`,
+      tone: "primary",
+      to: "/portal/tracking",
+    },
+    {
+      label: "Delayed",
+      value: String(s.delayed_shipments),
+      tone: s.delayed_shipments ? "danger" : undefined,
+      to: "/portal/movements",
+    },
+    {
+      label: "Open incidents",
+      value: String(s.open_incidents),
+      tone: s.open_incidents ? "warning" : undefined,
+      to: "/portal/incidents",
+    },
+    {
+      label: "Compliance alerts",
+      value: String(s.compliance_alerts),
+      tone: s.compliance_alerts ? "warning" : undefined,
+      to: "/portal/compliance",
+    },
+    {
+      label: "Available vehicles",
+      value: String(s.available_vehicles),
+      hint: `${s.vehicles_assigned} assigned`,
+      tone: "success",
+      to: "/portal/vehicles",
+    },
+    {
+      label: "Outstanding payments",
+      value: naira(s.outstanding_payments),
+      hint: `${Number(s.tonnes_moved).toLocaleString()} t moved`,
+      to: "/portal/payments",
+    },
   ];
-  const notes = s.notifications.slice(0, 6);
 
   return (
     <>
-      <PageHeader title="Command Centre" description={`${record.organisationName} · live operations across the Beldium network.`} />
+      <PageHeader
+        title="Command Centre"
+        description={`${record.organisationName} · live operations across the Beldium network.`}
+      />
       <VerifiedBanner record={record} />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {kpis.map((k) => (
-          <button key={k.label} type="button" onClick={() => open(k.target)} className="beldium-panel p-4 text-left transition-colors hover:border-primary/50">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</p>
-            <p className={cn("mt-2 text-2xl font-bold leading-none", k.tone)}>{k.value}</p>
-          </button>
+          <Link key={k.label} to={k.to} className="block transition-opacity hover:opacity-90">
+            <StatCard
+              label={k.label}
+              value={k.value}
+              tone={k.tone ?? "default"}
+              {...(k.hint ? { hint: k.hint } : {})}
+            />
+          </Link>
         ))}
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1.4fr]">
-        <Panel title="Action Required" action={<span className="text-xs font-semibold text-muted-foreground">{actions.length}</span>}>
-          {actions.length === 0 ? <p className="text-sm text-muted-foreground">All clear.</p> : null}
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        <Panel
+          title="Action required"
+          action={<span className="text-xs text-muted-foreground">{d.action_items.length}</span>}
+        >
           <ul className="space-y-2">
-            {actions.map((a) => (
-              <li key={a.id}>
-                <button type="button" onClick={() => open(a.target)} className="flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2 text-left hover:border-primary">
-                  <span className={cn("grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold", a.tone === "danger" ? "bg-destructive/15 text-destructive" : a.tone === "warning" ? "bg-warning/20 text-warning" : "bg-secondary text-primary")}>{a.count}</span>
-                  <span className="flex-1 text-sm font-medium">{a.label}</span>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </button>
+            {d.action_items.map((a) => (
+              <li
+                key={a.id}
+                className="flex items-center gap-3 rounded-md border border-border px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-foreground">{a.action}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {a.target}
+                    {a.movement_reference ? ` · ${a.movement_reference}` : ""}
+                  </div>
+                </div>
+                <StatusBadge value={a.urgency} />
+                {a.related_movement ? (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Open movement"
+                    onClick={() =>
+                      navigate({
+                        to: "/portal/movements/$movementId",
+                        params: { movementId: a.related_movement! },
+                      })
+                    }
+                  >
+                    <ChevronRight />
+                  </Button>
+                ) : null}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={completeItem.isPending}
+                  onClick={() => completeItem.mutate(a.id)}
+                >
+                  Done
+                </Button>
               </li>
             ))}
+            {d.action_items.length === 0 ? (
+              <li className="text-sm text-muted-foreground">All clear.</li>
+            ) : null}
           </ul>
         </Panel>
 
-        <Panel title="Live Operations Map">
-          <OpsMap />
+        <Panel title="Movement status">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {d.status_breakdown.map((row) => (
+              <li key={row.status} className="rounded-md border border-border p-3">
+                <div className="text-xs text-muted-foreground">{pretty(row.status)}</div>
+                <div className="mt-1 text-xl font-semibold text-card-foreground">{row.count}</div>
+              </li>
+            ))}
+            {d.status_breakdown.length === 0 ? (
+              <li className="text-sm text-muted-foreground">No movements yet.</li>
+            ) : null}
+          </ul>
+        </Panel>
+
+        <Panel
+          title="Transport requests"
+          action={
+            <Link
+              to="/portal/transport-requests"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Open queue
+            </Link>
+          }
+        >
+          <ul className="divide-y divide-border">
+            {d.transport_requests.slice(0, 6).map((r) => (
+              <li key={r.id}>
+                <Link
+                  to="/portal/transport-requests/$requestId"
+                  params={{ requestId: r.id }}
+                  className="flex items-center justify-between gap-3 py-2 hover:text-primary"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">
+                      {r.reference} · {r.movement_type}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {r.origin} → {r.destination} · {r.quantity_display}
+                    </div>
+                  </div>
+                  <StatusBadge value={pretty(r.status)} />
+                </Link>
+              </li>
+            ))}
+            {d.transport_requests.length === 0 ? (
+              <li className="py-2 text-sm text-muted-foreground">No requests.</li>
+            ) : null}
+          </ul>
+        </Panel>
+
+        <Panel
+          title="Active movements"
+          action={
+            <Link
+              to="/portal/movements"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Open queue
+            </Link>
+          }
+        >
+          <ul className="divide-y divide-border">
+            {d.active_movements.slice(0, 6).map((m) => (
+              <li key={m.id}>
+                <Link
+                  to="/portal/movements/$movementId"
+                  params={{ movementId: m.id }}
+                  className="flex items-center justify-between gap-3 py-2 hover:text-primary"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">
+                      {m.reference} · {m.mineral || m.movement_type}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {m.vehicle_registration ?? "No vehicle"} · {m.driver_name ?? "No driver"} ·
+                      ETA {fmtDateTime(m.eta_at)}
+                    </div>
+                  </div>
+                  <StatusBadge value={pretty(m.status)} />
+                </Link>
+              </li>
+            ))}
+            {d.active_movements.length === 0 ? (
+              <li className="py-2 text-sm text-muted-foreground">No active movements.</li>
+            ) : null}
+          </ul>
         </Panel>
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <Panel title="New Requests" action={<Link to="/portal/transport-requests" search={{ tab: "Awaiting Decision" }} className="text-xs font-semibold text-colorLink">Open queue</Link>}>
-          <ul className="divide-y divide-border">
-            {newReqs.length === 0 ? <li className="py-2 text-sm text-muted-foreground">No requests waiting.</li> : null}
-            {newReqs.slice(0, 5).map((r) => (
-              <li key={r.id} className="flex cursor-pointer items-center justify-between gap-3 py-2" onClick={() => open({ kind: "request", id: r.id })}>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-primary">
-                    {r.id} · {r.movementType}
-                  </p>
-                  <p className="beldium-small truncate">
-                    {siteName(s, r.originId)} → {siteName(s, r.destinationId)} · {r.quantity} {r.unit}
-                  </p>
-                </div>
-                <StatusBadge value={requestStatus(s, r)} />
-              </li>
-            ))}
-          </ul>
-        </Panel>
-
-        <Panel title="Active Movements" action={<Link to="/portal/active-movements" className="text-xs font-semibold text-colorLink">Open queue</Link>}>
-          <ul className="divide-y divide-border">
-            {active.slice(0, 6).map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <div className="min-w-0">
-                  <IdLink kind="movement" id={m.id} />
-                  <p className="beldium-small truncate">
-                    {m.movementType} · {m.vehicleId ?? "unassigned"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge value={movementStatus(m)} />
-                  <StageActionButton movement={m} size="sm" />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-
-        <Panel title="Exceptions" action={<Link to="/portal/active-movements" search={{ tab: "Exceptions" }} className="text-xs font-semibold text-colorLink">Open queue</Link>}>
-          <ul className="divide-y divide-border">
-            {exceptions.length === 0 ? <li className="py-2 text-sm text-muted-foreground">No exceptions.</li> : null}
-            {exceptions.map((m) => (
-              <li key={m.id} className="flex cursor-pointer items-center justify-between gap-2 py-2" onClick={() => open({ kind: "movement", id: m.id })}>
-                <div>
-                  <p className="text-sm font-semibold text-primary">{m.id}</p>
-                  <p className="beldium-small">{[m.exception && "Open incident", m.delayed && "Delayed", m.deviated && "Route deviation", m.stopped && "Stopped"].filter(Boolean).join(" · ")}</p>
-                </div>
-                <StatusBadge value={movementStatus(m)} />
-              </li>
-            ))}
-          </ul>
-        </Panel>
-
-        <Panel title="Notifications" action={<Link to="/portal/notifications" className="text-xs font-semibold text-colorLink">View all</Link>}>
-          <ul className="divide-y divide-border">
-            {notes.map((n) => (
-              <li key={n.id}>
+      <div className="mt-6">
+        <Panel
+          title="Recent activity"
+          action={
+            <Link
+              to="/portal/notifications"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              View all
+            </Link>
+          }
+        >
+          <ul className="grid gap-x-6 gap-y-1 md:grid-cols-2">
+            {d.events.slice(0, 12).map((e) => (
+              <li key={e.id}>
                 <button
                   type="button"
-                  onClick={() => {
-                    markRead(n.id);
-                    open(n.target);
-                  }}
-                  className="flex w-full items-start gap-2 py-2 text-left"
+                  disabled={!e.unread}
+                  onClick={() => markRead.mutate(e.id)}
+                  className="flex w-full items-baseline gap-3 py-1.5 text-left disabled:cursor-default"
+                  title={e.unread ? "Mark as read" : undefined}
                 >
-                  <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read ? "bg-border" : "bg-colorLink")} />
-                  <span className="min-w-0 flex-1">
-                    <span className={cn("block text-sm", !n.read && "font-semibold")}>{n.title}</span>
-                    <span className="beldium-small block truncate">{n.body}</span>
+                  <span
+                    className={cn(
+                      "mt-1.5 size-2 shrink-0 rounded-full",
+                      e.unread ? "bg-primary" : "bg-border",
+                    )}
+                  />
+                  <span className={cn("text-sm", e.unread && "font-medium")}>{e.text}</span>
+                  <span className="beldium-small ml-auto shrink-0">
+                    {fmtDateTime(e.occurred_at)}
                   </span>
-                  <span className="beldium-small shrink-0">{fmt(n.at)}</span>
                 </button>
               </li>
             ))}
-          </ul>
-        </Panel>
-      </div>
-
-      <div className="mt-5">
-        <Panel title="Recent Activity">
-          <ul className="grid gap-x-6 gap-y-1 md:grid-cols-2">
-            {s.activity.slice(0, 12).map((a) => (
-              <li key={a.id}>
-                <button type="button" onClick={() => open(a.target)} className="flex w-full items-baseline gap-3 py-1.5 text-left hover:text-primary">
-                  <span className="beldium-mono w-12 shrink-0 font-semibold text-primary">{fmtTime(a.at)}</span>
-                  <span className="text-sm">{a.text}</span>
-                  <span className="beldium-small ml-auto shrink-0">{a.sector}</span>
-                </button>
-              </li>
-            ))}
+            {d.events.length === 0 ? (
+              <li className="text-sm text-muted-foreground">No activity yet.</li>
+            ) : null}
           </ul>
         </Panel>
       </div>

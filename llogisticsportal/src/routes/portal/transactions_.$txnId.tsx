@@ -1,157 +1,143 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 
+import {
+  FieldGrid,
+  ResourceTable,
+  errorMessage,
+  fmtDate,
+  fmtDateTime,
+  naira,
+  type Column,
+  withResults,
+} from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
-import { FieldGrid } from "@/components/beldium/data-table";
 import { StatusBadge } from "@/components/beldium/status-badge";
-import { IdLink } from "@/components/beldium/ops-ui";
-import { fmt, movementStatus, naira, partyName, requestStatus, siteName, useOps } from "@/lib/ops-store";
+import {
+  listPayments,
+  listQualityRecords,
+  type LogisticsPayment,
+  type QualityRecord,
+} from "@/lib/api/operations";
+import { useOpsList, useTransaction } from "@/lib/api/operations-queries";
 
 export const Route = createFileRoute("/portal/transactions_/$txnId")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `${params.txnId} | Transaction - Beldium Logistics Hub` },
-      { name: "description", content: `Complete logistics history for transaction ${params.txnId}.` },
-      { property: "og:title", content: `${params.txnId} - Beldium Logistics Hub` },
-      { property: "og:description", content: "RFQ, batch, quality, movements, deliveries and settlement." },
-    ],
-  }),
-  component: TxnDetail,
+  head: () => ({ meta: [{ title: "Transaction - Beldium Logistics Hub" }] }),
+  component: TransactionPage,
 });
 
-const chainSteps = ["RFQ", "Transaction", "Supply Commitment", "Mine", "Batch", "Sample", "Quality", "Logistics Movement", "Warehouse / Processor", "Export", "Delivery", "Settlement"];
+const paymentColumns: Column<LogisticsPayment>[] = [
+  { header: "Payment", cell: (p) => p.reference },
+  { header: "Invoice", cell: (p) => p.invoice_reference || "-" },
+  { header: "Due", cell: (p) => naira(p.due_amount) },
+  { header: "Paid", cell: (p) => naira(p.paid_amount) },
+  { header: "Outstanding", cell: (p) => naira(p.outstanding_amount) },
+  { header: "Status", cell: (p) => <StatusBadge value={p.status} /> },
+  { header: "Paid on", cell: (p) => fmtDate(p.payment_date) },
+];
 
-function TxnDetail() {
+const qualityColumns: Column<QualityRecord>[] = [
+  { header: "Sample", cell: (q) => q.sample_status },
+  { header: "Result", cell: (q) => q.result || "-" },
+  { header: "Approval", cell: (q) => <StatusBadge value={q.approval} /> },
+  { header: "Handling", cell: (q) => q.handling || "-" },
+  { header: "Certificate", cell: (q) => q.certificate || "-" },
+  { header: "Buyer acceptance", cell: (q) => q.buyer_acceptance || "-" },
+];
+
+function TransactionPage() {
   const { txnId } = Route.useParams();
-  const s = useOps();
-  const t = s.transactions.find((x) => x.id === txnId);
-  if (!t) {
+  const txn = useTransaction(txnId);
+  const t = txn.data;
+  // Payments can only be searched by transaction id, not filtered by it.
+  const payments = useOpsList(
+    "payments",
+    listPayments,
+    { search: t?.transaction_id },
+    { enabled: Boolean(t) },
+  );
+  const quality = useOpsList(
+    "quality-records",
+    listQualityRecords,
+    { transaction_id: t?.transaction_id },
+    { enabled: Boolean(t) },
+  );
+
+  if (txn.isLoading) return <p className="text-sm text-muted-foreground">Loading transaction…</p>;
+  if (txn.error || !t)
     return (
-      <Panel title="Transaction not found">
-        <Link to="/portal/transactions" className="text-sm font-semibold text-colorLink">
-          Back to Transactions
-        </Link>
-      </Panel>
+      <p className="text-sm text-destructive">
+        {errorMessage(txn.error, "Could not load this transaction.")}
+      </p>
     );
-  }
-  const reqs = s.requests.filter((r) => r.txnId === t.id);
-  const moves = s.movements.filter((m) => m.txnId === t.id);
-  const invs = s.invoices.filter((i) => i.txnId === t.id);
-  const sample = moves.find((m) => m.kind === "Sample");
-  const reached = [
-    true,
-    true,
-    true,
-    true,
-    true,
-    !!sample,
-    t.quality === "Buyer accepted" || t.quality === "Result published",
-    moves.some((m) => m.kind === "Bulk"),
-    ["At Warehouse", "At Processor", "Processing Complete", "Export Movement", "At Port", "Logistics Completed"].includes(t.stage),
-    ["Export Movement", "At Port", "Logistics Completed"].includes(t.stage),
-    t.stage === "Logistics Completed",
-    invs.length > 0 && invs.every((i) => i.status === "Paid"),
-  ];
+
+  const linkedPayments = payments.data
+    ? withResults(
+        payments.data,
+        payments.data.results.filter((p) => p.transaction === t.id),
+      )
+    : undefined;
 
   return (
     <>
-      <PageHeader title={`Transaction ${t.id}`}>
-        <StatusBadge value={t.stage} />
-      </PageHeader>
-      <div className="space-y-5">
-        <Panel title="Shared Record">
-          <ol className="mb-4 flex flex-wrap gap-2">
-            {chainSteps.map((c, i) => (
-              <li key={c} className={reached[i] ? "rounded-full border border-success/40 bg-success/10 px-3 py-1 text-[11px] font-medium text-success" : "rounded-full border border-border px-3 py-1 text-[11px] font-medium text-muted-foreground"}>
-                {c}
-              </li>
-            ))}
-          </ol>
+      <Link
+        to="/portal/transactions"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" /> Transactions
+      </Link>
+      <PageHeader
+        title={t.transaction_id}
+        description={`${t.material} · ${t.origin} → ${t.destination}`}
+        actions={<StatusBadge value={t.stage} />}
+      />
+      <div className="space-y-4">
+        <Panel title="Transaction">
           <FieldGrid
             items={[
-              { label: "RFQ ID", value: t.rfqId },
-              { label: "Transaction ID", value: t.id },
-              { label: "Supply commitment", value: t.commitmentId },
-              { label: "Buyer", value: partyName(s, t.buyerId) },
-              { label: "Miner", value: partyName(s, t.minerId) },
-              { label: "Mine", value: siteName(s, t.mineId) },
-              { label: "Batch", value: t.batchId },
-              { label: "Mineral", value: t.mineral },
-              { label: "Quantity", value: `${t.quantity} t` },
-              { label: "Origin", value: siteName(s, t.mineId) },
-              { label: "Destination", value: siteName(s, t.destinationId) },
-              { label: "Export port", value: siteName(s, t.portId) },
-              { label: "Quality", value: <StatusBadge value={t.quality} /> },
-              { label: "Quality result", value: t.qualityResult ?? "-" },
-              { label: "Contract value", value: naira(t.quantity * t.unitPrice) },
+              ["RFQ", t.rfq_id],
+              ["Miner", t.miner],
+              ["Buyer", t.buyer],
+              ["Quantity", `${t.quantity} ${t.quantity_unit}`],
+              ["Transport fee", naira(t.transport_fee)],
+              ["Delivery status", t.delivery_status],
+              ["Payment status", t.payment_status],
+              [
+                "Movement",
+                t.movement ? (
+                  <Link
+                    to="/portal/movements/$movementId"
+                    params={{ movementId: t.movement }}
+                    className="text-primary hover:underline"
+                  >
+                    {t.movement_reference}
+                  </Link>
+                ) : (
+                  "-"
+                ),
+              ],
+              ["Opened", fmtDateTime(t.created_at)],
             ]}
           />
         </Panel>
-
-        <div className="grid gap-5 xl:grid-cols-2">
-          <Panel title="Transport Requests">
-            <ul className="divide-y divide-border">
-              {reqs.length === 0 ? <li className="py-2 text-sm text-muted-foreground">None.</li> : null}
-              {reqs.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                  <span>
-                    <IdLink kind="request" id={r.id} /> <span className="beldium-small ml-2">{r.movementType}</span>
-                  </span>
-                  <StatusBadge value={requestStatus(s, r)} />
-                </li>
-              ))}
-            </ul>
-          </Panel>
-          <Panel title="Movements">
-            <ul className="divide-y divide-border">
-              {moves.length === 0 ? <li className="py-2 text-sm text-muted-foreground">None.</li> : null}
-              {moves.map((m) => (
-                <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                  <span>
-                    <IdLink kind="movement" id={m.id} />
-                    <span className="beldium-small ml-2">
-                      {siteName(s, m.originId)} → {siteName(s, m.destinationId)} · {m.received ?? m.loaded ?? m.quantity} {m.unit}
-                    </span>
-                  </span>
-                  <StatusBadge value={movementStatus(m)} />
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </div>
-
-        {invs.length ? (
-          <Panel title="Settlement">
-            <ul className="divide-y divide-border">
-              {invs.map((i) => (
-                <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                  <span>
-                    {i.id} · {i.movementId} · {naira(i.amount)}
-                  </span>
-                  <Link to="/portal/payments" search={{ tab: i.status }}>
-                    <StatusBadge value={i.status} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        ) : null}
-
-        <Panel title="Logistics History">
-          <ol className="relative space-y-3 border-l border-border pl-5">
-            {[...t.timeline, ...moves.flatMap((m) => m.timeline.map((e) => ({ at: e.at, sector: `Logistics · ${m.id}`, event: e.event, ref: m.id })))]
-              .sort((a, b) => (a.at < b.at ? 1 : -1))
-              .map((e, i) => (
-                <li key={i} className="relative">
-                  <span className="absolute -left-[26px] top-1.5 size-2.5 rounded-full bg-primary ring-4 ring-card" />
-                  <p className="text-sm">
-                    <span className="beldium-mono mr-2 font-semibold text-primary">{fmt(e.at)}</span>
-                    {e.event}
-                  </p>
-                  <p className="beldium-small">{e.sector}</p>
-                </li>
-              ))}
-          </ol>
+        <Panel title="Quality">
+          <ResourceTable
+            columns={qualityColumns}
+            data={quality.data}
+            isLoading={quality.isLoading}
+            error={quality.error}
+            empty="No quality records for this transaction."
+          />
+        </Panel>
+        <Panel title="Payments">
+          <ResourceTable
+            columns={paymentColumns}
+            data={linkedPayments}
+            isLoading={payments.isLoading}
+            error={payments.error}
+            empty="No payments recorded."
+          />
         </Panel>
       </div>
     </>

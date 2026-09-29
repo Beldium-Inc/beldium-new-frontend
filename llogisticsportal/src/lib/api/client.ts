@@ -145,3 +145,32 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   if (!response.ok) throw apiErrorFromBody(payload, response.status);
   return payload as T;
 }
+
+/**
+ * Download a protected file (evidence, report CSV) and hand it to the browser.
+ * A plain link can't carry the bearer token, so the file is fetched here and
+ * saved through an object URL.
+ */
+export async function apiDownload(path: string, fallbackName: string): Promise<void> {
+  const url = /^https?:\/\//.test(path) ? path : apiUrl(path);
+  const get = (token: string | null) =>
+    fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} }).catch((cause) => {
+      throw networkError(cause);
+    });
+
+  let response = await get(readTokens()?.access ?? null);
+  if (response.status === 401 && readTokens()) {
+    const outcome = await refreshAccessToken();
+    if (outcome.status === "refreshed") response = await get(outcome.tokens.access);
+  }
+  if (!response.ok) throw apiErrorFromBody(await readBody(response), response.status);
+
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const name = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)?.[1] ?? fallbackName;
+  const objectUrl = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = decodeURIComponent(name);
+  link.click();
+  URL.revokeObjectURL(objectUrl);
+}

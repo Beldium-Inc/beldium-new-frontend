@@ -12,8 +12,6 @@ import { ApiError } from "@/lib/api/errors";
 import { organisationDirectory } from "@/lib/api/organisations";
 import { useCreateJoinRequest } from "@/lib/api/queries";
 import { useAuth } from "@/lib/auth";
-import { isDemoMode } from "@/lib/data-mode";
-import { DEMO_CODE, existingOrganisations, requestToJoin } from "@/lib/onboarding-store";
 
 const title = "Verify your account - Beldium Logistics Hub";
 const description =
@@ -52,7 +50,7 @@ function VerifyPage() {
   const navigate = useNavigate();
 
   const [emailCode, setEmailCode] = useState("");
-  const [note, setNote] = useState(isDemoMode ? `Demo mode: use code ${DEMO_CODE}.` : "");
+  const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -87,15 +85,6 @@ function VerifyPage() {
   }
 
   async function joinOrganisation(name: string) {
-    if (isDemoMode) {
-      if (!requestToJoin(name)) {
-        setError(
-          `No organisation named "${name}" was found. Demo organisations: ${existingOrganisations.map((o) => o.name).join(", ")}.`,
-        );
-        return false;
-      }
-      return true;
-    }
     const matches = await organisationDirectory({ search: name, page_size: 5 });
     const match = matches.results.find(
       (org) => org.name.trim().toLowerCase() === name.trim().toLowerCase(),
@@ -182,7 +171,7 @@ function VerifyPage() {
                 onClick={async () => {
                   try {
                     const res = await resendCode(targetEmail!);
-                    setNote(isDemoMode ? res.message : "A new email code was sent.");
+                    setNote(res.message || "A new email code was sent.");
                   } catch (cause) {
                     setError(
                       cause instanceof ApiError ? cause.message : "Could not resend the code.",

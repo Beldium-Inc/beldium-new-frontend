@@ -1,39 +1,35 @@
 # Beldium API layer (Logistics Hub)
 
+The portal runs entirely on the Beldium Django API. There is no demo or mock
+data path. Set `VITE_API_URL` to the API origin (see `.env.example`; defaults to
+`http://localhost:8000`).
+
 `config`, `client`, `errors`, `tokens`, `auth`, `types`, `organisations` and
-`queries` are copied from Miner Hub unchanged (apart from the added
-`logistics_company` organisation type), so both portals authenticate and
-fail the same way. Keep them in sync if Miner Hub's copy changes.
+`queries` are Miner Hub's copies (plus the `logistics_company` organisation
+type and `apiDownload`), so both portals authenticate and fail the same way.
+Keep them in sync if Miner Hub's copy changes.
 
-| File | Backend status |
-| --- | --- |
-| `auth.ts`, `organisations.ts` | Exist. Blocked for this portal by the Origin check below. |
-| `logistics.ts`, `logistics-queries.ts` | Exist (`beldium-backend/logistics`). Onboarding, review, vehicles, drivers. |
-| `onboarding.ts` | Submits the wizard draft through `logistics.ts`. |
-| `operations.ts`, `operations-queries.ts` | **Proposed**. No backend yet; hooks stay disabled in demo mode. |
+| File                                     | Backend (`beldium-backend/logistics`)                                                                                                                                       |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `logistics.ts`, `logistics-queries.ts`   | Onboarding: companies, applications, sections, vehicles, drivers, evidence, information requests, conditions, restrictions, notifications, reports.                         |
+| `onboarding.ts`                          | Submits the application wizard draft, resumably.                                                                                                                            |
+| `operations.ts`, `operations-queries.ts` | Operations (commit f0ba53b): transport requests, movements, deliveries, transactions, payments, incidents, findings, quality, events, action items, `operations_dashboard`. |
 
-## Data modes
+## Rules the frontend works around
 
-`VITE_DATA_MODE` (see `src/lib/data-mode.ts`):
+- **Document identity is `document_type` per application.** A second upload with
+  the same type is a new version and must keep the same domain and links. Per
+  vehicle/driver evidence therefore uses `"<type> (<registration or name>)"`, and
+  condition / information-request evidence uses a type suffixed with its id.
+- **Fleet changes lock after approval.** Vehicles and drivers can only be created or
+  edited while the application is draft, awaiting information or rejected, so the
+  registers are read-only for verified operators.
+- **Submission needs every applicable domain** (9, or 8 without mineral services)
+  to have section data and a current, unexpired document. The wizard enforces this
+  before calling `submit`.
+- **Incident references are client-generated** (`INC-YYYYMMDD-XXXXXX`): the
+  model requires a unique `reference` and has no generator.
+- Movements can't be filtered by `request`, and payments can't be filtered by
+  `transaction`, so detail pages filter those lists client-side.
 
-- unset / `demo`: everything in the browser. Default; works in Lovable with no backend.
-- `api`: auth, verification, the onboarding application and the review screens use the API.
-  Set `VITE_API_URL` to the API origin (defaults to `http://localhost:8000`).
-
-## Backend checklist before switching to `api`
-
-1. **Portal origin.** `accounts/portal.py` only maps compliance and miner origins, so
-   register/login from this portal fails with `portal_undetermined`. Add a
-   `User.Portal.LOGISTICS`, a `LOGISTICS_PORTAL_ORIGINS` setting (e.g.
-   `https://logistics.beldium.com`, `http://localhost:5175`) and add the origin to
-   `CORS_ALLOWED_ORIGINS`.
-2. **Organisation type.** `organisations.models.OrganisationType` has no logistics
-   value; `onboarding.ts` creates the organisation with `logistics_company`.
-3. **Operations endpoints.** Implement `/logistics/ops/...` per `operations.ts`
-   (or change that file to match what gets built).
-
-## Migrating a page off the demo store
-
-Operational pages read `useOps()` from `src/lib/ops-store.ts`. Move one page at a
-time onto the hooks here, like Miner Hub did with `MinerProvider`. Vehicles and
-drivers can go first: their endpoints already exist in `logistics.ts`.
+See the handoff list for the backend work still open.

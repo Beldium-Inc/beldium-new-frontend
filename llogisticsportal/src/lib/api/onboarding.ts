@@ -1,10 +1,17 @@
 import { formatPhoneNumber } from "../phone";
-import type { DocumentRecord, OperatorState, VehicleRecord } from "../onboarding-store";
+import {
+  getState,
+  recordServerId,
+  requiredDomains,
+  type DraftState,
+  type VehicleRecord,
+} from "../onboarding-store";
 import {
   createApplication,
   createCompany,
   createDriver,
   createVehicle,
+  fetchLogisticsDashboard,
   saveLogisticsApplicationSection,
   submitLogisticsApplication,
   uploadLogisticsApplicationDocument,
@@ -12,28 +19,19 @@ import {
   type Vehicle,
 } from "./logistics";
 import { createOrganisation } from "./organisations";
-import type { UUID } from "./types";
+import type { User, UUID } from "./types";
 
-// Submits the onboarding wizard's draft to the Beldium API, in the order the
-// backend's foreign keys require:
+// Submits the application draft in the order the backend's foreign keys need:
 //
-//   organisation → logistics company → application → sections
-//                → vehicles → drivers (may reference a vehicle) → documents → submit
+//   organisation → company → application → sections → vehicles → drivers
+//                → documents → submit
 //
-// Each call is a separate request, so a failure part-way leaves earlier records
-// in place; the error is surfaced and the draft is kept so the user can retry.
+// Every record the API creates is written back into the draft (`server`), and
+// an account that already has a company reuses it, so a failure part-way
+// through resumes on retry instead of tripping the duplicate-organisation guard.
 
-/** Files can't live in the localStorage draft, so the wizard parks them here until submit. */
+/** Files can't live in the localStorage draft, so the wizard parks them here until upload. */
 export const pendingDocumentFiles = new Map<string, File>();
-
-const DOCUMENT_DOMAIN: Record<string, LogisticsDomainKey> = {
-  "Organisation documents": "corporate",
-  "Vehicle documents": "fleet",
-  "Driver documents": "driver",
-  "Safety & operations documents": "hs",
-  "Compliance documents": "regulatory",
-  Insurance: "insurance",
-};
 
 const OWNERSHIP: Record<string, Vehicle["ownership"]> = {
   Owned: "owned",
@@ -41,62 +39,169 @@ const OWNERSHIP: Record<string, Vehicle["ownership"]> = {
   Subcontracted: "contracted",
 };
 
-function vehicleGps(v: VehicleRecord): Vehicle["gps_status"] {
+function gps(v: VehicleRecord): Vehicle["gps_status"] {
   if (v.trackerInstalled !== "Yes") return "inactive";
   return v.trackerId ? "active" : "unknown";
 }
 
 const orNull = (value: string) => (value ? value : null);
 
-export async function submitOperatorApplication(
-  draft: OperatorState,
-): Promise<{ applicationId: UUID; reference: string }> {
+/** Section payloads: the backend needs non-empty data for every applicable domain. */
+function sectionData(d: DraftState): Record<LogisticsDomainKey, Record<string, unknown>> {
+  const org = d.organisation!;
+  const cap = d.capability!;
+  const answers = d.compliance;
+  const docsFor = (domain: LogisticsDomainKey) =>
+    d.documents
+      .filter((x) => x.domain === domain)
+      .map((x) => ({ type: x.type, number: x.number, expires: x.expiryDate }));
+  return {
+    corporate: { ...org },
+    regulatory: {
+      registration_number: org.registrationNumber,
+      tax_identifier: org.tin,
+      organisation_type: org.orgType,
+      licences: docsFor("regulatory"),
+    },
+    fleet: {
+      fleet_size: cap.fleetSize,
+      vehicle_categories: cap.vehicleCategories,
+      max_capacity_tonnes: cap.maxCapacity,
+      vehicles: d.vehicles.map((v) => ({
+        registration: v.registration,
+        type: v.type,
+        status: v.operatingStatus,
+      })),
+      inspection_records: answers["Do you maintain vehicle inspection records?"],
+      maintenance_records: answers["Do you maintain vehicle maintenance records?"],
+    },
+    driver: {
+      drivers: d.drivers.map((x) => ({
+        name: x.name,
+        licence_class: x.licenceClass,
+        safety: x.safetyStatus,
+      })),
+      verified_before_assignment: answers["Do you verify drivers before assignment?"],
+      licence_expiry_records: answers["Do you maintain driver licence expiry records?"],
+    },
+    insurance: {
+      vehicles: d.vehicles.map((v) => ({
+        registration: v.registration,
+        insurer: v.insurer,
+        expires: v.insuranceExpiry,
+      })),
+      policies: docsFor("insurance"),
+    },
+    hs: {
+      emergency_response: answers["Do you have emergency response procedures?"],
+      incident_records: answers["Do you maintain incident records?"],
+      journey_management: answers["Do you operate journey management procedures?"],
+    },
+    operational: {
+      participant_type: cap.participantType,
+      services: cap.services,
+      operating_states: cap.operatingStates,
+      routes_covered: cap.routesCovered,
+      security: cap.security,
+      pickup_delivery_evidence: answers["Do you maintain pickup and delivery evidence?"],
+      cargo_handover_records: answers["Do you maintain quantity / cargo handover records?"],
+    },
+    mineral: {
+      minerals: cap.minerals,
+      sample_chain_of_custody: cap.sampleCustody,
+      chain_of_custody: answers["Do you support chain of custody?"],
+    },
+    data: {
+      tracking: cap.tracking,
+      active_tracking: answers["Do vehicles have active tracking?"],
+      trackers: d.vehicles
+        .filter((v) => v.trackerId)
+        .map((v) => ({ registration: v.registration, tracker: v.trackerId })),
+      declarations: d.declarations,
+    },
+  };
+}
+
+/** Documents whose file was lost (page reload before upload) and must be re-attached. */
+export function missingFiles(d: DraftState) {
+  return d.documents.filter(
+    (doc) => !d.server.documents[doc.id] && !pendingDocumentFiles.has(doc.id),
+  );
+}
+
+export async function submitOperatorApplication(user: User): Promise<{ applicationId: UUID }> {
+  const draft = getState();
   const org = draft.organisation;
   const cap = draft.capability;
-  const account = draft.account;
-  if (!org || !cap || !account) throw new Error("The application is incomplete.");
+  if (!org || !cap) throw new Error("The application is incomplete.");
 
-  const phone = formatPhoneNumber(org.phone || account.phone);
-
-  const organisation = await createOrganisation({
-    name: org.name,
-    organisation_type: "logistics_company",
-    registration_number: org.registrationNumber,
-    tax_identifier: org.tin,
-    email: org.email || account.email,
-    phone_number: phone,
-    website: org.website,
-    address: org.registeredAddress,
-    country: account.country || "Nigeria",
-    state: org.state,
-  });
-
-  const company = await createCompany({
-    organisation: organisation.id,
-    contact_name: org.primaryContact || `${account.firstName} ${account.lastName}`.trim(),
-    contact_email: org.email || account.email,
-    contact_phone: phone,
-    incorporated_on: org.yearEstablished ? `${org.yearEstablished}-01-01` : null,
-    annual_tonnage: cap.maxCapacity ? Number(cap.maxCapacity) : undefined,
-    services: cap.services,
-  });
-
-  const application = await createApplication({ company: company.id });
-
-  const sections: [LogisticsDomainKey, Record<string, unknown>][] = [
-    ["corporate", { ...org, participant_type: account.participantType }],
-    ["operational", { ...cap }],
-    ["hs", { answers: draft.compliance }],
-    ["data", { declarations: draft.declarations }],
-  ];
-  for (const [key, data] of sections) {
-    await saveLogisticsApplicationSection(application.id, key, data);
+  const lost = missingFiles(draft);
+  if (lost.length) {
+    throw new Error(
+      `Re-attach the file for: ${lost.map((d) => d.type).join(", ")} (files are not kept after a page reload).`,
+    );
   }
 
-  const vehicleIds = new Map<string, UUID>();
-  for (const v of draft.vehicles) {
+  const phone = formatPhoneNumber(org.phone || user.phone_number);
+
+  // An account that already registered a company (another device, an earlier
+  // attempt) continues that record rather than creating a second one.
+  if (!getState().server.company) {
+    const existing = (await fetchLogisticsDashboard()).companies[0];
+    if (existing) {
+      recordServerId({
+        company: existing.company_id,
+        application: existing.application_id ?? undefined,
+      });
+    }
+  }
+
+  if (!getState().server.company) {
+    if (!getState().server.organisation) {
+      const organisation = await createOrganisation({
+        name: org.name,
+        organisation_type: "logistics_company",
+        registration_number: org.registrationNumber,
+        tax_identifier: org.tin,
+        email: org.email || user.email,
+        phone_number: phone,
+        website: org.website,
+        address: org.registeredAddress,
+        country: user.country || "Nigeria",
+        state: org.state,
+      });
+      recordServerId({ organisation: organisation.id });
+    }
+    const company = await createCompany({
+      organisation: getState().server.organisation!,
+      contact_name: org.primaryContact || `${user.first_name} ${user.last_name}`.trim(),
+      contact_email: org.email || user.email,
+      contact_phone: phone,
+      incorporated_on: org.yearEstablished ? `${org.yearEstablished}-01-01` : null,
+      employees: Number(org.employees) || 0,
+      annual_tonnage: cap.maxCapacity ? Number(cap.maxCapacity) : undefined,
+      services: cap.services,
+    });
+    recordServerId({ company: company.id });
+  }
+  const companyId = getState().server.company!;
+
+  if (!getState().server.application) {
+    const application = await createApplication({ company: companyId });
+    recordServerId({ application: application.id });
+  }
+  const applicationId = getState().server.application!;
+
+  // Sections are re-saved every time: the draft may have changed since.
+  const data = sectionData(getState());
+  for (const key of requiredDomains(cap.services)) {
+    await saveLogisticsApplicationSection(applicationId, key, data[key]);
+  }
+
+  for (const v of getState().vehicles) {
+    if (getState().server.vehicles[v.id]) continue;
     const created = await createVehicle({
-      company: company.id,
+      company: companyId,
       registration: v.registration,
       vin: v.vin,
       vehicle_type: v.type,
@@ -109,24 +214,29 @@ export async function submitOperatorApplication(
       insurer: v.insurer,
       insurance_expiry: v.insuranceExpiry,
       roadworthiness_expiry: v.roadworthinessExpiry,
-      gps_status: vehicleGps(v),
+      gps_status: gps(v),
       location: org.operatingAddress,
       is_active: v.operatingStatus !== "Out of service",
     });
-    vehicleIds.set(v.registration || v.id, created.id);
+    recordServerId({ vehicles: { ...getState().server.vehicles, [v.id]: created.id } });
   }
 
-  const driverIds = new Map<string, UUID>();
-  for (const d of draft.drivers) {
+  const vehicleByRegistration = (registration: string) => {
+    const local = getState().vehicles.find((v) => v.registration === registration);
+    return local ? (getState().server.vehicles[local.id] ?? null) : null;
+  };
+
+  for (const d of getState().drivers) {
+    if (getState().server.drivers[d.id]) continue;
     const created = await createDriver({
-      company: company.id,
+      company: companyId,
       full_name: d.name,
       licence_number: d.licenceNumber,
       licence_class: d.licenceClass,
       licence_expiry: d.expiryDate,
       national_id: d.nationalId,
       years_experience: Number(d.yearsExperience) || 0,
-      assigned_vehicle: vehicleIds.get(d.assignedVehicle) ?? null,
+      assigned_vehicle: d.assignedVehicle ? vehicleByRegistration(d.assignedVehicle) : null,
       training: d.training
         ? d.training
             .split(",")
@@ -136,37 +246,33 @@ export async function submitOperatorApplication(
       medical_expiry: d.medicalExpiry,
       is_active: d.safetyStatus !== "Restricted",
     });
-    driverIds.set(d.name || d.id, created.id);
+    recordServerId({ drivers: { ...getState().server.drivers, [d.id]: created.id } });
   }
 
-  for (const doc of draft.documents) {
-    await uploadDocument(application.id, doc, vehicleIds, driverIds);
+  for (const doc of getState().documents) {
+    if (getState().server.documents[doc.id]) continue;
+    const file = pendingDocumentFiles.get(doc.id)!;
+    const s = getState();
+    const vehicle = s.vehicles.find((v) => v.registration === doc.related);
+    const driver = s.drivers.find((x) => x.name === doc.related);
+    const uploaded = await uploadLogisticsApplicationDocument(applicationId, {
+      domain: doc.domain,
+      // The API treats uploads sharing a document_type as versions of one
+      // document, so per-vehicle and per-driver evidence needs its own type.
+      document_type: vehicle || driver ? `${doc.type} (${doc.related})` : doc.type,
+      title: doc.type,
+      file,
+      issuer: doc.issuingAuthority,
+      reference: doc.number,
+      issued_on: orNull(doc.issueDate),
+      expires_on: orNull(doc.expiryDate),
+      vehicle: vehicle ? (s.server.vehicles[vehicle.id] ?? null) : null,
+      driver: driver ? (s.server.drivers[driver.id] ?? null) : null,
+    });
+    pendingDocumentFiles.delete(doc.id);
+    recordServerId({ documents: { ...getState().server.documents, [doc.id]: uploaded.id } });
   }
 
-  await submitLogisticsApplication(application.id);
-  pendingDocumentFiles.clear();
-  return { applicationId: application.id, reference: company.reference };
-}
-
-async function uploadDocument(
-  applicationId: UUID,
-  doc: DocumentRecord,
-  vehicleIds: Map<string, UUID>,
-  driverIds: Map<string, UUID>,
-) {
-  const file = pendingDocumentFiles.get(doc.id);
-  // A reload drops parked files; the reviewer will request anything missing.
-  if (!file) return;
-  await uploadLogisticsApplicationDocument(applicationId, {
-    domain: DOCUMENT_DOMAIN[doc.group] ?? "regulatory",
-    document_type: doc.type,
-    title: doc.type,
-    file,
-    issuer: doc.issuingAuthority,
-    reference: doc.number,
-    issued_on: orNull(doc.issueDate),
-    expires_on: orNull(doc.expiryDate),
-    vehicle: vehicleIds.get(doc.related) ?? null,
-    driver: driverIds.get(doc.related) ?? null,
-  });
+  await submitLogisticsApplication(applicationId);
+  return { applicationId };
 }

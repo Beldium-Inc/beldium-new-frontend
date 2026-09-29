@@ -1,23 +1,49 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import type { MineSite } from "@/verticals/mining/types";
+import type { MineSite, ScoreFactor } from "@/verticals/mining/types";
 import { Panel } from "./primitives";
 import { RiskChip } from "./chips";
 
 const trendIcon = { up: ArrowUpRight, down: ArrowDownRight, flat: Minus };
 
+/**
+ * The backend scores a site from its ten review sections (weight × section
+ * score) and only falls back to explicit score factors when no section carries
+ * a weight, so the sections are the breakdown whenever no factors were added.
+ */
+function sectionFactors(site: MineSite): ScoreFactor[] {
+  return site.sections
+    .filter((s) => s.weight > 0)
+    .map((s) => ({
+      id: `section:${s.key}`,
+      label: s.title,
+      weight: s.weight,
+      score: s.score,
+      reason: s.decisionNote || `Section ${s.status.toLowerCase()}.`,
+      trend: "flat" as const,
+    }));
+}
+
 export function ScoreBreakdown({ site }: { site: MineSite }) {
-  const factors = site.scoreFactors;
-  const weighted = factors.reduce((a, f) => a + (f.score * f.weight) / 100, 0);
+  const fromSections = site.scoreFactors.length === 0;
+  const factors = fromSections ? sectionFactors(site) : site.scoreFactors;
+  const totalWeight = factors.reduce((a, f) => a + f.weight, 0);
+  const weighted = totalWeight
+    ? factors.reduce((a, f) => a + f.score * f.weight, 0) / totalWeight
+    : 0;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
       <Panel
         title="Compliance score breakdown"
-        description={`Weighted across ${factors.length} explainable factors. Each factor contributes weight × score.`}
+        description={
+          fromSections
+            ? `Weighted across the ${factors.length} review sections. Each section contributes weight × section score, and moves as sections are verified, rejected or flagged.`
+            : `Weighted across ${factors.length} explainable factors. Each factor contributes weight × score.`
+        }
       >
         {factors.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No factor-level breakdown captured for this site.
+            No review sections carry a weight for this site yet.
           </p>
         ) : (
           <div className="space-y-4">
@@ -35,7 +61,7 @@ export function ScoreBreakdown({ site }: { site: MineSite }) {
                         {f.score}/100 <Trend className="size-3.5" />
                       </span>
                       <span className="tabular-nums">
-                        +{((f.score * f.weight) / 100).toFixed(1)} pts
+                        +{totalWeight ? ((f.score * f.weight) / totalWeight).toFixed(1) : "0.0"} pts
                       </span>
                     </div>
                   </div>

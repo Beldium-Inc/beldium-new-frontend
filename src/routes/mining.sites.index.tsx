@@ -8,17 +8,64 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMiningApplications } from "@/lib/api/mining-queries";
 import { useStore } from "@/verticals/mining/store";
-import { PageHeader, Panel } from "@/verticals/mining/components/primitives";
+import type { MineSite } from "@/verticals/mining/types";
+import { EmptyState, PageHeader, Panel } from "@/verticals/mining/components/primitives";
 import { RiskChip, ScorePill, StatusChip } from "@/verticals/mining/components/chips";
 
 export const Route = createFileRoute("/mining/sites/")({ component: SitesPage });
 
+/**
+ * In progress: sites still being reviewed through an application. History:
+ * sites whose review is finished, either verified (operational) or whose
+ * admission application was decided.
+ */
 function SitesPage() {
   const { sites } = useStore();
+  const applications = useMiningApplications();
+  const decidedSites = new Set(
+    (applications.data?.results ?? [])
+      .filter((a) => a.site && (a.status === "approved" || a.status === "rejected"))
+      .map((a) => a.site as string),
+  );
+  const isHistory = (s: MineSite) => s.status === "Operational" || decidedSites.has(s.id);
+  const history = sites.filter(isHistory);
+  const inProgress = sites.filter((s) => !isHistory(s));
+
   return (
     <>
-      <PageHeader title="Mining sites" description="All sites in the prototype portfolio." />
+      <PageHeader
+        title="Mining sites"
+        description="Sites under review are worked from their claimed application. Completed reviews move to History."
+      />
+      <Tabs defaultValue="in-progress">
+        <TabsList>
+          <TabsTrigger value="in-progress">In progress ({inProgress.length})</TabsTrigger>
+          <TabsTrigger value="history">History ({history.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value="in-progress" className="mt-4">
+          <SiteTable sites={inProgress} empty="No sites are under review." />
+        </TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <SiteTable sites={history} empty="No completed site reviews yet." />
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+}
+
+function SiteTable({ sites, empty }: { sites: MineSite[]; empty: string }) {
+  if (sites.length === 0) {
+    return (
+      <Panel title="Site register">
+        <EmptyState title={empty} />
+      </Panel>
+    );
+  }
+  return (
+    <>
       <Panel title="Site register" bodyClassName="p-0">
         <div className="overflow-x-auto">
           <Table>

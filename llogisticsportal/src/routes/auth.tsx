@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { ApiError } from "@/lib/api/errors";
 import { useAuth } from "@/lib/auth";
-import { isDemoMode } from "@/lib/data-mode";
-import { startDemoWorkspace } from "@/lib/onboarding-store";
 
 const title = "Sign in - Beldium Logistics Hub";
 const description =
@@ -100,22 +98,6 @@ function AuthPage() {
           {submitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
-
-      {isDemoMode ? (
-        <div className="mt-6 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-          Just looking around?
-          <Button
-            variant="outline"
-            className="mt-3 w-full"
-            onClick={() => {
-              startDemoWorkspace();
-              navigate({ to: "/portal" });
-            }}
-          >
-            Explore the demo operator workspace
-          </Button>
-        </div>
-      ) : null}
     </AuthLayout>
   );
 }
