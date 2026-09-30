@@ -12,12 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicationRouteImport } from './routes/application'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CareersRouteImport } from './routes/careers'
 import { Route as PortalRouteRouteImport } from './routes/portal/route'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SubmittedRouteImport } from './routes/submitted'
 import { Route as VerifyRouteImport } from './routes/verify'
+import { Route as CareersIndexRouteImport } from './routes/careers.index'
+import { Route as CareersLogisticsPartnerRegistrationRouteImport } from './routes/careers.logistics-partner-registration'
 import { Route as PortalIndexRouteImport } from './routes/portal/index'
 import { Route as PortalApplicationRecordRouteImport } from './routes/portal/application-record'
 import { Route as PortalComplianceRouteImport } from './routes/portal/compliance'
@@ -54,6 +58,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CareersRoute = CareersRouteImport.update({
+  id: '/careers',
+  path: '/careers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalRouteRoute = PortalRouteRouteImport.update({
   id: '/portal',
   path: '/portal',
@@ -74,6 +83,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SubmittedRoute = SubmittedRouteImport.update({
   id: '/submitted',
   path: '/submitted',
@@ -84,6 +98,17 @@ const VerifyRoute = VerifyRouteImport.update({
   path: '/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CareersIndexRoute = CareersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CareersRoute,
+} as any)
+const CareersLogisticsPartnerRegistrationRoute =
+  CareersLogisticsPartnerRegistrationRouteImport.update({
+    id: '/logistics-partner-registration',
+    path: '/logistics-partner-registration',
+    getParentRoute: () => CareersRoute,
+  } as any)
 const PortalIndexRoute = PortalIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -192,11 +217,14 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRouteRouteWithChildren
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
+  '/careers': typeof CareersRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
+  '/careers/logistics-partner-registration': typeof CareersLogisticsPartnerRegistrationRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
@@ -213,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
+  '/careers/': typeof CareersIndexRoute
   '/portal/': typeof PortalIndexRoute
   '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
@@ -225,8 +254,10 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
+  '/careers/logistics-partner-registration': typeof CareersLogisticsPartnerRegistrationRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
@@ -243,6 +274,7 @@ export interface FileRoutesByTo {
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
+  '/careers': typeof CareersIndexRoute
   '/portal': typeof PortalIndexRoute
   '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
@@ -254,11 +286,14 @@ export interface FileRoutesById {
   '/portal': typeof PortalRouteRouteWithChildren
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
+  '/careers': typeof CareersRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
+  '/careers/logistics-partner-registration': typeof CareersLogisticsPartnerRegistrationRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
@@ -275,6 +310,7 @@ export interface FileRoutesById {
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
+  '/careers/': typeof CareersIndexRoute
   '/portal/': typeof PortalIndexRoute
   '/portal/movements_/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions_/$txnId': typeof PortalTransactionsTxnIdRoute
@@ -287,11 +323,14 @@ export interface FileRouteTypes {
     | '/portal'
     | '/application'
     | '/auth'
+    | '/careers'
     | '/sign-in'
     | '/sign-up'
     | '/signup'
+    | '/sitemap.xml'
     | '/submitted'
     | '/verify'
+    | '/careers/logistics-partner-registration'
     | '/portal/application-record'
     | '/portal/compliance'
     | '/portal/deliveries'
@@ -308,6 +347,7 @@ export interface FileRouteTypes {
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
+    | '/careers/'
     | '/portal/'
     | '/portal/movements/$movementId'
     | '/portal/transactions/$txnId'
@@ -320,8 +360,10 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/signup'
+    | '/sitemap.xml'
     | '/submitted'
     | '/verify'
+    | '/careers/logistics-partner-registration'
     | '/portal/application-record'
     | '/portal/compliance'
     | '/portal/deliveries'
@@ -338,6 +380,7 @@ export interface FileRouteTypes {
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
+    | '/careers'
     | '/portal'
     | '/portal/movements/$movementId'
     | '/portal/transactions/$txnId'
@@ -348,11 +391,14 @@ export interface FileRouteTypes {
     | '/portal'
     | '/application'
     | '/auth'
+    | '/careers'
     | '/sign-in'
     | '/sign-up'
     | '/signup'
+    | '/sitemap.xml'
     | '/submitted'
     | '/verify'
+    | '/careers/logistics-partner-registration'
     | '/portal/application-record'
     | '/portal/compliance'
     | '/portal/deliveries'
@@ -369,6 +415,7 @@ export interface FileRouteTypes {
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
+    | '/careers/'
     | '/portal/'
     | '/portal/movements_/$movementId'
     | '/portal/transactions_/$txnId'
@@ -380,9 +427,11 @@ export interface RootRouteChildren {
   PortalRouteRoute: typeof PortalRouteRouteWithChildren
   ApplicationRoute: typeof ApplicationRoute
   AuthRoute: typeof AuthRoute
+  CareersRoute: typeof CareersRouteWithChildren
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   SignupRoute: typeof SignupRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SubmittedRoute: typeof SubmittedRoute
   VerifyRoute: typeof VerifyRoute
 }
@@ -408,6 +457,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/careers': {
+      id: '/careers'
+      path: '/careers'
+      fullPath: '/careers'
+      preLoaderRoute: typeof CareersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal': {
@@ -438,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/submitted': {
       id: '/submitted'
       path: '/submitted'
@@ -451,6 +514,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/verify'
       preLoaderRoute: typeof VerifyRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/careers/': {
+      id: '/careers/'
+      path: '/'
+      fullPath: '/careers/'
+      preLoaderRoute: typeof CareersIndexRouteImport
+      parentRoute: typeof CareersRoute
+    }
+    '/careers/logistics-partner-registration': {
+      id: '/careers/logistics-partner-registration'
+      path: '/logistics-partner-registration'
+      fullPath: '/careers/logistics-partner-registration'
+      preLoaderRoute: typeof CareersLogisticsPartnerRegistrationRouteImport
+      parentRoute: typeof CareersRoute
     }
     '/portal/': {
       id: '/portal/'
@@ -645,14 +722,30 @@ const PortalRouteRouteWithChildren = PortalRouteRoute._addFileChildren(
   PortalRouteRouteChildren,
 )
 
+interface CareersRouteChildren {
+  CareersLogisticsPartnerRegistrationRoute: typeof CareersLogisticsPartnerRegistrationRoute
+  CareersIndexRoute: typeof CareersIndexRoute
+}
+
+const CareersRouteChildren: CareersRouteChildren = {
+  CareersLogisticsPartnerRegistrationRoute:
+    CareersLogisticsPartnerRegistrationRoute,
+  CareersIndexRoute: CareersIndexRoute,
+}
+
+const CareersRouteWithChildren =
+  CareersRoute._addFileChildren(CareersRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PortalRouteRoute: PortalRouteRouteWithChildren,
   ApplicationRoute: ApplicationRoute,
   AuthRoute: AuthRoute,
+  CareersRoute: CareersRouteWithChildren,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   SignupRoute: SignupRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SubmittedRoute: SubmittedRoute,
   VerifyRoute: VerifyRoute,
 }

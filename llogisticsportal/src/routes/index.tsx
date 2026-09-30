@@ -69,6 +69,9 @@ function Landing() {
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
           <BeldiumLockup />
           <div className="flex items-center gap-2">
+            <Button variant="ghost" asChild className="hidden sm:inline-flex">
+              <Link to="/careers">Careers</Link>
+            </Button>
             <Button variant="ghost" asChild>
               <Link to="/auth">Sign in</Link>
             </Button>
@@ -107,6 +110,12 @@ function Landing() {
                 </Link>
               </Button>
             </div>
+            <p className="mt-6 text-sm text-sidebar-foreground/70">
+              Looking to drive or work with a logistics partner?{" "}
+              <Link to="/careers" className="font-semibold text-accent underline">
+                Visit the Logistics Talent Hub
+              </Link>
+            </p>
           </div>
 
           <div
@@ -169,7 +178,12 @@ function Landing() {
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-xs text-muted-foreground">
           <BeldiumLockup />
-          <span>Beldium Logistics Hub</span>
+          <div className="flex items-center gap-4">
+            <Link to="/careers" className="hover:text-foreground">
+              Talent Hub
+            </Link>
+            <span>Beldium Logistics Hub</span>
+          </div>
         </div>
       </footer>
     </div>
