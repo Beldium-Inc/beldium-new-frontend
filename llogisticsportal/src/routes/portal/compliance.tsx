@@ -10,6 +10,7 @@ import {
   fieldCls,
   fmtDate,
   fmtDateTime,
+  pretty,
   useListQuery,
   type Column,
 } from "@/components/beldium/ops";
@@ -50,11 +51,11 @@ function CompliancePage() {
     { header: "Corrective action", cell: (f) => f.action || "-", className: "max-w-xs" },
     { header: "Owner", cell: (f) => f.owner || "-" },
     { header: "Raised", cell: (f) => fmtDate(f.raised_at) },
-    { header: "Status", cell: (f) => <StatusBadge value={f.status} /> },
+    { header: "Status", cell: (f) => <StatusBadge value={pretty(f.status)} /> },
     {
       header: "",
       cell: (f) =>
-        f.status.toLowerCase() === "cleared" ? null : (
+        f.status === "cleared" || f.status === "corrective_action_submitted" ? null : (
           <Button size="sm" variant="outline" onClick={() => setActing(f)}>
             Record action
           </Button>
@@ -166,7 +167,7 @@ function FindingDialog({ finding, onClose }: { finding: ComplianceFinding; onClo
       onSubmit={() => {
         if (!action.trim()) return setError("Describe the corrective action taken.");
         update.mutate(
-          { id: finding.id, action: action.trim(), status: "Corrective Action Submitted" },
+          { id: finding.id, action: action.trim(), status: "corrective_action_submitted" },
           {
             onSuccess: () => {
               toast.success("Corrective action submitted for review");

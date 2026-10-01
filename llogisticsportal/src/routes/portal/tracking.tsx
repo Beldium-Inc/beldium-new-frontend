@@ -90,6 +90,7 @@ function TrackingPage() {
             tabs={[
               { value: "in_transit", label: "In transit" },
               { value: "delayed", label: "Delayed" },
+              { value: "arrived", label: "Arrived" },
               { value: "loading", label: "Loading" },
               { value: "assigned", label: "Assigned" },
             ]}

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/portal/incidents")({
   component: IncidentsPage,
 });
 
-const isResolved = (i: Incident) => i.status.toLowerCase() === "resolved";
+const isResolved = (i: Incident) => i.status === "resolved" || i.status === "closed";
 const severityTone = (s: string) =>
   s === "critical" || s === "high" ? "danger" : s === "medium" ? "warning" : "default";
 
@@ -64,7 +64,7 @@ function IncidentsPage() {
     },
     { header: "Location", cell: (i) => i.location || "-" },
     { header: "Occurred", cell: (i) => fmtDateTime(i.occurred_at) },
-    { header: "Status", cell: (i) => <StatusBadge value={i.status} /> },
+    { header: "Status", cell: (i) => <StatusBadge value={pretty(i.status)} /> },
     {
       header: "",
       cell: (i) =>

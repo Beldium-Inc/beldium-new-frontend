@@ -35,7 +35,7 @@ const rules: { match: RegExp; tone: Tone }[] = [
   },
   {
     match:
-      /(in transit|loading|dispatched|en route|new|live|scheduled|assigned|at pickup|at destination|unloading|loaded|generated|submitted|collected|at origin|at mine|at laboratory|on journey|responded)/i,
+      /(in transit|loading|dispatched|en route|new|live|scheduled|assigned|at pickup|at destination|unloading|loaded|generated|submitted|collected|at origin|at mine|at laboratory|on journey|responded|corrective action submitted|invoice raised)/i,
     tone: "primary",
   },
 ];
@@ -51,7 +51,7 @@ export function StatusBadge({
   className,
 }: {
   value: string;
-  tone?: Tone;
+  tone?: Tone | undefined;
   className?: string;
 }) {
   return (

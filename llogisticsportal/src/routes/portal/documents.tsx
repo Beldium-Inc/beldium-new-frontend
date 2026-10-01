@@ -3,7 +3,9 @@ import { Download } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  Field,
   FilterSelect,
+  FormDialog,
   PillTabs,
   ResourceTable,
   SearchBox,
@@ -17,14 +19,20 @@ import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
 import { StatusBadge } from "@/components/beldium/status-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { apiDownload } from "@/lib/api/client";
 import {
   documentDownloadUrl,
   listLogisticsDocuments,
   type LogisticsDocument,
 } from "@/lib/api/logistics";
-import { listOperationsDocuments, type OperationsDocument } from "@/lib/api/operations";
-import { useOpsList } from "@/lib/api/operations-queries";
+import {
+  downloadOperationsDocument,
+  listOperationsDocuments,
+  type OperationsDocument,
+} from "@/lib/api/operations";
+import { useOpsList, useUploadOperationsDocument } from "@/lib/api/operations-queries";
+import { useWorkspace } from "@/lib/workspace";
 import { useState } from "react";
 
 export const Route = createFileRoute("/portal/documents")({
@@ -71,12 +79,29 @@ const registerColumns: Column<OperationsDocument>[] = [
   { header: "Related to", cell: (d) => d.related_asset || "-" },
   { header: "Issued", cell: (d) => fmtDate(d.issue_date) },
   { header: "Expires", cell: (d) => fmtDate(d.expiry_date) },
-  { header: "Verification", cell: (d) => <StatusBadge value={d.verification_status} /> },
-  { header: "Compliance", cell: (d) => <StatusBadge value={d.compliance_status} /> },
+  { header: "Reference", cell: (d) => d.reference },
+  { header: "Verification", cell: (d) => <StatusBadge value={pretty(d.verification_status)} /> },
+  { header: "Compliance", cell: (d) => <StatusBadge value={pretty(d.compliance_status)} /> },
+  {
+    header: "",
+    cell: (d) =>
+      d.download_url ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => downloadOperationsDocument(d).catch((e) => toast.error(errorMessage(e)))}
+        >
+          <Download /> Download
+        </Button>
+      ) : (
+        <span className="text-xs text-muted-foreground">No file</span>
+      ),
+  },
 ];
 
 function DocumentsPage() {
   const [view, setView] = useState("evidence");
+  const [uploading, setUploading] = useState(false);
   const evidenceList = useListQuery({ is_current: "true" });
   const registerList = useListQuery();
   const evidence = useOpsList("documents", listLogisticsDocuments, evidenceList.query, {
@@ -91,6 +116,11 @@ function DocumentsPage() {
       <PageHeader
         title="Documents"
         description="Evidence you have submitted to Beldium Logistics Compliance, and the operations document register."
+        actions={
+          view === "register" ? (
+            <Button onClick={() => setUploading(true)}>Upload document</Button>
+          ) : undefined
+        }
       />
       <Panel title="Documents">
         <div className="space-y-4">
@@ -158,6 +188,86 @@ function DocumentsPage() {
           )}
         </div>
       </Panel>
+      {uploading ? <UploadDialog onClose={() => setUploading(false)} /> : null}
     </>
+  );
+}
+
+const ACCEPTED = ".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.zip";
+
+function UploadDialog({ onClose }: { onClose: () => void }) {
+  const { record } = useWorkspace();
+  const upload = useUploadOperationsDocument();
+  const [f, setF] = useState({
+    name: "",
+    document_type: "",
+    related_asset: "",
+    issue_date: "",
+    expiry_date: "",
+  });
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState("");
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setF({ ...f, [k]: e.target.value });
+
+  return (
+    <FormDialog
+      open
+      onClose={onClose}
+      title="Upload operations document"
+      submitLabel="Upload"
+      busy={upload.isPending}
+      error={error}
+      onSubmit={() => {
+        if (!record) return setError("Your company record isn't loaded yet.");
+        if (!f.name.trim() || !f.document_type.trim())
+          return setError("Name and document type are required.");
+        if (!file) return setError("Choose a file.");
+        upload.mutate(
+          { company: record.companyId, ...f, file },
+          {
+            onSuccess: (doc) => {
+              toast.success(`${doc.reference} uploaded`);
+              onClose();
+            },
+            onError: (e) => setError(errorMessage(e)),
+          },
+        );
+      }}
+    >
+      <Field label="Name">
+        <Input
+          value={f.name}
+          onChange={set("name")}
+          placeholder="e.g. Goods in transit policy 2026"
+        />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Document type">
+          <Input
+            value={f.document_type}
+            onChange={set("document_type")}
+            placeholder="e.g. Insurance"
+          />
+        </Field>
+        <Field label="Related vehicle, driver or asset">
+          <Input value={f.related_asset} onChange={set("related_asset")} />
+        </Field>
+        <Field label="Issue date">
+          <Input type="date" value={f.issue_date} onChange={set("issue_date")} />
+        </Field>
+        <Field label="Expiry date">
+          <Input type="date" value={f.expiry_date} onChange={set("expiry_date")} />
+        </Field>
+      </div>
+      <Field label="File (PDF, Word, JPEG, PNG, XLSX or ZIP)">
+        <input
+          type="file"
+          accept={ACCEPTED}
+          className="text-sm"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+      </Field>
+    </FormDialog>
   );
 }

@@ -8,8 +8,8 @@ import {
   fmtDate,
   fmtDateTime,
   naira,
+  pretty,
   type Column,
-  withResults,
 } from "@/components/beldium/ops";
 import { PageHeader } from "@/components/beldium/shell";
 import { Panel } from "@/components/beldium/stat-card";
@@ -33,7 +33,7 @@ const paymentColumns: Column<LogisticsPayment>[] = [
   { header: "Due", cell: (p) => naira(p.due_amount) },
   { header: "Paid", cell: (p) => naira(p.paid_amount) },
   { header: "Outstanding", cell: (p) => naira(p.outstanding_amount) },
-  { header: "Status", cell: (p) => <StatusBadge value={p.status} /> },
+  { header: "Status", cell: (p) => <StatusBadge value={pretty(p.status)} /> },
   { header: "Paid on", cell: (p) => fmtDate(p.payment_date) },
 ];
 
@@ -50,13 +50,7 @@ function TransactionPage() {
   const { txnId } = Route.useParams();
   const txn = useTransaction(txnId);
   const t = txn.data;
-  // Payments can only be searched by transaction id, not filtered by it.
-  const payments = useOpsList(
-    "payments",
-    listPayments,
-    { search: t?.transaction_id },
-    { enabled: Boolean(t) },
-  );
+  const payments = useOpsList("payments", listPayments, { transaction: txnId });
   const quality = useOpsList(
     "quality-records",
     listQualityRecords,
@@ -71,13 +65,6 @@ function TransactionPage() {
         {errorMessage(txn.error, "Could not load this transaction.")}
       </p>
     );
-
-  const linkedPayments = payments.data
-    ? withResults(
-        payments.data,
-        payments.data.results.filter((p) => p.transaction === t.id),
-      )
-    : undefined;
 
   return (
     <>
@@ -133,7 +120,7 @@ function TransactionPage() {
         <Panel title="Payments">
           <ResourceTable
             columns={paymentColumns}
-            data={linkedPayments}
+            data={payments.data}
             isLoading={payments.isLoading}
             error={payments.error}
             empty="No payments recorded."

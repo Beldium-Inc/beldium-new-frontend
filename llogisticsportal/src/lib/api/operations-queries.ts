@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import {
   acceptTransportRequest,
+  declineTransportRequest,
   assignMovement,
   completeActionItem,
   completeDelivery,
@@ -14,8 +15,11 @@ import {
   resolveIncident,
   setMovementStatus,
   updateFinding,
+  uploadOperationsDocument,
+  type ComplianceFindingStatus,
   type MovementStatusInput,
   type NewIncidentInput,
+  type NewOperationsDocumentInput,
   type OpsListQuery,
 } from "./operations";
 import { useHasTokens } from "./queries";
@@ -122,10 +126,18 @@ export const useResolveIncident = () =>
   );
 
 export const useUpdateFinding = () =>
-  useOpsMutation((input: { id: UUID; action: string; status: string }) =>
+  useOpsMutation((input: { id: UUID; action: string; status: ComplianceFindingStatus }) =>
     updateFinding(input.id, { action: input.action, status: input.status }),
   );
 
 export const useMarkEventRead = () => useOpsMutation((id: UUID) => markEventRead(id));
 
 export const useCompleteActionItem = () => useOpsMutation((id: UUID) => completeActionItem(id));
+
+export const useDeclineTransportRequest = () =>
+  useOpsMutation((input: { id: UUID; reason: string }) =>
+    declineTransportRequest(input.id, input.reason),
+  );
+
+export const useUploadOperationsDocument = () =>
+  useOpsMutation((input: NewOperationsDocumentInput) => uploadOperationsDocument(input));

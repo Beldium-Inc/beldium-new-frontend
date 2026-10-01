@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { listDrivers, listVehicles } from "@/lib/api/logistics";
 import {
-  MOVEMENT_STATUSES,
+  MOVEMENT_TRANSITIONS,
   listDeliveries,
   listIncidents,
   type Delivery,
@@ -265,7 +265,12 @@ function AssignDialog({ movement, onClose }: { movement: Movement; onClose: () =
 
 function StatusDialog({ movement, onClose }: { movement: Movement; onClose: () => void }) {
   const setStatus = useSetMovementStatus();
-  const [status, setStatusValue] = useState<MovementStatus>(movement.status);
+  // Only the moves the backend allows from the current status.
+  const options = MOVEMENT_TRANSITIONS[movement.status];
+  const [status, setStatusValue] = useState<MovementStatus | "">(options[0] ?? "");
+  // datetime-local works in the viewer's local time; the API speaks UTC.
+  const initialEta = toLocalInput(movement.eta_at);
+  const [eta, setEta] = useState(initialEta);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [note, setNote] = useState("");
@@ -291,18 +296,24 @@ function StatusDialog({ movement, onClose }: { movement: Movement; onClose: () =
       busy={setStatus.isPending}
       error={error}
       onSubmit={() => {
+        if (!status) return setError("This movement is closed; its status can't change.");
         if ((latitude && !longitude) || (!latitude && longitude))
           return setError("Enter both latitude and longitude, or neither.");
         setStatus.mutate(
           {
             id: movement.id,
             status,
+            ...(eta && eta !== initialEta ? { eta_at: new Date(eta).toISOString() } : {}),
             ...(latitude ? { latitude, longitude } : {}),
             ...(note.trim() ? { note: note.trim() } : {}),
           },
           {
             onSuccess: () => {
-              toast.success(`${movement.reference}: ${pretty(status)}`);
+              toast.success(
+                status === "arrived" || status === "delivered"
+                  ? `${movement.reference}: ${pretty(status)}. Confirm the received quantity under Deliveries to complete handover.`
+                  : `${movement.reference}: ${pretty(status)}`,
+              );
               onClose();
             },
             onError: (e) => setError(errorMessage(e)),
@@ -316,12 +327,15 @@ function StatusDialog({ movement, onClose }: { movement: Movement; onClose: () =
           value={status}
           onChange={(e) => setStatusValue(e.target.value as MovementStatus)}
         >
-          {MOVEMENT_STATUSES.map((s) => (
+          {options.map((s) => (
             <option key={s} value={s}>
               {pretty(s)}
             </option>
           ))}
         </select>
+      </Field>
+      <Field label="ETA (optional)">
+        <Input type="datetime-local" value={eta} onChange={(e) => setEta(e.target.value)} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Latitude">
@@ -351,6 +365,14 @@ function StatusDialog({ movement, onClose }: { movement: Movement; onClose: () =
   );
 }
 
+/** ISO timestamp to the `YYYY-MM-DDTHH:mm` a datetime-local input expects, in local time. */
+function toLocalInput(iso: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const INCIDENT_TYPES = [
   "Vehicle breakdown",
   "Accident",
@@ -363,16 +385,6 @@ const INCIDENT_TYPES = [
   "Documentation issue",
   "Other",
 ];
-
-/**
- * The backend has no reference generator for incidents, so one is minted
- * here. It is unique enough for the unique constraint; see lib/api/README.md.
- */
-function incidentReference() {
-  const d = new Date();
-  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-  return `INC-${stamp}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
-}
 
 function IncidentDialog({ movement, onClose }: { movement: Movement; onClose: () => void }) {
   const report = useReportIncident();
@@ -398,9 +410,7 @@ function IncidentDialog({ movement, onClose }: { movement: Movement; onClose: ()
         report.mutate(
           {
             company: movement.company,
-            reference: incidentReference(),
             movement: movement.id,
-            status: "Open",
             occurred_at: new Date().toISOString(),
             ...form,
           },
