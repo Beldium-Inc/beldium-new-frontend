@@ -23,8 +23,7 @@ import {
   type AgreementKey,
 } from "@/lib/careers/logistics-schemas";
 import { submitPartnerApplication } from "@/lib/careers/logistics-api";
-import { SupabaseNotConfiguredError } from "@/lib/careers/supabase";
-import { ApplicationsUnavailable } from "@/components/careers/ApplicationsUnavailable";
+import { submissionErrorMessage } from "@/lib/careers/api";
 
 type AnyForm = UseFormReturn<any>;
 
@@ -204,16 +203,13 @@ export function LogisticsPartnerForm({ onSubmitted }: LogisticsPartnerFormProps)
         agreements: AGREEMENTS.map((a) => ({
           key: a.key,
           signedName: agreementSignatures[a.key],
-          signedAt: new Date().toISOString(),
         })),
       });
       onSubmitted(result.applicationId);
     } catch (err) {
       console.error(err);
       toast.error(
-        err instanceof SupabaseNotConfiguredError
-          ? err.message
-          : "Something went wrong while submitting. Please try again.",
+        submissionErrorMessage(err, "Something went wrong while submitting. Please try again."),
       );
     } finally {
       setSubmitting(false);
@@ -222,7 +218,6 @@ export function LogisticsPartnerForm({ onSubmitted }: LogisticsPartnerFormProps)
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <ApplicationsUnavailable />
       <div className="mb-8">
         <Stepper steps={STEP_LABELS} currentStep={step} />
       </div>

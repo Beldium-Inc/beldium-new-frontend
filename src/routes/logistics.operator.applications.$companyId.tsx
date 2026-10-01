@@ -46,7 +46,10 @@ import {
   StatusBadge,
 } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
-import { REQUEST_REASONS, type Company, type ComplianceDocument } from "@/verticals/logistics/mock-data";
+import { REQUEST_REASONS, type Company } from "@/verticals/logistics/mock-data";
+import { Preview, useProtectedFile } from "@/components/file-preview";
+import { ApiError } from "@/lib/api/errors";
+import { useDocumentNotes } from "@/lib/api/logistics-queries";
 import { cn } from "@/lib/utils";
 
 type Tab = "overview" | "review" | "documents" | "risk" | "requests" | "decision" | "activity";
@@ -426,18 +429,63 @@ function ChecksTab({ company }: { company: Company }) {
 /* ---------------------------- Documents ---------------------------- */
 
 function DocumentsTab({ company }: { company: Company }) {
-  const { setDocumentStatus, addDocumentNote } = useApp();
+  const { reviewDocument, addDocumentNote } = useApp();
   const [selectedId, setSelectedId] = React.useState(company.documents[0]?.id ?? "");
   const [filter, setFilter] = React.useState("All");
   const [note, setNote] = React.useState("");
+  const [reviewNote, setReviewNote] = React.useState("");
+  const [busy, setBusy] = React.useState<"verified" | "rejected" | "note" | null>(null);
+  const [requesting, setRequesting] = React.useState(false);
   const selected = company.documents.find((d) => d.id === selectedId) ?? company.documents[0];
   const categories = ["All", ...Array.from(new Set(company.documents.map((d) => d.category)))];
   const list = company.documents.filter((d) => filter === "All" || d.category === filter);
 
-  const act = (status: ComplianceDocument["status"], label: string) => {
+  // The download endpoint sits behind the bearer token, so the file is fetched
+  // with it once and reused for the preview, "View" and "Download".
+  const fileName = selected?.originalName || selected?.name || "document";
+  const { file, error: fileError } = useProtectedFile(selected?.downloadUrl ?? null, fileName);
+  const reviewable = selected?.status === "pending";
+  const notes = useDocumentNotes(selected?.id ?? null).data ?? [];
+
+  const describe = (err: unknown) => (err instanceof ApiError ? err.message : "Please try again.");
+
+  const withFile = (run: (url: string) => void) => {
+    if (file) run(file.url);
+    else if (fileError) toast.error("This file could not be loaded", { description: fileError });
+    else toast.info("The file is still loading. Try again in a moment.");
+  };
+
+  const view = () => withFile((url) => window.open(url, "_blank"));
+
+  const download = () =>
+    withFile((url) => {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
+
+  // The API wants a note with every review and only accepts one while the
+  // application is under review, so the outcome shown is the API's, not assumed.
+  const review = async (status: "verified" | "rejected") => {
     if (!selected) return;
-    setDocumentStatus(company.id, selected.id, status);
-    toast.success(`${selected.name}: ${label}`);
+    const notes = reviewNote.trim();
+    if (status === "rejected" && !notes) {
+      toast.error("Add a review note saying why this document is rejected.");
+      return;
+    }
+    setBusy(status);
+    try {
+      await reviewDocument(selected.id, status, notes || "Evidence checked and verified.");
+      toast.success(`${selected.name}: ${status}`);
+      setReviewNote("");
+    } catch (err) {
+      toast.error(`${selected.name} was not ${status}`, { description: describe(err) });
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
@@ -493,48 +541,70 @@ function DocumentsTab({ company }: { company: Company }) {
         >
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <div className="rounded-xl border border-dashed border-border bg-muted/40 p-6">
-              <div className="mx-auto flex h-72 max-w-md flex-col items-center justify-center rounded-lg border border-border bg-white text-center shadow-sm">
-                <FileText className="h-10 w-10 text-[var(--link)]" />
-                <p className="mt-3 font-display text-sm font-semibold text-[var(--brand)]">{selected.name}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {selected.type} preview · {selected.size}
-                </p>
-                <p className="mt-3 max-w-xs text-[11px] text-muted-foreground">
-                  Inline viewer is simulated in this prototype. Verification actions below update the case record.
-                </p>
+              <div className="h-96 overflow-hidden rounded-lg border border-border bg-white shadow-sm">
+                <Preview
+                  file={file}
+                  error={fileError}
+                  hasUrl={Boolean(selected.downloadUrl)}
+                  name={selected.name}
+                />
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                {selected.originalName || selected.name} · {selected.type}
+              </p>
+              <textarea
+                rows={2}
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+                disabled={!reviewable}
+                placeholder={
+                  reviewable
+                    ? "Review note: required to reject, optional to verify"
+                    : "This document has already been reviewed."
+                }
+                className="mt-3 w-full rounded-lg border border-input bg-white px-3 py-2 text-xs outline-none focus:border-[var(--link)] focus:ring-2 focus:ring-[var(--link)]/20 disabled:opacity-60"
+              />
+              {selected.reviewNotes ? (
+                <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-xs text-[var(--brand)]">
+                  <span className="text-muted-foreground">Review note: </span>
+                  {selected.reviewNotes}
+                </p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => toast.info(`Opening secure viewer for ${selected.name}`)}
+                  onClick={view}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50"
                 >
                   <Eye className="h-3.5 w-3.5" /> View
                 </button>
                 <button
                   type="button"
-                  onClick={() => act("verified", "verified")}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--success)] px-3 py-2 text-xs font-semibold text-[var(--success-foreground)] hover:brightness-95"
+                  disabled={!reviewable || busy !== null}
+                  onClick={() => void review("verified")}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--success)] px-3 py-2 text-xs font-semibold text-[var(--success-foreground)] hover:brightness-95 disabled:opacity-40"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Verify
+                  <CheckCircle2 className="h-3.5 w-3.5" />{" "}
+                  {busy === "verified" ? "Verifying…" : "Verify"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => act("rejected", "rejected")}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--danger)] px-3 py-2 text-xs font-semibold text-white hover:brightness-95"
+                  disabled={!reviewable || busy !== null}
+                  onClick={() => void review("rejected")}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--danger)] px-3 py-2 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-40"
                 >
-                  <Ban className="h-3.5 w-3.5" /> Reject
+                  <Ban className="h-3.5 w-3.5" /> {busy === "rejected" ? "Rejecting…" : "Reject"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => act("replacement", "replacement requested")}
+                  onClick={() => setRequesting(true)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--warning)] px-3 py-2 text-xs font-semibold text-[var(--warning-foreground)] hover:brightness-95"
                 >
                   <RefreshCw className="h-3.5 w-3.5" /> Request replacement
                 </button>
                 <button
                   type="button"
-                  onClick={() => toast.success(`${selected.name} downloaded`)}
+                  onClick={download}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50"
                 >
                   <Download className="h-3.5 w-3.5" /> Download
@@ -567,15 +637,16 @@ function DocumentsTab({ company }: { company: Company }) {
               <div className="rounded-xl border border-border p-4">
                 <p className="mb-2 font-display text-xs font-semibold text-[var(--brand)]">Document notes</p>
                 <ul className="mb-3 space-y-2">
-                  {selected.notes.length === 0 ? (
+                  {notes.length === 0 ? (
                     <li className="text-xs text-muted-foreground">No notes recorded.</li>
                   ) : (
-                    selected.notes.map((n) => (
+                    notes.map((n) => (
                       <li key={n.id} className="rounded-lg bg-muted px-3 py-2 text-xs">
                         <p className="text-muted-foreground">
-                          {n.author} · {n.at}
+                          {n.created_at.slice(0, 16).replace("T", " ")}
+                          {n.internal ? " · internal" : ""}
                         </p>
-                        <p className="mt-0.5 text-[var(--brand)]">{n.text}</p>
+                        <p className="mt-0.5 text-[var(--brand)]">{n.body}</p>
                       </li>
                     ))
                   )}
@@ -589,11 +660,18 @@ function DocumentsTab({ company }: { company: Company }) {
                 />
                 <button
                   type="button"
-                  disabled={!note.trim()}
+                  disabled={!note.trim() || busy !== null}
                   onClick={() => {
-                    addDocumentNote(company.id, selected.id, note.trim());
-                    setNote("");
-                    toast.success("Note added to document");
+                    setBusy("note");
+                    addDocumentNote(company.id, selected.id, note.trim())
+                      .then(() => {
+                        setNote("");
+                        toast.success("Note added to document");
+                      })
+                      .catch((err: unknown) =>
+                        toast.error("The note was not saved", { description: describe(err) }),
+                      )
+                      .finally(() => setBusy(null));
                   }}
                   className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-[var(--brand)] disabled:opacity-40"
                 >
@@ -603,6 +681,9 @@ function DocumentsTab({ company }: { company: Company }) {
             </div>
           </div>
         </Panel>
+      ) : null}
+      {requesting ? (
+        <RequestInfoModal companyId={company.id} onClose={() => setRequesting(false)} />
       ) : null}
     </div>
   );

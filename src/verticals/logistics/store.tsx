@@ -24,6 +24,7 @@ import {
   useStartReview,
 } from "@/lib/api/logistics-queries";
 import { useCurrentUser } from "@/lib/api/queries";
+import { apiUrl } from "@/lib/api/config";
 import {
   documentDownloadUrl,
   type LogisticsDomainKey,
@@ -176,6 +177,9 @@ function toDocument(row: Api.LogisticsDocument): ComplianceDocument {
     uploadedAt: row.created_at.slice(0, 10),
     status: DOC_STATUS[row.status],
     notes: [],
+    originalName: row.original_name,
+    downloadUrl: apiUrl(documentDownloadUrl(row.id)),
+    reviewNotes: row.review_notes,
   };
 }
 
@@ -261,8 +265,9 @@ interface Ctx {
   reviewNotes: { id: string; author: string; at: string; text: string }[];
   decisions: Record<string, { decision: Decision; at: string; summary: string; by: string }>;
 
-  setDocumentStatus: (companyId: string, docId: string, status: DocStatus) => void;
-  addDocumentNote: (companyId: string, docId: string, text: string) => void;
+  /** Resolves once the API has recorded the review; rejects with its error. */
+  reviewDocument: (docId: string, status: "verified" | "rejected", notes: string) => Promise<void>;
+  addDocumentNote: (companyId: string, docId: string, text: string) => Promise<void>;
   addReviewNote: (text: string) => void;
   assignReviewer: (companyId: string, reviewer: string) => void;
   startReview: (companyId: string) => void;
@@ -520,12 +525,13 @@ export function AppStateProvider({
     reviewNotes: [],
     decisions,
 
-    setDocumentStatus: (_companyId, docId, status) => {
-      if (status !== "verified" && status !== "rejected") return;
-      void reviewDocumentFor.mutateAsync({ id: docId, status, notes: "" });
+    // The API requires a non-empty note with every review, and refuses one
+    // outside "under review"; callers await this so they can show that.
+    reviewDocument: async (docId, status, notes) => {
+      await reviewDocumentFor.mutateAsync({ id: docId, status, notes });
     },
-    addDocumentNote: (_companyId, docId, text) => {
-      void addDocumentNoteFor.mutateAsync({ id: docId, body: text });
+    addDocumentNote: async (_companyId, docId, text) => {
+      await addDocumentNoteFor.mutateAsync({ id: docId, body: text });
     },
     addReviewNote: () => {},
     assignReviewer: () => {
