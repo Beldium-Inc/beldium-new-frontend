@@ -36,6 +36,12 @@ export interface ComplianceDocument {
   uploadedAt: string;
   status: DocStatus;
   notes: { id: string; author: string; at: string; text: string }[];
+  /** Uploaded file name; drives the download name and preview type. */
+  originalName?: string;
+  /** Absolute, token-protected download endpoint for this document. */
+  downloadUrl?: string;
+  /** What the reviewer wrote when verifying or rejecting. */
+  reviewNotes?: string;
 }
 
 export interface CheckItem {
