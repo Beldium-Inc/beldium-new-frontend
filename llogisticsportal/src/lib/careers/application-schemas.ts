@@ -131,11 +131,3 @@ export function schemaFor(pathway: Pathway) {
   if (pathway === "volunteer") return volunteerSchema;
   return partnershipSchema;
 }
-
-export function generateReferenceId(pathway: Pathway) {
-  const code = PATHWAY_META[pathway].code;
-  const rand = Array.from({ length: 6 }, () =>
-    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".charAt(Math.floor(Math.random() * 32)),
-  ).join("");
-  return `BLD-${code}-${rand}`;
-}

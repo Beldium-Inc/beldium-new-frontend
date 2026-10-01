@@ -1,14 +1,5 @@
+import { apiFetch } from "@/lib/api/client";
 import type { CompanyInfoValues, DocumentKey } from "@/lib/careers/logistics-schemas";
-import {
-  generateApplicationId,
-  OPTIONAL_DOCUMENTS,
-  REQUIRED_DOCUMENTS,
-} from "@/lib/careers/logistics-schemas";
-import { PARTNER_DOCUMENTS_BUCKET, supabase } from "@/lib/careers/supabase";
-
-const DOCUMENT_LABELS: Record<DocumentKey, string> = Object.fromEntries(
-  [...REQUIRED_DOCUMENTS, ...OPTIONAL_DOCUMENTS].map((doc) => [doc.key, doc.label]),
-) as Record<DocumentKey, string>;
 
 export type PartnerApplicationStatus =
   "submitted" | "under_review" | "info_requested" | "approved" | "dashboard_active";
@@ -24,68 +15,45 @@ export interface SubmitPartnerApplicationPayload {
   agreements: {
     key: string;
     signedName: string;
-    signedAt: string;
   }[];
 }
 
+type StatusResponse = { application_id: string; status: PartnerApplicationStatus };
+
 /**
- * Submits a logistics partner registration application: uploads each document
- * to the private `partner-documents` storage bucket, then inserts the
- * application row into `logistics_partner_applications`.
+ * Submits a logistics partner registration application in three steps: open
+ * the application, upload each document on its own request (up to fourteen
+ * files of 10MB do not fit in one on a slow connection), then submit. Staff
+ * are only notified, and the status tracker only sees it, after the last step.
  */
 export async function submitPartnerApplication(
   payload: SubmitPartnerApplicationPayload,
 ): Promise<PartnerApplicationResult> {
-  const applicationId = generateApplicationId();
+  const draft = await apiFetch<{ application_id: string; upload_token: string }>(
+    "/careers/partner-applications/",
+    {
+      method: "POST",
+      body: { company: payload.company, agreements: payload.agreements },
+      auth: false,
+    },
+  );
+  const base = `/careers/partner-applications/${draft.application_id}`;
 
-  const documentPaths: Partial<Record<DocumentKey, string>> = {};
   for (const [key, file] of Object.entries(payload.documents)) {
     if (!file) continue;
-    const path = `${applicationId}/${key}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from(PARTNER_DOCUMENTS_BUCKET)
-      .upload(path, file, { upsert: false });
-    if (uploadError) throw uploadError;
-    documentPaths[key as DocumentKey] = path;
+    const body = new FormData();
+    body.set("upload_token", draft.upload_token);
+    body.set("key", key);
+    body.set("file", file);
+    await apiFetch(`${base}/documents/`, { method: "POST", body, auth: false });
   }
 
-  const { error } = await supabase.from("logistics_partner_applications").insert({
-    application_id: applicationId,
-    status: "submitted",
-    company: payload.company,
-    document_paths: documentPaths,
-    agreements: payload.agreements,
+  const submitted = await apiFetch<StatusResponse>(`${base}/submit/`, {
+    method: "POST",
+    body: { upload_token: draft.upload_token },
+    auth: false,
   });
-  if (error) throw error;
-
-  const documents = Object.entries(documentPaths).map(([key, path]) => ({
-    label: DOCUMENT_LABELS[key as DocumentKey] ?? key,
-    bucket: PARTNER_DOCUMENTS_BUCKET,
-    path: path as string,
-  }));
-
-  supabase.functions
-    .invoke("bright-api", {
-      body: {
-        kind: "partner-application",
-        referenceId: applicationId,
-        answers: {
-          "Company name": payload.company.companyName,
-          "RC number": payload.company.rcNumber,
-          Email: payload.company.companyEmail,
-          Phone: payload.company.phoneNumber,
-          "Business address": payload.company.businessAddress,
-          "Contact person": payload.company.contactPerson,
-          "Agreements signed": payload.agreements
-            .map((a) => `${a.key} (${a.signedName}, ${a.signedAt})`)
-            .join("; "),
-        },
-        documents,
-      },
-    })
-    .catch((err) => console.error("bright-api notify failed", err));
-
-  return { applicationId, status: "submitted" };
+  return { applicationId: submitted.application_id, status: submitted.status };
 }
 
 /**
@@ -94,11 +62,9 @@ export async function submitPartnerApplication(
 export async function getPartnerApplicationStatus(
   applicationId: string,
 ): Promise<PartnerApplicationResult> {
-  const { data, error } = await supabase
-    .from("logistics_partner_applications")
-    .select("application_id, status")
-    .eq("application_id", applicationId)
-    .single();
-  if (error) throw error;
-  return { applicationId: data.application_id, status: data.status as PartnerApplicationStatus };
+  const data = await apiFetch<StatusResponse>(
+    `/careers/partner-applications/${encodeURIComponent(applicationId)}/`,
+    { auth: false },
+  );
+  return { applicationId: data.application_id, status: data.status };
 }

@@ -171,10 +171,3 @@ export const AGREEMENTS = [
 ] as const;
 
 export type AgreementKey = (typeof AGREEMENTS)[number]["key"];
-
-export function generateApplicationId() {
-  const rand = Array.from({ length: 6 }, () =>
-    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".charAt(Math.floor(Math.random() * 32)),
-  ).join("");
-  return `BLD-LOG-${rand}`;
-}

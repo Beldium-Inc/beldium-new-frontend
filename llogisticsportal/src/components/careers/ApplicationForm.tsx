@@ -21,18 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileDropzone } from "@/components/careers/FileDropzone";
-import {
-  PATHWAY_META,
-  generateReferenceId,
-  schemaFor,
-  type Pathway,
-} from "@/lib/careers/application-schemas";
-import {
-  APPLICATION_DOCUMENTS_BUCKET,
-  SupabaseNotConfiguredError,
-  supabase,
-} from "@/lib/careers/supabase";
-import { ApplicationsUnavailable } from "@/components/careers/ApplicationsUnavailable";
+import { PATHWAY_META, schemaFor, type Pathway } from "@/lib/careers/application-schemas";
+import { submissionErrorMessage, submitApplication } from "@/lib/careers/api";
 import { cn } from "@/lib/utils";
 
 interface ApplicationFormProps {
@@ -234,23 +224,7 @@ export function ApplicationForm({ pathway, onBack, onSubmitted }: ApplicationFor
 
     setSubmitting(true);
     try {
-      const referenceId = generateReferenceId(pathway);
-
-      async function uploadFile(file: File | null, label: string) {
-        if (!file) return null;
-        const path = `${referenceId}/${label}-${file.name}`;
-        const { error } = await supabase.storage
-          .from(APPLICATION_DOCUMENTS_BUCKET)
-          .upload(path, file, { upsert: false });
-        if (error) throw error;
-        return path;
-      }
-
-      const [resumePath, headshotPath, companyProfilePath] = await Promise.all([
-        uploadFile(resume, "resume"),
-        uploadFile(headshot, "headshot"),
-        uploadFile(companyProfile, "company-profile"),
-      ]);
+      if (!resume) return; // resumeName is required by the schema; this narrows the type
 
       const {
         fullName,
@@ -261,78 +235,32 @@ export function ApplicationForm({ pathway, onBack, onSubmitted }: ApplicationFor
         city,
         linkedin,
         portfolio,
-        resumeName,
-        headshotName,
-        companyProfileName,
-        ...rest
-      } = values as Record<string, unknown>;
+        resumeName: _resumeName,
+        headshotName: _headshotName,
+        companyProfileName: _companyProfileName,
+        ...answers
+      } = values as Record<string, string>;
 
-      const { error } = await supabase.from("applications").insert({
-        reference_id: referenceId,
+      const referenceId = await submitApplication({
         pathway,
-        full_name: fullName,
-        email,
-        phone,
-        country,
-        state,
-        city,
-        linkedin,
-        portfolio: portfolio || null,
-        resume_path: resumePath,
-        headshot_path: headshotPath,
-        company_profile_path: companyProfilePath,
-        answers: rest,
+        fullName: fullName ?? "",
+        email: email ?? "",
+        phone: phone ?? "",
+        country: country ?? "",
+        state: state ?? "",
+        city: city ?? "",
+        linkedin: linkedin ?? "",
+        portfolio,
+        answers,
+        resume,
+        headshot,
+        companyProfile,
       });
-      if (error) throw error;
-
-      const documents = [
-        resumePath && {
-          label: "Resume / CV",
-          bucket: APPLICATION_DOCUMENTS_BUCKET,
-          path: resumePath,
-        },
-        headshotPath && {
-          label: "Professional headshot",
-          bucket: APPLICATION_DOCUMENTS_BUCKET,
-          path: headshotPath,
-        },
-        companyProfilePath && {
-          label: "Company profile",
-          bucket: APPLICATION_DOCUMENTS_BUCKET,
-          path: companyProfilePath,
-        },
-      ].filter(Boolean);
-
-      supabase.functions
-        .invoke("bright-api", {
-          body: {
-            kind: "application",
-            referenceId,
-            answers: {
-              Pathway: meta.title,
-              "Full name": fullName,
-              Email: email,
-              Phone: phone,
-              Country: country,
-              State: state,
-              City: city,
-              LinkedIn: linkedin,
-              Portfolio: portfolio,
-              ...rest,
-            },
-            documents,
-          },
-        })
-        .catch((err) => console.error("bright-api notify failed", err));
 
       onSubmitted(referenceId);
     } catch (err) {
       console.error(err);
-      toast.error(
-        err instanceof SupabaseNotConfiguredError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      toast.error(submissionErrorMessage(err, "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -340,7 +268,6 @@ export function ApplicationForm({ pathway, onBack, onSubmitted }: ApplicationFor
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto w-full max-w-4xl" noValidate>
-      <ApplicationsUnavailable />
       {/* Honeypot */}
       <input
         type="text"
