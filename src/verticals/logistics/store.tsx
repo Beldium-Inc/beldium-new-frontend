@@ -19,6 +19,7 @@ import {
   useLogisticsVehicles,
   useMarkNotificationRead,
   useReviewDocument,
+  useReviewLogisticsApplicationSection,
   useRespondToRequest,
   useAddDocumentNote,
   useStartReview,
@@ -198,6 +199,10 @@ function toCheckSections(
       score: section?.score ?? 0,
       items: [],
       documentIds: documents.filter((d) => d.domain === key).map((d) => d.id),
+      applicable: section?.applicable ?? true,
+      hasData: Boolean(section && Object.keys(section.data).length > 0),
+      reviewNotes: section?.review_notes ?? "",
+      reviewedAt: section?.reviewed_at?.slice(0, 16).replace("T", " ") ?? "",
     };
   });
 }
@@ -270,10 +275,27 @@ interface Ctx {
   addDocumentNote: (companyId: string, docId: string, text: string) => Promise<void>;
   addReviewNote: (text: string) => void;
   assignReviewer: (companyId: string, reviewer: string) => void;
-  startReview: (companyId: string) => void;
+  /** Resolves once the API has moved the application to "under review". */
+  startReview: (companyId: string) => Promise<void>;
+  /** Operator sign-off on one compliance check; rejects with the API's reason. */
+  reviewSection: (
+    companyId: string,
+    key: string,
+    input: {
+      status: "passed" | "attention" | "failed";
+      score: number;
+      notes: string;
+      applicable: boolean;
+    },
+  ) => Promise<void>;
   createRequest: (companyId: string, reason: string, message: string, items: string[]) => void;
   respondToRequest: (requestId: string, message: string, files: string[]) => void;
-  recordDecision: (companyId: string, decision: Decision, summary: string) => void;
+  recordDecision: (
+    companyId: string,
+    decision: Exclude<Decision, "More Info Requested">,
+    summary: string,
+    conditions?: { title: string; description: string; due_date: string; service_scope?: string }[],
+  ) => Promise<void>;
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
 
@@ -313,6 +335,7 @@ export function AppStateProvider({
   const createRequestFor = useCreateInformationRequest();
   const respondFor = useRespondToRequest();
   const reviewDocumentFor = useReviewDocument();
+  const reviewSectionFor = useReviewLogisticsApplicationSection();
   const addDocumentNoteFor = useAddDocumentNote();
   const markReadFor = useMarkNotificationRead();
 
@@ -333,6 +356,7 @@ export function AppStateProvider({
   const driversRaw = (driversQuery.data ?? EMPTY_LIST).results;
   const documentsRaw = (documentsQuery.data ?? EMPTY_LIST).results;
   const requestsRaw = (requestsQuery.data ?? EMPTY_LIST).results;
+  const restrictionsRaw = (restrictionsQuery.data ?? EMPTY_LIST).results;
   const notificationsRaw = (notificationsQuery.data ?? EMPTY_LIST).results;
   const auditRaw = auditQuery.data?.events ?? [];
 
@@ -414,13 +438,38 @@ export function AppStateProvider({
           mineral: application?.sections.find((s) => s.key === "mineral")?.score ?? 0,
         },
         checks: toCheckSections(application, documents),
+        conditions: (application?.conditions ?? []).map((c) => ({
+          id: c.id,
+          title: c.title,
+          description: c.description,
+          due: c.due_date,
+          scope: c.service_scope,
+          cleared: Boolean(c.cleared_at),
+          overdue: c.is_overdue,
+        })),
+        restrictions: restrictionsRaw
+          .filter((r) => r.company === row.id && !r.resolved_at)
+          .map((r) => ({
+            id: r.id,
+            scope: r.service_scope,
+            reason: r.reason,
+            automatic: r.automatic,
+          })),
         documents: documents.map(toDocument),
         vehicles,
         drivers,
         activity: [],
       };
     });
-  }, [companiesRaw, applicationByCompanyUuid, vehiclesRaw, driversRaw, documentsRaw, dashboardByCompanyUuid]);
+  }, [
+    companiesRaw,
+    applicationByCompanyUuid,
+    vehiclesRaw,
+    driversRaw,
+    documentsRaw,
+    dashboardByCompanyUuid,
+    restrictionsRaw,
+  ]);
 
   const companyNameByUuid = React.useMemo(() => {
     const map = new Map<string, string>();
@@ -538,10 +587,15 @@ export function AppStateProvider({
       // The API assigns reviewers by user id, not the display name this
       // screen currently collects; wire a user picker before enabling this.
     },
-    startReview: (companyId) => {
+    startReview: async (companyId) => {
       const id = applicationIdForCompany(companyId);
-      if (!id) return;
-      void startReviewFor.mutateAsync(id);
+      if (!id) throw new Error("This company has no application to review.");
+      await startReviewFor.mutateAsync(id);
+    },
+    reviewSection: async (companyId, key, input) => {
+      const id = applicationIdForCompany(companyId);
+      if (!id) throw new Error("This company has no application to review.");
+      await reviewSectionFor.mutateAsync({ id, key: key as LogisticsDomainKey, ...input });
     },
     createRequest: (companyId, reason, message, items) => {
       const id = applicationIdForCompany(companyId);
@@ -554,13 +608,17 @@ export function AppStateProvider({
       if (!request) return;
       void respondFor.mutateAsync({ id: requestId, message, documents: [] });
     },
-    recordDecision: (companyId, decision, summary) => {
+    recordDecision: async (companyId, decision, summary, conditions) => {
       const id = applicationIdForCompany(companyId);
-      if (!id) return;
-      if (decision === "More Info Requested") return;
+      if (!id) throw new Error("This company has no application to decide.");
       const status =
         decision === "Approved" ? "approved" : decision === "Conditionally Approved" ? "conditionally_approved" : "rejected";
-      void decideFor.mutateAsync({ id, status, rationale: summary });
+      await decideFor.mutateAsync({
+        id,
+        status,
+        rationale: summary,
+        ...(conditions && conditions.length > 0 ? { conditions } : {}),
+      });
     },
     markNotificationRead: (id) => void markReadFor.mutateAsync(id),
     markAllRead: () => {
