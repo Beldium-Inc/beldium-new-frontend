@@ -27,7 +27,12 @@ import {
   schemaFor,
   type Pathway,
 } from "@/lib/careers/application-schemas";
-import { APPLICATION_DOCUMENTS_BUCKET, supabase } from "@/lib/careers/supabase";
+import {
+  APPLICATION_DOCUMENTS_BUCKET,
+  SupabaseNotConfiguredError,
+  supabase,
+} from "@/lib/careers/supabase";
+import { ApplicationsUnavailable } from "@/components/careers/ApplicationsUnavailable";
 import { cn } from "@/lib/utils";
 
 interface ApplicationFormProps {
@@ -323,7 +328,11 @@ export function ApplicationForm({ pathway, onBack, onSubmitted }: ApplicationFor
       onSubmitted(referenceId);
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(
+        err instanceof SupabaseNotConfiguredError
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -331,6 +340,7 @@ export function ApplicationForm({ pathway, onBack, onSubmitted }: ApplicationFor
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto w-full max-w-4xl" noValidate>
+      <ApplicationsUnavailable />
       {/* Honeypot */}
       <input
         type="text"
