@@ -5,6 +5,7 @@ import {
   SearchBox,
   fmtDate,
   naira,
+  pretty,
   useListQuery,
   type Column,
 } from "@/components/beldium/ops";
@@ -49,7 +50,7 @@ const columns: Column<LogisticsPayment>[] = [
       </span>
     ),
   },
-  { header: "Status", cell: (p) => <StatusBadge value={p.status} /> },
+  { header: "Status", cell: (p) => <StatusBadge value={pretty(p.status)} /> },
   { header: "Paid on", cell: (p) => fmtDate(p.payment_date) },
 ];
 

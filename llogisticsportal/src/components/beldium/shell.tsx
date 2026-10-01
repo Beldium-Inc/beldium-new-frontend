@@ -113,7 +113,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const verified = isVerified(stage);
   const groups = verified ? verifiedNav : [{ group: "Verification", items: reviewNav }];
   const dashboard = useOperationsDashboard({ enabled: verified });
-  const unread = verified ? (dashboard.data?.stats.unread_notifications ?? 0) : 0;
+  const stats = dashboard.data?.stats;
+  const unread = verified ? (stats?.unread_notifications ?? 0) + (stats?.unread_events ?? 0) : 0;
 
   return (
     <SidebarProvider>

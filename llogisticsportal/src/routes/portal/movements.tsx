@@ -28,6 +28,7 @@ const STATUS_TABS = [
   { value: "loading", label: "Loading" },
   { value: "in_transit", label: "In transit" },
   { value: "delayed", label: "Delayed" },
+  { value: "arrived", label: "Arrived" },
   { value: "delivered", label: "Delivered" },
   { value: "cancelled", label: "Cancelled" },
 ];

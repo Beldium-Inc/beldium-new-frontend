@@ -27,7 +27,7 @@ const STATUS_TABS = [
   { value: "accepted", label: "Accepted" },
   { value: "assigned", label: "Assigned" },
   { value: "blocked", label: "Blocked" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "cancelled", label: "Declined / cancelled" },
 ];
 
 const columns: Column<TransportRequest>[] = [

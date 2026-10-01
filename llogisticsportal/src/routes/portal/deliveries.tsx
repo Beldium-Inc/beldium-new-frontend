@@ -66,7 +66,7 @@ function DeliveriesPage() {
     {
       header: "",
       cell: (d) =>
-        d.status !== "completed" ? (
+        d.status === "pending" || d.status === "in_transit" || d.status === "arrived" ? (
           <Button size="sm" variant="outline" onClick={() => setCompleting(d)}>
             Confirm handover
           </Button>
@@ -85,7 +85,11 @@ function DeliveriesPage() {
           <PillTabs
             tabs={[
               { value: "", label: "All" },
+              { value: "pending", label: "Pending" },
+              { value: "in_transit", label: "In transit" },
+              { value: "arrived", label: "Arrived" },
               { value: "completed", label: "Completed" },
+              { value: "variance_flagged", label: "Variance flagged" },
             ]}
             value={list.filters["status"] ?? ""}
             onChange={(v) => list.setFilter("status", v)}
@@ -133,8 +137,14 @@ function CompleteDialog({ delivery, onClose }: { delivery: Delivery; onClose: ()
         complete.mutate(
           { id: delivery.id, received_quantity: received, receipt_reference: receipt || undefined },
           {
-            onSuccess: () => {
-              toast.success(`${delivery.reference} completed`);
+            onSuccess: (result) => {
+              if (result.status === "variance_flagged") {
+                toast.warning(
+                  `${delivery.reference}: received ${result.received_quantity} ${result.quantity_unit}, expected ${result.expected_quantity}. Variance flagged for review.`,
+                );
+              } else {
+                toast.success(`${delivery.reference} completed`);
+              }
               onClose();
             },
             onError: (e) => setError(errorMessage(e)),

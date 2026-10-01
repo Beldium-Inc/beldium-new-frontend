@@ -13,7 +13,12 @@ import { Panel } from "@/components/beldium/stat-card";
 import { Button } from "@/components/ui/button";
 import { listNotifications, markNotificationRead, type Notification } from "@/lib/api/logistics";
 import { listOperationsEvents, type OperationsEvent } from "@/lib/api/operations";
-import { useMarkEventRead, useOpsList, useOpsMutation } from "@/lib/api/operations-queries";
+import {
+  useMarkEventRead,
+  useOperationsDashboard,
+  useOpsList,
+  useOpsMutation,
+} from "@/lib/api/operations-queries";
 import { cn } from "@/lib/utils";
 import { isVerified, useWorkspace } from "@/lib/workspace";
 
@@ -25,6 +30,8 @@ export const Route = createFileRoute("/portal/notifications")({
 function NotificationsPage() {
   const { record } = useWorkspace();
   const verified = isVerified(record?.stage);
+  const stats = useOperationsDashboard({ enabled: verified }).data?.stats;
+  const count = (n: number | undefined) => (n ? ` (${n})` : "");
   const [view, setView] = useState("compliance");
   const complianceList = useListQuery();
   const eventList = useListQuery();
@@ -117,8 +124,11 @@ function NotificationsPage() {
           {verified ? (
             <PillTabs
               tabs={[
-                { value: "compliance", label: "Compliance" },
-                { value: "operations", label: "Operations activity" },
+                { value: "compliance", label: `Compliance${count(stats?.unread_notifications)}` },
+                {
+                  value: "operations",
+                  label: `Operations activity${count(stats?.unread_events)}`,
+                },
               ]}
               value={view}
               onChange={setView}
