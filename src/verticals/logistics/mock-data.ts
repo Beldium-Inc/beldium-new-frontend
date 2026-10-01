@@ -58,6 +58,30 @@ export interface CheckSection {
   score: number;
   items: CheckItem[];
   documentIds: string[];
+  /** False only for a domain the reviewer ruled out (mineral transport). */
+  applicable?: boolean;
+  /** The applicant has supplied this section's details. */
+  hasData?: boolean;
+  /** What the reviewer wrote at sign-off, and when. */
+  reviewNotes?: string;
+  reviewedAt?: string;
+}
+
+export interface CompanyCondition {
+  id: string;
+  title: string;
+  description: string;
+  due: string;
+  scope: string;
+  cleared: boolean;
+  overdue: boolean;
+}
+
+export interface CompanyRestriction {
+  id: string;
+  scope: string;
+  reason: string;
+  automatic: boolean;
 }
 
 export interface Vehicle {
@@ -102,6 +126,10 @@ export interface ActivityEvent {
 }
 
 export interface Company {
+  /** Approval conditions recorded on the application. */
+  conditions?: CompanyCondition[];
+  /** Service scopes currently restricted for this company. */
+  restrictions?: CompanyRestriction[];
   id: string;
   name: string;
   regId: string;
