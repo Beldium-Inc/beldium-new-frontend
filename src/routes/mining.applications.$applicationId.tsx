@@ -129,6 +129,8 @@ function ApplicationReview() {
     if (application?.site) ids.add(application.site);
     return [...ids].sort();
   }, [sites, orgId, application?.site]);
+  // Applications filed before a site record existed review the organisation's own site.
+  const reviewSiteId = application?.site ?? siteIds[0] ?? null;
   const { documents, isLoading: documentsLoading } = useSiteFiles(siteIds);
   const filed = documents.filter((d) => d.file_url);
   const orgDocs = filed.filter((d) => isOrganisationDocumentName(d.name));
@@ -167,7 +169,7 @@ function ApplicationReview() {
       `${unverifiedOrg.length} of ${orgDocs.length} organisation document${orgDocs.length > 1 ? "s" : ""} still to verify.`,
     );
   const siteBlockers: string[] = [];
-  if (!application.site) siteBlockers.push("This application is not linked to a mine site.");
+  if (!reviewSiteId) siteBlockers.push("This application is not linked to a mine site.");
   else if (!documentsLoading && siteDocs.length === 0)
     siteBlockers.push("No mining site documents have been submitted.");
   else if (unverifiedSite.length)
@@ -382,8 +384,8 @@ function ApplicationReview() {
             <OrganisationReview siteId={application.site} siteIds={siteIds} org={org} />
           </TabsContent>
           <TabsContent value="site" className="mt-4">
-            {application.site ? (
-              <SiteReview siteId={application.site} embedded siteDocumentsOnly />
+            {reviewSiteId ? (
+              <SiteReview siteId={reviewSiteId} embedded siteDocumentsOnly />
             ) : (
               <Panel title="Mining site">
                 <EmptyState
