@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +37,6 @@ function ClaimCell({ application }: { application: Application }) {
   const canDecide = Boolean(capabilities.data?.can_decide);
   const claim = useClaimApplication();
   const release = useReleaseApplication();
-  const navigate = useNavigate();
 
   const claimedByMe = Boolean(user && application.assigned_to === user.id);
   const claimedByOther = Boolean(application.assigned_to && !claimedByMe);
@@ -45,10 +44,10 @@ function ClaimCell({ application }: { application: Application }) {
   const onClaim = async () => {
     try {
       await claim.mutateAsync(application.id);
-      toast.success(`Claimed ${application.reference}`);
-      void navigate({
-        to: "/mining/applications/$applicationId",
-        params: { applicationId: application.id },
+      // The row flips to "Open review" once the claim lands; opening is the
+      // reviewer's next click.
+      toast.success(`Claimed ${application.reference}`, {
+        description: "Only you can review it now. Open the review to begin verification.",
       });
     } catch (err) {
       // Another reviewer can win the race between this list loading and the

@@ -19,13 +19,18 @@ import {
 } from "@/lib/api/mining-queries";
 import { ApiError } from "@/lib/api/errors";
 import { SiteDocumentViewer } from "@/verticals/mining/components/SiteDocumentViewer";
-import { buildSiteFiles, SOURCE_LABEL, type SiteFile } from "@/verticals/mining/site-files";
+import {
+  buildSiteFiles,
+  isOrganisationFile,
+  SOURCE_LABEL,
+  type SiteFile,
+} from "@/verticals/mining/site-files";
 
 const statusLabel = (status: string) =>
   status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 /** One submitted file, with the action that opens it in the viewer. */
-function FileRow({
+export function FileRow({
   file,
   showSection,
   onOpen,
@@ -182,7 +187,16 @@ function InfoRequestsPanel({
  * sections with reviewer actions, the score breakdown, information requests
  * and field records. Used on its own page and inside a claimed application.
  */
-export function SiteReview({ siteId, embedded = false }: { siteId: string; embedded?: boolean }) {
+export function SiteReview({
+  siteId,
+  embedded = false,
+  siteDocumentsOnly = false,
+}: {
+  siteId: string;
+  embedded?: boolean;
+  /** Leave out the organisation-level papers: they are verified in the organisation stage. */
+  siteDocumentsOnly?: boolean;
+}) {
   const { nonConformities, inspections, organisations, licences, samples, sites } = useStore();
   const { site, isLoading } = useSiteDetail(siteId);
   const [tab, setTab] = useState<string>("corporate");
@@ -206,13 +220,14 @@ export function SiteReview({ siteId, embedded = false }: { siteId: string; embed
     if (!site) return [];
     const siteNames = new Map(orgSites.map((s) => [s.id, s.name]));
     siteNames.set(site.id, site.name);
-    return buildSiteFiles({
+    const all = buildSiteFiles({
       site,
       siteNames,
       documents: siteFiles.documents,
       licences: siteFiles.licences,
     });
-  }, [site, orgSites, siteFiles.documents, siteFiles.licences]);
+    return siteDocumentsOnly ? all.filter((f) => !isOrganisationFile(f)) : all;
+  }, [site, orgSites, siteFiles.documents, siteFiles.licences, siteDocumentsOnly]);
 
   if (!site) {
     return (
