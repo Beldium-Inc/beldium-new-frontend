@@ -56,6 +56,21 @@ const SECTION_BY_DOCUMENT_NAME: Record<string, SectionKey> = {
 
 const normalise = (name: string) => name.trim().toLowerCase();
 
+// Papers that belong to the organisation rather than to a mining site. The
+// backend (mining/verification.py) splits the two stages of verification on
+// the same list: these are decided with the organisation, the rest with the
+// site.
+const ORGANISATION_DOCUMENT_NAMES = new Set([
+  "certificate of incorporation",
+  "tax clearance certificate",
+]);
+
+export const isOrganisationDocumentName = (name: string) =>
+  ORGANISATION_DOCUMENT_NAMES.has(normalise(name));
+
+export const isOrganisationFile = (file: SiteFile) =>
+  file.source === "document" && isOrganisationDocumentName(file.name);
+
 /**
  * Every file a miner submitted that bears on this site's review: the site's
  * own section evidence, plus the documents and licences filed against any

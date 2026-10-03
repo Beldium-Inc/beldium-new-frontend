@@ -791,6 +791,20 @@ export function approveApplication(id: UUID): Promise<Application> {
   return apiFetch<Application>(`${BASE}/applications/${id}/approve/`, { method: "POST" });
 }
 
+/** Stage one of the review: verify the organisation that filed this claimed application. */
+export function verifyApplicationOrganisation(id: UUID): Promise<Application> {
+  return apiFetch<Application>(`${BASE}/applications/${id}/verify-organisation/`, {
+    method: "POST",
+  });
+}
+
+export function rejectApplicationOrganisation(id: UUID, reason: string): Promise<Application> {
+  return apiFetch<Application>(`${BASE}/applications/${id}/reject-organisation/`, {
+    method: "POST",
+    body: { reason },
+  });
+}
+
 export function rejectApplication(id: UUID, reason: string): Promise<Application> {
   return apiFetch<Application>(`${BASE}/applications/${id}/reject/`, {
     method: "POST",
@@ -963,13 +977,19 @@ export interface OrganisationVerificationRow {
   rejection_reason: string;
   sites_total: number;
   sites_verified: number;
+  /** Organisation-level documents (incorporation, tax clearance). */
   documents_total: number;
   documents_verified: number;
+  site_documents_total: number;
+  site_documents_verified: number;
+  verified_by: UUID | null;
   blockers: string[];
   ready: boolean;
 }
 
-export function listOrganisationVerification(): Promise<{ results: OrganisationVerificationRow[] }> {
+export function listOrganisationVerification(): Promise<{
+  results: OrganisationVerificationRow[];
+}> {
   return apiFetch(`${BASE}/organisation-verification/`);
 }
 

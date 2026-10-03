@@ -22,6 +22,7 @@ import {
   type OrganisationInput,
   type OrganisationQuery,
 } from "./organisations";
+import { listMineSites } from "./mining";
 import { readTokens, subscribeTokens, bindCrossTabSync } from "./tokens";
 import type { MembershipRole, UUID } from "./types";
 
@@ -81,6 +82,25 @@ export function useMyOrganisations(query: OrganisationQuery = {}) {
     queryKey: queryKeys.organisations(query),
     queryFn: () => listOrganisations(query),
     enabled: hasTokens,
+  });
+}
+
+/**
+ * Whether the compliance desk has verified at least one of the caller's mine
+ * sites. Together with the organisation's own verification this decides how
+ * much of the workspace is open: organisation first, then the full dashboard.
+ */
+export function useSiteVerified(options: { enabled?: boolean } = {}) {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: ["mining", "my-site-verified"] as const,
+    queryFn: async () => {
+      const page = await listMineSites();
+      const sites = Array.isArray(page) ? page : page.results;
+      return sites.some((s) => s.status === "operational");
+    },
+    enabled: hasTokens && (options.enabled ?? true),
+    refetchInterval: 30_000,
   });
 }
 

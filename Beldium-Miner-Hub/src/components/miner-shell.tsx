@@ -41,10 +41,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
-import { useMyOrganisations } from "@/lib/api/queries";
+import { useMyOrganisations, useSiteVerified } from "@/lib/api/queries";
 import { fullName } from "@/lib/api/types";
 import { useMinerSetup } from "@/lib/setup";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Lock } from "lucide-react";
 
 const reviewNav = [
   { title: "Review overview", url: "/portal", icon: LayoutDashboard },
@@ -87,6 +87,28 @@ const verifiedNav = [
   ] },
 ];
 
+/**
+ * Between the two verification stages: the organisation is verified, the mine
+ * site is not yet. The miner can see and manage their company and its filings,
+ * but nothing that moves minerals or money.
+ */
+const organisationVerifiedNav = [
+  { group: "Overview", items: [
+    { title: "Dashboard", url: "/portal", icon: LayoutDashboard },
+  ] },
+  { group: "Operations", items: [
+    { title: "My Organisation", url: "/portal/organisation", icon: Users },
+    { title: "Mining Sites", url: "/portal/sites", icon: Mountain },
+  ] },
+  { group: "Governance", items: [
+    { title: "Compliance", url: "/portal/compliance", icon: ShieldCheck },
+    { title: "Documents", url: "/portal/documents", icon: FileText },
+    { title: "Information requests", url: "/portal/requests", icon: ClipboardCheck },
+    { title: "Notifications", url: "/portal/notifications", icon: Bell },
+    { title: "Settings", url: "/portal/settings", icon: Settings },
+  ] },
+];
+
 export function MinerShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const organisations = useMyOrganisations();
@@ -94,8 +116,14 @@ export function MinerShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const verified = org?.verification_status === "verified";
+  const siteVerified = useSiteVerified({ enabled: verified });
+  const fullAccess = verified && siteVerified.data === true;
 
-  const groups = verified ? verifiedNav : [{ group: "Verification", items: reviewNav }];
+  const groups = fullAccess
+    ? verifiedNav
+    : verified
+      ? organisationVerifiedNav
+      : [{ group: "Verification", items: reviewNav }];
 
   return (
     <SidebarProvider>
@@ -157,11 +185,30 @@ export function MinerShell({ children }: { children: React.ReactNode }) {
           </header>
           <main className="min-w-0 flex-1 p-6">
             <SetupBanner />
+            {verified && siteVerified.isSuccess && !fullAccess ? <SiteVerificationBanner /> : null}
             {children}
           </main>
         </SidebarInset>
       </div>
     </SidebarProvider>
+  );
+}
+
+/** Shown once the organisation is verified and until the compliance desk verifies the mine site. */
+function SiteVerificationBanner() {
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-3">
+      <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-foreground">
+          Your organisation is verified. Your mining site is next.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Production, inventory, marketplace, logistics and the rest of your dashboard unlock as
+          soon as the compliance desk verifies your mining site. We will notify you.
+        </p>
+      </div>
+    </div>
   );
 }
 

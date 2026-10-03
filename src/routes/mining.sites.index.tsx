@@ -9,7 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMiningApplications } from "@/lib/api/mining-queries";
+import {
+  useMiningApplications,
+  useMiningCapabilities,
+  useOrganisationVerification,
+} from "@/lib/api/mining-queries";
 import { useStore } from "@/verticals/mining/store";
 import type { MineSite } from "@/verticals/mining/types";
 import { EmptyState, PageHeader, Panel } from "@/verticals/mining/components/primitives";
@@ -18,13 +22,24 @@ import { RiskChip, ScorePill, StatusChip } from "@/verticals/mining/components/c
 export const Route = createFileRoute("/mining/sites/")({ component: SitesPage });
 
 /**
- * In progress: sites still being reviewed through an application. History:
+ * Sites of verified organisations only. In progress: sites still awaiting their own verification. History:
  * sites whose review is finished, either verified (operational) or whose
  * admission application was decided.
  */
 function SitesPage() {
-  const { sites } = useStore();
+  const { sites: allSites } = useStore();
   const applications = useMiningApplications();
+  const capabilities = useMiningCapabilities();
+  const organisations = useOrganisationVerification();
+  // The register is for verified organisations only: a site whose organisation
+  // is still under review is worked from its claimed application instead.
+  const verifiedOrgs = new Set(
+    (organisations.data?.results ?? [])
+      .filter((o) => o.verification_status === "verified")
+      .map((o) => o.id),
+  );
+  const deskView = capabilities.data?.audience !== "miner";
+  const sites = deskView ? allSites.filter((s) => verifiedOrgs.has(s.orgId)) : allSites;
   const decidedSites = new Set(
     (applications.data?.results ?? [])
       .filter((a) => a.site && (a.status === "approved" || a.status === "rejected"))
@@ -38,7 +53,7 @@ function SitesPage() {
     <>
       <PageHeader
         title="Mining sites"
-        description="Sites under review are worked from their claimed application. Completed reviews move to History."
+        description="Sites of verified mining organisations. A site is verified from its claimed application, and completed reviews move to History."
       />
       <Tabs defaultValue="in-progress">
         <TabsList>
@@ -46,7 +61,10 @@ function SitesPage() {
           <TabsTrigger value="history">History ({history.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="in-progress" className="mt-4">
-          <SiteTable sites={inProgress} empty="No sites are under review." />
+          <SiteTable
+            sites={inProgress}
+            empty="No sites of verified organisations are awaiting verification."
+          />
         </TabsContent>
         <TabsContent value="history" className="mt-4">
           <SiteTable sites={history} empty="No completed site reviews yet." />

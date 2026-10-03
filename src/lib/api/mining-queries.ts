@@ -46,6 +46,8 @@ import {
   listSiteActivity,
   recomputeSiteScore,
   rejectApplication,
+  rejectApplicationOrganisation,
+  verifyApplicationOrganisation,
   releaseApplication,
   respondToInfoRequest,
   reviewMiningDocument,
@@ -284,7 +286,8 @@ export function useClaimApplication() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: UUID) => claimApplication(id),
-    onSuccess: () => invalidateMining(queryClient),
+    // A lost race should show who won straight away, not at the next poll.
+    onSettled: () => invalidateMining(queryClient),
   });
 }
 
@@ -300,6 +303,29 @@ export function useApproveApplication() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: UUID) => approveApplication(id),
+    onSuccess: () => {
+      invalidateMining(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ["organisations"] });
+    },
+  });
+}
+
+export function useVerifyApplicationOrganisation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => verifyApplicationOrganisation(id),
+    onSuccess: () => {
+      invalidateMining(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ["organisations"] });
+    },
+  });
+}
+
+export function useRejectApplicationOrganisation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; reason: string }) =>
+      rejectApplicationOrganisation(input.id, input.reason),
     onSuccess: () => {
       invalidateMining(queryClient);
       void queryClient.invalidateQueries({ queryKey: ["organisations"] });
