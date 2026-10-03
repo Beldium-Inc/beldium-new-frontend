@@ -31,7 +31,9 @@ export function OrganisationReview({
   org: OrganisationVerificationRow | null;
 }) {
   const { organisations, sites } = useStore();
-  const { site } = useSiteDetail(siteId);
+  // An application is not always linked to a site, but the organisation's papers
+  // are filed against one of its sites: fall back to the first of those.
+  const { site } = useSiteDetail(siteId ?? siteIds[0] ?? null);
   const [openId, setOpenId] = useState<string | null>(null);
   const siteFiles = useSiteFiles(siteIds);
   const profile = organisations.find((o) => o.id === org?.id);
