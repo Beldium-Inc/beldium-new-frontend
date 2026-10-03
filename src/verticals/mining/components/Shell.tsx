@@ -83,7 +83,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const user = account ?? { name: "", initials: "??", title: "", isStaff: false };
   const items = navForRole(role).filter((item) => !item.staffOnly || user.isStaff);
   const groups = [...new Set(items.map((i) => i.group))];
-  const mine = notifications.filter((n) => n.audience.includes(role));
+  // Newest first, whatever order the API returned them in.
+  const mine = notifications
+    .filter((n) => n.audience.includes(role))
+    .sort((a, b) => (Date.parse(b.at) || 0) - (Date.parse(a.at) || 0));
   const unread = mine.filter((n) => !n.read).length;
 
   const handleLogout = () => {
@@ -230,9 +233,14 @@ export function Shell({ children }: { children: ReactNode }) {
               <div className="border-b border-border px-4 py-3">
                 <p className="font-display text-sm font-semibold">Notifications</p>
               </div>
-              <ScrollArea className="max-h-80">
+              <div className="max-h-96 overflow-y-auto overscroll-contain">
+                {mine.length === 0 ? (
+                  <p className="px-4 py-6 text-center text-xs text-muted-foreground">
+                    You are all caught up.
+                  </p>
+                ) : null}
                 <ul className="divide-y divide-border">
-                  {mine.slice(0, 12).map((n) => (
+                  {mine.map((n) => (
                     <li key={n.id} className="px-4 py-3">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-[13px] font-medium">{n.title}</p>
@@ -255,11 +263,13 @@ export function Shell({ children }: { children: ReactNode }) {
                         </Chip>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">{n.body}</p>
-                      <p className="mt-1 text-[10px] text-muted-foreground/70">{n.at}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground/70">
+                        {Number.isNaN(Date.parse(n.at)) ? n.at : new Date(n.at).toLocaleString()}
+                      </p>
                     </li>
                   ))}
                 </ul>
-              </ScrollArea>
+              </div>
             </PopoverContent>
           </Popover>
 
