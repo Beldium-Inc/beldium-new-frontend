@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useQueries } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { CheckCircle2, FileSearch, FileX, Paperclip } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +19,9 @@ import {
   useSiteFiles,
 } from "@/lib/api/mining-queries";
 import { ApiError } from "@/lib/api/errors";
+import { getMineSite } from "@/lib/api/mining";
+import { miningKeys } from "@/lib/api/mining-queries";
+import { toMineSiteDetail } from "@/verticals/mining/mappers";
 import { SiteDocumentViewer } from "@/verticals/mining/components/SiteDocumentViewer";
 import {
   buildSiteFiles,
@@ -216,6 +220,17 @@ export function SiteReview({
     return [...ids].sort();
   }, [orgSites, siteId]);
   const siteFiles = useSiteFiles(siteIds);
+  // Section evidence lives on each site's own detail record, so the files an
+  // organisation attached to its other sites are read too: nothing a miner
+  // uploaded should be missing from the review.
+  const otherSites = useQueries({
+    queries: orgSites
+      .filter((s) => s.id !== siteId)
+      .map((s) => ({
+        queryKey: miningKeys.site(s.id),
+        queryFn: () => getMineSite(s.id),
+      })),
+  });
   const files = useMemo(() => {
     if (!site) return [];
     const siteNames = new Map(orgSites.map((s) => [s.id, s.name]));
@@ -226,8 +241,23 @@ export function SiteReview({
       documents: siteFiles.documents,
       licences: siteFiles.licences,
     });
+    const known = new Set(all.map((f) => f.key));
+    for (const query of otherSites) {
+      if (!query.data) continue;
+      const other = toMineSiteDetail(query.data);
+      const extra = buildSiteFiles({
+        site: other,
+        siteNames,
+        documents: siteFiles.documents.filter((d) => d.site === other.id),
+        licences: [],
+      }).filter((f) => f.source === "evidence" && !known.has(f.key));
+      for (const f of extra) {
+        known.add(f.key);
+        all.push(f);
+      }
+    }
     return siteDocumentsOnly ? all.filter((f) => !isOrganisationFile(f)) : all;
-  }, [site, orgSites, siteFiles.documents, siteFiles.licences, siteDocumentsOnly]);
+  }, [site, orgSites, siteFiles.documents, siteFiles.licences, siteDocumentsOnly, otherSites]);
 
   if (!site) {
     return (
