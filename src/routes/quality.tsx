@@ -3,7 +3,6 @@ import { useEffect } from "react";
 
 import { BeldiumProvider } from "@/verticals/quality/store";
 import type { Role } from "@/verticals/quality/types";
-import { QAC_HOST, isOtherBeldiumHost } from "@/lib/hosts";
 import { useSession } from "@/lib/session";
 import { useSignOut } from "@/lib/sign-out";
 import { roleIn } from "@/lib/verticals";
@@ -29,14 +28,6 @@ function QualityLayout() {
 
   const role = session?.vertical === "quality" ? session.role : null;
   const valid = role !== null && roleIn("quality", role) !== undefined;
-
-  // On any other deployed Beldium host, Quality & Control lives at qac.beldium.com.
-  useEffect(() => {
-    if (isOtherBeldiumHost()) {
-      const { pathname, search, hash } = window.location;
-      window.location.replace(`https://${QAC_HOST}${pathname}${search}${hash}`);
-    }
-  }, []);
 
   useEffect(() => {
     if (hydrated && !valid) navigate({ to: "/signin" });
