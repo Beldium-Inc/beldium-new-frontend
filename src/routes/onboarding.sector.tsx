@@ -1,8 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import * as React from "react";
 import { AuthShell, OptionCard, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
-import { isQacHost } from "@/lib/hosts";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { COMPLIANCE_VERTICALS } from "@/lib/verticals";
 
@@ -12,15 +10,6 @@ function SectorPage() {
   const { sector, setSector } = useOnboarding();
   const navigate = useNavigate();
   const selected = sector ?? "mining";
-
-  // qac.beldium.com only onboards Quality & Control accounts: skip the chooser.
-  React.useEffect(() => {
-    if (isQacHost()) {
-      setSector("quality");
-      navigate({ to: "/onboarding/role", replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <AuthShell
