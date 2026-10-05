@@ -138,8 +138,6 @@ function YesNo({ value, onChange }: { value?: string | undefined; onChange: (v: 
   );
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 /** The API's incompleteness error carries which domains are missing; name them. */
 function submissionError(error: ApiError) {
   const details = error.details as {
@@ -766,7 +764,6 @@ function StepDocuments({
   };
   const [open, setOpen] = useState<string | null>(null);
   const [draft, setDraft] = useState(blank);
-  const [file, setFile] = useState<File | null>(null);
 
   return (
     <div className="space-y-4">
@@ -860,7 +857,6 @@ function StepDocuments({
                             onClick={() => {
                               setOpen(open === key ? null : key);
                               setDraft({ ...blank, related: relatedOpts[0] ?? "" });
-                              setFile(null);
                             }}
                           >
                             Upload
@@ -868,71 +864,44 @@ function StepDocuments({
                         </div>
                       </div>
                       {open === key ? (
-                        <div className="mt-3 grid gap-4 rounded-md bg-muted p-4 sm:grid-cols-2">
-                          <Field label="Document number">
-                            <Input
-                              value={draft.number}
-                              onChange={(e) => setDraft({ ...draft, number: e.target.value })}
-                            />
-                          </Field>
-                          <Field label="Issuing authority">
-                            <Input
-                              value={draft.issuingAuthority}
-                              onChange={(e) =>
-                                setDraft({ ...draft, issuingAuthority: e.target.value })
-                              }
-                            />
-                          </Field>
-                          <Field label="Issue date">
-                            <Input
-                              type="date"
-                              max={today()}
-                              value={draft.issueDate}
-                              onChange={(e) => setDraft({ ...draft, issueDate: e.target.value })}
-                            />
-                          </Field>
-                          <Field label="Expiry date">
-                            <Input
-                              type="date"
-                              value={draft.expiryDate}
-                              onChange={(e) => setDraft({ ...draft, expiryDate: e.target.value })}
-                            />
-                          </Field>
-                          <Field label={`Related ${g.related.toLowerCase()}`}>
-                            <Choice
-                              value={draft.related}
-                              options={relatedOpts}
-                              onChange={(v) => setDraft({ ...draft, related: v })}
-                            />
-                          </Field>
+                        <div className="mt-3 grid gap-4 rounded-md bg-muted p-4">
+                          {relatedOpts.length > 1 ? (
+                            <Field label={`Related ${g.related.toLowerCase()}`}>
+                              <Choice
+                                value={draft.related}
+                                options={relatedOpts}
+                                onChange={(v) => setDraft({ ...draft, related: v })}
+                              />
+                            </Field>
+                          ) : null}
                           <Field label="File">
                             <input
                               type="file"
-                              className="block text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground"
+                              className="block max-w-full text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground"
                               onChange={(e) => {
-                                const f = e.target.files?.[0] ?? null;
-                                setFile(f);
-                                setDraft({ ...draft, fileName: f?.name ?? "" });
+                                // The file is the whole submission: reviewers read the
+                                // number, issuer and dates off the document itself.
+                                const f = e.target.files?.[0];
+                                if (!f) return;
+                                const id = uid("DOC");
+                                pendingDocumentFiles.set(id, f);
+                                setState({
+                                  documents: [
+                                    ...docs,
+                                    {
+                                      id,
+                                      group: g.group,
+                                      domain: g.domain,
+                                      type: item,
+                                      ...draft,
+                                      fileName: f.name,
+                                    },
+                                  ],
+                                });
+                                setOpen(null);
                               }}
                             />
                           </Field>
-                          <Button
-                            className="sm:col-span-2"
-                            disabled={!file || !draft.number}
-                            onClick={() => {
-                              const id = uid("DOC");
-                              if (file) pendingDocumentFiles.set(id, file);
-                              setState({
-                                documents: [
-                                  ...docs,
-                                  { id, group: g.group, domain: g.domain, type: item, ...draft },
-                                ],
-                              });
-                              setOpen(null);
-                            }}
-                          >
-                            Save document
-                          </Button>
                         </div>
                       ) : null}
                     </li>
