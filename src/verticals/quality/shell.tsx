@@ -16,6 +16,7 @@ import { roleMeta } from "@/verticals/quality/data";
 import type { Role } from "@/verticals/quality/types";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { QualityNotificationBell } from "@/verticals/quality/bell";
 import { DashboardHeader } from "@/components/dashboard-header";
 
 type AppPath =
@@ -68,7 +69,7 @@ export const navByRole: Record<Role, NavItem[]> = {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, ready, logout } = useBeldium();
+  const { user, ready, logout, error, retry } = useBeldium();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = React.useState(false);
@@ -96,6 +97,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       // ignore write failures (private mode, disabled storage)
     }
   }, [collapsed]);
+
+  if (error && !user) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-6 text-center">
+        <p className="text-sm text-muted-foreground">{error.message}</p>
+        <button
+          type="button"
+          onClick={retry}
+          className="rounded-xl border border-border px-4 py-2 text-sm font-medium"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (!ready || !user) {
     return (
@@ -216,6 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onOpenNav={() => setOpen(true)}
           actions={
             <div className="flex items-center gap-3">
+              <QualityNotificationBell />
               <span className="hidden text-right sm:block">
                 <span className="block text-sm font-semibold text-navy">{user.name}</span>
                 <span className="block text-xs text-muted-foreground">{user.title}</span>

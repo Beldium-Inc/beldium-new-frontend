@@ -13,7 +13,7 @@ import {
   Surface,
 } from "@/verticals/quality/ui";
 import { useBeldium, useBuyerSpecList } from "@/verticals/quality/store";
-import type { ResultVerdict } from "@/verticals/quality/types";
+import type { TestResult } from "@/verticals/quality/types";
 
 export const Route = createFileRoute("/quality/samples/$id")({
   head: () => ({
@@ -55,7 +55,7 @@ function SampleDetail() {
     role,
     addCustody,
     createTestRequest,
-    setResultVerdict,
+    updateResult,
     submitQualityReview,
     issueCertificate,
     raiseNonConformity,
@@ -81,7 +81,7 @@ function SampleDetail() {
   const isOperator = role === "operator";
   const cert = state.certificates.find((c) => c.sampleRef === sample.ref);
 
-  const verdicts: ResultVerdict[] = ["pass", "conditional", "fail", "pending"];
+  const canRecordResults = isPartner || isOperator;
 
   return (
     <>
@@ -270,41 +270,20 @@ function SampleDetail() {
                       <th className="px-6 py-3 font-semibold">Result</th>
                       <th className="px-6 py-3 font-semibold">Specification</th>
                       <th className="px-6 py-3 font-semibold">Verdict</th>
-                      {isPartner ? <th className="px-6 py-3 font-semibold">Set</th> : null}
+                      {canRecordResults ? <th className="px-6 py-3 font-semibold">Record</th> : null}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {sample.results.map((r) => (
-                      <tr key={r.id}>
-                        <td className="px-6 py-3 font-medium text-navy">{r.analyte}</td>
-                        <td className="px-6 py-3 text-muted-foreground">{r.method}</td>
-                        <td className="px-6 py-3 text-navy">
-                          {r.value} {r.unit}{" "}
-                          <span className="text-xs text-muted-foreground">{r.uncertainty}</span>
-                        </td>
-                        <td className="px-6 py-3 text-muted-foreground">{r.spec}</td>
-                        <td className="px-6 py-3">
-                          <StatusPill value={r.verdict} />
-                        </td>
-                        {isPartner ? (
-                          <td className="px-6 py-3">
-                            <select
-                              value={r.verdict}
-                              onChange={(e) => {
-                                setResultVerdict(sample.id, r.id, e.target.value as ResultVerdict);
-                                toast.success(`${r.analyte} marked ${e.target.value}`);
-                              }}
-                              className="rounded-lg border border-border bg-background px-2 py-1 text-xs outline-none focus:border-link"
-                            >
-                              {verdicts.map((v) => (
-                                <option key={v} value={v}>
-                                  {v}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                        ) : null}
-                      </tr>
+                      <ResultRow
+                        key={`${r.id}:${r.value}:${r.unit}:${r.uncertainty}`}
+                        result={r}
+                        editable={canRecordResults}
+                        onSave={(input) => {
+                          updateResult(sample.id, r.id, input);
+                          toast.success(`${r.analyte} recorded`);
+                        }}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -378,7 +357,7 @@ function SampleDetail() {
                   >
                     <div>
                       <p className="text-sm font-medium text-navy">{l.analyte}</p>
-                      <p className="text-xs text-muted-foreground">{l.rule}</p>
+                      <p className="text-xs text-muted-foreground">{describeLimit(l)}</p>
                     </div>
                     {res ? <StatusPill value={res.verdict} /> : <Pill tone="neutral">no data</Pill>}
                   </div>
@@ -405,6 +384,7 @@ function SampleDetail() {
                   type="button"
                   onClick={async () => {
                     const newId = await issueCertificate(sample.id);
+                    if (!newId) return;
                     toast.success("Certificate issued");
                     navigate({ to: "/quality/certificates/$id", params: { id: newId } });
                   }}
@@ -456,5 +436,77 @@ function SampleDetail() {
         </div>
       </div>
     </>
+  );
+}
+
+function describeLimit(l: { min: string; max: string; unit: string; method: string }): string {
+  const bounds = [l.min ? `min ${l.min}` : "", l.max ? `max ${l.max}` : ""].filter(Boolean);
+  const range = bounds.length > 0 ? bounds.join(" · ") + (l.unit ? ` ${l.unit}` : "") : "No limit set";
+  return l.method ? `${range} · ${l.method}` : range;
+}
+
+function ResultRow({
+  result,
+  editable,
+  onSave,
+}: {
+  result: TestResult;
+  editable: boolean;
+  onSave: (input: { value: string; unit: string; uncertainty: string }) => void;
+}) {
+  const [value, setValue] = React.useState(result.value);
+  const [unit, setUnit] = React.useState(result.unit);
+  const [uncertainty, setUncertainty] = React.useState(result.uncertainty);
+  const input =
+    "w-20 rounded-lg border border-border bg-background px-2 py-1 text-xs outline-none focus:border-link";
+
+  return (
+    <tr>
+      <td className="px-6 py-3 font-medium text-navy">{result.analyte}</td>
+      <td className="px-6 py-3 text-muted-foreground">{result.method}</td>
+      <td className="px-6 py-3 text-navy">
+        {result.value || "—"} {result.unit}{" "}
+        <span className="text-xs text-muted-foreground">{result.uncertainty}</span>
+      </td>
+      <td className="px-6 py-3 text-muted-foreground">{result.spec}</td>
+      <td className="px-6 py-3">
+        <StatusPill value={result.verdict} />
+      </td>
+      {editable ? (
+        <td className="px-6 py-3">
+          <div className="flex items-center gap-1.5">
+            <input
+              aria-label={`${result.analyte} measured value`}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Value"
+              className={input}
+            />
+            <input
+              aria-label={`${result.analyte} unit`}
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="Unit"
+              className={input}
+            />
+            <input
+              aria-label={`${result.analyte} uncertainty`}
+              value={uncertainty}
+              onChange={(e) => setUncertainty(e.target.value)}
+              placeholder="±"
+              className={input}
+            />
+            <button
+              type="button"
+              disabled={!value.trim()}
+              onClick={() => onSave({ value: value.trim(), unit, uncertainty })}
+              className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-navy hover:border-link hover:text-link disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+        </td>
+      ) : null}
+    </tr>
   );
 }

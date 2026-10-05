@@ -1,6 +1,7 @@
 import * as React from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { openApplicationDocument } from "@/lib/api/quality";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -59,13 +60,13 @@ type TabKey = (typeof tabs)[number]["key"];
 
 function ApplicationDetail() {
   const { id } = useParams({ from: "/quality/applications/$id" });
-  const { state, role, setDocStatus, resolveFlag, decideApplication, assignApplication, raiseNonConformity } =
+  const { state, role, can, uploadDocument, setDocStatus, resolveFlag, decideApplication, assignApplication, raiseNonConformity } =
     useBeldium();
   const [tab, setTab] = React.useState<TabKey>("organisation");
   const [note, setNote] = React.useState("");
 
   const app = state.applications.find((a) => a.id === id);
-  const canDecide = role === "operator";
+  const canDecide = can.decide;
 
   if (!app) {
     return (
@@ -316,6 +317,43 @@ function ApplicationDetail() {
                           </div>
                           <div className="flex items-center gap-2">
                             <StatusPill value={d.status} />
+                            {d.hasFile ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openApplicationDocument(app.id, d.id).catch((error: unknown) =>
+                                    toast.error(
+                                      error instanceof Error ? error.message : "Could not open the file",
+                                    ),
+                                  )
+                                }
+                                className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
+                              >
+                                View file
+                              </button>
+                            ) : null}
+                            {role === "partner" || role === "operator" ? (
+                              <label className="cursor-pointer rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link">
+                                {d.hasFile ? "Replace" : "Upload"}
+                                <input
+                                  type="file"
+                                  className="sr-only"
+                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx,.zip"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    e.target.value = "";
+                                    if (!file) return;
+                                    if (file.size > 10 * 1024 * 1024) {
+                                      toast.error("File too large; the maximum size is 10 MB.");
+                                      return;
+                                    }
+                                    if (await uploadDocument(app.id, d.id, file)) {
+                                      toast.success(`${d.name} uploaded`);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            ) : null}
                             {canDecide ? (
                               <>
                                 <button

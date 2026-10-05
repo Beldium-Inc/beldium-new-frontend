@@ -4,6 +4,7 @@ import { FileCheck2, MapPin, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { isQacHost } from "@/lib/hosts";
 import { useSession } from "@/lib/session";
 import { COMPLIANCE_VERTICALS, homeFor } from "@/lib/verticals";
 
@@ -49,6 +50,11 @@ const highlights = [
 function EntryPage() {
   const { session, hydrated } = useSession();
   const navigate = useNavigate();
+
+  // qac.beldium.com is the Quality & Control workspace, not the sector chooser.
+  React.useEffect(() => {
+    if (isQacHost()) navigate({ to: "/quality/dashboard", replace: true });
+  }, [navigate]);
 
   // An existing session goes straight back to its workspace.
   React.useEffect(() => {

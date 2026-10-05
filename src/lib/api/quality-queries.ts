@@ -24,7 +24,12 @@ import {
   resolveRiskFlag,
   revokeCertificate,
   setDocumentStatus,
-  setResultVerdict,
+  uploadQualityApplicationDocument,
+  updateTestResult,
+  createBuyerSpec,
+  updateBuyerSpec,
+  listQualityNotifications,
+  markQualityNotificationRead,
   setSampleStatus,
   submitQualityReview,
   type QualityApplicationStatus,
@@ -32,6 +37,7 @@ import {
   type QualityListQuery,
   type NewSampleInput,
   type QualityNonConformity,
+  type BuyerSpecInput,
   type ResultVerdict,
   type SampleStatus,
 } from "./quality";
@@ -49,6 +55,7 @@ export const qualityKeys = {
   certificates: (query: QualityListQuery = {}) => ["quality", "certificates", query] as const,
   certificate: (id: UUID) => ["quality", "certificate", id] as const,
   buyerSpecs: (query: QualityListQuery = {}) => ["quality", "buyer-specs", query] as const,
+  notifications: ["quality", "notifications"] as const,
   nonConformities: (query: QualityListQuery = {}) =>
     ["quality", "non-conformities", query] as const,
 };
@@ -170,6 +177,15 @@ export function useSetDocumentStatus() {
   });
 }
 
+export function useUploadQualityApplicationDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { appId: UUID; docId: string; file: File }) =>
+      uploadQualityApplicationDocument(input.appId, input.docId, input.file),
+    onSuccess: () => invalidateQuality(queryClient),
+  });
+}
+
 export function useResolveRiskFlag() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -238,18 +254,22 @@ export function useCreateTestRequest() {
   });
 }
 
-export function useSetResultVerdict() {
+export function useUpdateTestResult() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: {
       sampleId: UUID;
       resultId: UUID;
-      verdict: ResultVerdict;
       value?: string | undefined;
+      unit?: string | undefined;
+      spec?: string | undefined;
+      uncertainty?: string | undefined;
     }) =>
-      setResultVerdict(input.sampleId, input.resultId, {
-        verdict: input.verdict,
+      updateTestResult(input.sampleId, input.resultId, {
         value: input.value,
+        unit: input.unit,
+        spec: input.spec,
+        uncertainty: input.uncertainty,
       }),
     onSuccess: () => invalidateQuality(queryClient),
   });
@@ -324,6 +344,44 @@ export function useCloseQualityNonConformity() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: UUID) => closeQualityNonConformity(id),
+    onSuccess: () => invalidateQuality(queryClient),
+  });
+}
+
+export function useCreateBuyerSpec() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: BuyerSpecInput) => createBuyerSpec(input),
+    onSuccess: () => invalidateQuality(queryClient),
+  });
+}
+
+export function useUpdateBuyerSpec() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID } & Partial<BuyerSpecInput>) => {
+      const { id, ...rest } = input;
+      return updateBuyerSpec(id, rest);
+    },
+    onSuccess: () => invalidateQuality(queryClient),
+  });
+}
+
+/** Polled so assignments and verdicts reach the bell without a reload. */
+export function useQualityNotifications() {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: qualityKeys.notifications,
+    queryFn: () => listQualityNotifications({ page_size: 50 }),
+    enabled: hasTokens,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkQualityNotificationRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => markQualityNotificationRead(id),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }

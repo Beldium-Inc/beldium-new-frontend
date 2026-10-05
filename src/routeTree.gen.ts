@@ -82,6 +82,7 @@ import { Route as QualityAuditRouteImport } from './routes/quality.audit'
 import { Route as QualityDashboardRouteImport } from './routes/quality.dashboard'
 import { Route as QualityNonconformitiesRouteImport } from './routes/quality.nonconformities'
 import { Route as StaffComplianceVettingRouteImport } from './routes/staff.compliance-vetting'
+import { Route as VerifyHashRouteImport } from './routes/verify.$hash'
 import { Route as WarehousingIndexRouteImport } from './routes/warehousing.index'
 import { Route as ExportExportersIndexRouteImport } from './routes/export.exporters.index'
 import { Route as ExportExportersIdRouteImport } from './routes/export.exporters.$id'
@@ -519,6 +520,11 @@ const QualityNonconformitiesRoute = QualityNonconformitiesRouteImport.update({
 const StaffComplianceVettingRoute = StaffComplianceVettingRouteImport.update({
   id: '/staff/compliance-vetting',
   path: '/staff/compliance-vetting',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyHashRoute = VerifyHashRouteImport.update({
+  id: '/verify/$hash',
+  path: '/verify/$hash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WarehousingIndexRoute = WarehousingIndexRouteImport.update({
@@ -987,6 +993,7 @@ export interface FileRoutesByFullPath {
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
@@ -1125,6 +1132,7 @@ export interface FileRoutesByTo {
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/export': typeof ExportIndexRoute
   '/logistics': typeof LogisticsIndexRoute
   '/marketplace': typeof MarketplaceIndexRoute
@@ -1272,6 +1280,7 @@ export interface FileRoutesById {
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
@@ -1420,6 +1429,7 @@ export interface FileRouteTypes {
     | '/quality/dashboard'
     | '/quality/nonconformities'
     | '/staff/compliance-vetting'
+    | '/verify/$hash'
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
@@ -1558,6 +1568,7 @@ export interface FileRouteTypes {
     | '/quality/dashboard'
     | '/quality/nonconformities'
     | '/staff/compliance-vetting'
+    | '/verify/$hash'
     | '/export'
     | '/logistics'
     | '/marketplace'
@@ -1704,6 +1715,7 @@ export interface FileRouteTypes {
     | '/quality/dashboard'
     | '/quality/nonconformities'
     | '/staff/compliance-vetting'
+    | '/verify/$hash'
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
@@ -1796,6 +1808,7 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   WarehousingRoute: typeof WarehousingRouteWithChildren
   StaffComplianceVettingRoute: typeof StaffComplianceVettingRoute
+  VerifyHashRoute: typeof VerifyHashRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2309,6 +2322,13 @@ declare module '@tanstack/react-router' {
       path: '/staff/compliance-vetting'
       fullPath: '/staff/compliance-vetting'
       preLoaderRoute: typeof StaffComplianceVettingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$hash': {
+      id: '/verify/$hash'
+      path: '/verify/$hash'
+      fullPath: '/verify/$hash'
+      preLoaderRoute: typeof VerifyHashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/warehousing/': {
@@ -3203,6 +3223,7 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   WarehousingRoute: WarehousingRouteWithChildren,
   StaffComplianceVettingRoute: StaffComplianceVettingRoute,
+  VerifyHashRoute: VerifyHashRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
