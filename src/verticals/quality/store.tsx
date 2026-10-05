@@ -1,4 +1,5 @@
 import * as React from "react";
+import { toast } from "sonner";
 
 import { ApiError } from "@/lib/api/errors";
 import type * as Api from "@/lib/api/quality";
@@ -22,7 +23,8 @@ import {
   useResolveRiskFlag,
   useRevokeCertificate,
   useSetDocumentStatus,
-  useSetResultVerdict,
+  useUploadQualityApplicationDocument,
+  useUpdateTestResult,
   useSubmitQualityReview,
 } from "@/lib/api/quality-queries";
 import { useCurrentUser } from "@/lib/api/queries";
@@ -89,6 +91,7 @@ function toApplication(row: Api.QualityApplication): Application {
       status: d.status,
       ...(d.note ? { note: d.note } : {}),
       ...(d.conditional_on ? { conditionalOn: d.conditional_on } : {}),
+      ...(d.file_id ? { hasFile: true } : {}),
     })),
     riskFlags: row.risk_flags,
     audit: row.audit.map((a) => ({ ...a, role: (a.role || "operator") as Role })),
@@ -157,7 +160,13 @@ function toBuyerSpec(row: Api.BuyerSpec): BuyerSpec {
     name: row.name,
     buyerOrg: row.buyer_org,
     material: row.material,
-    limits: row.limits,
+    limits: row.limits.map((l) => ({
+      analyte: l.analyte,
+      unit: l.unit ?? "",
+      min: l.min ?? "",
+      max: l.max ?? "",
+      method: l.method ?? "",
+    })),
   };
 }
 
@@ -195,9 +204,13 @@ interface Ctx {
   ready: boolean;
   user: { role: Role; name: string; title: string; org: string; initials: string } | null;
   role: Role | null;
+  /** What the API says this caller may do; the session role is only a view preference. */
+  can: { review: boolean; decide: boolean };
   state: State;
   logout: () => void;
   setDocStatus: (appId: string, docId: string, status: DocStatus) => void;
+  /** Resolves true once the file is stored; failures are reported to the user. */
+  uploadDocument: (appId: string, docId: string, file: File) => Promise<boolean>;
   resolveFlag: (appId: string, flagId: string) => void;
   decideApplication: (appId: string, status: ApplicationStatus, note: string) => void;
   assignApplication: (appId: string) => void;
@@ -208,21 +221,21 @@ interface Ctx {
     origin: string;
     massKg: number;
     buyerSpecId: string;
-  }) => Promise<string>;
+  }) => Promise<string | null>;
   addCustody: (sampleId: string, action: string, location: string, sealIntact: boolean) => void;
   createTestRequest: (
     sampleId: string,
     input: { methods: string[]; priority: "standard" | "expedited"; turnaround: string },
   ) => void;
-  setResultVerdict: (
+  /** The API derives the verdict from the measured value and the spec limit. */
+  updateResult: (
     sampleId: string,
     resultId: string,
-    verdict: ResultVerdict,
-    value?: string,
+    input: { value?: string; unit?: string; uncertainty?: string },
   ) => void;
   submitQualityReview: (sampleId: string, verdict: ResultVerdict, note: string) => void;
   setSampleStatus: (sampleId: string, status: SampleStatus) => void;
-  issueCertificate: (sampleId: string) => Promise<string>;
+  issueCertificate: (sampleId: string) => Promise<string | null>;
   revokeCertificate: (certId: string) => void;
   raiseNonConformity: (input: {
     title: string;
@@ -236,6 +249,12 @@ interface Ctx {
 
   isLoading: boolean;
   error: ApiError | null;
+  retry: () => void;
+}
+
+/** Surface a failed API call instead of dropping the rejection on the floor. */
+function reportFailure(error: unknown): void {
+  toast.error(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
 }
 
 const BeldiumContext = React.createContext<Ctx | null>(null);
@@ -260,13 +279,14 @@ export function BeldiumProvider({
   const nonConformitiesQuery = useQualityNonConformities();
 
   const setDocStatusFor = useSetDocumentStatus();
+  const uploadDocumentFor = useUploadQualityApplicationDocument();
   const resolveFlagFor = useResolveRiskFlag();
   const decideApplicationFor = useDecideQualityApplication();
   const assignApplicationFor = useAssignApplication();
   const registerSampleFor = useRegisterSample();
   const addCustodyFor = useAddCustodyEvent();
   const createTestRequestFor = useCreateTestRequest();
-  const setResultVerdictFor = useSetResultVerdict();
+  const updateTestResultFor = useUpdateTestResult();
   const submitQualityReviewFor = useSubmitQualityReview();
   const issueCertificateFor = useIssueCertificate();
   const revokeCertificateFor = useRevokeCertificate();
@@ -325,73 +345,99 @@ export function BeldiumProvider({
     ready: !isLoading,
     user,
     role: effectiveRole,
+    can: {
+      review: capabilities.data?.can_review ?? false,
+      decide: capabilities.data?.can_decide ?? false,
+    },
     state: { applications, samples, certificates, nonConformities },
     logout: onSignOut,
+    uploadDocument: async (appId, docId, file) => {
+      try {
+        await uploadDocumentFor.mutateAsync({ appId, docId, file });
+        return true;
+      } catch (error) {
+        reportFailure(error);
+        return false;
+      }
+    },
     setDocStatus: (appId, docId, status) => {
-      void setDocStatusFor.mutateAsync({ appId, docId, status });
+      setDocStatusFor.mutateAsync({ appId, docId, status }).catch(reportFailure);
     },
     resolveFlag: (appId, flagId) => {
-      void resolveFlagFor.mutateAsync({ appId, flagId });
+      resolveFlagFor.mutateAsync({ appId, flagId }).catch(reportFailure);
     },
     decideApplication: (appId, status, note) => {
-      void decideApplicationFor.mutateAsync({ id: appId, status, note });
+      decideApplicationFor.mutateAsync({ id: appId, status, note }).catch(reportFailure);
     },
     assignApplication: (appId) => {
-      void assignApplicationFor.mutateAsync(appId);
+      assignApplicationFor.mutateAsync(appId).catch(reportFailure);
     },
     registerSample: async (input) => {
-      const created = await registerSampleFor.mutateAsync({
-        material: input.material,
-        lot: input.lot,
-        mine_site: input.mineSite,
-        origin: input.origin,
-        mass_kg: input.massKg,
-        buyer_spec: input.buyerSpecId,
-      });
-      return created.id;
+      try {
+        const created = await registerSampleFor.mutateAsync({
+          material: input.material,
+          lot: input.lot,
+          mine_site: input.mineSite,
+          origin: input.origin,
+          mass_kg: input.massKg,
+          buyer_spec: input.buyerSpecId,
+        });
+        return created.id;
+      } catch (error) {
+        reportFailure(error);
+        return null;
+      }
     },
     addCustody: (sampleId, action, location, sealIntact) => {
-      void addCustodyFor.mutateAsync({ id: sampleId, action, location, seal_intact: sealIntact });
+      addCustodyFor.mutateAsync({ id: sampleId, action, location, seal_intact: sealIntact }).catch(reportFailure);
     },
     createTestRequest: (sampleId, input) => {
-      void createTestRequestFor.mutateAsync({ id: sampleId, ...input });
+      createTestRequestFor.mutateAsync({ id: sampleId, ...input }).catch(reportFailure);
     },
-    setResultVerdict: (sampleId, resultId, verdict, value) => {
-      void setResultVerdictFor.mutateAsync({ sampleId, resultId, verdict, value });
+    updateResult: (sampleId, resultId, input) => {
+      updateTestResultFor.mutateAsync({ sampleId, resultId, ...input }).catch(reportFailure);
     },
     submitQualityReview: (sampleId, verdict, note) => {
-      void submitQualityReviewFor.mutateAsync({ id: sampleId, verdict, note });
+      submitQualityReviewFor.mutateAsync({ id: sampleId, verdict, note }).catch(reportFailure);
     },
     setSampleStatus: () => {
       // No screen currently drives a bare status change outside the mutations above.
     },
     issueCertificate: async (sampleId) => {
-      const created = await issueCertificateFor.mutateAsync(sampleId);
-      return created.id;
+      try {
+        const created = await issueCertificateFor.mutateAsync(sampleId);
+        return created.id;
+      } catch (error) {
+        reportFailure(error);
+        return null;
+      }
     },
     revokeCertificate: (certId) => {
-      void revokeCertificateFor.mutateAsync(certId);
+      revokeCertificateFor.mutateAsync(certId).catch(reportFailure);
     },
     raiseNonConformity: (input) => {
-      void raiseNonConformityFor.mutateAsync(input);
+      raiseNonConformityFor.mutateAsync(input).catch(reportFailure);
     },
     addCorrectiveAction: (ncrId, action) => {
-      void addCorrectiveActionFor.mutateAsync({
+      addCorrectiveActionFor.mutateAsync({
         id: ncrId,
         action: action.action,
         owner: action.owner,
         due: action.due,
-      });
+      }).catch(reportFailure);
     },
     advanceCorrectiveAction: (ncrId, actionId) => {
-      void advanceCorrectiveActionFor.mutateAsync({ ncId: ncrId, actionId });
+      advanceCorrectiveActionFor.mutateAsync({ ncId: ncrId, actionId }).catch(reportFailure);
     },
     closeNonConformity: (ncrId) => {
-      void closeNonConformityFor.mutateAsync(ncrId);
+      closeNonConformityFor.mutateAsync(ncrId).catch(reportFailure);
     },
 
     isLoading,
     error: firstError instanceof ApiError ? firstError : null,
+    retry: () => {
+      for (const query of queries) void query.refetch();
+    },
   };
 
   return <BeldiumContext.Provider value={value}>{children}</BeldiumContext.Provider>;

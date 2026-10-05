@@ -23,6 +23,8 @@ export interface PartnerDocument {
   status: DocStatus;
   note?: string;
   conditionalOn?: string;
+  /** True once a file has been uploaded against this requirement. */
+  hasFile?: boolean;
 }
 
 export type ApplicationStatus =
@@ -169,7 +171,7 @@ export interface BuyerSpec {
   name: string;
   buyerOrg: string;
   material: string;
-  limits: { analyte: string; rule: string; target: string }[];
+  limits: { analyte: string; unit: string; min: string; max: string; method: string }[];
 }
 
 export interface Certificate {

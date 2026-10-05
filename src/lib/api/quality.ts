@@ -1,4 +1,6 @@
 import { apiFetch } from "./client";
+import { apiUrl } from "./config";
+import { readTokens } from "./tokens";
 import type { Paginated, UUID } from "./types";
 
 // The Quality & Control Partner register: accredited labs, their admission
@@ -32,6 +34,8 @@ export interface PartnerDocument {
   status: DocStatus;
   note: string;
   conditional_on: string;
+  /** Set once a file has been uploaded for this requirement. */
+  file_id?: UUID;
 }
 
 export interface RiskFlag {
@@ -118,6 +122,15 @@ export interface CustodyEvent {
 
 export type ResultVerdict = "pass" | "fail" | "conditional" | "pending";
 
+/** One limit on a buyer specification. Empty `min`/`max` mean unbounded on that side. */
+export interface SpecLimit {
+  analyte: string;
+  unit?: string;
+  min?: string;
+  max?: string;
+  method?: string;
+}
+
 export interface TestResult {
   id: UUID;
   analyte: string;
@@ -125,6 +138,8 @@ export interface TestResult {
   value: string;
   unit: string;
   spec: string;
+  /** The buyer-spec limit this row is measured against, when seeded from one. */
+  limit?: SpecLimit;
   verdict: ResultVerdict;
   uncertainty: string;
 }
@@ -158,6 +173,9 @@ export interface Sample {
   partner_org: string;
   buyer_org: string;
   buyer_spec: UUID | null;
+  miner_organisation: UUID | null;
+  partner_organisation: UUID | null;
+  buyer_organisation: UUID | null;
   status: SampleStatus;
   custody: CustodyEvent[];
   test_request: TestRequest | null;
@@ -173,7 +191,8 @@ export interface BuyerSpec {
   name: string;
   buyer_org: string;
   material: string;
-  limits: { analyte: string; rule: string; target: string }[];
+  buyer_organisation: UUID | null;
+  limits: SpecLimit[];
 }
 
 export interface Certificate {
@@ -324,10 +343,19 @@ export function createTestRequest(
   return apiFetch<Sample>(`${BASE}/samples/${id}/test-request/`, { method: "POST", body: input });
 }
 
-export function setResultVerdict(
+/**
+ * Record a measurement. The verdict is not sent: the API derives it from the
+ * measured value and the buyer-spec limit on the row.
+ */
+export function updateTestResult(
   sampleId: UUID,
   resultId: UUID,
-  input: { verdict: ResultVerdict; value?: string | undefined },
+  input: {
+    value?: string | undefined;
+    unit?: string | undefined;
+    spec?: string | undefined;
+    uncertainty?: string | undefined;
+  },
 ): Promise<TestResult> {
   return apiFetch<TestResult>(`${BASE}/samples/${sampleId}/results/${resultId}/`, {
     method: "PATCH",
@@ -370,6 +398,21 @@ export function listBuyerSpecs(query: QualityListQuery = {}): Promise<Paginated<
   return apiFetch<Paginated<BuyerSpec>>(`${BASE}/buyer-specs/`, { query });
 }
 
+export interface BuyerSpecInput {
+  name: string;
+  material: string;
+  buyer_org?: string | undefined;
+  limits: SpecLimit[];
+}
+
+export function createBuyerSpec(input: BuyerSpecInput): Promise<BuyerSpec> {
+  return apiFetch<BuyerSpec>(`${BASE}/buyer-specs/`, { method: "POST", body: input });
+}
+
+export function updateBuyerSpec(id: UUID, input: Partial<BuyerSpecInput>): Promise<BuyerSpec> {
+  return apiFetch<BuyerSpec>(`${BASE}/buyer-specs/${id}/`, { method: "PATCH", body: input });
+}
+
 // --- non-conformities -----------------------------------------------------------
 
 export function listQualityNonConformities(
@@ -410,4 +453,91 @@ export function closeQualityNonConformity(id: UUID): Promise<QualityNonConformit
   return apiFetch<QualityNonConformity>(`${BASE}/non-conformities/${id}/close/`, {
     method: "POST",
   });
+}
+
+// --- application documents ------------------------------------------------------
+
+export interface UploadedApplicationDocument {
+  id: UUID;
+  application: UUID;
+  document_id: string;
+  name: string;
+  category: string;
+  file_url: string | null;
+  original_name: string;
+  created_at: string;
+}
+
+export function uploadQualityApplicationDocument(
+  appId: UUID,
+  docId: string,
+  file: File,
+): Promise<UploadedApplicationDocument> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<UploadedApplicationDocument>(
+    `${BASE}/applications/${appId}/documents/${docId}/upload/`,
+    { method: "POST", body: form },
+  );
+}
+
+/**
+ * Fetch an uploaded document with the bearer token and open it in a new tab.
+ * The download route is authenticated, so a plain link would arrive without it.
+ */
+export async function openApplicationDocument(appId: UUID, docId: string): Promise<void> {
+  const tokens = readTokens();
+  const response = await fetch(
+    apiUrl(`${BASE}/applications/${appId}/documents/${docId}/download/`),
+    { headers: tokens ? { Authorization: `Bearer ${tokens.access}` } : {} },
+  );
+  if (!response.ok) throw new Error("The document could not be opened.");
+  const url = URL.createObjectURL(await response.blob());
+  window.open(url, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+// --- notifications -----------------------------------------------------------------
+
+export interface QualityNotification {
+  id: UUID;
+  title: string;
+  body: string;
+  event: string;
+  read_at: string | null;
+  created_at: string;
+  sample: UUID | null;
+  application: UUID | null;
+  certificate: UUID | null;
+  non_conformity: UUID | null;
+}
+
+export function listQualityNotifications(
+  query: QualityListQuery = {},
+): Promise<Paginated<QualityNotification>> {
+  return apiFetch<Paginated<QualityNotification>>(`${BASE}/notifications/`, { query });
+}
+
+export function markQualityNotificationRead(id: UUID): Promise<QualityNotification> {
+  return apiFetch<QualityNotification>(`${BASE}/notifications/${id}/read/`, { method: "POST" });
+}
+
+// --- public certificate verification -----------------------------------------------
+
+export interface CertificateVerification {
+  reference: string;
+  sample_reference: string;
+  material: string;
+  issued_at: string;
+  valid_until: string | null;
+  status: Certificate["status"];
+  scans: number;
+}
+
+/** Unauthenticated: anyone holding the hash from a certificate's QR code can check it. */
+export function verifyCertificate(hash: string): Promise<CertificateVerification> {
+  return apiFetch<CertificateVerification>(
+    `${BASE}/certificates/verify/${encodeURIComponent(hash)}/`,
+    { auth: false },
+  );
 }

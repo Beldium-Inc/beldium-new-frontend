@@ -38,7 +38,7 @@ export const Route = createFileRoute("/quality/certificates/$id")({
 
 function CertificateDetail() {
   const { id } = useParams({ from: "/quality/certificates/$id" });
-  const { state, role, revokeCertificate } = useBeldium();
+  const { state, role, can, revokeCertificate } = useBeldium();
   const cert = state.certificates.find((c) => c.id === id);
 
   if (!cert) {
@@ -50,7 +50,7 @@ function CertificateDetail() {
   }
 
   const sample = state.samples.find((s) => s.ref === cert.sampleRef);
-  const canRevoke = role === "operator" || role === "partner";
+  const canRevoke = can.decide;
 
   return (
     <>
@@ -113,6 +113,14 @@ function CertificateDetail() {
                 <p className="mt-3 font-mono text-xs break-all text-navy/70">
                   {cert.verificationHash}
                 </p>
+                <a
+                  href={`/verify/${cert.verificationHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-xs font-medium text-link underline"
+                >
+                  Open public verification page
+                </a>
               </div>
             </div>
           </Surface>

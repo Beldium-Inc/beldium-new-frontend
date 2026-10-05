@@ -19,10 +19,16 @@ import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, getPlatformStats } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { isQacHost } from "@/lib/hosts";
 import { useSession } from "@/lib/session";
 import { fetchAccountSetup, needsComplianceSetup } from "@/lib/onboarding/setup";
 import { rememberOnboardingSector } from "@/lib/onboarding/store";
-import { COMPLIANCE_VERTICALS, homeFor, type Vertical, type VerticalSlug } from "@/lib/verticals";
+import {
+  COMPLIANCE_VERTICALS as ALL_VERTICALS,
+  homeFor,
+  type Vertical,
+  type VerticalSlug,
+} from "@/lib/verticals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -53,6 +59,12 @@ export const Route = createFileRoute("/signin")({
 
 const DISCLAIMER =
   "Beldium issues an independent compliance verification record. It is not a government permit, licence, or customs clearance and does not replace any statutory approval.";
+
+// qac.beldium.com only signs people in to Quality & Control.
+const COMPLIANCE_VERTICALS: Vertical[] =
+  typeof window !== "undefined" && isQacHost()
+    ? ALL_VERTICALS.filter((v) => v.slug === "quality")
+    : ALL_VERTICALS;
 
 const partnerRoleCount = COMPLIANCE_VERTICALS.reduce((n, v) => n + v.roles.length, 0);
 

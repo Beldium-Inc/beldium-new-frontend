@@ -45,9 +45,9 @@ function SamplesPage() {
   const [form, setForm] = React.useState({
     material: "Cassiterite concentrate",
     lot: "",
-    mineSite: "Kivu Ridge Pit 4",
-    origin: "South Kivu, DRC",
-    massKg: "10",
+    mineSite: "",
+    origin: "",
+    massKg: "",
     buyerSpecId: "",
   });
 
@@ -148,6 +148,7 @@ function SamplesPage() {
                 onChange={(e) => setForm({ ...form, buyerSpecId: e.target.value })}
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-link"
               >
+                {buyerSpecs.length === 0 ? <option value="">No buyer specifications available</option> : null}
                 {buyerSpecs.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -164,6 +165,10 @@ function SamplesPage() {
                   toast.error("A lot reference is required");
                   return;
                 }
+                if (!form.buyerSpecId) {
+                  toast.error("Choose a buyer specification first");
+                  return;
+                }
                 const id = await registerSample({
                   material: form.material,
                   lot: form.lot,
@@ -172,6 +177,7 @@ function SamplesPage() {
                   massKg: Number(form.massKg) || 0,
                   buyerSpecId: form.buyerSpecId,
                 });
+                if (!id) return;
                 toast.success("Sample registered and sealed");
                 setOpen(false);
                 navigate({ to: "/quality/samples/$id", params: { id } });
