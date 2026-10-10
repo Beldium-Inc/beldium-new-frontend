@@ -20,6 +20,7 @@ import {
 } from "./organisations";
 import {
   createComplianceApplication,
+  setApplicationSector,
   createPersonnel,
   decideComplianceApplication,
   deletePersonnel,
@@ -270,7 +271,8 @@ export function useComplianceApplication(id: UUID | null) {
 export function useCreateComplianceApplication() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (organisation: UUID) => createComplianceApplication(organisation),
+    mutationFn: (input: { organisation: UUID; sector?: string | null }) =>
+      createComplianceApplication(input.organisation, input.sector),
     onSuccess: (application) => {
       queryClient.setQueryData(queryKeys.application(application.id), application);
       void queryClient.invalidateQueries({ queryKey: queryKeys.applications });
@@ -372,6 +374,17 @@ export function useSubmitApplication(id: UUID | null) {
 }
 
 /** is_staff only on the backend — see compliance/views.py ComplianceApplicationViewSet.decide. */
+export function useSetApplicationSector() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; sector: string }) => setApplicationSector(input.id, input.sector),
+    onSuccess: (application) => {
+      queryClient.setQueryData(queryKeys.application(application.id), application);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.applications });
+    },
+  });
+}
+
 export function useDecideComplianceApplication() {
   const queryClient = useQueryClient();
   return useMutation({

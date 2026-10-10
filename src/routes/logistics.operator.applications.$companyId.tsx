@@ -1164,9 +1164,39 @@ export function RequestInfoModal({
 }
 
 function RequestsTab({ company }: { company: Company }) {
-  const { requests } = useApp();
+  const { requests, reviewResponse, withdrawRequest } = useApp();
   const [open, setOpen] = React.useState(false);
+  const [notes, setNotes] = React.useState<Record<string, string>>({});
+  const [busy, setBusy] = React.useState<string | null>(null);
   const list = requests.filter((r) => r.companyId === company.id);
+
+  // Every open request holds the application on "awaiting information", so
+  // each one has to be closed here before a decision can be recorded.
+  const act = (id: string, action: "accept" | "return" | "withdraw") => {
+    const note = (notes[id] ?? "").trim();
+    if (!note) {
+      toast.error("Add a note first: it is kept on the request and shown to the partner.");
+      return;
+    }
+    setBusy(id);
+    const call =
+      action === "withdraw" ? withdrawRequest(id, note) : reviewResponse(id, action === "accept", note);
+    call
+      .then(() => {
+        toast.success(
+          action === "accept"
+            ? "Response accepted"
+            : action === "return"
+              ? "Sent back to the partner"
+              : "Request closed",
+        );
+        setNotes((n) => ({ ...n, [id]: "" }));
+      })
+      .catch((err: unknown) =>
+        toast.error("That could not be recorded", { description: describeError(err) }),
+      )
+      .finally(() => setBusy(null));
+  };
 
   return (
     <>
@@ -1215,6 +1245,56 @@ function RequestsTab({ company }: { company: Company }) {
                   ))}
                 </div>
               ) : null}
+              {r.status !== "Closed" ? (
+                <div className="mt-3 space-y-2">
+                  <textarea
+                    rows={2}
+                    value={notes[r.id] ?? ""}
+                    onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+                    placeholder={
+                      r.status === "Responded"
+                        ? "Note on the response (shown to the partner)…"
+                        : "Why this request is no longer needed…"
+                    }
+                    className="w-full rounded-lg border border-input bg-white px-3 py-2 text-xs outline-none focus:border-[var(--link)]"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {r.status === "Responded" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={busy !== null}
+                          onClick={() => act(r.id, "accept")}
+                          className="rounded-lg bg-[var(--brand)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--brand)]/90 disabled:opacity-40"
+                        >
+                          Accept response
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy !== null}
+                          onClick={() => act(r.id, "return")}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50 disabled:opacity-40"
+                        >
+                          Send back
+                        </button>
+                      </>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={busy !== null}
+                      onClick={() => act(r.id, "withdraw")}
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50 disabled:opacity-40"
+                    >
+                      Close without a response
+                    </button>
+                    <span className="text-[11px] text-muted-foreground">
+                      {r.status === "Responded"
+                        ? "Accepting needs the attached evidence verified in Document review first."
+                        : "The partner has not responded yet."}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </li>
           ))}
           {list.length === 0 ? <li className="px-5 py-10 text-center text-sm text-muted-foreground">No requests raised.</li> : null}
@@ -1260,7 +1340,10 @@ function DecisionTab({ company }: { company: Company }) {
       `${company.documents.length - verified} document(s) are not verified (Document review tab)`,
     );
   }
-  if (openRequests > 0) blockers.push(`${openRequests} information request(s) are still open`);
+  if (openRequests > 0)
+    blockers.push(
+      `${openRequests} information request(s) are still open: accept or close them in the Information requests tab`,
+    );
   if (outstanding.length > 0)
     blockers.push(`${outstanding.length} approval condition(s) are not cleared`);
   if (restrictions.length > 0)

@@ -47,10 +47,24 @@ export function getComplianceApplication(id: UUID): Promise<ComplianceApplicatio
   return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/`);
 }
 
-export function createComplianceApplication(organisation: UUID): Promise<ComplianceApplication> {
+export function createComplianceApplication(
+  organisation: UUID,
+  sector?: string | null,
+): Promise<ComplianceApplication> {
   return apiFetch<ComplianceApplication>("/compliance-applications/", {
     method: "POST",
-    body: { organisation },
+    body: sector ? { organisation, sector } : { organisation },
+  });
+}
+
+/**
+ * File an application under a sector. Staff only once the application exists:
+ * it is how the vetting desk sorts applications that predate the field.
+ */
+export function setApplicationSector(id: UUID, sector: string): Promise<ComplianceApplication> {
+  return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/`, {
+    method: "PATCH",
+    body: { sector },
   });
 }
 

@@ -202,7 +202,7 @@ export function QualityOrgApplicationFlow() {
       });
       organisationId = created.id;
     }
-    return createApplication.mutateAsync(organisationId);
+    return createApplication.mutateAsync({ organisation: organisationId, sector: "quality" });
   };
 
   const saveSection = async <S extends QualitySectionSlug>(

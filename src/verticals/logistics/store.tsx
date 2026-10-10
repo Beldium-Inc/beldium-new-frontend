@@ -21,6 +21,8 @@ import {
   useReviewDocument,
   useReviewLogisticsApplicationSection,
   useRespondToRequest,
+  useReviewRequestResponse,
+  useWithdrawRequest,
   useAddDocumentNote,
   useAssignReviewer,
   useStartReview,
@@ -317,6 +319,10 @@ interface Ctx {
   ) => Promise<void>;
   createRequest: (companyId: string, reason: string, message: string, items: string[]) => void;
   respondToRequest: (requestId: string, message: string, files: string[]) => void;
+  /** Accept the partner's response, or send it back; rejects with the API's reason. */
+  reviewResponse: (requestId: string, accepted: boolean, notes: string) => Promise<void>;
+  /** Close a request that no longer needs an answer. */
+  withdrawRequest: (requestId: string, notes: string) => Promise<void>;
   recordDecision: (
     companyId: string,
     decision: Exclude<Decision, "More Info Requested">,
@@ -361,6 +367,8 @@ export function AppStateProvider({
   const assignReviewerFor = useAssignReviewer();
   const decideFor = useDecideApplication();
   const createRequestFor = useCreateInformationRequest();
+  const reviewResponseFor = useReviewRequestResponse();
+  const withdrawRequestFor = useWithdrawRequest();
   const respondFor = useRespondToRequest();
   const reviewDocumentFor = useReviewDocument();
   const reviewSectionFor = useReviewLogisticsApplicationSection();
@@ -643,6 +651,12 @@ export function AppStateProvider({
       if (!id) return;
       const due = new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10);
       void createRequestFor.mutateAsync({ id, reason, message, items, due_date: due });
+    },
+    reviewResponse: async (requestId, accepted, notes) => {
+      await reviewResponseFor.mutateAsync({ id: requestId, accepted, notes });
+    },
+    withdrawRequest: async (requestId, notes) => {
+      await withdrawRequestFor.mutateAsync({ id: requestId, notes });
     },
     respondToRequest: (requestId, message) => {
       const request = findRequest(requestId);

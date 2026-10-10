@@ -558,6 +558,18 @@ export function reviewRequestResponse(
   });
 }
 
+/**
+ * Close a request the reviewer no longer needs answered (the evidence arrived
+ * another way). Like an accepted response, it lets the application return to
+ * "under review" once nothing else is outstanding.
+ */
+export function withdrawRequest(id: UUID, notes: string): Promise<InformationRequest> {
+  return apiFetch<InformationRequest>(`${BASE}/requests/${id}/withdraw/`, {
+    method: "POST",
+    body: { notes },
+  });
+}
+
 // --- conditions ----------------------------------------------------------------
 
 export function listApplicationConditions(id: UUID): Promise<ApprovalCondition[]> {

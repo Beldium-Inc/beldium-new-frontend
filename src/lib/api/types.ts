@@ -332,6 +332,11 @@ export interface ComplianceApplication {
   organisation: UUID;
   /** The organisation record's type, set at signup — unlike organisation_profile, always present. */
   organisation_type: string | null;
+  /**
+   * The sector the partner applied to work in (a vertical slug), chosen at the
+   * start of onboarding. Empty on applications filed before it was recorded.
+   */
+  sector?: string;
   status: ApplicationStatus;
   /** Empty object until the matching section has been saved. */
   organisation_profile: Partial<OrganisationProfileData>;

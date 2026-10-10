@@ -392,7 +392,7 @@ export function OrgApplicationFlow() {
       });
       organisationId = created.id;
     }
-    return createApplication.mutateAsync(organisationId);
+    return createApplication.mutateAsync({ organisation: organisationId, sector });
   };
 
   const saving =
