@@ -171,6 +171,19 @@ export const licenceStatusToApi = invert(licenceStatusToUi);
 
 export const documentStatusToUi: Record<
   MiningDocumentStatus,
+  "Pending" | "Verified" | "Rejected" | "Expired" | "Replaced"
+> = {
+  pending: "Pending",
+  verified: "Verified",
+  rejected: "Rejected",
+  expired: "Expired",
+  superseded: "Replaced",
+};
+export const documentStatusToApi = invert(documentStatusToUi);
+
+// Evidence shares DocumentRecord's four review states; only a document can be replaced.
+export const evidenceStatusToUi: Record<
+  MiningEvidenceStatus,
   "Pending" | "Verified" | "Rejected" | "Expired"
 > = {
   pending: "Pending",
@@ -178,13 +191,6 @@ export const documentStatusToUi: Record<
   rejected: "Rejected",
   expired: "Expired",
 };
-export const documentStatusToApi = invert(documentStatusToUi);
-
-// Evidence uses the same four states as DocumentRecord.
-export const evidenceStatusToUi: Record<
-  MiningEvidenceStatus,
-  "Pending" | "Verified" | "Rejected" | "Expired"
-> = documentStatusToUi;
 export const evidenceStatusToApi = invert(evidenceStatusToUi);
 
 // --- EnvRecord.status --------------------------------------------------------------

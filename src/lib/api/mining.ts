@@ -337,6 +337,9 @@ export interface InfoRequest {
   site: UUID;
   site_name: string;
   section: SectionKey | "";
+  /** The filed document this request asks the miner to replace, if any. */
+  document: UUID | null;
+  document_name: string;
   subject: string;
   details: string;
   requested_by_name: string;
@@ -371,7 +374,9 @@ export interface LicenceDoc {
   updated_at: string;
 }
 
-export type MiningDocumentStatus = "pending" | "verified" | "rejected" | "expired";
+// "superseded": the miner filed a newer copy. Kept for the record, but it no
+// longer counts for or against verification.
+export type MiningDocumentStatus = "pending" | "verified" | "rejected" | "expired" | "superseded";
 
 export interface DocumentRecord {
   id: UUID;
@@ -380,6 +385,8 @@ export interface DocumentRecord {
   category: string;
   expires_on: string | null;
   status: MiningDocumentStatus;
+  /** The earlier copy this one was filed to replace, if any. */
+  replaces: UUID | null;
   file_url: string | null;
   original_name: string;
   uploaded_by_name: string;
@@ -924,10 +931,14 @@ export function uploadMiningDocument(input: {
   return apiFetch<DocumentRecord>(`${BASE}/documents/`, { method: "POST", body: form });
 }
 
-/** Accept or reject a document. Separate from `status`'s expiry-derived states. */
+/**
+ * Accept or reject a document. Separate from `status`'s expiry-derived states.
+ * A rejection opens an information request against the document, which the
+ * miner answers by uploading its replacement; `notes` is what they are told.
+ */
 export function reviewMiningDocument(
   id: UUID,
-  input: { status: "verified" | "rejected" },
+  input: { status: "verified" | "rejected"; notes?: string },
 ): Promise<DocumentRecord> {
   return apiFetch<DocumentRecord>(`${BASE}/documents/${id}/review/`, {
     method: "POST",

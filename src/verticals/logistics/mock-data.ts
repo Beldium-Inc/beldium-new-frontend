@@ -42,6 +42,10 @@ export interface ComplianceDocument {
   downloadUrl?: string;
   /** What the reviewer wrote when verifying or rejecting. */
   reviewNotes?: string;
+  /** Advice from the file's own metadata; only reviewers are sent it. */
+  reviewTags?: { code: string; tone: "info" | "warning"; label: string; detail: string }[];
+  /** What the file records about how it was made, as label and value. */
+  fileDetails?: [string, string][];
 }
 
 export interface CheckItem {
@@ -145,6 +149,11 @@ export interface Company {
   riskScore: number;
   submitted: string;
   reviewer: string;
+  /**
+   * Who holds the review. Every verified compliance desk sees the whole
+   * register, so one reviewer claims an application before working it.
+   */
+  claim?: "mine" | "other" | "none";
   lastActivity: string;
   contactName: string;
   contactEmail: string;

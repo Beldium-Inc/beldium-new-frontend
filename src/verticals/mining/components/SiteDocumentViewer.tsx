@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Download, ExternalLink, Loader2 } from "luci
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -113,15 +114,26 @@ function ViewerBody({
   const checklist = useMemo(() => checklistFor(document, context), [document, context]);
   const [checked, setChecked] = useState<boolean[]>(() => checklist.map(() => false));
   const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
 
   const reviewable = document.source === "document" && document.status === "pending";
   const allChecked = checked.every(Boolean);
 
   const act = async (status: "verified" | "rejected") => {
     try {
-      await review.mutateAsync({ id: document.id, status });
-      toast.success(`${document.name} ${status === "verified" ? "accepted" : "rejected"}`);
+      await review.mutateAsync({
+        id: document.id,
+        status,
+        ...(status === "rejected" ? { notes: reason.trim() } : {}),
+      });
+      toast.success(
+        `${document.name} ${status === "verified" ? "accepted" : "rejected"}`,
+        status === "rejected"
+          ? { description: "The operator has been asked to upload a replacement." }
+          : undefined,
+      );
       setRejecting(false);
+      setReason("");
       onNext?.();
     } catch (err) {
       toast.error("Could not review this document", {
@@ -229,8 +241,15 @@ function ViewerBody({
               {rejecting ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Reject this document? The operator will need to upload a replacement.
+                    Reject this document? The operator is asked to upload a replacement, and sees
+                    the reason you give here.
                   </p>
+                  <Textarea
+                    rows={3}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="What is wrong with it, and what should the replacement show?"
+                  />
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -242,7 +261,7 @@ function ViewerBody({
                     <Button
                       variant="destructive"
                       className="flex-1"
-                      disabled={review.isPending}
+                      disabled={!reason.trim() || review.isPending}
                       onClick={() => void act("rejected")}
                     >
                       Confirm reject
@@ -283,7 +302,11 @@ function ViewerBody({
                 ? `Section evidence is decided with the section: use Verify or Reject on "${document.sectionTitle ?? "its section"}" once you have read it.`
                 : document.source === "licence"
                   ? `This is the licence record on file (status: ${document.status}). Check it against the licence details in the review header.`
-                  : `This document has already been marked ${document.status}.`}
+                  : document.status === "superseded"
+                    ? "The operator has replaced this copy with a newer upload. It is kept for the record; review the replacement instead."
+                    : document.status === "rejected"
+                      ? "This document was rejected. The operator has been asked for a replacement, which will appear here for review once uploaded."
+                      : `This document has already been marked ${document.status}.`}
             </p>
           )}
         </aside>

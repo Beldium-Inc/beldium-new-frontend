@@ -7,6 +7,7 @@ import { AuthShell, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordGuide, passwordProblem } from "@/components/ui/password-guide";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,7 +50,8 @@ function AccountPage() {
     if (!isValidPhoneNumber(formatPhoneNumber(account.phone)))
       e["phone"] =
         "Enter the number in international format, including the country code, e.g. +234 803 000 0000.";
-    if (account.password.length < 8) e["password"] = "Use at least 8 characters.";
+    const weak = passwordProblem(account.password);
+    if (weak) e["password"] = weak;
     if (confirmPassword !== account.password) e["confirmPassword"] = "Both passwords must match.";
     if (!account.acceptedTerms) e["terms"] = "You must accept the platform terms.";
     setErrors(e);
@@ -166,6 +168,7 @@ function AccountPage() {
             value={account.password}
             onChange={(ev) => updateAccount({ password: ev.target.value })}
             autoComplete="new-password"
+            aria-describedby="password-guide"
           />
           <div className="flex gap-1.5 pt-1" aria-hidden>
             {[0, 1, 2, 3].map((i) => (
@@ -175,10 +178,12 @@ function AccountPage() {
               />
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Use 8+ characters with a capital letter, number and symbol.
-          </p>
           {errors["password"] && <p className="text-xs text-danger">{errors["password"]}</p>}
+          <PasswordGuide
+            id="password-guide"
+            password={account.password}
+            identity={[account.fullName, account.email]}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="confirmPassword">Confirm password</Label>

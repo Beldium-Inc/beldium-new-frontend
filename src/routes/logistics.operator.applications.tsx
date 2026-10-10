@@ -18,7 +18,8 @@ export const Route = createFileRoute("/logistics/operator/applications")({
   component: ApplicationsRoute,
 });
 
-const REVIEWERS = ["Ngozi Adeyemi", "Tunde Ayeni", "Chioma Balogun"];
+const describeError = (err: unknown) =>
+  err instanceof Error ? err.message : "Please try again.";
 
 function ApplicationsRoute() {
   const isChild = useRouterState({
@@ -29,7 +30,7 @@ function ApplicationsRoute() {
 }
 
 function ApplicationsList() {
-  const { companies, assignReviewer, startReview } = useApp();
+  const { companies, claimApplication, startReview } = useApp();
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState("All");
   const [risk, setRisk] = React.useState("All");
@@ -135,7 +136,7 @@ function ApplicationsList() {
                   <td className="px-3 py-3"><StatusBadge status={c.status} /></td>
                   <td className="px-3 py-3"><RiskBadge risk={c.risk} score={c.riskScore} /></td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{c.submitted}</td>
-                  <td className="px-3 py-3 text-xs">{c.reviewer}</td>
+                  <td className="px-3 py-3 text-xs">{c.claim === "mine" ? "You" : c.reviewer}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{c.lastActivity}</td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1">
@@ -150,13 +151,24 @@ function ApplicationsList() {
                       </Link>
                       <button
                         type="button"
-                        title="Assign reviewer"
+                        title={
+                          c.claim === "mine"
+                            ? "You hold this application"
+                            : c.claim === "other"
+                              ? `Claimed by ${c.reviewer}`
+                              : "Claim this application"
+                        }
+                        disabled={c.claim !== "none"}
                         onClick={() => {
-                          const next = REVIEWERS[(REVIEWERS.indexOf(c.reviewer) + 1) % REVIEWERS.length] ?? REVIEWERS[0]!;
-                          assignReviewer(c.id, next);
-                          toast.success(`${c.name} assigned to ${next}`);
+                          claimApplication(c.id)
+                            .then(() => toast.success(`You claimed ${c.name}`))
+                            .catch((err: unknown) =>
+                              toast.error("Could not claim this application", {
+                                description: describeError(err),
+                              }),
+                            );
                         }}
-                        className="rounded-md border border-border p-1.5 text-[var(--brand)] hover:border-[var(--link)]/50 hover:text-[var(--link)]"
+                        className="rounded-md border border-border p-1.5 text-[var(--brand)] hover:border-[var(--link)]/50 hover:text-[var(--link)] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <UserPlus className="h-3.5 w-3.5" />
                       </button>
@@ -171,12 +183,18 @@ function ApplicationsList() {
                       </Link>
                       <button
                         type="button"
-                        title="Start review"
+                        title={c.claim === "other" ? `Claimed by ${c.reviewer}` : "Claim and start the review"}
+                        disabled={c.claim === "other"}
                         onClick={() => {
-                          startReview(c.id);
-                          toast.success(`Review started for ${c.name}`);
+                          startReview(c.id)
+                            .then(() => toast.success(`Review started for ${c.name}`))
+                            .catch((err: unknown) =>
+                              toast.error("The review could not be started", {
+                                description: describeError(err),
+                              }),
+                            );
                         }}
-                        className="inline-flex items-center gap-1 rounded-md bg-[var(--brand)] px-2 py-1.5 text-[11px] font-medium text-white hover:bg-[var(--brand)]/90"
+                        className="inline-flex items-center gap-1 rounded-md bg-[var(--brand)] px-2 py-1.5 text-[11px] font-medium text-white hover:bg-[var(--brand)]/90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <PlayCircle className="h-3.5 w-3.5" /> Review
                       </button>

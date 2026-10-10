@@ -215,7 +215,8 @@ export function createInventoryItem(input: InventoryItemInput): Promise<Inventor
   return apiFetch<InventoryItem>("/mining/inventory/", { method: "POST", body: input });
 }
 
-export type DocumentStatus = "pending" | "verified" | "rejected" | "expired";
+// "superseded": a newer copy was filed in its place. Kept for the record only.
+export type DocumentStatus = "pending" | "verified" | "rejected" | "expired" | "superseded";
 
 export interface DocumentRecord {
   id: UUID;
@@ -224,6 +225,8 @@ export interface DocumentRecord {
   category: string;
   expires_on: string | null;
   status: DocumentStatus;
+  /** The earlier copy this one was filed to replace, if any. */
+  replaces: UUID | null;
   file_url: string | null;
   original_name: string;
   uploaded_by_name: string;
@@ -249,6 +252,17 @@ export function uploadDocument(input: {
   if (input.expires_on) form.append("expires_on", input.expires_on);
   form.append("file", input.file);
   return apiFetch<DocumentRecord>("/mining/documents/", { method: "POST", body: form });
+}
+
+/**
+ * File a new copy of a document, most often one the compliance desk rejected.
+ * The replacement keeps the original's name and goes back to the desk for
+ * review; the old copy stops counting against verification.
+ */
+export function replaceDocument(id: UUID, file: File): Promise<DocumentRecord> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<DocumentRecord>(`/mining/documents/${id}/replace/`, { method: "POST", body: form });
 }
 
 export type LicenceStatus = "active" | "expiring" | "expired" | "suspended";
@@ -395,6 +409,9 @@ export interface InfoRequest {
   site: UUID;
   site_name: string;
   section: string;
+  /** The filed document this request asks you to replace, if any. */
+  document: UUID | null;
+  document_name: string;
   requested_by_name: string;
   subject: string;
   details: string;

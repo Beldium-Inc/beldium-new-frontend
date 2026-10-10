@@ -124,11 +124,12 @@ function CompanyReview() {
             <RiskBadge risk={company.risk} score={company.riskScore} />
             <button
               type="button"
-              disabled={starting}
+              disabled={starting || company.claim === "other"}
+              title={company.claim === "other" ? `Claimed by ${company.reviewer}` : undefined}
               onClick={() => {
-                // Only a submitted application can be started; anything already
-                // in review is simply resumed.
-                if (company.status !== "Pending Review") {
+                // Only a submitted application can be started; one you already
+                // hold and have in review is simply resumed.
+                if (company.status !== "Pending Review" && company.claim === "mine") {
                   setTab("review");
                   return;
                 }
@@ -147,7 +148,12 @@ function CompanyReview() {
               }}
               className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--brand)]/90 disabled:opacity-40"
             >
-              <ShieldCheck className="h-3.5 w-3.5" /> Start / resume review
+              <ShieldCheck className="h-3.5 w-3.5" />{" "}
+              {company.claim === "other"
+                ? `Claimed by ${company.reviewer}`
+                : company.claim === "none"
+                  ? "Claim & start review"
+                  : "Start / resume review"}
             </button>
           </>
         }
@@ -689,8 +695,13 @@ function DocumentsTab({ company }: { company: Company }) {
                   <span className="block text-[11px] text-muted-foreground">
                     {d.category} · {d.type} · {d.size}
                   </span>
-                  <span className="mt-1 block">
+                  <span className="mt-1 flex flex-wrap gap-1">
                     <DocStatusBadge status={d.status} />
+                    {d.reviewTags?.map((t) => (
+                      <Pill key={t.code + t.detail} tone={t.tone} className="px-2 text-[10px]">
+                        {t.label}
+                      </Pill>
+                    ))}
                   </span>
                 </span>
               </button>
@@ -791,6 +802,7 @@ function DocumentsTab({ company }: { company: Company }) {
                     ["File size", selected.size],
                     ["Uploaded by", selected.uploadedBy],
                     ["Uploaded", selected.uploadedAt],
+                    ...(selected.fileDetails ?? []),
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between gap-3">
                       <dt className="text-muted-foreground">{k}</dt>
@@ -799,6 +811,23 @@ function DocumentsTab({ company }: { company: Company }) {
                   ))}
                 </dl>
               </div>
+
+              {selected.reviewTags?.length ? (
+                <div className="rounded-xl border border-border p-4">
+                  <p className="font-display text-xs font-semibold text-[var(--brand)]">File checks</p>
+                  <p className="mt-0.5 mb-3 text-[11px] text-muted-foreground">
+                    Read automatically from the file's metadata. Advisory only, and shown to reviewers only.
+                  </p>
+                  <ul className="space-y-2.5">
+                    {selected.reviewTags.map((t) => (
+                      <li key={t.code + t.detail} className="text-xs">
+                        <Pill tone={t.tone}>{t.label}</Pill>
+                        <p className="mt-1 text-muted-foreground">{t.detail}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
 
               <div className="rounded-xl border border-border p-4">
                 <p className="mb-2 font-display text-xs font-semibold text-[var(--brand)]">Document notes</p>

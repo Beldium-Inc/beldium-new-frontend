@@ -49,116 +49,203 @@ export const services = [
 ];
 
 /**
- * Evidence groups, one per backend review domain. The API refuses submission
- * until every applicable domain has at least one current, unexpired document.
+ * The onboarding evidence checklist: Beldium's "Logistics Partner Required
+ * Documents" for Nigeria, sections 1 to 6. Section 7 of that list (mineral
+ * movement documents) is collected per shipment, not at onboarding.
+ *
+ * Every item is required unless the list marks it conditional ("where
+ * applicable"). Each files under a backend review domain; the API itself only
+ * refuses submission when an applicable domain has no current document.
  */
+export type DocumentItem = {
+  name: string;
+  domain: LogisticsDomainKey;
+  note?: string;
+  /** Owed only where it applies to the operator, so never blocks submission. */
+  conditional: boolean;
+};
+
+const WHERE_APPLICABLE = "where applicable";
+const BELDIUM_REQUIREMENT = "Beldium requirement";
+const CONDITIONAL_NOTES = [WHERE_APPLICABLE, "where required", "sample couriers"];
+
+const items = (domain: LogisticsDomainKey, list: (string | [string, string])[]): DocumentItem[] =>
+  list.map((entry) =>
+    typeof entry === "string"
+      ? { name: entry, domain, conditional: false }
+      : {
+          name: entry[0],
+          domain,
+          note: entry[1],
+          conditional: CONDITIONAL_NOTES.includes(entry[1]),
+        },
+  );
+
 export const documentGroups: {
   group: string;
-  domain: LogisticsDomainKey;
   related: "Organisation" | "Vehicle" | "Driver";
-  items: string[];
+  items: DocumentItem[];
 }[] = [
   {
-    group: "Corporate documents",
-    domain: "corporate",
+    group: "Organisation and business registration",
     related: "Organisation",
-    items: [
-      "CAC Certificate / Business Registration",
-      "TIN / Tax Registration",
+    items: items("corporate", [
+      ["CAC Certificate of Incorporation or Business Name Registration", "as applicable"],
+      "Tax Identification Number (TIN)",
       "Company Profile",
-      "Proof of Registered Address",
-      "Authorised Representative Evidence",
-    ],
+      "Proof of Registered Business Address",
+      "Authorised Representative Identification",
+      ["Letter of Authorisation", WHERE_APPLICABLE],
+      ["Tax Clearance Certificate", "where required"],
+      ["Transport or Haulage Operating Permit", WHERE_APPLICABLE],
+    ]),
   },
   {
-    group: "Regulatory licences",
-    domain: "regulatory",
+    group: "FRSC and fleet safety",
     related: "Organisation",
-    items: [
-      "Operating / Transport Licence",
-      "Relevant Regulatory Registration",
-      "Relevant Transport Permit",
-      "Regulatory / Transport Compliance Evidence",
-    ],
+    items: items("regulatory", [
+      ["FRSC RTSSS Registration/Certification", WHERE_APPLICABLE],
+      "Fleet Register",
+      "Fleet Safety Policy",
+      ["Safety Unit and Safety Manager Details", WHERE_APPLICABLE],
+      "Driver Training Records",
+      "Fleet Vehicle Inspection Records",
+      "Vehicle Maintenance Records",
+      ["Speed Limiter Compliance Evidence", WHERE_APPLICABLE],
+    ]),
   },
   {
-    group: "Fleet documents",
-    domain: "fleet",
+    group: "Vehicle documents",
     related: "Vehicle",
     items: [
-      "Vehicle Registration",
-      "Proof of Ownership / Lease",
-      "Roadworthiness Certificate",
-      "Vehicle Inspection Certificate / Report",
-      "Maintenance / Service Evidence",
+      ...items("fleet", [
+        "Vehicle Registration Certificate / Particulars",
+        "Proof of Vehicle Ownership or Lease",
+        ["Valid Roadworthiness Certificate", WHERE_APPLICABLE],
+        "Valid Motor Insurance Certificate",
+        "Vehicle Inspection Report",
+        "Vehicle Maintenance / Service Records",
+        ["Commercial Vehicle or Haulage Permit", WHERE_APPLICABLE],
+        ["Speed Limiter Compliance Evidence", WHERE_APPLICABLE],
+      ]),
+      ...items("data", [["GPS Tracker / Telematics Evidence", BELDIUM_REQUIREMENT]]),
+      ...items("fleet", [
+        "Vehicle Photographs and Load Capacity Evidence",
+        ["Trailer Registration and Documents", WHERE_APPLICABLE],
+      ]),
     ],
   },
   {
     group: "Driver documents",
-    domain: "driver",
     related: "Driver",
-    items: [
-      "Driver's Licence",
+    items: items("driver", [
+      ["Valid Driver's Licence", "appropriate vehicle class"],
       "Driver Identification",
-      "Driver Training / Competency Evidence",
-      "Medical / Fitness Evidence",
-    ],
+      "Driver Photograph",
+      "Employment or Engagement Evidence",
+      ["Heavy Vehicle Training Certificate", WHERE_APPLICABLE],
+      "Safety Training Records",
+      ["Medical Fitness Evidence", WHERE_APPLICABLE],
+      ["Driver Competency Assessment", BELDIUM_REQUIREMENT],
+    ]),
   },
   {
-    group: "Insurance",
-    domain: "insurance",
+    group: "Insurance documents",
+    related: "Organisation",
+    items: items("insurance", [
+      "Motor Vehicle Insurance Certificate",
+      ["Goods-in-Transit Insurance", WHERE_APPLICABLE],
+      ["Carrier's Liability Insurance", WHERE_APPLICABLE],
+      ["Public Liability Insurance", WHERE_APPLICABLE],
+      ["Employee Compensation / Insurance Evidence", WHERE_APPLICABLE],
+      ["Shipment-Specific Cargo Insurance", WHERE_APPLICABLE],
+    ]),
+  },
+  {
+    group: "Safety and operational documents",
     related: "Organisation",
     items: [
-      "Vehicle Insurance",
-      "Goods In Transit Insurance",
-      "Public Liability / Business Insurance",
+      ...items("hs", ["Health, Safety and Environment (HSE) Policy", "Transport Safety Policy"]),
+      ...items("operational", ["Journey Management Procedure"]),
+      ...items("hs", ["Emergency Response Procedure", "Incident Reporting Procedure"]),
+      ...items("operational", [
+        "Vehicle Maintenance Procedure",
+        "Driver Management Procedure",
+        "Cargo Loading and Securing Procedure",
+      ]),
+      ...items("mineral", ["Mineral Handling Procedure"]),
+      ...items("operational", ["Security and Cargo Protection Procedure"]),
+      ...items("mineral", [
+        ["Sample Handling Procedure", "sample couriers"],
+        ["Chain of Custody Procedure", WHERE_APPLICABLE],
+      ]),
+      ...items("hs", [["Corrective Action Records", WHERE_APPLICABLE]]),
     ],
   },
-  {
-    group: "Health & safety",
-    domain: "hs",
-    related: "Organisation",
-    items: [
-      "HSE Policy",
-      "Transport Safety Policy",
-      "Emergency Response Procedure",
-      "Incident Reporting Procedure",
-    ],
-  },
-  {
-    group: "Operational procedures",
-    domain: "operational",
-    related: "Organisation",
-    items: [
-      "Journey Management Procedure",
-      "Vehicle Maintenance Procedure",
-      "Driver Management Procedure",
-      "Security / Cargo Protection Procedure",
-    ],
-  },
-  {
-    group: "Mineral transport",
-    domain: "mineral",
-    related: "Organisation",
-    items: [
-      "Cargo / Mineral Handling Procedure",
-      "Sample Handling Procedure",
-      "Chain of Custody Procedure",
-      "Mineral Movement Compliance Evidence",
-    ],
-  },
-  {
-    group: "Data & tracking",
-    domain: "data",
-    related: "Organisation",
-    items: ["Tracker / Telematics Evidence", "Data Protection Policy"],
-  },
+];
+
+const ALL_DOMAINS: LogisticsDomainKey[] = [
+  "corporate",
+  "regulatory",
+  "fleet",
+  "driver",
+  "insurance",
+  "hs",
+  "operational",
+  "mineral",
+  "data",
 ];
 
 /** The backend makes the mineral domain applicable when any service mentions minerals. */
 export function requiredDomains(servicesChosen: string[]): LogisticsDomainKey[] {
   const mineral = servicesChosen.some((s) => s.toLowerCase().includes("mineral"));
-  return documentGroups.map((g) => g.domain).filter((d) => d !== "mineral" || mineral);
+  return ALL_DOMAINS.filter((d) => d !== "mineral" || mineral);
+}
+
+/** Who a group's documents are filed against: each vehicle, each driver, or the organisation. */
+export function documentSubjects(
+  related: "Organisation" | "Vehicle" | "Driver",
+  vehicles: { id: string; registration: string }[],
+  drivers: { id: string; name: string }[],
+  orgName: string,
+) {
+  if (related === "Vehicle") return vehicles.map((v) => v.registration || v.id);
+  if (related === "Driver") return drivers.map((d) => d.name || d.id);
+  return [orgName || "Organisation"];
+}
+
+/**
+ * Required documents not yet attached. Every item is owed unless it is
+ * conditional; vehicle and driver items are owed once per vehicle and driver
+ * (`missingFor`). Mineral procedures are owed only by mineral operators.
+ */
+export function outstandingDocuments(
+  servicesChosen: string[],
+  docs: { group: string; type: string; related: string }[],
+  vehicles: { id: string; registration: string }[],
+  drivers: { id: string; name: string }[],
+) {
+  const domains = requiredDomains(servicesChosen);
+  return documentGroups.flatMap((g) =>
+    g.items
+      .filter((i) => !i.conditional && domains.includes(i.domain))
+      .map((i) => {
+        const have = docs.filter((d) => d.group === g.group && d.type === i.name);
+        const missingFor =
+          g.related === "Organisation"
+            ? []
+            : documentSubjects(g.related, vehicles, drivers, "").filter(
+                (subject) => !have.some((d) => d.related === subject),
+              );
+        return {
+          group: g.group,
+          name: i.name,
+          missingFor,
+          missing: g.related === "Organisation" ? have.length === 0 : missingFor.length > 0,
+        };
+      })
+      .filter((i) => i.missing),
+  );
 }
 
 export const complianceQuestions = [
@@ -338,6 +425,16 @@ function load() {
   try {
     const raw = window.localStorage.getItem(KEY);
     if (raw) state = { ...empty(), ...JSON.parse(raw) };
+    // A draft started against an older checklist keeps only what is still on it
+    // (or already with the API).
+    state.documents = state.documents.filter(
+      (d) =>
+        state.server.documents[d.id] ||
+        documentGroups.some(
+          (g) =>
+            g.group === d.group && g.items.some((i) => i.name === d.type && i.domain === d.domain),
+        ),
+    );
   } catch {
     /* A corrupt or blocked draft just starts empty. */
   }

@@ -341,6 +341,8 @@ export interface ComplianceApplication {
   inspection_capability: Partial<InspectionCapabilityData>;
   conflict_declaration: Partial<ConflictDeclarationData>;
   declaration: Partial<DeclarationData>;
+  /** Quality & Control sections; empty for every other sector. */
+  quality_profile?: import("./compliance").QualityProfile;
   submitted_at: Timestamp | null;
   reviewed_at: Timestamp | null;
   review_notes: string;

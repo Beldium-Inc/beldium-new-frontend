@@ -22,6 +22,7 @@ import {
   useReviewLogisticsApplicationSection,
   useRespondToRequest,
   useAddDocumentNote,
+  useAssignReviewer,
   useStartReview,
 } from "@/lib/api/logistics-queries";
 import { useCurrentUser } from "@/lib/api/queries";
@@ -163,7 +164,24 @@ function toDriver(row: Api.Driver, vehicleReg: string): Driver {
   };
 }
 
+const FILE_DETAILS: [string, string][] = [
+  ["created", "File created"],
+  ["modified", "File last changed"],
+  ["software", "Made with"],
+  ["producer", "PDF producer"],
+  ["author", "File author"],
+  ["modified_by", "Last changed by"],
+  ["camera", "Camera"],
+  ["pages", "Pages"],
+];
+
+function fileSize(bytes: unknown): string {
+  if (typeof bytes !== "number") return "";
+  return bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 function toDocument(row: Api.LogisticsDocument): ComplianceDocument {
+  const meta = row.file_metadata ?? {};
   return {
     id: row.id,
     name: row.title,
@@ -173,7 +191,7 @@ function toDocument(row: Api.LogisticsDocument): ComplianceDocument {
     reference: row.reference,
     issued: row.issued_on ?? "-",
     expires: row.expires_on ?? "-",
-    size: "",
+    size: fileSize(meta["size"]),
     uploadedBy: "",
     uploadedAt: row.created_at.slice(0, 10),
     status: DOC_STATUS[row.status],
@@ -181,6 +199,11 @@ function toDocument(row: Api.LogisticsDocument): ComplianceDocument {
     originalName: row.original_name,
     downloadUrl: apiUrl(documentDownloadUrl(row.id)),
     reviewNotes: row.review_notes,
+    reviewTags: row.review_tags ?? [],
+    fileDetails: FILE_DETAILS.filter(([key]) => meta[key]).map(([key, label]) => {
+      const value = String(meta[key]);
+      return [label, key === "created" || key === "modified" ? value.slice(0, 10) : value];
+    }),
   };
 }
 
@@ -274,8 +297,12 @@ interface Ctx {
   reviewDocument: (docId: string, status: "verified" | "rejected", notes: string) => Promise<void>;
   addDocumentNote: (companyId: string, docId: string, text: string) => Promise<void>;
   addReviewNote: (text: string) => void;
-  assignReviewer: (companyId: string, reviewer: string) => void;
-  /** Resolves once the API has moved the application to "under review". */
+  /** Take the application for yourself; refused if another reviewer holds it. */
+  claimApplication: (companyId: string) => Promise<void>;
+  /**
+   * Claims the application if nobody has, then moves a submitted one to
+   * "under review". Resolves once the API has recorded both.
+   */
   startReview: (companyId: string) => Promise<void>;
   /** Operator sign-off on one compliance check; rejects with the API's reason. */
   reviewSection: (
@@ -331,6 +358,7 @@ export function AppStateProvider({
   const auditQuery = useLogisticsAudit();
 
   const startReviewFor = useStartReview();
+  const assignReviewerFor = useAssignReviewer();
   const decideFor = useDecideApplication();
   const createRequestFor = useCreateInformationRequest();
   const respondFor = useRespondToRequest();
@@ -420,7 +448,12 @@ export function AppStateProvider({
         risk: riskBandLabel(application?.risk?.risk_band),
         riskScore: application?.risk?.compliance_score ?? 0,
         submitted: application?.submitted_at?.slice(0, 10) ?? "",
-        reviewer: application?.reviewer ?? "Unassigned",
+        reviewer: application?.reviewer_name || "Unassigned",
+        claim: !application?.reviewer
+          ? "none"
+          : application.reviewer === currentUser.data?.id
+            ? "mine"
+            : "other",
         lastActivity: row.updated_at.slice(0, 10),
         contactName: row.contact_name,
         contactEmail: row.contact_email,
@@ -469,6 +502,7 @@ export function AppStateProvider({
     documentsRaw,
     dashboardByCompanyUuid,
     restrictionsRaw,
+    currentUser.data?.id,
   ]);
 
   const companyNameByUuid = React.useMemo(() => {
@@ -583,14 +617,21 @@ export function AppStateProvider({
       await addDocumentNoteFor.mutateAsync({ id: docId, body: text });
     },
     addReviewNote: () => {},
-    assignReviewer: () => {
-      // The API assigns reviewers by user id, not the display name this
-      // screen currently collects; wire a user picker before enabling this.
+    claimApplication: async (companyId) => {
+      const id = applicationIdForCompany(companyId);
+      const reviewer = currentUser.data?.id;
+      if (!id || !reviewer) throw new Error("This company has no application to claim.");
+      await assignReviewerFor.mutateAsync({ id, reviewer });
     },
     startReview: async (companyId) => {
-      const id = applicationIdForCompany(companyId);
-      if (!id) throw new Error("This company has no application to review.");
-      await startReviewFor.mutateAsync(id);
+      const uuid = uuidByReference.get(companyId);
+      const application = uuid ? applicationByCompanyUuid.get(uuid) : undefined;
+      if (!application) throw new Error("This company has no application to review.");
+      const reviewer = currentUser.data?.id;
+      // Only the reviewer holding the application may act on it.
+      if (!application.reviewer && reviewer)
+        await assignReviewerFor.mutateAsync({ id: application.id, reviewer });
+      if (application.status === "submitted") await startReviewFor.mutateAsync(application.id);
     },
     reviewSection: async (companyId, key, input) => {
       const id = applicationIdForCompany(companyId);

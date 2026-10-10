@@ -26,6 +26,7 @@ import {
   listProduction,
   respondToInfoRequest,
   submitCorrectiveEvidence,
+  replaceDocument,
   uploadDocument,
   type ApplicationInput,
   type EquipmentInput,
@@ -149,6 +150,15 @@ export function useUploadMiningDocument() {
   return useMutation({
     mutationFn: uploadDocument,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: miningKeys.documents }),
+  });
+}
+
+export function useReplaceMiningDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; file: File }) => replaceDocument(input.id, input.file),
+    // A replacement also answers any open request raised against the document.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["mining"] }),
   });
 }
 

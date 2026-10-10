@@ -10,9 +10,14 @@ export const Route = createFileRoute("/onboarding/submitted")({
   component: SubmittedPage,
   // The flow passes the id it just submitted; falling back to the resolved
   // application keeps a direct visit or a refresh working.
-  validateSearch: (search: Record<string, unknown>): { id?: string } => {
-    const id = search["id"];
-    return typeof id === "string" && id.trim() ? { id: id.trim() } : {};
+  validateSearch: (search: Record<string, unknown>): { id?: string; reference?: string } => {
+    const text = (value: unknown) =>
+      typeof value === "string" && value.trim() ? value.trim() : undefined;
+    const id = text(search["id"]);
+    // An individual's application has no compliance application to look up,
+    // so the flow hands over the reference it was issued.
+    const reference = text(search["reference"]);
+    return { ...(id ? { id } : {}), ...(reference ? { reference } : {}) };
   },
   head: () => ({
     meta: [
@@ -34,7 +39,7 @@ export const Route = createFileRoute("/onboarding/submitted")({
 });
 
 function SubmittedPage() {
-  const { role, professional } = useOnboarding();
+  const { role, professional, sector, account } = useOnboarding();
   const search = Route.useSearch();
   const navigate = useNavigate();
 
@@ -44,6 +49,20 @@ function SubmittedPage() {
   const organisation = context.organisation;
 
   const isProfessional = role === "independent";
+  const isQualityOfficer = sector === "quality" && role === "compliance-officer";
+
+  if (isQualityOfficer) {
+    return (
+      <SubmittedShell
+        heading="Professional application received"
+        applicant={account.fullName}
+        reference={search.reference ?? "Pending"}
+        status="Under Review"
+        submitted="Just now"
+        onSignIn={() => navigate({ to: "/signin" })}
+      />
+    );
+  }
 
   // The independent-professional flow is still the local prototype; only the
   // organisation application has a backend record to read from.
@@ -104,7 +123,7 @@ function SubmittedShell({
   reference: string;
   status: string;
   submitted: string;
-  documentCount: number;
+  documentCount?: number;
   onSignIn: () => void;
 }) {
   return (
@@ -134,7 +153,9 @@ function SubmittedShell({
           value={<span className="font-semibold uppercase tracking-wide">{status}</span>}
         />
         <InfoRow label="Submitted" value={submitted} />
-        <InfoRow label="Documents attached" value={`${documentCount}`} />
+        {documentCount !== undefined && (
+          <InfoRow label="Documents attached" value={`${documentCount}`} />
+        )}
       </div>
 
       <p className="mt-6 text-sm text-muted-foreground">

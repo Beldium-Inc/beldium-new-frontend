@@ -8,6 +8,7 @@ import {
   closeQualityNonConformity,
   createTestRequest,
   decideQualityApplication,
+  decideQualityProfessionalApplication,
   fetchQualityCapabilities,
   fetchQualityDashboard,
   getQualityApplication,
@@ -15,6 +16,7 @@ import {
   getSample,
   issueCertificate,
   listQualityApplications,
+  listQualityProfessionalApplications,
   listBuyerSpecs,
   listCertificates,
   listQualityNonConformities,
@@ -50,6 +52,7 @@ export const qualityKeys = {
   dashboard: ["quality", "dashboard"] as const,
   applications: (query: QualityListQuery = {}) => ["quality", "applications", query] as const,
   application: (id: UUID) => ["quality", "application", id] as const,
+  professionalApplications: ["quality", "professional-applications"] as const,
   samples: (query: QualityListQuery = {}) => ["quality", "samples", query] as const,
   sample: (id: UUID) => ["quality", "sample", id] as const,
   certificates: (query: QualityListQuery = {}) => ["quality", "certificates", query] as const,
@@ -203,6 +206,29 @@ export function useDecideQualityApplication() {
       status: QualityApplicationStatus;
       note?: string | undefined;
     }) => decideQualityApplication(input.id, { status: input.status, note: input.note }),
+    onSuccess: () => invalidateQuality(queryClient),
+  });
+}
+
+export function useQualityProfessionalApplications() {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: qualityKeys.professionalApplications,
+    queryFn: () => listQualityProfessionalApplications(FULL_PAGE),
+    enabled: hasTokens,
+    staleTime: LIST_STALE_TIME,
+  });
+}
+
+export function useDecideQualityProfessionalApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: UUID;
+      status: QualityApplicationStatus;
+      note?: string | undefined;
+    }) =>
+      decideQualityProfessionalApplication(input.id, { status: input.status, note: input.note }),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }

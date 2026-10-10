@@ -116,7 +116,7 @@ function numeric(value: string): number {
  * non-field error, or a failure with no field detail at all. Repeating every
  * field message in a toast as well would say the same thing twice.
  */
-function reportError(error: unknown, fallback: string): Record<string, string> {
+export function reportError(error: unknown, fallback: string): Record<string, string> {
   if (!(error instanceof ApiError)) {
     toast.error(fallback);
     return {};

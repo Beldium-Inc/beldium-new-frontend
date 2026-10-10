@@ -169,7 +169,9 @@ export function buildSiteFiles({
     sectionTitle: titleOf("licence"),
   }));
 
-  // Awaiting a decision first, so the reviewer's Next walks the work queue.
-  const order = (f: SiteFile) => (f.source === "document" && f.status === "pending" ? 0 : 1);
+  // Awaiting a decision first, so the reviewer's Next walks the work queue;
+  // copies the miner has since replaced go last.
+  const order = (f: SiteFile) =>
+    f.status === "superseded" ? 2 : f.source === "document" && f.status === "pending" ? 0 : 1;
   return [...documentFiles, ...evidenceFiles, ...licenceFiles].sort((a, b) => order(a) - order(b));
 }

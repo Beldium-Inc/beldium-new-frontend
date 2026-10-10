@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2 } from "lucide-react";
 import { AuthShell } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
-import { roleCatalogue } from "@/lib/onboarding/data";
+import { roleCatalogueFor } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { seatFor } from "@/lib/onboarding/seat";
 import { useSession } from "@/lib/session";
@@ -14,7 +14,7 @@ function WelcomePage() {
   const { sector, role, application, account, markWelcomeSeen, capability } = useOnboarding();
   const { signIn } = useSession();
   const navigate = useNavigate();
-  const entry = roleCatalogue.find((r) => r.role === role);
+  const entry = roleCatalogueFor(sector).find((r) => r.role === role);
 
   const enter = () => {
     // An approved application always carries the sector it was scoped to; fall

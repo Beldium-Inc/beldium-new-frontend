@@ -6,6 +6,7 @@ import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordGuide, passwordProblem } from "@/components/ui/password-guide";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -83,8 +84,13 @@ function SignupPage() {
     e.preventDefault();
     setError("");
     const phone = formatPhoneNumber(form.phone);
-    if (!form.fullName || !form.email.includes("@") || !isValidPhoneNumber(phone) || form.password.length < 8) {
-      setError("Complete your name, a valid email, a complete phone number and an 8+ character password.");
+    if (!form.fullName || !form.email.includes("@") || !isValidPhoneNumber(phone)) {
+      setError("Complete your name, a valid email and a complete phone number.");
+      return;
+    }
+    const weak = passwordProblem(form.password);
+    if (weak) {
+      setError(weak);
       return;
     }
     if (role !== "individual" && !form.organisationName) {
@@ -183,8 +189,21 @@ function SignupPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <PasswordInput id="password" value={form.password} onChange={set("password")} placeholder="••••••••" />
+            <PasswordInput
+              id="password"
+              value={form.password}
+              onChange={set("password")}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              aria-describedby="password-guide"
+            />
           </div>
+          <PasswordGuide
+            id="password-guide"
+            className="sm:col-span-2"
+            password={form.password}
+            identity={[form.fullName, form.email]}
+          />
         </div>
 
         {role !== "individual" ? (

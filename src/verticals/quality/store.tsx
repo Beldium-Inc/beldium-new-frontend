@@ -80,6 +80,24 @@ function toApplication(row: Api.QualityApplication): Application {
       proficiencyTesting: row.laboratory.proficiency_testing,
       scope: row.laboratory.scope,
     },
+    ...(row.organisation.organisation_type
+      ? {
+          onboarding: {
+            organisationType: row.organisation.organisation_type,
+            taxIdentifier: row.organisation.tax_identifier ?? "",
+            registeredAddress: row.organisation.registered_address ?? "",
+            capabilities: row.capability.capabilities ?? [],
+            minerals: row.capability.minerals ?? [],
+            laboratories: row.laboratory.laboratories ?? [],
+            equipment: row.laboratory.equipment ?? [],
+            accreditedScope: row.laboratory.accredited_scope ?? "",
+            coverage: row.capability.sampling?.geographic_coverage ?? [],
+            samplingTeams: row.capability.sampling?.field_sampling_teams ?? null,
+            sealing: row.capability.sampling?.tamper_evident_sealing ?? "",
+            samplingProcedure: row.capability.sampling?.sampling_procedure_summary ?? "",
+          },
+        }
+      : {}),
     documents: row.documents.map((d) => ({
       id: d.id,
       name: d.name,
@@ -254,7 +272,9 @@ interface Ctx {
 
 /** Surface a failed API call instead of dropping the rejection on the floor. */
 function reportFailure(error: unknown): void {
-  toast.error(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+  toast.error(
+    error instanceof ApiError ? error.message : "Something went wrong. Please try again.",
+  );
 }
 
 const BeldiumContext = React.createContext<Ctx | null>(null);
@@ -389,7 +409,9 @@ export function BeldiumProvider({
       }
     },
     addCustody: (sampleId, action, location, sealIntact) => {
-      addCustodyFor.mutateAsync({ id: sampleId, action, location, seal_intact: sealIntact }).catch(reportFailure);
+      addCustodyFor
+        .mutateAsync({ id: sampleId, action, location, seal_intact: sealIntact })
+        .catch(reportFailure);
     },
     createTestRequest: (sampleId, input) => {
       createTestRequestFor.mutateAsync({ id: sampleId, ...input }).catch(reportFailure);
@@ -419,12 +441,14 @@ export function BeldiumProvider({
       raiseNonConformityFor.mutateAsync(input).catch(reportFailure);
     },
     addCorrectiveAction: (ncrId, action) => {
-      addCorrectiveActionFor.mutateAsync({
-        id: ncrId,
-        action: action.action,
-        owner: action.owner,
-        due: action.due,
-      }).catch(reportFailure);
+      addCorrectiveActionFor
+        .mutateAsync({
+          id: ncrId,
+          action: action.action,
+          owner: action.owner,
+          due: action.due,
+        })
+        .catch(reportFailure);
     },
     advanceCorrectiveAction: (ncrId, actionId) => {
       advanceCorrectiveActionFor.mutateAsync({ ncId: ncrId, actionId }).catch(reportFailure);

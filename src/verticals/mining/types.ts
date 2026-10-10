@@ -170,7 +170,7 @@ export interface DocumentRecord {
   siteId: string;
   uploaded: string;
   expiry?: string;
-  status: "Verified" | "Pending" | "Rejected" | "Expired";
+  status: "Verified" | "Pending" | "Rejected" | "Expired" | "Replaced";
   owner: string;
 }
 
