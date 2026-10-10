@@ -78,7 +78,10 @@ export function updateComplianceApplication(
  */
 export function decideComplianceApplication(
   id: UUID,
-  input: { status: "verified" | "conditionally_approved" | "action_required" | "rejected"; notes?: string | undefined },
+  input: {
+    status: "verified" | "conditionally_approved" | "action_required" | "rejected";
+    notes?: string | undefined;
+  },
 ): Promise<ComplianceApplication> {
   return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/decide/`, {
     method: "POST",
@@ -133,6 +136,103 @@ export function saveSection<S extends SectionSlug>(
   id: UUID,
   section: S,
   data: SectionData[S],
+): Promise<ComplianceApplication> {
+  return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/sections/${section}/`, {
+    method: "PATCH",
+    body: { data },
+  });
+}
+
+// --- Quality & Control sections --------------------------------------------
+
+// The Quality & Control organisation application asks for a different set of
+// facts from the shared seven sections (laboratories, accreditation, methods,
+// equipment, sampling), so it writes to its own slugs under the same
+// `sections/` route and reads them back from `quality_profile`.
+// Saving the first one is what marks an application as a Q&C one: from then on
+// its document checklist and progress are the Q&C ones.
+
+export const QUALITY_SECTION_SLUGS = [
+  "quality-organisation",
+  "quality-services",
+  "quality-laboratories",
+  "quality-accreditation",
+  "quality-testing-methods",
+  "quality-equipment",
+  "quality-personnel",
+  "quality-sampling",
+  "quality-declaration",
+] as const;
+
+export type QualitySectionSlug = (typeof QUALITY_SECTION_SLUGS)[number];
+
+export interface QualityLaboratory {
+  name: string;
+  location: string;
+  registration_number: string;
+}
+
+export interface QualityEquipment {
+  name: string;
+  serial_number: string;
+  /** ISO date (YYYY-MM-DD). */
+  calibration_date: string;
+}
+
+export interface QualityKeyPerson {
+  full_name: string;
+  role: string;
+  email: string;
+}
+
+/** Payload shape per Quality & Control section. */
+export interface QualitySectionData {
+  "quality-organisation": {
+    legal_name: string;
+    trading_name: string;
+    organisation_type: string;
+    registration_number: string;
+    tax_identifier: string;
+    registered_address: string;
+    country: string;
+    website: string;
+  };
+  "quality-services": { capabilities: string[]; minerals: string[] };
+  "quality-laboratories": { laboratories: QualityLaboratory[] };
+  "quality-accreditation": {
+    accreditation_body: string;
+    accreditation_number: string;
+    /** ISO date (YYYY-MM-DD). */
+    accreditation_expiry: string;
+    standard: string;
+    accredited_scope: string;
+  };
+  "quality-testing-methods": { testing_methods: string[] };
+  "quality-equipment": { equipment: QualityEquipment[] };
+  "quality-personnel": { personnel: QualityKeyPerson[] };
+  "quality-sampling": {
+    geographic_coverage: string[];
+    field_sampling_teams: number;
+    tamper_evident_sealing: string;
+    sampling_procedure_summary: string;
+  };
+  "quality-declaration": {
+    information_true: boolean;
+    consent_to_verification: boolean;
+    understands_verification: boolean;
+    signature: string;
+  };
+}
+
+/** `quality_profile`: one entry per saved section, keyed by the slug minus `quality-`. */
+export type QualityProfile = {
+  [S in QualitySectionSlug as S extends `quality-${infer K}` ? K : never]?: QualitySectionData[S];
+};
+
+export function saveQualitySection<S extends QualitySectionSlug>(
+  id: UUID,
+  section: S,
+  data: QualitySectionData[S],
 ): Promise<ComplianceApplication> {
   return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/sections/${section}/`, {
     method: "PATCH",

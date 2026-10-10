@@ -15,7 +15,7 @@ import { AuthShell, InfoRow } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { roleCatalogue } from "@/lib/onboarding/data";
+import { roleCatalogueFor } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { useApplicationContext } from "@/lib/onboarding/application";
 import {
@@ -88,7 +88,7 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 function OnboardingDashboard() {
-  const { role } = useOnboarding();
+  const { role, sector } = useOnboarding();
   const navigate = useNavigate();
 
   const dashboard = useDashboard();
@@ -101,7 +101,7 @@ function OnboardingDashboard() {
   const activity = useApplicationActivity(applicationId);
 
   const [reply, setReply] = useState("");
-  const roleEntry = roleCatalogue.find((r) => r.role === role);
+  const roleEntry = roleCatalogueFor(sector).find((r) => r.role === role);
 
   // The row from GET /dashboard/ is the authoritative summary; the detail
   // fetch backs the sections that need more than counts.

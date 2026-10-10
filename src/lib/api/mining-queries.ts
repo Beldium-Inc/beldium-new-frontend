@@ -803,8 +803,11 @@ export function useUploadMiningDocument() {
 export function useReviewMiningDocument() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; status: "verified" | "rejected" }) =>
-      reviewMiningDocument(input.id, { status: input.status }),
+    mutationFn: (input: { id: UUID; status: "verified" | "rejected"; notes?: string }) =>
+      reviewMiningDocument(input.id, {
+        status: input.status,
+        ...(input.notes ? { notes: input.notes } : {}),
+      }),
     onSuccess: () => invalidateMining(queryClient),
   });
 }

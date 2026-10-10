@@ -1,6 +1,7 @@
+import type { VerticalSlug } from "../verticals";
 import type { OnboardingRole } from "./types";
 
-export const roleCatalogue: {
+export type RoleCatalogueEntry = {
   role: OnboardingRole;
   title: string;
   blurb: string;
@@ -8,13 +9,24 @@ export const roleCatalogue: {
   needsOrganisation: boolean;
   joinOnly?: boolean;
   oversight?: boolean;
-}[] = [
+  /** Skip the register-or-join question: this role always registers a new organisation. */
+  registersOnly?: boolean;
+  /** Shown under the blurb, e.g. "Organisation · 11 application steps". */
+  note?: string;
+};
+
+export const roleCatalogue: RoleCatalogueEntry[] = [
   {
     role: "compliance-org",
     title: "Compliance Organisation",
     blurb:
       "An independent organisation providing compliance, verification, inspection, environmental, regulatory or technical assessment services in your sector.",
-    permissions: ["Register organisation & personnel", "Run compliance reviews", "File inspection reports", "Raise non-conformities"],
+    permissions: [
+      "Register organisation & personnel",
+      "Run compliance reviews",
+      "File inspection reports",
+      "Raise non-conformities",
+    ],
     needsOrganisation: true,
   },
   {
@@ -51,6 +63,70 @@ export const roleCatalogue: {
   },
 ];
 
+/** Quality & Control names its account types after its own trade. */
+export const qualityRoleCatalogue: RoleCatalogueEntry[] = [
+  {
+    role: "compliance-org",
+    title: "Quality & Control Organisation",
+    blurb:
+      "Laboratories, assay, inspection and conformity assessment organisations operating one or more facilities.",
+    permissions: [],
+    needsOrganisation: true,
+    registersOnly: true,
+    note: "Organisation · 11 application steps",
+  },
+  {
+    role: "compliance-officer",
+    title: "Quality & Control Officer / Inspector",
+    blurb: "Individual inspectors and sampling officers working for a Q&C organisation.",
+    permissions: [],
+    needsOrganisation: true,
+    joinOnly: true,
+    note: "Individual · 8 application steps",
+  },
+  {
+    role: "laboratory-analyst",
+    title: "Laboratory Analyst",
+    blurb: "Bench analysts running accredited methods inside a registered laboratory.",
+    permissions: [],
+    needsOrganisation: true,
+    joinOnly: true,
+    note: "Individual",
+  },
+  {
+    role: "regulator-org",
+    title: "Regulatory / Oversight Organisation",
+    blurb: "Ministries, agencies and standards bodies supervising mineral quality and trade.",
+    permissions: [],
+    needsOrganisation: true,
+    oversight: true,
+    note: "Organisation",
+  },
+  {
+    role: "regulator-officer",
+    title: "Regulatory / Oversight Officer",
+    blurb: "An authorised user operating under an approved regulatory organisation.",
+    permissions: [],
+    needsOrganisation: true,
+    joinOnly: true,
+    oversight: true,
+    note: "Individual",
+  },
+  {
+    role: "independent",
+    title: "Independent Quality Professional",
+    blurb:
+      "An individual professional providing eligible quality and control services independently.",
+    permissions: [],
+    needsOrganisation: false,
+    note: "Individual",
+  },
+];
+
+export function roleCatalogueFor(sector: VerticalSlug | null): RoleCatalogueEntry[] {
+  return sector === "quality" ? qualityRoleCatalogue : roleCatalogue;
+}
+
 export const documentCatalogue = [
   "CAC Certificate of Incorporation",
   "CAC Status Report (Form CO7)",
@@ -75,7 +151,14 @@ export const nigerianStates = [
   "FCT Abuja",
 ];
 
-export const mineralOptions = ["Lithium (Spodumene)", "Lithium (Lepidolite)", "Tin", "Columbite", "Tantalite", "Feldspar"];
+export const mineralOptions = [
+  "Lithium (Spodumene)",
+  "Lithium (Lepidolite)",
+  "Tin",
+  "Columbite",
+  "Tantalite",
+  "Feldspar",
+];
 
 export const inspectionDisciplines = [
   "Geological verification",
@@ -131,11 +214,31 @@ export const personnelRoleOptions = [
 ];
 
 export const orgDeclarationItems = [
-  { key: "accuracy", label: "Accuracy Declaration", detail: "All information supplied in this application is accurate and complete." },
-  { key: "independence", label: "Independence Declaration", detail: "Compliance work will be carried out independently and objectively." },
-  { key: "conflict", label: "Conflict of Interest Disclosure", detail: "Any conflict of interest will be disclosed to Beldium without delay." },
-  { key: "dataIntegrity", label: "Data Integrity Declaration", detail: "Evidence, findings and reports will not be altered or misrepresented." },
-  { key: "authorised", label: "Authorised Representative Declaration", detail: "I am authorised to submit this application on behalf of the organisation." },
+  {
+    key: "accuracy",
+    label: "Accuracy Declaration",
+    detail: "All information supplied in this application is accurate and complete.",
+  },
+  {
+    key: "independence",
+    label: "Independence Declaration",
+    detail: "Compliance work will be carried out independently and objectively.",
+  },
+  {
+    key: "conflict",
+    label: "Conflict of Interest Disclosure",
+    detail: "Any conflict of interest will be disclosed to Beldium without delay.",
+  },
+  {
+    key: "dataIntegrity",
+    label: "Data Integrity Declaration",
+    detail: "Evidence, findings and reports will not be altered or misrepresented.",
+  },
+  {
+    key: "authorised",
+    label: "Authorised Representative Declaration",
+    detail: "I am authorised to submit this application on behalf of the organisation.",
+  },
 ];
 
 export const reviewCapabilityOptions = [
@@ -179,7 +282,10 @@ export const independenceQuestions = [
   { key: "ownsMining", label: "Do you own or have a financial interest in a mining company?" },
   { key: "tradesMinerals", label: "Do you trade minerals?" },
   { key: "worksForMiner", label: "Do you work for a miner you may be assigned to review?" },
-  { key: "otherRelationship", label: "Do you have any relationship that could affect independent judgement?" },
+  {
+    key: "otherRelationship",
+    label: "Do you have any relationship that could affect independent judgement?",
+  },
 ];
 
 export const professionOptions = [
@@ -277,10 +383,27 @@ export const oversightCapabilityOptions = [
 ];
 
 export const regulatorDeclarationItems = [
-  { key: "authority", label: "Organisation Authority", detail: "This organisation holds lawful authority to carry out the regulatory functions declared." },
-  { key: "accuracy", label: "Accuracy of Information", detail: "All information and documents submitted are accurate and complete." },
-  { key: "representative", label: "Authorised Representative", detail: "I am authorised to submit this application on behalf of the institution." },
-  { key: "terms", label: "Beldium Terms & Data Requirements", detail: "The institution accepts Beldium's platform terms and data handling requirements." },
+  {
+    key: "authority",
+    label: "Organisation Authority",
+    detail:
+      "This organisation holds lawful authority to carry out the regulatory functions declared.",
+  },
+  {
+    key: "accuracy",
+    label: "Accuracy of Information",
+    detail: "All information and documents submitted are accurate and complete.",
+  },
+  {
+    key: "representative",
+    label: "Authorised Representative",
+    detail: "I am authorised to submit this application on behalf of the institution.",
+  },
+  {
+    key: "terms",
+    label: "Beldium Terms & Data Requirements",
+    detail: "The institution accepts Beldium's platform terms and data handling requirements.",
+  },
 ];
 
 export const authorisationLevels = ["Administrator", "Approver", "Officer", "Read Only"];

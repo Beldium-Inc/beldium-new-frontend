@@ -132,7 +132,9 @@ function ApplicationReview() {
   // Applications filed before a site record existed review the organisation's own site.
   const reviewSiteId = application?.site ?? siteIds[0] ?? null;
   const { documents, isLoading: documentsLoading } = useSiteFiles(siteIds);
-  const filed = documents.filter((d) => d.file_url);
+  // A copy the miner has since replaced is history, not something left to
+  // verify: the replacement is what the gate is judged on.
+  const filed = documents.filter((d) => d.file_url && d.status !== "superseded");
   const orgDocs = filed.filter((d) => isOrganisationDocumentName(d.name));
   const siteDocs = filed.filter((d) => !isOrganisationDocumentName(d.name));
 

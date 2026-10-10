@@ -80,6 +80,10 @@ export interface QualityApplication {
     website: string;
     beneficial_owners: { name: string; share: number; pep: boolean }[];
     contact: { name: string; email: string; phone: string };
+    /** Present on applications that came in through Q&C onboarding. */
+    organisation_type?: string;
+    tax_identifier?: string;
+    registered_address?: string;
   };
   capability: {
     lead_assessor: string;
@@ -88,6 +92,14 @@ export interface QualityApplication {
     registry: string;
     registry_id: string;
     staff: { name: string; role: string; competency: string; verified: boolean }[];
+    capabilities?: string[];
+    minerals?: string[];
+    sampling?: {
+      geographic_coverage?: string[];
+      field_sampling_teams?: number;
+      tamper_evident_sealing?: string;
+      sampling_procedure_summary?: string;
+    };
   };
   laboratory: {
     facility: string;
@@ -98,6 +110,9 @@ export interface QualityApplication {
     last_surveillance: string;
     proficiency_testing: string;
     scope: ScopeItem[];
+    accredited_scope?: string;
+    laboratories?: { name: string; location: string; registration_number: string }[];
+    equipment?: { name: string; serial_number: string; calibration_date: string }[];
   };
   documents: PartnerDocument[];
   risk_flags: RiskFlag[];
@@ -540,4 +555,107 @@ export function verifyCertificate(hash: string): Promise<CertificateVerification
     `${BASE}/certificates/verify/${encodeURIComponent(hash)}/`,
     { auth: false },
   );
+}
+
+// --- professional applications ------------------------------------------------
+
+// An individual (officer, inspector) applying to work under a Q&C organisation.
+// Beldium reviews the person here; the organisation's administrator answers the
+// join request that is sent alongside.
+
+export interface QualityProfessionalInput {
+  /** The organisation the applicant is asking to join. */
+  organisation: UUID;
+  role: "officer_inspector";
+  personal: {
+    full_legal_name: string;
+    /** ISO date (YYYY-MM-DD). */
+    date_of_birth: string;
+    national_id: string;
+    job_title: string;
+    base_city: string;
+  };
+  qualifications: { qualification: string; institution: string; year: string }[];
+  certifications: { name: string; certificate_number: string; expiry: string }[];
+  capability: { capabilities: string[]; minerals: string[] };
+  experience: { years_experience: number; previous_employer: string; summary: string };
+  declaration: {
+    information_true: boolean;
+    consent_to_verification: boolean;
+    understands_verification: boolean;
+    signature: string;
+  };
+}
+
+export interface QualityProfessionalDocument {
+  id: UUID;
+  document_type: string;
+  title: string;
+  original_name: string;
+  created_at: string;
+}
+
+export interface QualityProfessionalApplication extends Omit<
+  QualityProfessionalInput,
+  "organisation"
+> {
+  id: UUID;
+  reference: string;
+  status: QualityApplicationStatus;
+  applicant_email: string;
+  organisation: UUID | null;
+  organisation_name: string;
+  documents: QualityProfessionalDocument[];
+  audit: AuditEntry[];
+  decision_note: string;
+  submitted_at: string;
+}
+
+/**
+ * One multipart request: the answers as a JSON string under `data`, and each
+ * attached file under its document type.
+ */
+export function submitQualityProfessionalApplication(
+  input: QualityProfessionalInput,
+  files: Record<string, File>,
+): Promise<QualityProfessionalApplication> {
+  const form = new FormData();
+  form.append("data", JSON.stringify(input));
+  for (const [documentType, file] of Object.entries(files)) form.append(documentType, file);
+  return apiFetch<QualityProfessionalApplication>(`${BASE}/professional-applications/`, {
+    method: "POST",
+    body: form,
+  });
+}
+
+/** Operators see every application; anyone else sees only their own. */
+export function listQualityProfessionalApplications(
+  query: QualityListQuery = {},
+): Promise<Paginated<QualityProfessionalApplication>> {
+  return apiFetch<Paginated<QualityProfessionalApplication>>(`${BASE}/professional-applications/`, {
+    query,
+  });
+}
+
+export function decideQualityProfessionalApplication(
+  id: UUID,
+  input: { status: QualityApplicationStatus; note?: string | undefined },
+): Promise<QualityProfessionalApplication> {
+  return apiFetch<QualityProfessionalApplication>(
+    `${BASE}/professional-applications/${id}/decide/`,
+    { method: "POST", body: input },
+  );
+}
+
+/** Same reason as `openApplicationDocument`: the download route needs the token. */
+export async function openProfessionalDocument(appId: UUID, docId: UUID): Promise<void> {
+  const tokens = readTokens();
+  const response = await fetch(
+    apiUrl(`${BASE}/professional-applications/${appId}/documents/${docId}/download/`),
+    { headers: tokens ? { Authorization: `Bearer ${tokens.access}` } : {} },
+  );
+  if (!response.ok) throw new Error("The document could not be opened.");
+  const url = URL.createObjectURL(await response.blob());
+  window.open(url, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

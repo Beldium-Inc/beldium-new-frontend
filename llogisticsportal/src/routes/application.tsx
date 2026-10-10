@@ -22,11 +22,12 @@ import {
   complianceQuestions,
   declarations,
   documentGroups,
+  documentSubjects,
   emptyCapability,
   emptyOrganisation,
   getState,
+  outstandingDocuments,
   participantTypes,
-  requiredDomains,
   resetState,
   roles,
   services,
@@ -267,12 +268,13 @@ function ApplicationPage() {
         }
         return "";
       case 5: {
-        const have = new Set(s.documents.map((d) => d.domain));
-        const missing = documentGroups.filter(
-          (g) => requiredDomains(cap.services).includes(g.domain) && !have.has(g.domain),
-        );
-        if (missing.length)
-          return `Upload at least one document for: ${missing.map((g) => g.group).join(", ")}.`;
+        const owed = outstandingDocuments(cap.services, s.documents, s.vehicles, s.drivers);
+        if (owed.length) {
+          const groups = Array.from(new Set(owed.map((o) => o.group)));
+          return `Upload the required documents still missing under: ${groups
+            .map((g) => `${g} (${owed.filter((o) => o.group === g).length})`)
+            .join(", ")}.`;
+        }
         const lost = missingFiles(s);
         return lost.length ? `Re-attach the file for: ${lost.map((d) => d.type).join(", ")}.` : "";
       }
@@ -752,7 +754,7 @@ function StepDocuments({
   orgName: string;
   servicesChosen: string[];
 }) {
-  const required = requiredDomains(servicesChosen);
+  const owed = outstandingDocuments(servicesChosen, docs, vehicles, drivers);
   const [, force] = useState(0);
   const blank = {
     number: "",
@@ -768,149 +770,157 @@ function StepDocuments({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Each section needs at least one current document. Uploading does not verify a document:
-        Beldium Logistics Compliance reviews every upload. Files are sent when you submit, so keep
-        this tab open until then.
+        Every document is required unless it is marked as conditional; vehicle and driver documents
+        are needed for each vehicle and each driver. Uploading does not verify a document: Beldium
+        Logistics Compliance reviews every upload. Files are sent when you submit, so keep this tab
+        open until then.
       </p>
-      {documentGroups
-        .filter((g) => required.includes(g.domain))
-        .map((g) => {
-          const covered = docs.some((d) => d.domain === g.domain);
-          const relatedOpts =
-            g.related === "Vehicle"
-              ? vehicles.map((v) => v.registration || v.id)
-              : g.related === "Driver"
-                ? drivers.map((d) => d.name || d.id)
-                : [orgName || "Organisation"];
-          return (
-            <div key={g.group} className="overflow-hidden rounded-md border border-border">
-              <div className="flex items-center justify-between border-b border-border bg-muted px-4 py-2 text-sm font-medium text-foreground">
-                {g.group}
-                <StatusBadge
-                  value={covered ? "Provided" : "Required"}
-                  tone={covered ? "success" : "warning"}
-                />
-              </div>
-              <ul className="divide-y divide-border">
-                {g.items.map((item) => {
-                  const key = `${g.group}:${item}`;
-                  const uploaded = docs.filter((d) => d.group === g.group && d.type === item);
-                  return (
-                    <li key={item} className="px-4 py-2.5 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span>{item}</span>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {uploaded.map((u) => {
-                            const sent = Boolean(getState().server.documents[u.id]);
-                            const ready = sent || pendingDocumentFiles.has(u.id);
-                            return (
-                              <span key={u.id} className="inline-flex items-center gap-1">
-                                <StatusBadge
-                                  value={
-                                    sent
-                                      ? `Uploaded · ${u.related}`
-                                      : ready
-                                        ? `${u.fileName} · ${u.related}`
-                                        : "File missing"
-                                  }
-                                  tone={sent ? "success" : ready ? "primary" : "danger"}
-                                />
-                                {!ready ? (
-                                  <label className="cursor-pointer text-xs font-medium text-primary hover:underline">
-                                    Re-attach
-                                    <input
-                                      type="file"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        const f = e.target.files?.[0];
-                                        if (!f) return;
-                                        pendingDocumentFiles.set(u.id, f);
-                                        setState({
-                                          documents: docs.map((d) =>
-                                            d.id === u.id ? { ...d, fileName: f.name } : d,
-                                          ),
-                                        });
-                                        force((n) => n + 1);
-                                      }}
-                                    />
-                                  </label>
-                                ) : null}
-                                {sent ? null : (
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    aria-label={`Remove ${u.type}`}
-                                    onClick={() => {
-                                      pendingDocumentFiles.delete(u.id);
-                                      setState({ documents: docs.filter((d) => d.id !== u.id) });
-                                    }}
-                                  >
-                                    <Trash2 className="text-destructive" />
-                                  </Button>
-                                )}
-                              </span>
-                            );
-                          })}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setOpen(open === key ? null : key);
-                              setDraft({ ...blank, related: relatedOpts[0] ?? "" });
-                            }}
-                          >
-                            Upload
-                          </Button>
-                        </div>
-                      </div>
-                      {open === key ? (
-                        <div className="mt-3 grid gap-4 rounded-md bg-muted p-4">
-                          {relatedOpts.length > 1 ? (
-                            <Field label={`Related ${g.related.toLowerCase()}`}>
-                              <Choice
-                                value={draft.related}
-                                options={relatedOpts}
-                                onChange={(v) => setDraft({ ...draft, related: v })}
+      {documentGroups.map((g) => {
+        const pending = owed.filter((o) => o.group === g.group);
+        const covered = pending.length === 0;
+        const relatedOpts = documentSubjects(g.related, vehicles, drivers, orgName);
+        return (
+          <div key={g.group} className="overflow-hidden rounded-md border border-border">
+            <div className="flex items-center justify-between border-b border-border bg-muted px-4 py-2 text-sm font-medium text-foreground">
+              {g.group}
+              <StatusBadge
+                value={covered ? "Provided" : "Required"}
+                tone={covered ? "success" : "warning"}
+              />
+            </div>
+            <ul className="divide-y divide-border">
+              {g.items.map(({ name: item, domain, note }) => {
+                const key = `${g.group}:${item}`;
+                const uploaded = docs.filter((d) => d.group === g.group && d.type === item);
+                const due = pending.find((o) => o.name === item);
+                return (
+                  <li key={item} className="px-4 py-2.5 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span>
+                        {item}
+                        {note ? (
+                          <span className="ml-1.5 text-xs text-muted-foreground">({note})</span>
+                        ) : null}
+                        {due ? (
+                          <span className="ml-1.5 text-xs font-medium text-warning">
+                            {due.missingFor.length
+                              ? `Required for ${due.missingFor.join(", ")}`
+                              : "Required"}
+                          </span>
+                        ) : null}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {uploaded.map((u) => {
+                          const sent = Boolean(getState().server.documents[u.id]);
+                          const ready = sent || pendingDocumentFiles.has(u.id);
+                          return (
+                            <span key={u.id} className="inline-flex items-center gap-1">
+                              <StatusBadge
+                                value={
+                                  sent
+                                    ? `Uploaded · ${u.related}`
+                                    : ready
+                                      ? `${u.fileName} · ${u.related}`
+                                      : "File missing"
+                                }
+                                tone={sent ? "success" : ready ? "primary" : "danger"}
                               />
-                            </Field>
-                          ) : null}
-                          <Field label="File">
-                            <input
-                              type="file"
-                              className="block max-w-full text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground"
-                              onChange={(e) => {
-                                // The file is the whole submission: reviewers read the
-                                // number, issuer and dates off the document itself.
-                                const f = e.target.files?.[0];
-                                if (!f) return;
-                                const id = uid("DOC");
-                                pendingDocumentFiles.set(id, f);
-                                setState({
-                                  documents: [
-                                    ...docs,
-                                    {
-                                      id,
-                                      group: g.group,
-                                      domain: g.domain,
-                                      type: item,
-                                      ...draft,
-                                      fileName: f.name,
-                                    },
-                                  ],
-                                });
-                                setOpen(null);
-                              }}
+                              {!ready ? (
+                                <label className="cursor-pointer text-xs font-medium text-primary hover:underline">
+                                  Re-attach
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      if (!f) return;
+                                      pendingDocumentFiles.set(u.id, f);
+                                      setState({
+                                        documents: docs.map((d) =>
+                                          d.id === u.id ? { ...d, fileName: f.name } : d,
+                                        ),
+                                      });
+                                      force((n) => n + 1);
+                                    }}
+                                  />
+                                </label>
+                              ) : null}
+                              {sent ? null : (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  aria-label={`Remove ${u.type}`}
+                                  onClick={() => {
+                                    pendingDocumentFiles.delete(u.id);
+                                    setState({ documents: docs.filter((d) => d.id !== u.id) });
+                                  }}
+                                >
+                                  <Trash2 className="text-destructive" />
+                                </Button>
+                              )}
+                            </span>
+                          );
+                        })}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setOpen(open === key ? null : key);
+                            setDraft({ ...blank, related: relatedOpts[0] ?? "" });
+                          }}
+                        >
+                          Upload
+                        </Button>
+                      </div>
+                    </div>
+                    {open === key ? (
+                      <div className="mt-3 grid gap-4 rounded-md bg-muted p-4">
+                        {relatedOpts.length > 1 ? (
+                          <Field label={`Related ${g.related.toLowerCase()}`}>
+                            <Choice
+                              value={draft.related}
+                              options={relatedOpts}
+                              onChange={(v) => setDraft({ ...draft, related: v })}
                             />
                           </Field>
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })}
+                        ) : null}
+                        <Field label="File">
+                          <input
+                            type="file"
+                            className="block max-w-full text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground"
+                            onChange={(e) => {
+                              // The file is the whole submission: reviewers read the
+                              // number, issuer and dates off the document itself.
+                              const f = e.target.files?.[0];
+                              if (!f) return;
+                              const id = uid("DOC");
+                              pendingDocumentFiles.set(id, f);
+                              setState({
+                                documents: [
+                                  ...docs,
+                                  {
+                                    id,
+                                    group: g.group,
+                                    domain,
+                                    type: item,
+                                    ...draft,
+                                    fileName: f.name,
+                                  },
+                                ],
+                              });
+                              setOpen(null);
+                            }}
+                          />
+                        </Field>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }

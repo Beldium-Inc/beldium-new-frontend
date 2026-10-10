@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMineSites, useMiningDocuments, useUploadMiningDocument } from "@/lib/api/mining-queries";
+import { ApiError } from "@/lib/api/errors";
+import {
+  useMineSites,
+  useMiningDocuments,
+  useReplaceMiningDocument,
+  useUploadMiningDocument,
+} from "@/lib/api/mining-queries";
 
 const title = "Documents - Beldium Miner Hub";
 const description = "Licences, permits, environmental plans and supporting documents held for your organisation.";
@@ -30,8 +36,28 @@ function DocumentsPage() {
   const documentsQuery = useMiningDocuments();
   const sitesQuery = useMineSites();
   const upload = useUploadMiningDocument();
+  const replace = useReplaceMiningDocument();
+  const [replaceError, setReplaceError] = useState<Record<string, string>>({});
 
-  const docs = Array.isArray(documentsQuery.data) ? documentsQuery.data : (documentsQuery.data?.results ?? []);
+  const all = Array.isArray(documentsQuery.data) ? documentsQuery.data : (documentsQuery.data?.results ?? []);
+  // Copies you have since replaced are history: listed last, and left out of the counts.
+  const docs = all.filter((d) => d.status !== "superseded");
+  const replaced = all.filter((d) => d.status === "superseded");
+
+  const onReplace = (id: string, picked: File | undefined) => {
+    if (!picked) return;
+    setReplaceError((e) => ({ ...e, [id]: "" }));
+    replace.mutate(
+      { id, file: picked },
+      {
+        onError: (err) =>
+          setReplaceError((e) => ({
+            ...e,
+            [id]: err instanceof ApiError ? err.message : "Could not upload the replacement. Please try again.",
+          })),
+      },
+    );
+  };
   const sites = Array.isArray(sitesQuery.data) ? sitesQuery.data : (sitesQuery.data?.results ?? []);
 
   const [site, setSite] = useState("");
@@ -104,12 +130,47 @@ function DocumentsPage() {
                 {d.category} · {d.original_name || "No file"} {d.expires_on ? `· expires ${d.expires_on}` : ""}
               </div>
             </div>
-            <StatusChip tone={d.status === "verified" ? "success" : d.status === "rejected" ? "danger" : "warning"}>
-              {d.status}
-            </StatusChip>
+            <div className="flex flex-col items-end gap-2">
+              <StatusChip tone={d.status === "verified" ? "success" : d.status === "rejected" ? "danger" : "warning"}>
+                {d.status === "pending" ? "awaiting review" : d.status}
+              </StatusChip>
+              {d.status === "rejected" ? (
+                <label className="inline-flex cursor-pointer items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-card-foreground hover:bg-muted/40">
+                  {replace.isPending && replace.variables?.id === d.id ? "Uploading…" : "Upload replacement"}
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv"
+                    className="sr-only"
+                    disabled={replace.isPending}
+                    onChange={(e) => {
+                      onReplace(d.id, e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              ) : null}
+            </div>
+            {d.status === "rejected" ? (
+              <p className="basis-full text-xs text-muted-foreground">
+                The compliance desk did not accept this document. Upload a corrected copy: it goes back for review
+                and this one stops counting against your verification.
+                {replaceError[d.id] ? <span className="mt-1 block text-destructive">{replaceError[d.id]}</span> : null}
+              </p>
+            ) : null}
           </li>
         ))}
-        {docs.length === 0 ? (
+        {replaced.map((d) => (
+          <li key={d.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 opacity-60">
+            <div>
+              <span className="font-medium text-card-foreground">{d.name}</span>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                {d.category} · {d.original_name || "No file"} · earlier copy
+              </div>
+            </div>
+            <StatusChip>replaced</StatusChip>
+          </li>
+        ))}
+        {all.length === 0 ? (
           <li className="px-5 py-8 text-center text-sm text-muted-foreground">No documents uploaded yet.</li>
         ) : null}
       </ul>

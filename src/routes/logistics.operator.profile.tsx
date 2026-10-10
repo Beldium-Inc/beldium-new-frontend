@@ -19,7 +19,7 @@ export const Route = createFileRoute("/logistics/operator/profile")({
 function ProfilePage() {
   const { session, signOut, companies, requests } = useApp();
   const navigate = useNavigate();
-  const mine = companies.filter((c) => c.reviewer === session?.person);
+  const mine = companies.filter((c) => c.claim === "mine");
 
   return (
     <AppShell role="operator" breadcrumbs={[{ label: "Compliance Operations", to: "/logistics/operator" }, { label: "My profile" }]}>

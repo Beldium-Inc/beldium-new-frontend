@@ -92,6 +92,12 @@ function RequestsPage() {
               </div>
             </div>
             <p className="mt-3 text-sm text-muted-foreground">{r.details}</p>
+            {r.document && r.status === "open" ? (
+              <p className="mt-2 text-sm text-card-foreground">
+                The file you attach replaces <span className="font-medium">{r.document_name}</span> and goes back to
+                the compliance desk for review.
+              </p>
+            ) : null}
 
             {r.status !== "open" ? (
               <div className="mt-4 space-y-2 border-t border-border pt-4">

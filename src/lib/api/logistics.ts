@@ -262,6 +262,8 @@ export interface LogisticsApplication {
   company: UUID;
   created_by: UUID;
   reviewer: UUID | null;
+  /** The claiming reviewer's display name; empty while unclaimed. */
+  reviewer_name: string;
   status: LogisticsApplicationStatus;
   submitted_at: string | null;
   reviewed_at: string | null;
@@ -375,6 +377,14 @@ export function listLogisticsApplicationActivity(id: UUID): Promise<{ events: Lo
 
 // --- documents (nested under an application) ----------------------------------
 
+/** Advice read off an uploaded file's own metadata. A prompt to look closer, never a finding. */
+export interface DocumentReviewTag {
+  code: string;
+  tone: "info" | "warning";
+  label: string;
+  detail: string;
+}
+
 export interface LogisticsDocument {
   id: UUID;
   application: UUID;
@@ -397,6 +407,9 @@ export interface LogisticsDocument {
   reviewed_by: UUID | null;
   reviewed_at: string | null;
   review_notes: string;
+  /** Sent only to a user who may review the company; absent for everyone else. */
+  file_metadata?: Record<string, string | number | boolean>;
+  review_tags?: DocumentReviewTag[];
   download_url: string;
   validity: CredentialValidity;
   created_at: string;

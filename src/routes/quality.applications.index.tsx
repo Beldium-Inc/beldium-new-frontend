@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { AppShell } from "@/verticals/quality/shell";
 import { EmptyState, PageHeader, Pill, SectionTitle, Stat, StatusPill, Surface } from "@/verticals/quality/ui";
+import { ProfessionalApplications } from "@/verticals/quality/professional-applications";
 import { useBeldium } from "@/verticals/quality/store";
 import type { ApplicationStatus } from "@/verticals/quality/types";
 
@@ -151,6 +152,8 @@ function ApplicationsPage() {
           )}
         </div>
       </Surface>
+
+      {role === "operator" ? <ProfessionalApplications canDecide /> : null}
     </>
   );
 }

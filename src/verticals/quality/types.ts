@@ -28,11 +28,7 @@ export interface PartnerDocument {
 }
 
 export type ApplicationStatus =
-  | "submitted"
-  | "in_review"
-  | "info_requested"
-  | "approved"
-  | "rejected";
+  "submitted" | "in_review" | "info_requested" | "approved" | "rejected";
 
 export interface RiskFlag {
   id: string;
@@ -95,6 +91,21 @@ export interface Application {
     proficiencyTesting: string;
     scope: ScopeItem[];
   };
+  /** What a Q&C onboarding application declared beyond the fields above. */
+  onboarding?: {
+    organisationType: string;
+    taxIdentifier: string;
+    registeredAddress: string;
+    capabilities: string[];
+    minerals: string[];
+    laboratories: { name: string; location: string; registration_number: string }[];
+    equipment: { name: string; serial_number: string; calibration_date: string }[];
+    accreditedScope: string;
+    coverage: string[];
+    samplingTeams: number | null;
+    sealing: string;
+    samplingProcedure: string;
+  };
   documents: PartnerDocument[];
   riskFlags: RiskFlag[];
   audit: AuditEntry[];
@@ -102,13 +113,7 @@ export interface Application {
 }
 
 export type SampleStatus =
-  | "registered"
-  | "in_transit"
-  | "received"
-  | "testing"
-  | "reviewed"
-  | "certified"
-  | "rejected";
+  "registered" | "in_transit" | "received" | "testing" | "reviewed" | "certified" | "rejected";
 
 export interface CustodyEvent {
   id: string;

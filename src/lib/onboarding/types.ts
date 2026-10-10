@@ -3,6 +3,7 @@ import type { VerticalSlug } from "../verticals";
 export type OnboardingRole =
   | "compliance-org"
   | "compliance-officer"
+  | "laboratory-analyst"
   | "regulator-org"
   | "regulator-officer"
   | "independent";

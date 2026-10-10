@@ -31,7 +31,9 @@ import {
 } from "@/verticals/mining/site-files";
 
 const statusLabel = (status: string) =>
-  status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  status === "superseded"
+    ? "Replaced"
+    : status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 /** One submitted file, with the action that opens it in the viewer. */
 export function FileRow({

@@ -313,7 +313,7 @@ function PhoneChannel({
 }
 
 function VerifyPage() {
-  const { account, updateAccount, verifyChannel, role, orgPath } = useOnboarding();
+  const { account, updateAccount, verifyChannel, role, orgPath, sector } = useOnboarding();
   const { user, refetchUser } = useAuth();
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -340,7 +340,11 @@ function VerifyPage() {
   }, [search.email, account.email, updateAccount]);
 
   const next = () => {
-    if (role === "independent") navigate({ to: "/onboarding/application" });
+    // A Q&C officer finds their organisation as the first step of their own
+    // application, rather than on the separate join page.
+    const appliesAsIndividual =
+      role === "independent" || (sector === "quality" && role === "compliance-officer");
+    if (appliesAsIndividual) navigate({ to: "/onboarding/application" });
     else if (orgPath === "existing") navigate({ to: "/onboarding/join" });
     else navigate({ to: "/onboarding/application" });
   };

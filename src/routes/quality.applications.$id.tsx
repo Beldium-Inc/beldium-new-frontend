@@ -166,6 +166,13 @@ function ApplicationDetail() {
                   <Field label="Primary contact" value={app.organisation.contact.name} />
                   <Field label="Email" value={app.organisation.contact.email} />
                   <Field label="Phone" value={app.organisation.contact.phone} />
+                  {app.onboarding ? (
+                    <>
+                      <Field label="Organisation type" value={app.onboarding.organisationType} />
+                      <Field label="TIN" value={app.onboarding.taxIdentifier} />
+                      <Field label="Registered address" value={app.onboarding.registeredAddress} />
+                    </>
+                  ) : null}
                 </dl>
               </Surface>
 
@@ -188,6 +195,28 @@ function ApplicationDetail() {
 
           {tab === "capability" ? (
             <div className="space-y-6">
+              {app.onboarding ? (
+                <Surface>
+                  <SectionTitle
+                    title="Services & sampling capability"
+                    hint="As declared in the onboarding application"
+                  />
+                  <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2">
+                    <Field label="Capabilities" value={app.onboarding.capabilities.join(", ")} />
+                    <Field
+                      label="Minerals / materials supported"
+                      value={app.onboarding.minerals.join(", ")}
+                    />
+                    <Field label="Geographic coverage" value={app.onboarding.coverage.join(", ")} />
+                    <Field label="Field sampling teams" value={app.onboarding.samplingTeams ?? "-"} />
+                    <Field label="Tamper-evident sealing" value={app.onboarding.sealing} />
+                    <Field
+                      label="Sampling procedure summary"
+                      value={app.onboarding.samplingProcedure || "-"}
+                    />
+                  </dl>
+                </Surface>
+              ) : null}
               <Surface>
                 <SectionTitle title="Lead assessor" hint="Professional competence for material assessment" />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2">
@@ -226,6 +255,52 @@ function ApplicationDetail() {
 
           {tab === "laboratory" ? (
             <div className="space-y-6">
+              {app.onboarding ? (
+                <Surface>
+                  <SectionTitle
+                    title="Laboratories & equipment"
+                    hint="As declared in the onboarding application"
+                  />
+                  <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2">
+                    <Field
+                      label="Laboratories"
+                      value={
+                        app.onboarding.laboratories.length
+                          ? app.onboarding.laboratories.map((lab) => (
+                              <span key={lab.name + lab.registration_number} className="block">
+                                {[lab.name, lab.location, lab.registration_number]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </span>
+                            ))
+                          : "-"
+                      }
+                    />
+                    <Field
+                      label="Equipment register"
+                      value={
+                        app.onboarding.equipment.length
+                          ? app.onboarding.equipment.map((item) => (
+                              <span key={item.name + item.serial_number} className="block">
+                                {[
+                                  item.name,
+                                  item.serial_number,
+                                  item.calibration_date && `calibrated ${item.calibration_date}`,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </span>
+                            ))
+                          : "-"
+                      }
+                    />
+                    <Field
+                      label="Accredited scope (as stated)"
+                      value={app.onboarding.accreditedScope || "-"}
+                    />
+                  </dl>
+                </Surface>
+              ) : null}
               <Surface>
                 <SectionTitle title="Facility accreditation" hint="Checked against the accreditation body register" />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
