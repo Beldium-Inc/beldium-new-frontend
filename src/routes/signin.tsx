@@ -22,7 +22,13 @@ import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { fetchAccountSetup, needsComplianceSetup } from "@/lib/onboarding/setup";
 import { rememberOnboardingSector } from "@/lib/onboarding/store";
-import { COMPLIANCE_VERTICALS, homeFor, type Vertical, type VerticalSlug } from "@/lib/verticals";
+import {
+  COMPLIANCE_VERTICALS,
+  VERTICAL_BY_SLUG,
+  homeFor,
+  type Vertical,
+  type VerticalSlug,
+} from "@/lib/verticals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -82,7 +88,7 @@ function SignInPage() {
   // Two things happen on submit: the API authenticates the person, and the
   // local session records which dashboard and role they chose to work in.
   const { session, hydrated, signIn: startSession } = useSession();
-  const { signIn: authenticate } = useAuth();
+  const { signIn: authenticate, signOut: endAuth } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const stats = useQuery({
@@ -126,11 +132,23 @@ function SignInPage() {
     try {
       const user = await authenticate({ email: address, password });
 
+      // A compliance account belongs to the one sector it registered in. The
+      // API refuses the other sectors' desks anyway; this stops the person at
+      // the door and tells them where their account does open.
+      const setup = user.is_staff ? null : await fetchAccountSetup(queryClient);
+      const registered = setup?.application?.sector;
+      if (registered && registered !== picked.slug) {
+        await endAuth();
+        toast.error(
+          `This account is registered for ${VERTICAL_BY_SLUG[registered as VerticalSlug]?.name ?? registered}. Sign in under that sector instead.`,
+        );
+        return;
+      }
+
       // A compliance desk is only open to an account whose organisation
       // application has been submitted. Anyone who stopped part-way through
       // signup is taken back to where they left off instead.
-      if (!user.is_staff && needsComplianceSetup(picked.slug, roleId)) {
-        const setup = await fetchAccountSetup(queryClient);
+      if (setup && needsComplianceSetup(picked.slug, roleId)) {
         if (setup.stage !== "complete") {
           rememberOnboardingSector(picked.slug);
           toast.info(
