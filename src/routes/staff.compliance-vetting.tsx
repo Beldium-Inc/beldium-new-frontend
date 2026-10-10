@@ -44,8 +44,10 @@ export const Route = createFileRoute("/staff/compliance-vetting")({ ssr: false, 
 // Organisation types that gate into the shared compliance-partner audience
 // bucket (see organisations/access.py audience()) once verified: the ones
 // this desk exists to vet, as opposed to the miners themselves, who are
-// verified separately on the Mining Organisations register.
-const PARTNER_TYPES = ["compliance_partner", "inspection_body"];
+// verified separately on the Mining Organisations register. Laboratories and
+// standards institutions are here because that is what a Quality & Control
+// applicant registers as.
+const PARTNER_TYPES = ["compliance_partner", "inspection_body", "laboratory", "regulator"];
 
 const statusLabel: Record<ApplicationStatus, string> = {
   draft: "Draft",

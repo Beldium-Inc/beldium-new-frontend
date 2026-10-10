@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { apiFetchBlob } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
+import type { QualityProfile } from "@/lib/api/compliance";
 import type { ComplianceApplication, Personnel } from "@/lib/api/types";
 
 /**
@@ -138,6 +139,94 @@ function PersonnelCard({ person }: { person: Personnel }) {
   );
 }
 
+function Rows({ rows }: { rows: object[] | undefined }) {
+  if (!rows || rows.length === 0)
+    return <p className="text-sm text-muted-foreground">None added.</p>;
+  return (
+    <div className="space-y-1">
+      {rows.map((row, index) => (
+        <p key={index} className="break-words">
+          {Object.values(row).filter(Boolean).map(String).join(" · ")}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function RowsSection({ heading, rows }: { heading: string; rows: object[] | undefined }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {heading}
+      </p>
+      <Rows rows={rows} />
+    </div>
+  );
+}
+
+/** The Quality & Control organisation application, section by section. */
+function QualityApplicationDetails({ profile: q }: { profile: QualityProfile }) {
+  const org = q.organisation;
+  const acc = q.accreditation;
+  const sampling = q.sampling;
+  const decl = q.declaration;
+
+  return (
+    <div className="space-y-5">
+      <Section heading="Organisation details" empty={!org}>
+        <Field label="Registered legal name">{text(org?.legal_name)}</Field>
+        <Field label="Trading name">{text(org?.trading_name)}</Field>
+        <Field label="Organisation type">{text(org?.organisation_type)}</Field>
+        <Field label="CAC / registration number">{text(org?.registration_number)}</Field>
+        <Field label="TIN">{text(org?.tax_identifier)}</Field>
+        <Field label="Website">{text(org?.website)}</Field>
+        <Field label="Registered address">{text(org?.registered_address)}</Field>
+        <Field label="Country">{text(org?.country)}</Field>
+      </Section>
+
+      <Section heading="Services & testing capability" empty={!q.services}>
+        <Field label="Capabilities">{list(q.services?.capabilities)}</Field>
+        <Field label="Minerals / materials supported">{list(q.services?.minerals)}</Field>
+      </Section>
+
+      <RowsSection heading="Laboratories" rows={q.laboratories?.laboratories} />
+
+      <Section heading="Accreditation & scope" empty={!acc}>
+        <Field label="Accreditation body">{text(acc?.accreditation_body)}</Field>
+        <Field label="Accreditation number">{text(acc?.accreditation_number)}</Field>
+        <Field label="Accreditation expiry">{text(acc?.accreditation_expiry)}</Field>
+        <Field label="Standard">{text(acc?.standard)}</Field>
+        <Field label="Accredited scope">{text(acc?.accredited_scope)}</Field>
+      </Section>
+
+      <Section heading="Testing methods" empty={!q["testing-methods"]}>
+        <Field label="Methods">{list(q["testing-methods"]?.testing_methods)}</Field>
+      </Section>
+
+      <RowsSection heading="Equipment register" rows={q.equipment?.equipment} />
+      <RowsSection heading="Key personnel" rows={q.personnel?.personnel} />
+
+      <Section heading="Sampling & inspection capability" empty={!sampling}>
+        <Field label="Geographic coverage">{list(sampling?.geographic_coverage)}</Field>
+        <Field label="Field sampling teams">{text(sampling?.field_sampling_teams)}</Field>
+        <Field label="Tamper-evident sealing">{text(sampling?.tamper_evident_sealing)}</Field>
+        <Field label="Sampling procedure summary">
+          {text(sampling?.sampling_procedure_summary)}
+        </Field>
+      </Section>
+
+      <Section heading="Declaration" empty={!decl}>
+        <Field label="Information is true and complete">{yesNo(decl?.information_true)}</Field>
+        <Field label="Consents to verification">{yesNo(decl?.consent_to_verification)}</Field>
+        <Field label="Understands upload is not verification">
+          {yesNo(decl?.understands_verification)}
+        </Field>
+        <Field label="Signed by">{text(decl?.signature)}</Field>
+      </Section>
+    </div>
+  );
+}
+
 /** Every onboarding section an applicant filled in, read-only, for the desk. */
 export function ApplicationDetails({ application: a }: { application: ComplianceApplication }) {
   const org = a.organisation_profile;
@@ -148,6 +237,11 @@ export function ApplicationDetails({ application: a }: { application: Compliance
   const conflict = a.conflict_declaration;
   const decl = a.declaration;
   const isEmpty = (o: object) => Object.keys(o).length === 0;
+
+  // A Quality & Control application answers its own set of sections.
+  if (a.quality_profile && !isEmpty(a.quality_profile)) {
+    return <QualityApplicationDetails profile={a.quality_profile} />;
+  }
 
   const counts: [string, number | undefined][] = [
     ["Compliance professionals", pro.compliance_professionals],
