@@ -27,11 +27,13 @@ import { useAuth } from "@/lib/auth";
 import {
   useApplicationsByOrganisationType,
   useDecideComplianceApplication,
+  useSetApplicationSector,
 } from "@/lib/api/queries";
 import { dedupeOrganisations, type DedupeReport } from "@/lib/api/organisations";
 import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
+import { VERTICALS } from "@/lib/verticals";
 
 // Client-only, like the /mining layout: the JWT pair lives in localStorage, so
 // a server-rendered pass hydrates with useHasTokens() === false, the auth guard
@@ -106,11 +108,19 @@ function DocumentRow({ document, onOpen }: { document: ComplianceDocument; onOpe
   );
 }
 
+// The sector a partner applied to work in, as recorded at the start of
+// onboarding. Applications filed before it was recorded carry none, and are
+// listed under their own tab until the desk files them.
+const UNFILED = "unfiled";
+const sectorName = (slug: string | undefined) =>
+  VERTICALS.find((v) => v.slug === slug)?.name.replace(/ Compliance$/, "") ?? "Not recorded";
+
 function ApplicationRow({ application }: { application: ComplianceApplication }) {
   const [expanded, setExpanded] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const decide = useDecideComplianceApplication();
+  const setSector = useSetApplicationSector();
   const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
 
   const canReview = REVIEWABLE_STATUSES.includes(application.status);
@@ -127,7 +137,9 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
         {
           description:
             status === "verified"
-              ? "This organisation can now see and claim mining applications."
+              ? `This organisation can now see and claim ${
+                  application.sector ? sectorName(application.sector).toLowerCase() : "sector"
+                } applications.`
               : "The applicant can see the reason and resubmit.",
         },
       );
@@ -151,6 +163,9 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
         </TableCell>
         <TableCell className="text-sm text-muted-foreground capitalize">
           {orgType?.replace("_", " ") ?? "-"}
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          {sectorName(application.sector)}
         </TableCell>
         <TableCell>
           <Badge label={statusLabel[application.status]} tone={statusTone[application.status]} />
@@ -197,8 +212,39 @@ function ApplicationRow({ application }: { application: ComplianceApplication })
       </TableRow>
       {expanded ? (
         <TableRow>
-          <TableCell colSpan={7} className="bg-muted/30">
+          <TableCell colSpan={8} className="bg-muted/30">
             <div className="space-y-3 py-3 text-sm">
+              <label className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-semibold uppercase tracking-wide">Sector</span>
+                <select
+                  value={application.sector ?? ""}
+                  disabled={setSector.isPending}
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    setSector.mutate(
+                      { id: application.id, sector: e.target.value },
+                      {
+                        onSuccess: () => toast.success(`Filed under ${sectorName(e.target.value)}`),
+                        onError: (err) =>
+                          toast.error("Could not change the sector", {
+                            description:
+                              err instanceof ApiError ? err.message : "Please try again.",
+                          }),
+                      },
+                    );
+                  }}
+                  className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+                >
+                  {application.sector ? null : <option value="">Not recorded: choose one</option>}
+                  {VERTICALS.map((v) => (
+                    <option key={v.slug} value={v.slug}>
+                      {sectorName(v.slug)}
+                    </option>
+                  ))}
+                </select>
+                <span>The sector this organisation applied to work in.</span>
+              </label>
+
               <ApplicationDetails application={application} />
 
               <div>
@@ -388,6 +434,7 @@ function Page() {
   const { user, status, signOut } = useAuth();
   const navigate = useNavigate();
   const { data, isPending, error } = useApplicationsByOrganisationType(PARTNER_TYPES);
+  const [tab, setTab] = useState<string>("all");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -422,7 +469,18 @@ function Page() {
 
   // Filtered server-side on the organisation record's type; the profile's
   // copy is empty until the applicant saves that section.
-  const applications = data?.results ?? [];
+  const all = data?.results ?? [];
+  const inTab = (app: ComplianceApplication, key: string) =>
+    key === "all" || (key === UNFILED ? !app.sector : app.sector === key);
+  const tabs = [
+    { key: "all", label: "All sectors" },
+    ...VERTICALS.map((v) => ({ key: v.slug as string, label: sectorName(v.slug) })),
+    // Only while there is something in it.
+    ...(all.some((a) => !a.sector) ? [{ key: UNFILED, label: "Sector not recorded" }] : []),
+  ];
+  const applications = all.filter((a) => inTab(a, tab));
+  const waiting = (key: string) =>
+    all.filter((a) => inTab(a, key) && REVIEWABLE_STATUSES.includes(a.status)).length;
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -454,11 +512,45 @@ function Page() {
         <div className="mb-6">
           <h1 className="font-display text-2xl font-semibold">Compliance partner applications</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Vet organisations applying to become a compliance partner or inspection body before they
-            join the partner pool and gain visibility into mining applications. This is separate
-            from the compliance dashboard so only Beldium's own desk can act here. Keep access
-            limited to one or two staff accounts.
+            One tab per sector. Vet organisations applying to become a compliance partner or
+            inspection body before they join the partner pool and gain visibility into mining
+            applications. This is separate from the compliance dashboard so only Beldium's own desk
+            can act here. Keep access limited to one or two staff accounts.
           </p>
+        </div>
+
+        <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Sector">
+          {tabs.map((t) => {
+            const count = waiting(t.key);
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.key}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  tab === t.key
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+                {count > 0 ? (
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 text-xs",
+                      tab === t.key ? "bg-primary-foreground/20" : "bg-amber-100 text-amber-800",
+                    )}
+                    title={`${count} awaiting review`}
+                  >
+                    {count}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -470,7 +562,11 @@ function Page() {
             </div>
           ) : applications.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
-              No compliance-partner applications waiting on review.
+              {tab === "all"
+                ? "No compliance-partner applications yet."
+                : tab === UNFILED
+                  ? "Every application is filed under a sector."
+                  : `No ${sectorName(tab).toLowerCase()} compliance-partner applications yet.`}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -480,6 +576,7 @@ function Page() {
                     <TableHead>Reference</TableHead>
                     <TableHead>Organisation</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Sector</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Progress</TableHead>
                     <TableHead>Submitted</TableHead>

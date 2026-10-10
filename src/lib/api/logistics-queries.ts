@@ -46,6 +46,7 @@ import {
   reviewCondition,
   reviewDocument,
   reviewRequestResponse,
+  withdrawRequest,
   saveLogisticsApplicationSection,
   startReview,
   submitLogisticsApplication,
@@ -589,6 +590,14 @@ export function useReviewRequestResponse() {
   return useMutation({
     mutationFn: (input: { id: UUID; accepted: boolean; notes: string }) =>
       reviewRequestResponse(input.id, { accepted: input.accepted, notes: input.notes }),
+    onSuccess: () => invalidateLogistics(queryClient),
+  });
+}
+
+export function useWithdrawRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; notes: string }) => withdrawRequest(input.id, input.notes),
     onSuccess: () => invalidateLogistics(queryClient),
   });
 }
