@@ -25,6 +25,8 @@ import {
   useCreateOrganisation,
   useCreatePersonnel,
   useDocumentRequirements,
+  saveLogisticsSection,
+  useSaveLogisticsSection,
   useSaveSection,
   useSubmitApplication,
   useUploadDocument,
@@ -34,6 +36,10 @@ import {
 } from "@/lib/api";
 import {
   complianceServiceOptions,
+  logisticsEvidenceStandards,
+  logisticsOrganisationTypes,
+  logisticsPersonnelRoles,
+  logisticsServiceOptions,
   nigerianStates,
   personnelRoleOptions,
 } from "@/lib/onboarding/data";
@@ -44,7 +50,7 @@ import { VERTICAL_BY_SLUG } from "@/lib/verticals";
 // Steps follow the backend's seven sections plus documents, personnel and a
 // review gate, rather than the shape the local prototype store used: each save
 // below is a real PATCH, and a step only advances once the API accepts it.
-const steps = [
+const GENERIC_STEPS = [
   "Organisation",
   "Representative",
   "Compliance Services",
@@ -57,7 +63,37 @@ const steps = [
   "Review",
 ];
 
-const ORG_TYPE_ENTRIES = Object.entries(ORGANISATION_TYPE_LABELS) as [OrganisationType, string][];
+// Logistics applicants answer the same ten steps, with haulage wording in place of mining.
+const LOGISTICS_STEPS = [
+  "Organisation",
+  "Representative",
+  "Haulage Services",
+  "Professional Capability",
+  "Fleet Operations",
+  "Documents",
+  "Personnel",
+  "Conflict Declaration",
+  "Declarations",
+  "Review",
+];
+
+/** The logistics capability fields on step 4, in form order. */
+const LOGISTICS_CAPABILITY_FIELDS = [
+  ["years_haulage_experience", "Years of Haulage Experience"],
+  ["drivers_employed", "Drivers Employed"],
+  ["vehicles_operated", "Vehicles Operated"],
+  ["compliance_professionals", "Compliance Professionals"],
+  ["transport_safety_managers", "Transport Safety Managers"],
+  ["maintenance_engineers", "Maintenance Engineers"],
+  ["dispatch_coordinators", "Dispatch Coordinators"],
+  ["driver_trainers", "Driver Trainers"],
+  ["other_technical_personnel", "Other Technical Personnel"],
+] as const;
+
+// Logistics applicants pick a subtype from their own list, so the platform logistics type stays out of this one.
+const ORG_TYPE_ENTRIES = (Object.entries(ORGANISATION_TYPE_LABELS) as [OrganisationType, string][]).filter(
+  ([type]) => type !== "logistics_company",
+);
 const ORG_TYPE_LABELS = ORG_TYPE_ENTRIES.map(([, label]) => label);
 
 const EVIDENCE_STANDARDS = [
@@ -142,6 +178,8 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
   const { sector } = useOnboarding();
   const queryClient = useQueryClient();
   const sectorName = sector ? VERTICAL_BY_SLUG[sector].name : "your sector";
+  const isLogistics = sector === "logistics";
+  const steps = isLogistics ? LOGISTICS_STEPS : GENERIC_STEPS;
   const navigate = useNavigate();
   const [step, setStep] = useState(startAtDocuments ? DOCUMENTS_STEP : 0);
   /** Per-field validation messages from the last rejected save, by API field name. */
@@ -158,6 +196,11 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
   const saveInspection = useSaveSection(applicationId, "inspection-capability");
   const saveConflict = useSaveSection(applicationId, "conflict-declaration");
   const saveDeclaration = useSaveSection(applicationId, "declaration");
+  const saveLogisticsOrganisation = useSaveLogisticsSection(applicationId, "organisation");
+  const saveLogisticsServices = useSaveLogisticsSection(applicationId, "services");
+  const saveLogisticsCapability = useSaveLogisticsSection(applicationId, "capability");
+  const saveLogisticsOperations = useSaveLogisticsSection(applicationId, "operations");
+  const saveLogisticsConflict = useSaveLogisticsSection(applicationId, "conflict");
   const submit = useSubmitApplication(applicationId);
 
   const requirements = useDocumentRequirements(applicationId);
@@ -168,7 +211,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
 
   const [org, setOrg] = useState({
     name: "",
-    organisation_type: ORG_TYPE_LABELS[1] ?? "",
+    organisation_type: isLogistics ? (logisticsOrganisationTypes[0] ?? "") : (ORG_TYPE_LABELS[1] ?? ""),
     registration_number: "",
     tax_identifier: "",
     year_established: "",
@@ -201,6 +244,13 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
     legal_regulatory_specialists: "",
     field_inspectors: "",
     other_technical_personnel: "",
+    years_haulage_experience: "",
+    drivers_employed: "",
+    vehicles_operated: "",
+    transport_safety_managers: "",
+    maintenance_engineers: "",
+    dispatch_coordinators: "",
+    driver_trainers: "",
   });
   const [inspection, setInspection] = useState({
     conducts_physical_inspections: false,
@@ -209,6 +259,10 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
     average_turnaround_time: "",
     typical_mobilisation_time: "",
     evidence: [] as string[],
+    operates_own_fleet: false,
+    active_vehicles: "",
+    gps_tracking_available: false,
+    maximum_movements_per_month: "",
   });
   const [conflict, setConflict] = useState({
     owns_assets: false,
@@ -228,7 +282,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
   const [signatory, setSignatory] = useState({ signatory_name: "", signatory_position: "" });
   const [person, setPerson] = useState({
     full_name: "",
-    role: personnelRoleOptions[0] ?? "",
+    role: (isLogistics ? logisticsPersonnelRoles[0] : personnelRoleOptions[0]) ?? "",
     discipline: "",
     qualification: "",
     registration_number: "",
@@ -245,9 +299,11 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
     if (seeded || !application) return;
     const profile = application.organisation_profile ?? {};
     if (profile.name) {
-      const label = profile.organisation_type
-        ? ORGANISATION_TYPE_LABELS[profile.organisation_type]
-        : undefined;
+      const label = isLogistics
+        ? application.logistics_profile?.organisation?.logistics_type
+        : profile.organisation_type
+          ? ORGANISATION_TYPE_LABELS[profile.organisation_type]
+          : undefined;
       setOrg((s) => ({
         ...s,
         name: profile.name ?? s.name,
@@ -290,7 +346,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
       }));
     }
 
-    const saved = application.services ?? {};
+    const saved = (isLogistics ? application.logistics_profile?.services : application.services) ?? {};
     if (saved.selected_services) {
       setServices({
         selected_services: saved.selected_services ?? [],
@@ -300,9 +356,18 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
       });
     }
 
+    const logisticsCapability = application.logistics_profile?.capability;
+    if (isLogistics && logisticsCapability) {
+      setProfessional((s) => ({
+        ...s,
+        ...Object.fromEntries(Object.entries(logisticsCapability).map(([k, v]) => [k, String(v ?? "")])),
+      }));
+    }
+
     const capability = application.professional_capability ?? {};
-    if (capability.years_mining_experience !== undefined) {
-      setProfessional({
+    if (!isLogistics && capability.years_mining_experience !== undefined) {
+      setProfessional((s) => ({
+        ...s,
         years_mining_experience: String(capability.years_mining_experience ?? ""),
         compliance_professionals: String(capability.compliance_professionals ?? ""),
         mining_engineers: String(capability.mining_engineers ?? ""),
@@ -312,23 +377,49 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
         legal_regulatory_specialists: String(capability.legal_regulatory_specialists ?? ""),
         field_inspectors: String(capability.field_inspectors ?? ""),
         other_technical_personnel: String(capability.other_technical_personnel ?? ""),
-      });
+      }));
+    }
+
+    const logisticsOperations = application.logistics_profile?.operations;
+    if (isLogistics && logisticsOperations) {
+      setInspection((s) => ({
+        ...s,
+        operates_own_fleet: Boolean(logisticsOperations.operates_own_fleet),
+        active_vehicles: String(logisticsOperations.active_vehicles ?? ""),
+        gps_tracking_available: Boolean(logisticsOperations.gps_tracking_available),
+        maximum_movements_per_month: String(logisticsOperations.maximum_movements_per_month ?? ""),
+        average_turnaround_time: logisticsOperations.average_turnaround_time ?? "",
+        typical_mobilisation_time: logisticsOperations.typical_mobilisation_time ?? "",
+        evidence: logisticsOperations.evidence_standards ?? [],
+      }));
     }
 
     const inspect = application.inspection_capability ?? {};
-    if (inspect.conducts_physical_inspections !== undefined) {
-      setInspection({
+    if (!isLogistics && inspect.conducts_physical_inspections !== undefined) {
+      setInspection((s) => ({
+        ...s,
         conducts_physical_inspections: Boolean(inspect.conducts_physical_inspections),
         active_inspectors: String(inspect.active_inspectors ?? ""),
         maximum_inspections_per_month: String(inspect.maximum_inspections_per_month ?? ""),
         average_turnaround_time: inspect.average_turnaround_time ?? "",
         typical_mobilisation_time: inspect.typical_mobilisation_time ?? "",
         evidence: inspect.inspection_evidence_standards ?? [],
+      }));
+    }
+
+    const logisticsConflict = application.logistics_profile?.conflict;
+    if (isLogistics && logisticsConflict) {
+      setConflict({
+        owns_assets: Boolean(logisticsConflict.owns_mineral_assets),
+        serves_mining_companies: Boolean(logisticsConflict.serves_mining_companies),
+        trades_minerals: Boolean(logisticsConflict.trades_minerals),
+        relationships: logisticsConflict.relationships ?? "",
+        agreed: Boolean(logisticsConflict.agreed),
       });
     }
 
     const declared = application.conflict_declaration ?? {};
-    if (declared.agreed !== undefined) {
+    if (!isLogistics && declared.agreed !== undefined) {
       setConflict({
         owns_assets: Boolean(declared.owns_assets),
         serves_mining_companies: Boolean(declared.serves_mining_companies),
@@ -360,7 +451,9 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 
   const typeValueFor = (label: string): OrganisationType =>
-    ORG_TYPE_ENTRIES.find(([, l]) => l === label)?.[0] ?? "compliance_partner";
+    isLogistics
+      ? "logistics_company"
+      : ORG_TYPE_ENTRIES.find(([, l]) => l === label)?.[0] ?? "compliance_partner";
 
   const organisationPayload = (): OrganisationProfileData => ({
     name: org.name.trim(),
@@ -401,6 +494,12 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
   };
 
   const saving =
+    (isLogistics &&
+      (saveLogisticsOrganisation.isPending ||
+        saveLogisticsServices.isPending ||
+        saveLogisticsCapability.isPending ||
+        saveLogisticsOperations.isPending ||
+        saveLogisticsConflict.isPending)) ||
     saveOrganisation.isPending ||
     saveRepresentative.isPending ||
     saveServices.isPending ||
@@ -423,6 +522,11 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           if (target.id === applicationId)
             await saveOrganisation.mutateAsync(organisationPayload());
           else await saveSection(target.id, "organisation", organisationPayload());
+          if (isLogistics) {
+            const logisticsType = { logistics_type: org.organisation_type };
+            if (target.id === applicationId) await saveLogisticsOrganisation.mutateAsync(logisticsType);
+            else await saveLogisticsSection(target.id, "organisation", logisticsType);
+          }
           return true;
         }
         case 1:
@@ -435,6 +539,14 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           });
           return true;
         case 2:
+          if (isLogistics) {
+            await saveLogisticsServices.mutateAsync({
+              selected_services: services.selected_services,
+              geographic_coverage: services.coverage === "Nationwide" ? "nationwide" : "selected_states",
+              states_covered: services.coverage === "Nationwide" ? [] : services.states_covered,
+            });
+            return true;
+          }
           await saveServices.mutateAsync({
             selected_services: services.selected_services,
             geographic_coverage:
@@ -443,6 +555,20 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           });
           return true;
         case 3:
+          if (isLogistics) {
+            await saveLogisticsCapability.mutateAsync({
+              years_haulage_experience: numeric(professional.years_haulage_experience),
+              drivers_employed: numeric(professional.drivers_employed),
+              vehicles_operated: numeric(professional.vehicles_operated),
+              compliance_professionals: numeric(professional.compliance_professionals),
+              transport_safety_managers: numeric(professional.transport_safety_managers),
+              maintenance_engineers: numeric(professional.maintenance_engineers),
+              dispatch_coordinators: numeric(professional.dispatch_coordinators),
+              driver_trainers: numeric(professional.driver_trainers),
+              other_technical_personnel: numeric(professional.other_technical_personnel),
+            });
+            return true;
+          }
           await saveProfessional.mutateAsync({
             years_mining_experience: numeric(professional.years_mining_experience),
             compliance_professionals: numeric(professional.compliance_professionals),
@@ -456,6 +582,18 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           });
           return true;
         case 4:
+          if (isLogistics) {
+            await saveLogisticsOperations.mutateAsync({
+              operates_own_fleet: inspection.operates_own_fleet,
+              active_vehicles: numeric(inspection.active_vehicles),
+              gps_tracking_available: inspection.gps_tracking_available,
+              maximum_movements_per_month: numeric(inspection.maximum_movements_per_month),
+              average_turnaround_time: inspection.average_turnaround_time.trim(),
+              typical_mobilisation_time: inspection.typical_mobilisation_time.trim(),
+              evidence_standards: inspection.evidence,
+            });
+            return true;
+          }
           await saveInspection.mutateAsync({
             conducts_physical_inspections: inspection.conducts_physical_inspections,
             active_inspectors: numeric(inspection.active_inspectors),
@@ -469,6 +607,16 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           });
           return true;
         case 7:
+          if (isLogistics) {
+            await saveLogisticsConflict.mutateAsync({
+              owns_mineral_assets: conflict.owns_assets,
+              serves_mining_companies: conflict.serves_mining_companies,
+              trades_minerals: conflict.trades_minerals,
+              relationships: conflict.relationships.trim() || "None declared.",
+              agreed: conflict.agreed,
+            });
+            return true;
+          }
           await saveConflict.mutateAsync({
             owns_assets: conflict.owns_assets,
             serves_mining_companies: conflict.serves_mining_companies,
@@ -532,6 +680,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
   };
 
   const progress = application?.progress;
+  const savedServices = isLogistics ? application?.logistics_profile?.services : application?.services;
 
   /**
    * Why the API would refuse this submission, or null when it would take it.
@@ -610,7 +759,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                 label="Organisation Type"
                 value={org.organisation_type}
                 onChange={(v) => setOrg({ ...org, organisation_type: v })}
-                options={ORG_TYPE_LABELS}
+                options={isLogistics ? logisticsOrganisationTypes : ORG_TYPE_LABELS}
               />
               <TextField
                 name="registration_number"
@@ -719,9 +868,9 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           {step === 2 && (
             <div className="space-y-6">
               <ChipToggleGroup
-                label="Compliance Services Offered"
+                label={isLogistics ? "Haulage Services Offered" : "Compliance Services Offered"}
                 hint="Select every service your organisation is able to deliver."
-                options={complianceServiceOptions}
+                options={isLogistics ? logisticsServiceOptions : complianceServiceOptions}
                 selected={services.selected_services}
                 onToggle={(v) =>
                   setServices({
@@ -750,7 +899,21 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
             </div>
           )}
 
-          {step === 3 && (
+          {step === 3 && isLogistics && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {LOGISTICS_CAPABILITY_FIELDS.map(([key, label]) => (
+                <TextField
+                  key={key}
+                  name={key}
+                  label={label}
+                  type="number"
+                  value={professional[key]}
+                  onChange={(v) => setProfessional({ ...professional, [key]: v })}
+                />
+              ))}
+            </div>
+          )}
+          {step === 3 && !isLogistics && (
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
                 name="years_mining_experience"
@@ -820,7 +983,59 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
             </div>
           )}
 
-          {step === 4 && (
+          {step === 4 && isLogistics && (
+            <div className="space-y-6">
+              <YesNoField
+                label="Operates its own fleet of vehicles"
+                value={inspection.operates_own_fleet}
+                onChange={(v) => setInspection({ ...inspection, operates_own_fleet: v })}
+              />
+              <YesNoField
+                label="GPS or telematics tracking is available"
+                value={inspection.gps_tracking_available}
+                onChange={(v) => setInspection({ ...inspection, gps_tracking_available: v })}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  name="active_vehicles"
+                  label="Active Vehicles"
+                  type="number"
+                  value={inspection.active_vehicles}
+                  onChange={(v) => setInspection({ ...inspection, active_vehicles: v })}
+                />
+                <TextField
+                  name="maximum_movements_per_month"
+                  label="Maximum Movements per Month"
+                  type="number"
+                  value={inspection.maximum_movements_per_month}
+                  onChange={(v) => setInspection({ ...inspection, maximum_movements_per_month: v })}
+                />
+                <TextField
+                  name="average_turnaround_time"
+                  label="Average Turnaround Time"
+                  placeholder="e.g. 2 days"
+                  value={inspection.average_turnaround_time}
+                  onChange={(v) => setInspection({ ...inspection, average_turnaround_time: v })}
+                />
+                <TextField
+                  name="typical_mobilisation_time"
+                  label="Typical Mobilisation Time"
+                  placeholder="e.g. 48 hours"
+                  value={inspection.typical_mobilisation_time}
+                  onChange={(v) => setInspection({ ...inspection, typical_mobilisation_time: v })}
+                />
+              </div>
+              <ChipToggleGroup
+                label="Evidence Standards You Can Provide"
+                options={logisticsEvidenceStandards}
+                selected={inspection.evidence}
+                onToggle={(v) =>
+                  setInspection({ ...inspection, evidence: toggle(inspection.evidence, v) })
+                }
+              />
+            </div>
+          )}
+          {step === 4 && !isLogistics && (
             <div className="space-y-6">
               <YesNoField
                 label="Conducts physical site inspections"
@@ -972,7 +1187,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                     label="Role"
                     value={person.role}
                     onChange={(v) => setPerson({ ...person, role: v })}
-                    options={personnelRoleOptions}
+                    options={isLogistics ? logisticsPersonnelRoles : personnelRoleOptions}
                   />
                   <TextField
                     name="discipline"
@@ -1039,7 +1254,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                       });
                       setPerson({
                         full_name: "",
-                        role: personnelRoleOptions[0] ?? "",
+                        role: (isLogistics ? logisticsPersonnelRoles[0] : personnelRoleOptions[0]) ?? "",
                         discipline: "",
                         qualification: "",
                         registration_number: "",
@@ -1104,7 +1319,11 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           {step === 7 && (
             <div className="space-y-5">
               <YesNoField
-                label="Does your organisation own mining assets or titles?"
+                label={
+                  isLogistics
+                    ? "Does your organisation own or hold an interest in a mining company?"
+                    : "Does your organisation own mining assets or titles?"
+                }
                 value={conflict.owns_assets}
                 onChange={(v) => setConflict({ ...conflict, owns_assets: v })}
               />
@@ -1240,7 +1459,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
               </SectionCard>
 
               <SectionCard
-                title="Compliance services"
+                title={isLogistics ? "Haulage services" : "Compliance services"}
                 action={
                   <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
                     Edit section
@@ -1250,13 +1469,13 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                 <div className="space-y-1">
                   <InfoRow
                     label="Services"
-                    value={application?.services?.selected_services?.join(", ") || "-"}
+                    value={savedServices?.selected_services?.join(", ") || "-"}
                   />
                   <InfoRow
                     label="Coverage"
                     value={
-                      application?.services?.geographic_coverage === "selected_states"
-                        ? application.services.states_covered?.join(", ") || "-"
+                      savedServices?.geographic_coverage === "selected_states"
+                        ? savedServices?.states_covered?.join(", ") || "-"
                         : "Nationwide"
                     }
                   />
