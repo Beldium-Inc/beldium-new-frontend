@@ -278,6 +278,8 @@ export interface DocumentRequirement {
   document_type: string;
   title: string;
   required: boolean;
+  /** When an optional document applies, e.g. "If any vehicle is leased". Blank when it always does. */
+  applies_when?: string;
   status: DocumentRequirementStatus;
 }
 

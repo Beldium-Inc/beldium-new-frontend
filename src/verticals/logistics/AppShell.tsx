@@ -28,6 +28,8 @@ import { useApp } from "@/verticals/logistics/store";
 import type { Role } from "@/verticals/logistics/mock-data";
 import { BeldiumMark } from "./bits";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { SetupBanner } from "@/components/setup-banner";
+import { PartnerApplicationBanner } from "./partner-documents";
 
 interface NavItem {
   to: string;
@@ -362,7 +364,11 @@ export function AppShell({
             </span>
           ))}
         </div>
-        <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="px-4 py-6 sm:px-6 lg:px-8">
+          {role === "operator" ? <SetupBanner /> : null}
+          {role === "partner" ? <PartnerApplicationBanner /> : null}
+          {children}
+        </main>
       </div>
     </div>
   );

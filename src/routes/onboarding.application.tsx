@@ -8,6 +8,8 @@ import { useOnboarding } from "@/lib/onboarding/store";
 
 export const Route = createFileRoute("/onboarding/application")({
   component: ApplicationPage,
+  validateSearch: (search: Record<string, unknown>): { step?: "documents" } =>
+    search["step"] === "documents" ? { step: "documents" } : {},
   head: () => ({
     meta: [
       { title: "Compliance Application | Beldium Compliance" },
@@ -25,11 +27,13 @@ export const Route = createFileRoute("/onboarding/application")({
 
 function ApplicationPage() {
   const { role, sector } = useOnboarding();
+  const { step } = Route.useSearch();
   if (role === "independent") return <ProfessionalApplicationFlow />;
   if (role === "regulator-org" || role === "regulator-officer") return <RegulatorApplicationFlow />;
   if (sector === "quality") {
-    if (role === "compliance-officer") return <QualityProfessionalApplicationFlow />;
+    if (role === "compliance-officer" || role === "laboratory-analyst")
+      return <QualityProfessionalApplicationFlow />;
     return <QualityOrgApplicationFlow />;
   }
-  return <OrgApplicationFlow />;
+  return <OrgApplicationFlow startAtDocuments={step === "documents"} />;
 }

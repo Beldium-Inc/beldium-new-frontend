@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Check, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -134,11 +135,15 @@ export function reportError(error: unknown, fallback: string): Record<string, st
   return fields;
 }
 
-export function OrgApplicationFlow() {
+const EDITABLE_STATUSES = ["draft", "action_required", "rejected"];
+const DOCUMENTS_STEP = 5;
+
+export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocuments?: boolean }) {
   const { sector } = useOnboarding();
+  const queryClient = useQueryClient();
   const sectorName = sector ? VERTICAL_BY_SLUG[sector].name : "your sector";
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(startAtDocuments ? DOCUMENTS_STEP : 0);
   /** Per-field validation messages from the last rejected save, by API field name. */
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -546,10 +551,14 @@ export function OrgApplicationFlow() {
   const outstandingDocuments = useMemo(
     () =>
       (requirements.data ?? []).filter(
-        (r) => r.status === "not_submitted" || r.status === "requested",
+        (r) => r.required && (r.status === "not_submitted" || r.status === "requested"),
       ),
     [requirements.data],
   );
+  /** Came from the workspace banner on an application the desk already has: documents are all that can change. */
+  const documentsOnly =
+    startAtDocuments && !!application && !EDITABLE_STATUSES.includes(application.status);
+  const backToWorkspace = () => navigate({ to: "/logistics/operator" });
 
   if (loading) {
     return (
@@ -572,7 +581,11 @@ export function OrgApplicationFlow() {
         <ProgressHeader
           step={step + 1}
           total={steps.length}
-          onBack={() => (step === 0 ? navigate({ to: "/onboarding/verify" }) : setStep(step - 1))}
+          onBack={() => {
+            if (documentsOnly) void backToWorkspace();
+            else if (step === 0) navigate({ to: "/onboarding/verify" });
+            else setStep(step - 1);
+          }}
         />
         <StepBar steps={steps} current={step} />
 
@@ -860,8 +873,10 @@ export function OrgApplicationFlow() {
           {step === 5 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Every document below is required before the application can be submitted. PDF, Word,
-                JPEG or PNG, up to 10 MB each.
+                {(requirements.data ?? []).some((r) => !r.required)
+                  ? "Documents marked Required are needed to complete the application. Upload the others if they apply to you."
+                  : "Every document below is required before the application can be submitted."}{" "}
+                PDF, Word, JPEG or PNG, up to 10 MB each.
               </p>
               {requirements.isLoading && (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -881,14 +896,28 @@ export function OrgApplicationFlow() {
                     className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">{requirement.title}</p>
+                      <p className="text-sm font-medium">
+                        {requirement.title}{" "}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {requirement.required ? "· Required" : "· Optional"}
+                        </span>
+                      </p>
+                      {requirement.applies_when && (
+                        <p className="text-xs text-muted-foreground">{requirement.applies_when}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {DOCUMENT_STATUS_LABELS[requirement.status]}
                         {uploaded?.original_name ? ` · ${uploaded.original_name}` : ""}
                         {uploaded?.review_notes ? ` · ${uploaded.review_notes}` : ""}
                       </p>
                     </div>
-                    <label className="shrink-0">
+                    <label
+                      className={
+                        application?.status === "verified" && requirement.status === "verified"
+                          ? "hidden"
+                          : "shrink-0"
+                      }
+                    >
                       <input
                         type="file"
                         className="hidden"
@@ -904,6 +933,7 @@ export function OrgApplicationFlow() {
                               file,
                               title: requirement.title,
                             });
+                            void queryClient.invalidateQueries({ queryKey: ["account-setup"] });
                             toast.success(`${requirement.title} uploaded.`);
                           } catch (error) {
                             setFieldErrors(reportError(error, "That file could not be uploaded."));
@@ -1299,7 +1329,11 @@ export function OrgApplicationFlow() {
         </div>
 
         <div className="mt-7 flex flex-wrap gap-3">
-          {step < steps.length - 1 ? (
+          {documentsOnly ? (
+            <Button size="lg" onClick={() => void backToWorkspace()}>
+              Back to dashboard
+            </Button>
+          ) : step < steps.length - 1 ? (
             <Button size="lg" disabled={saving} onClick={() => void advance()}>
               {saving ? "Saving…" : "Save and continue"}
             </Button>
@@ -1314,7 +1348,7 @@ export function OrgApplicationFlow() {
               {submit.isPending ? "Submitting…" : "Submit application"}
             </Button>
           )}
-          {step > 0 && (
+          {step > 0 && !documentsOnly && (
             <Button size="lg" variant="ghost" onClick={() => setStep(step - 1)}>
               Back
             </Button>

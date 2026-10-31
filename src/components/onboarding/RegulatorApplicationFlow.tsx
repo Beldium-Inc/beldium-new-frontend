@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Check, Trash2 } from "lucide-react";
 import { AuthShell, InfoRow, ProgressHeader, StepBar } from "@/components/onboarding/ui";
 import { AreaField, ChipToggleGroup, PhoneField, SectionCard, SelectField, TextField, YesNoField } from "@/components/onboarding/fields";
+import { DocumentChecklist } from "@/components/onboarding/quality-parts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -17,6 +18,7 @@ import {
   regulatoryResponsibilityOptions,
   regulatoryRoleOptions,
 } from "@/lib/onboarding/data";
+import { qualityRegulatorOfficerDocuments, qualityRegulatorOrgDocuments } from "@/lib/onboarding/quality";
 import { useOnboarding } from "@/lib/onboarding/store";
 
 const steps = [
@@ -42,11 +44,21 @@ export function RegulatorApplicationFlow() {
     declarations,
     setDeclaration,
     submitApplication,
+    sector,
+    role,
   } = useOnboarding();
+  const checklist =
+    sector === "quality"
+      ? role === "regulator-officer"
+        ? qualityRegulatorOfficerDocuments
+        : qualityRegulatorOrgDocuments
+      : null;
+  const documentOptions = checklist ? checklist.map((d) => d.title) : regulatorDocumentCatalogue;
+  const missingDocuments = (checklist ?? []).filter((d) => d.required && !documents.some((x) => x.category === d.title));
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
-  const [docDraft, setDocDraft] = useState({ category: regulatorDocumentCatalogue[0]!, name: "", reference: "", issued: "", expiry: "" });
+  const [docDraft, setDocDraft] = useState({ category: documentOptions[0]!, name: "", reference: "", issued: "", expiry: "" });
   const emptyOfficer = {
     name: "",
     position: regulatoryRoleOptions[0]!,
@@ -136,9 +148,10 @@ export function RegulatorApplicationFlow() {
 
         {step === 2 && (
           <div className="space-y-5">
+            {checklist && <DocumentChecklist items={checklist} attached={documents.map((d) => d.category)} />}
             <SectionCard title="Attach a document">
               <div className="grid gap-4 sm:grid-cols-2">
-                <SelectField label="Document type" value={docDraft.category} onChange={(v) => setDocDraft({ ...docDraft, category: v })} options={regulatorDocumentCatalogue} />
+                <SelectField label="Document type" value={docDraft.category} onChange={(v) => setDocDraft({ ...docDraft, category: v })} options={documentOptions} />
                 <TextField label="File name" placeholder="enabling-act.pdf" value={docDraft.name} onChange={(v) => setDocDraft({ ...docDraft, name: v })} />
                 <TextField label="Reference" value={docDraft.reference} onChange={(v) => setDocDraft({ ...docDraft, reference: v })} />
                 <TextField label="Issued" type="date" value={docDraft.issued} onChange={(v) => setDocDraft({ ...docDraft, issued: v })} />
@@ -149,7 +162,7 @@ export function RegulatorApplicationFlow() {
                 disabled={!docDraft.name.trim()}
                 onClick={() => {
                   addDocument(docDraft);
-                  setDocDraft({ category: regulatorDocumentCatalogue[0]!, name: "", reference: "", issued: "", expiry: "" });
+                  setDocDraft({ category: documentOptions[0]!, name: "", reference: "", issued: "", expiry: "" });
                 }}
               >
                 Attach document
@@ -330,7 +343,7 @@ export function RegulatorApplicationFlow() {
 
       <div className="mt-7 flex flex-wrap gap-3">
         {step < steps.length - 1 ? (
-          <Button size="lg" onClick={() => setStep(step + 1)}>
+          <Button size="lg" disabled={step === 2 && missingDocuments.length > 0} onClick={() => setStep(step + 1)}>
             Continue
           </Button>
         ) : (

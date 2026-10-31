@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Check, Trash2 } from "lucide-react";
 import { AuthShell, InfoRow, ProgressHeader, StepBar } from "@/components/onboarding/ui";
 import { AreaField, ChipToggleGroup, SectionCard, SelectField, TextField, YesNoField } from "@/components/onboarding/fields";
+import { DocumentChecklist } from "@/components/onboarding/quality-parts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,6 +14,7 @@ import {
   professionalDocumentCatalogue,
   reviewCapabilityOptions,
 } from "@/lib/onboarding/data";
+import { qualityIndependentDocuments } from "@/lib/onboarding/quality";
 import { useOnboarding } from "@/lib/onboarding/store";
 
 const steps = [
@@ -30,10 +32,13 @@ const idTypes = ["National Identification Number (NIN)", "International Passport
 const employmentStatuses = ["Self-employed / Independent", "Employed", "Consultant", "Retired professional"];
 
 export function ProfessionalApplicationFlow() {
-  const { professional, updateProfessional, documents, addDocument, removeDocument, submitApplication } = useOnboarding();
+  const { professional, updateProfessional, documents, addDocument, removeDocument, submitApplication, sector } = useOnboarding();
+  const checklist = sector === "quality" ? qualityIndependentDocuments : null;
+  const documentOptions = checklist ? checklist.map((d) => d.title) : professionalDocumentCatalogue;
+  const missingDocuments = (checklist ?? []).filter((d) => d.required && !documents.some((x) => x.category === d.title));
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [docDraft, setDocDraft] = useState({ category: professionalDocumentCatalogue[0]!, name: "", reference: "", issued: "", expiry: "" });
+  const [docDraft, setDocDraft] = useState({ category: documentOptions[0]!, name: "", reference: "", issued: "", expiry: "" });
 
   const toggle = (list: string[], value: string) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   const setIndependence = (key: string, value: boolean) =>
@@ -151,9 +156,10 @@ export function ProfessionalApplicationFlow() {
 
         {step === 6 && (
           <div className="space-y-5">
+            {checklist && <DocumentChecklist items={checklist} attached={documents.map((d) => d.category)} />}
             <SectionCard title="Attach a supporting document">
               <div className="grid gap-4 sm:grid-cols-2">
-                <SelectField label="Document type" value={docDraft.category} onChange={(v) => setDocDraft({ ...docDraft, category: v })} options={professionalDocumentCatalogue} />
+                <SelectField label="Document type" value={docDraft.category} onChange={(v) => setDocDraft({ ...docDraft, category: v })} options={documentOptions} />
                 <TextField label="File name" placeholder="cv.pdf" value={docDraft.name} onChange={(v) => setDocDraft({ ...docDraft, name: v })} />
                 <TextField label="Reference" value={docDraft.reference} onChange={(v) => setDocDraft({ ...docDraft, reference: v })} />
                 <TextField label="Issued" type="date" value={docDraft.issued} onChange={(v) => setDocDraft({ ...docDraft, issued: v })} />
@@ -164,7 +170,7 @@ export function ProfessionalApplicationFlow() {
                 disabled={!docDraft.name.trim()}
                 onClick={() => {
                   addDocument(docDraft);
-                  setDocDraft({ category: professionalDocumentCatalogue[0]!, name: "", reference: "", issued: "", expiry: "" });
+                  setDocDraft({ category: documentOptions[0]!, name: "", reference: "", issued: "", expiry: "" });
                 }}
               >
                 Attach document
@@ -237,7 +243,7 @@ export function ProfessionalApplicationFlow() {
 
       <div className="mt-7 flex flex-wrap gap-3">
         {step < steps.length - 1 ? (
-          <Button size="lg" onClick={() => setStep(step + 1)}>
+          <Button size="lg" disabled={step === 6 && missingDocuments.length > 0} onClick={() => setStep(step + 1)}>
             Continue
           </Button>
         ) : (

@@ -277,6 +277,7 @@ export interface LogisticsApplication {
     checks: Record<string, boolean>;
     missing_sections: string[];
     missing_document_domains: string[];
+    missing_document_types: string[];
     documents_submitted: number;
     domains_required: number;
   };

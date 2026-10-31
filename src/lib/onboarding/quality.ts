@@ -136,3 +136,39 @@ export const qualityOfficerDocumentCatalogue: { type: string; title: string; req
     { type: "professional_certifications", title: "Professional Certifications", required: false },
     { type: "other_supporting_documents", title: "Other Supporting Documents", required: false },
   ];
+
+// --- Laboratory Analyst application -------------------------------------------
+
+export const qualityAnalystDocumentCatalogue: { type: string; title: string; required: boolean }[] =
+  [
+    { type: "professional_qualifications", title: "Professional Qualifications", required: true },
+    { type: "professional_certifications", title: "Professional Certifications", required: false },
+    { type: "testing_method_evidence", title: "Testing Method Evidence", required: false },
+    { type: "other_supporting_documents", title: "Other Supporting Documents", required: false },
+  ];
+
+// --- Regulatory and independent applications ----------------------------------
+
+export type QualityDocumentRequirement = { title: string; required: boolean };
+
+export const qualityRegulatorOrgDocuments: QualityDocumentRequirement[] = [
+  { title: "Relevant Regulatory Approvals", required: true },
+  { title: "CAC / Organisation Registration", required: false },
+  { title: "Other Supporting Documents", required: false },
+];
+
+export const qualityRegulatorOfficerDocuments: QualityDocumentRequirement[] = [
+  { title: "Relevant Regulatory Approvals", required: true },
+  { title: "Professional Qualifications", required: false },
+  { title: "Other Supporting Documents", required: false },
+];
+
+export const qualityIndependentDocuments: QualityDocumentRequirement[] = [
+  { title: "Professional Qualifications", required: true },
+  { title: "Professional Certifications", required: true },
+  { title: "Sampling Credentials", required: false },
+  { title: "Inspection Credentials", required: false },
+  { title: "Equipment Calibration Certificates", required: false },
+  { title: "Insurance", required: false },
+  { title: "Other Supporting Documents", required: false },
+];

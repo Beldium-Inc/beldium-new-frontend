@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Check, Circle, Loader2 } from "lucide-react";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill, ScoreBar } from "@/verticals/logistics/bits";
+import { usePartnerChecklist } from "@/verticals/logistics/partner-documents";
 import { useApp } from "@/verticals/logistics/store";
 
 export const Route = createFileRoute("/logistics/partner/application")({
@@ -18,7 +19,6 @@ export const Route = createFileRoute("/logistics/partner/application")({
 
 const STAGES = [
   { name: "Company registration", detail: "CAC records, TIN and directors submitted", state: "done" },
-  { name: "Document upload", detail: "18 of 20 required documents provided", state: "done" },
   { name: "Fleet & driver declaration", detail: "12 vehicles and 14 drivers registered", state: "done" },
   { name: "Compliance review", detail: "Reviewer Ngozi Adeyemi is working through 9 check domains", state: "active" },
   { name: "Additional information", detail: "Mineral transport authorisation outstanding", state: "active" },
@@ -29,6 +29,17 @@ const STAGES = [
 function ApplicationPage() {
   const { myCompany } = useApp();
   const c = myCompany!;
+  const { rows, missing } = usePartnerChecklist();
+  const required = rows.filter((r) => r.required).length;
+  const stages = [
+    STAGES[0]!,
+    {
+      name: "Document upload",
+      detail: `${required - missing.length} of ${required} required documents provided`,
+      state: missing.length ? "active" : "done",
+    },
+    ...STAGES.slice(1),
+  ];
 
   return (
     <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Application progress" }]}>
@@ -36,7 +47,7 @@ function ApplicationPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel className="lg:col-span-2" title="Onboarding stages" bodyClassName="p-5">
           <ol className="space-y-4">
-            {STAGES.map((s, i) => (
+            {stages.map((s, i) => (
               <li key={s.name} className="flex gap-3">
                 <div className="flex flex-col items-center">
                   <span
@@ -47,7 +58,7 @@ function ApplicationPage() {
                   >
                     {s.state === "done" ? <Check className="h-3.5 w-3.5" /> : s.state === "active" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Circle className="h-3 w-3" />}
                   </span>
-                  {i < STAGES.length - 1 ? <span className="mt-1 w-px flex-1 bg-border" /> : null}
+                  {i < stages.length - 1 ? <span className="mt-1 w-px flex-1 bg-border" /> : null}
                 </div>
                 <div className="pb-1">
                   <p className="text-sm font-medium text-[var(--brand)]">{s.name}</p>

@@ -188,3 +188,25 @@ export const DOCUMENT_ACCEPT = ".pdf,.doc,.docx,.jpg,.jpeg,.png";
 export const DOCUMENT_HINT = "PDF, JPG, PNG or DOC up to 10 MB";
 export const DOCUMENT_STATUS_NOTE =
   "Uploading does not equal verification: each file is reviewed. After submission each moves to Under Review, then Verified, Information Required or Rejected.";
+
+/** Which documents a locally kept application needs, ticked off as they are attached. */
+export function DocumentChecklist({
+  items,
+  attached,
+}: {
+  items: { title: string; required: boolean }[];
+  attached: string[];
+}) {
+  return (
+    <ul className="space-y-1 rounded-[14px] border border-border px-4 py-3">
+      {items.map((item) => (
+        <li key={item.title} className="flex items-center justify-between gap-3 text-sm">
+          <span>{item.title}</span>
+          <span className="text-xs text-muted-foreground">
+            {attached.includes(item.title) ? "Attached" : item.required ? "Required" : "Optional"}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
