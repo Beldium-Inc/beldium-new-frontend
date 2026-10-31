@@ -85,6 +85,11 @@ const SECTION_LABELS: Record<string, string> = {
   inspection_capability: "Inspection capability",
   conflict_declaration: "Conflict declaration",
   declaration: "Declarations signed",
+  // Logistics applications are measured against these instead.
+  services: "Haulage services",
+  capability: "Professional capability",
+  operations: "Fleet operations",
+  conflict: "Conflict declaration",
 };
 
 function OnboardingDashboard() {
@@ -316,14 +321,21 @@ function OnboardingDashboard() {
                 value={`${row?.documents_submitted ?? 0} of ${row?.documents_required ?? 0} required`}
               />
               <InfoRow label="Personnel" value={`${row?.personnel_count ?? 0} registered`} />
-              <InfoRow
-                label="Inspection capability"
-                value={
-                  application?.inspection_capability?.conducts_physical_inspections
-                    ? "Declared"
-                    : "Not declared"
-                }
-              />
+              {sector === "logistics" ? (
+                <InfoRow
+                  label="Fleet operations"
+                  value={application?.logistics_profile?.operations ? "Declared" : "Not declared"}
+                />
+              ) : (
+                  <InfoRow
+                  label="Inspection capability"
+                  value={
+                    application?.inspection_capability?.conducts_physical_inspections
+                      ? "Declared"
+                      : "Not declared"
+                  }
+                />
+              )}
             </div>
           </div>
         </div>

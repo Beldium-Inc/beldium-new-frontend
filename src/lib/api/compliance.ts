@@ -254,6 +254,84 @@ export function saveQualitySection<S extends QualitySectionSlug>(
   });
 }
 
+// --- Logistics sections -----------------------------------------------------
+
+// Logistics applications answer about haulage services, fleet operations and
+// transport personnel. They write to `sections/logistics-<key>/` and read back
+// from `logistics_profile`. The organisation identity still uses the shared
+// organisation section; the logistics subtype is saved under `organisation`.
+export const LOGISTICS_SECTION_SLUGS = [
+  "organisation",
+  "services",
+  "capability",
+  "operations",
+  "conflict",
+] as const;
+
+export type LogisticsSectionSlug = (typeof LOGISTICS_SECTION_SLUGS)[number];
+
+export interface LogisticsOrganisationData {
+  logistics_type: string;
+}
+
+export interface LogisticsServicesData {
+  selected_services: string[];
+  geographic_coverage: "nationwide" | "selected_states";
+  states_covered: string[];
+}
+
+export interface LogisticsCapabilityData {
+  years_haulage_experience: number;
+  drivers_employed: number;
+  vehicles_operated: number;
+  compliance_professionals: number;
+  transport_safety_managers: number;
+  maintenance_engineers: number;
+  dispatch_coordinators: number;
+  driver_trainers: number;
+  other_technical_personnel: number;
+}
+
+export interface LogisticsOperationsData {
+  operates_own_fleet: boolean;
+  active_vehicles: number;
+  gps_tracking_available: boolean;
+  maximum_movements_per_month: number;
+  average_turnaround_time: string;
+  typical_mobilisation_time: string;
+  evidence_standards: string[];
+}
+
+export interface LogisticsConflictData {
+  owns_mineral_assets: boolean;
+  serves_mining_companies: boolean;
+  trades_minerals: boolean;
+  relationships: string;
+  agreed: boolean;
+}
+
+export interface LogisticsSectionData {
+  organisation: LogisticsOrganisationData;
+  services: LogisticsServicesData;
+  capability: LogisticsCapabilityData;
+  operations: LogisticsOperationsData;
+  conflict: LogisticsConflictData;
+}
+
+/** `logistics_profile`: one entry per saved section, keyed by the section slug. */
+export type LogisticsProfile = Partial<{ [S in LogisticsSectionSlug]: LogisticsSectionData[S] }>;
+
+export function saveLogisticsSection<S extends LogisticsSectionSlug>(
+  id: UUID,
+  section: S,
+  data: LogisticsSectionData[S],
+): Promise<ComplianceApplication> {
+  return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/sections/logistics-${section}/`, {
+    method: "PATCH",
+    body: { data },
+  });
+}
+
 // --- personnel --------------------------------------------------------------
 
 export interface PersonnelInput {
