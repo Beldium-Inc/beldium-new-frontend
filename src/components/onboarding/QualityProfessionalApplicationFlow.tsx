@@ -37,33 +37,66 @@ import { useAuth } from "@/lib/auth";
 import {
   qualityMineralOptions,
   qualityOfficerCapabilityOptions,
+  qualityAnalystDocumentCatalogue,
   qualityOfficerDocumentCatalogue,
+  qualityTestingMethodOptions,
 } from "@/lib/onboarding/quality";
 import { useOnboarding } from "@/lib/onboarding/store";
 
-const ROLE_TITLE = "Quality & Control Officer / Inspector";
-
-const steps = [
-  "Find / Join Organisation",
+const baseSteps = (join: string, capability: string, experience: string) => [
+  join,
   "Personal Details",
   "Qualifications",
   "Certifications",
-  "Sampling / Inspection Capability",
-  "Experience",
+  capability,
+  experience,
   "Documents",
   "Declaration",
 ];
 
-const stepDescriptions = [
-  "Request membership of the Q&C organisation you work for.",
+const baseDescriptions = (join: string, capability: string, experience: string) => [
+  join,
   "Your identity as it appears on official documents.",
   "Academic and professional qualifications relevant to quality and control work.",
   "Professional certifications, licences or accreditations you currently hold.",
-  "What you are competent to do in the field.",
-  "Relevant professional history.",
+  capability,
+  experience,
   "Upload supporting evidence.",
   "Confirm the accuracy of your application and consent to verification.",
 ];
+
+const ROLE_FLOWS = {
+  officer: {
+    apiRole: "officer_inspector",
+    membershipRole: "inspector",
+    title: "Quality & Control Officer / Inspector",
+    capabilityLabel: "Capabilities",
+    capabilityError: "Select at least one capability.",
+    capabilityOptions: qualityOfficerCapabilityOptions,
+    documents: qualityOfficerDocumentCatalogue,
+    steps: baseSteps("Find / Join Organisation", "Sampling / Inspection Capability", "Experience"),
+    descriptions: baseDescriptions(
+      "Request membership of the Q&C organisation you work for.",
+      "What you are competent to do in the field.",
+      "Relevant professional history.",
+    ),
+  },
+  analyst: {
+    apiRole: "laboratory_analyst",
+    membershipRole: "analyst",
+    title: "Laboratory Analyst",
+    capabilityLabel: "Testing methods",
+    capabilityError: "Select at least one testing method.",
+    capabilityOptions: qualityTestingMethodOptions,
+    documents: qualityAnalystDocumentCatalogue,
+    steps: baseSteps("Find / Join Laboratory", "Testing Methods & Materials", "Laboratory Experience"),
+    descriptions: baseDescriptions(
+      "Request membership of the laboratory where you work.",
+      "Methods you are trained to run and the materials you have analysed.",
+      "Your bench experience.",
+    ),
+  },
+} as const;
 
 const blankQualification = { qualification: "", institution: "", year: "" };
 const blankCertification = { name: "", certificate_number: "", expiry: "" };
@@ -73,7 +106,9 @@ const toggle = (list: string[], value: string) =>
 
 export function QualityProfessionalApplicationFlow() {
   const navigate = useNavigate();
-  const { account } = useOnboarding();
+  const { account, role } = useOnboarding();
+  const flow = ROLE_FLOWS[role === "laboratory-analyst" ? "analyst" : "officer"];
+  const { steps, descriptions: stepDescriptions, title: ROLE_TITLE, documents: documentCatalogue } = flow;
   const { status: authStatus } = useAuth();
   const signedIn = authStatus === "authenticated";
 
@@ -143,7 +178,7 @@ export function QualityProfessionalApplicationFlow() {
         break;
       case 4:
         if (!capability.capabilities.length)
-          errors["capabilities"] = "Select at least one capability.";
+          errors["capabilities"] = flow.capabilityError;
         if (!capability.minerals.length)
           errors["minerals"] = "Select at least one mineral or material.";
         break;
@@ -155,7 +190,7 @@ export function QualityProfessionalApplicationFlow() {
         break;
       }
       case 6:
-        for (const item of qualityOfficerDocumentCatalogue)
+        for (const item of documentCatalogue)
           if (item.required && !files[item.type]) errors[item.type] = "This document is required.";
         break;
       case 7:
@@ -180,7 +215,7 @@ export function QualityProfessionalApplicationFlow() {
       const application = await submitQualityProfessionalApplication(
         {
           organisation: organisationId,
-          role: "officer_inspector",
+          role: flow.apiRole,
           personal: {
             full_legal_name: personal.full_legal_name.trim(),
             date_of_birth: personal.date_of_birth,
@@ -208,7 +243,7 @@ export function QualityProfessionalApplicationFlow() {
       try {
         await createJoinRequest.mutateAsync({
           organisation: organisationId,
-          requested_role: "inspector",
+          requested_role: flow.membershipRole,
           justification: `${ROLE_TITLE} application ${application.reference}: ${personal.job_title.trim()}.`,
         });
       } catch (error) {
@@ -407,8 +442,8 @@ export function QualityProfessionalApplicationFlow() {
             <div className="space-y-6">
               <div>
                 <ChipToggleGroup
-                  label={required("Capabilities")}
-                  options={qualityOfficerCapabilityOptions}
+                  label={required(flow.capabilityLabel)}
+                  options={[...flow.capabilityOptions]}
                   selected={capability.capabilities}
                   onToggle={(v) => {
                     clearFieldError("capabilities");
@@ -464,7 +499,7 @@ export function QualityProfessionalApplicationFlow() {
           {step === 6 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">{DOCUMENT_STATUS_NOTE}</p>
-              {qualityOfficerDocumentCatalogue.map((item) => {
+              {documentCatalogue.map((item) => {
                 const file = files[item.type];
                 return (
                   <div key={item.type}>

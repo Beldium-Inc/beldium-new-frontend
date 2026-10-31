@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { AppStateProvider } from "@/verticals/logistics/store";
+import { AppStateProvider, useApp } from "@/verticals/logistics/store";
 import type { Role } from "@/verticals/logistics/mock-data";
 import { useSession } from "@/lib/session";
 import { useSignOut } from "@/lib/sign-out";
@@ -47,8 +47,21 @@ function LogisticsLayout() {
     // data-vertical scopes this dashboard's theme tokens (see src/styles.css).
     <div data-vertical="logistics">
       <AppStateProvider role={role as Role} onSignOut={signOut}>
-        <Outlet />
+        {role === "partner" ? <PartnerOutlet /> : <Outlet />}
       </AppStateProvider>
+    </div>
+  );
+}
+
+/** Every partner page reads the signed-in company, so it has to be there first. */
+function PartnerOutlet() {
+  const { myCompany, isLoading } = useApp();
+  if (myCompany) return <Outlet />;
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <p className="text-sm text-muted-foreground">
+        {isLoading ? "Loading workspace…" : "This account has no logistics company registered yet."}
+      </p>
     </div>
   );
 }

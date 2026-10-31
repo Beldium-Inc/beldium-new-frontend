@@ -24,6 +24,11 @@ export type AccountSetup = {
   application: ComplianceApplication | null;
   /** Registration progress, 0–100. */
   percent: number;
+  /**
+   * Required documents a submitted Logistics application has yet to supply. The
+   * checklist can grow after submission, so this never holds the account back.
+   */
+  documentsOutstanding?: number;
   /** Where the person should go to carry on. */
   resumeTo: "/onboarding/application" | "/onboarding/dashboard" | "/onboarding/join";
 };
@@ -79,11 +84,14 @@ function resolve(
       resumeTo: "/onboarding/dashboard",
     };
   }
+  const documents = application.progress.documents;
   return {
     stage: "complete",
     organisation,
     application,
     percent,
+    documentsOutstanding:
+      application.sector === "logistics" ? documents.required - documents.submitted : 0,
     resumeTo: "/onboarding/dashboard",
   };
 }

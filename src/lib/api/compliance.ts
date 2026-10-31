@@ -320,8 +320,8 @@ export function listDocuments(id: UUID): Promise<ComplianceDocument[]> {
 }
 
 /**
- * Upload (or replace) one document. `title` is ignored for the fifteen required
- * types (the backend substitutes its own label) and the endpoint rejects a
+ * Upload (or replace) one document. `title` is ignored for the types on the sector's
+ * checklist (the backend substitutes its own label) and the endpoint rejects a
  * `document_type` that is neither required nor already requested by a reviewer.
  * Re-uploading an existing type returns 200 and resets it to `submitted`.
  */
@@ -339,7 +339,7 @@ export function uploadDocument(
   });
 }
 
-/** The fifteen required types and where each one stands. */
+/** The checklist for the application's sector and where each document stands. */
 export function listDocumentRequirements(id: UUID): Promise<DocumentRequirement[]> {
   return apiFetch<DocumentRequirement[]>(`/compliance-applications/${id}/document-requirements/`);
 }
@@ -349,7 +349,7 @@ export function listDocumentRequirements(id: UUID): Promise<DocumentRequirement[
 /**
  * Submit for review. Rejects with 409 `application_incomplete` unless progress
  * is at 100%, which needs all seven sections, at least one person, and every
- * one of the fifteen required documents.
+ * required document on the sector's checklist.
  */
 export function submitApplication(id: UUID): Promise<ComplianceApplication> {
   return apiFetch<ComplianceApplication>(`/compliance-applications/${id}/submit/`, {

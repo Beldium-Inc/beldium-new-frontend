@@ -4,6 +4,7 @@ import { Download, FileText, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { DocStatusBadge, PageHeader, Panel } from "@/verticals/logistics/bits";
+import { RequiredDocumentsPanel } from "@/verticals/logistics/partner-documents";
 import { useApp } from "@/verticals/logistics/store";
 
 export const Route = createFileRoute("/logistics/partner/documents")({
@@ -33,16 +34,8 @@ function PartnerDocuments() {
       <PageHeader
         title="Documents"
         description="Verified documents are locked. Rejected or replacement-requested documents must be re-uploaded."
-        actions={
-          <button
-            type="button"
-            onClick={() => toast.success("Upload dialog simulated, attach files from the request centre")}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--brand)]/90"
-          >
-            <Upload className="h-3.5 w-3.5" /> Upload document
-          </button>
-        }
       />
+      <RequiredDocumentsPanel />
       <Panel bodyClassName="p-0" title="Document library" description={`${docs.length} documents`}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-sm">

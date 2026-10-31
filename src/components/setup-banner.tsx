@@ -1,3 +1,4 @@
+import type * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 
@@ -36,25 +37,60 @@ export function SetupBanner() {
   const setup = useAccountSetup(user, applies);
 
   const data = setup.data;
-  if (!session || !data || data.stage === "complete") return null;
+  if (!session || !data) return null;
+  if (data.stage === "complete") {
+    const missing = data.documentsOutstanding ?? 0;
+    if (missing <= 0) return null;
+    return (
+      <ContinueApplicationBanner
+        title={`${missing} required ${missing === 1 ? "document is" : "documents are"} still needed`}
+        body="The Logistics document requirements have changed. Upload what's missing to complete your application."
+      >
+        <Link
+          to="/onboarding/application"
+          search={{ step: "documents" }}
+          onClick={() => rememberOnboardingSector(session.vertical)}
+        >
+          Continue application <ArrowRight className="size-4" />
+        </Link>
+      </ContinueApplicationBanner>
+    );
+  }
   const copy = COPY[data.stage];
 
+  return (
+    <ContinueApplicationBanner
+      title={`${copy.title}${data.stage === "draft" ? ` (${data.percent}% complete)` : ""}`}
+      body={copy.body}
+    >
+      <Link to={data.resumeTo} onClick={() => rememberOnboardingSector(session.vertical)}>
+        {copy.action} <ArrowRight className="size-4" />
+      </Link>
+    </ContinueApplicationBanner>
+  );
+}
+
+/** The bar itself; `children` is the link back into the application. */
+export function ContinueApplicationBanner({
+  title,
+  body,
+  children,
+}: {
+  title: string;
+  body: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/60 bg-warning/15 px-4 py-3">
       <div className="flex min-w-0 items-start gap-3">
         <AlertTriangle className="mt-0.5 size-5 shrink-0" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold">
-            {copy.title}
-            {data.stage === "draft" ? ` (${data.percent}% complete)` : ""}
-          </p>
-          <p className="text-sm text-muted-foreground">{copy.body}</p>
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="text-sm text-muted-foreground">{body}</p>
         </div>
       </div>
       <Button asChild size="sm">
-        <Link to={data.resumeTo} onClick={() => rememberOnboardingSector(session.vertical)}>
-          {copy.action} <ArrowRight className="size-4" />
-        </Link>
+        {children}
       </Button>
     </div>
   );

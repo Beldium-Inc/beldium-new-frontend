@@ -566,7 +566,7 @@ export function verifyCertificate(hash: string): Promise<CertificateVerification
 export interface QualityProfessionalInput {
   /** The organisation the applicant is asking to join. */
   organisation: UUID;
-  role: "officer_inspector";
+  role: "officer_inspector" | "laboratory_analyst";
   personal: {
     full_legal_name: string;
     /** ISO date (YYYY-MM-DD). */
