@@ -31,18 +31,16 @@ function PartnerDashboard() {
   const open = requests.filter((r) => r.companyId === company.id && r.status === "Open");
 
   return (
-    <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd" }, { label: "Dashboard" }]}>
+    <AppShell role="partner" breadcrumbs={[{ label: company.name }, { label: "Dashboard" }]}>
       <PageHeader
         title="Compliance overview"
         description={`Beldium ID ${company.id} · application submitted ${company.submitted} · reviewer ${company.reviewer}`}
         actions={<StatusBadge status={company.status} />}
       />
 
-      <ComplianceBanner
-        tone="warning"
-        title="Mineral haulage restricted"
-        body="Your mineral transport licence is outstanding. Mineral routes remain blocked on the Beldium platform until the Mining Cadastre Office licence is verified."
-      />
+      {(company.restrictions ?? []).map((r) => (
+        <ComplianceBanner key={r.id} tone="warning" title={`${r.scope} restricted`} body={r.reason} />
+      ))}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Verification status" value={company.status} icon={ShieldCheck} tone="info" />

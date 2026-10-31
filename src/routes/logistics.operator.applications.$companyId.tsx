@@ -45,6 +45,7 @@ import {
   ScoreBar,
   StatusBadge,
 } from "@/verticals/logistics/bits";
+import { DeclaredProfilePanels } from "@/verticals/logistics/declared-profile";
 import { useApp } from "@/verticals/logistics/store";
 import { REQUEST_REASONS, type Company } from "@/verticals/logistics/mock-data";
 import { Preview, useProtectedFile } from "@/components/file-preview";
@@ -243,6 +244,8 @@ function OverviewTab({ company }: { company: Company }) {
             ]}
           />
         </Panel>
+
+        <DeclaredProfilePanels company={company} />
 
         <Panel title="Operating locations" bodyClassName="p-0">
           <ul className="divide-y divide-border">

@@ -31,7 +31,7 @@ function DriversPage() {
   return (
     <AppShell
       role="partner"
-      breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Drivers" }]}
+      breadcrumbs={[{ label: company.name, to: "/logistics/partner" }, { label: "Drivers" }]}
       search={{ value: query, onChange: setQuery, placeholder: "Search drivers, licence, vehicle…" }}
     >
       <PageHeader title="Driver compliance" description="Licence validity, medical fitness and mandatory training are monitored continuously." />
@@ -45,14 +45,21 @@ function DriversPage() {
 
       <Panel className="mt-4" title="Driver register" bodyClassName="p-0" description={`${drivers.length} of ${company.drivers.length} shown`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[1400px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
                 <th className="px-5 py-3 font-semibold">Driver</th>
                 <th className="px-3 py-3 font-semibold">Licence</th>
                 <th className="px-3 py-3 font-semibold">Expiry</th>
                 <th className="px-3 py-3 font-semibold">National ID</th>
+                <th className="px-3 py-3 font-semibold">Phone</th>
+                <th className="px-3 py-3 font-semibold">Employment</th>
                 <th className="px-3 py-3 font-semibold">Experience</th>
+                <th className="px-3 py-3 font-semibold">Mineral haulage</th>
+                <th className="px-3 py-3 font-semibold">Base</th>
+                <th className="px-3 py-3 font-semibold">Availability</th>
+                <th className="px-3 py-3 font-semibold">Emergency contact</th>
+                <th className="px-3 py-3 font-semibold">Safety training</th>
                 <th className="px-3 py-3 font-semibold">Vehicle</th>
                 <th className="px-3 py-3 font-semibold">Training</th>
                 <th className="px-3 py-3 font-semibold">Medical</th>
@@ -64,15 +71,24 @@ function DriversPage() {
                 <tr key={d.id} className="hover:bg-muted/40">
                   <td className="px-5 py-3">
                     <p className="text-sm font-medium text-[var(--brand)]">{d.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{d.id}</p>
+                    <p className="text-[11px] text-muted-foreground">{d.reference || d.id}</p>
                   </td>
                   <td className="px-3 py-3 text-xs">
                     {d.licence}
-                    <span className="block text-[11px] text-muted-foreground">Class {d.licenceClass}</span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {/^class/i.test(d.licenceClass) ? d.licenceClass : `Class ${d.licenceClass}`}
+                    </span>
                   </td>
                   <td className="px-3 py-3 text-xs">{d.licenceExpiry}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{d.nationalId}</td>
+                  <td className="px-3 py-3 text-xs">{d.phone || "-"}</td>
+                  <td className="px-3 py-3 text-xs">{d.employment || "-"}</td>
                   <td className="px-3 py-3 text-xs">{d.experience}</td>
+                  <td className="px-3 py-3 text-xs">{d.mineralExperience || "-"}</td>
+                  <td className="px-3 py-3 text-xs">{d.base || "-"}</td>
+                  <td className="px-3 py-3 text-xs">{d.availability || "-"}</td>
+                  <td className="px-3 py-3 text-xs">{d.emergencyContact || "-"}</td>
+                  <td className="px-3 py-3 text-xs">{d.safetyTrainingDeclared ? "Declared" : "-"}</td>
                   <td className="px-3 py-3 text-xs">{d.assignedVehicle}</td>
                   <td className="px-3 py-3">
                     <div className="flex flex-wrap gap-1">

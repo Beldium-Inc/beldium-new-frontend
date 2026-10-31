@@ -54,11 +54,25 @@ export function usePartnerChecklist() {
 
 /** Top of the partner workspace while a required document is still missing. */
 export function PartnerApplicationBanner() {
-  const { missing, loading, companyId } = usePartnerChecklist();
+  const { missing, loading, companyId, application } = usePartnerChecklist();
   const onDocuments = useRouterState({
     select: (state) => state.location.pathname === "/logistics/partner/documents",
   });
-  if (onDocuments || loading || !companyId || missing.length === 0) return null;
+  if (loading || !companyId) return null;
+  // Not submitted yet: the whole application is still to finish, not just its documents.
+  if (!application || application.status === "draft") {
+    return (
+      <ContinueApplicationBanner
+        title="Your logistics application has not been submitted"
+        body="Finish your organisation, fleet, driver and evidence details to send it for review."
+      >
+        <Link to="/onboarding/application" search={{ flow: "logistics-company" }}>
+          Continue application <ArrowRight className="size-4" />
+        </Link>
+      </ContinueApplicationBanner>
+    );
+  }
+  if (onDocuments || missing.length === 0) return null;
   return (
     <ContinueApplicationBanner
       title={`${missing.length} required ${missing.length === 1 ? "document is" : "documents are"} still needed`}

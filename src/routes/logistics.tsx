@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { AppStateProvider, useApp } from "@/verticals/logistics/store";
@@ -62,6 +62,15 @@ function PartnerOutlet() {
       <p className="text-sm text-muted-foreground">
         {isLoading ? "Loading workspace…" : "This account has no logistics company registered yet."}
       </p>
+      {isLoading ? null : (
+        <Link
+          to="/onboarding/application"
+          search={{ flow: "logistics-company" }}
+          className="ml-3 text-sm font-medium text-[var(--link)] hover:underline"
+        >
+          Register your company
+        </Link>
+      )}
     </div>
   );
 }

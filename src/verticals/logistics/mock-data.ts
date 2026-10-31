@@ -1,3 +1,8 @@
+import type {
+  LogisticsOperatingProfile,
+  LogisticsRepresentative,
+  LogisticsResponsibleOfficers,
+} from "@/lib/api/logistics";
 /**
  * View-model types for the Beldium Logistics Compliance dashboard. The data
  * itself comes from the API (see src/lib/api/logistics.ts and store.tsx,
@@ -90,6 +95,14 @@ export interface CompanyRestriction {
 
 export interface Vehicle {
   id: string;
+  /** The company's own reference, and the fields below it, come from onboarding. */
+  reference?: string;
+  insuranceDeclared?: boolean;
+  roadworthinessDeclared?: boolean;
+  safetyEquipmentDeclared?: boolean;
+  operatingStatus?: string;
+  maintenanceStatus?: string;
+  trackingCapability?: string;
   registration: string;
   type: string;
   vin: string;
@@ -108,6 +121,15 @@ export interface Vehicle {
 
 export interface Driver {
   id: string;
+  /** The company's own reference, and the fields below it, come from onboarding. */
+  reference?: string;
+  phone?: string;
+  employment?: string;
+  mineralExperience?: string;
+  base?: string;
+  availability?: string;
+  emergencyContact?: string;
+  safetyTrainingDeclared?: boolean;
   name: string;
   licence: string;
   licenceClass: string;
@@ -129,7 +151,21 @@ export interface ActivityEvent {
   channel: "Operator" | "Partner" | "System" | "Regulator";
 }
 
+/** What the company declared during onboarding. Nothing here has been verified. */
+export interface CompanyDeclaration {
+  businessEmail: string;
+  businessPhone: string;
+  localGovernmentArea: string;
+  yearEstablished: string;
+  logisticsType: string;
+  description: string;
+  representative: LogisticsRepresentative;
+  officers: LogisticsResponsibleOfficers;
+  operating: LogisticsOperatingProfile;
+}
+
 export interface Company {
+  declared?: CompanyDeclaration;
   /** Approval conditions recorded on the application. */
   conditions?: CompanyCondition[];
   /** Service scopes currently restricted for this company. */

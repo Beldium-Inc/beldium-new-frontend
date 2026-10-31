@@ -49,7 +49,7 @@ export type LogisticsApplicationStatus =
 export type EvidenceStatus = "pending" | "verified" | "rejected";
 export type DomainReviewStatus = "pending" | "passed" | "attention" | "failed";
 export type RiskBand = "low" | "medium" | "high";
-export type CredentialValidity = "current" | "expiring" | "expired";
+export type CredentialValidity = Api.CredentialValidity;
 
 const STATUS_LABEL: Record<Api.LogisticsApplicationStatus, LogisticsApplicationStatus> = {
   draft: "Draft",
@@ -143,7 +143,7 @@ export type Vehicle = {
   model: string;
   year: number;
   capacity: string;
-  capacityUnit: "tonnes" | "litres" | "seats";
+  capacityUnit: Api.Vehicle["capacity_unit"];
   ownership: "Owned" | "Leased" | "Contracted";
   insurer: string;
   insuranceExpiry: string;
@@ -172,7 +172,7 @@ export function toVehicle(row: Api.Vehicle): Vehicle {
     id: row.id,
     company: row.company,
     registration: row.registration,
-    vin: row.vin,
+    vin: row.vin ?? "",
     type: row.vehicle_type,
     make: row.make,
     model: row.model,
@@ -181,8 +181,8 @@ export function toVehicle(row: Api.Vehicle): Vehicle {
     capacityUnit: row.capacity_unit,
     ownership: OWNERSHIP_LABEL[row.ownership],
     insurer: row.insurer,
-    insuranceExpiry: row.insurance_expiry,
-    roadworthinessExpiry: row.roadworthiness_expiry,
+    insuranceExpiry: row.insurance_expiry ?? "",
+    roadworthinessExpiry: row.roadworthiness_expiry ?? "",
     gps: GPS_LABEL[row.gps_status],
     location: row.location,
     isActive: row.is_active,
@@ -218,7 +218,7 @@ export function toDriver(row: Api.Driver): Driver {
     experience: row.years_experience,
     assignedVehicle: row.assigned_vehicle,
     training: row.training,
-    medicalExpiry: row.medical_expiry,
+    medicalExpiry: row.medical_expiry ?? "",
     isActive: row.is_active,
     credentialStatus: row.credential_status,
   };
