@@ -122,6 +122,7 @@ const CREDENTIAL_STATUS: Record<Api.CredentialValidity, Vehicle["status"]> = {
   current: "Compliant",
   expiring: "Attention",
   expired: "Non-compliant",
+  undeclared: "Attention",
 };
 
 function riskBandLabel(band: Api.LogisticsApplication["risk"]["risk_band"] | null | undefined): RiskBand {
@@ -133,17 +134,24 @@ function riskBandLabel(band: Api.LogisticsApplication["risk"]["risk_band"] | nul
 function toVehicle(row: Api.Vehicle): Vehicle {
   return {
     id: row.id,
+    reference: row.vehicle_reference,
     registration: row.registration,
     type: row.vehicle_type,
-    vin: row.vin,
+    vin: row.vin || "Not declared",
     make: row.make,
     model: row.model,
     year: row.year,
     capacity: `${row.capacity} ${row.capacity_unit}`,
     ownership: row.ownership === "owned" ? "Owned" : row.ownership === "leased" ? "Leased" : "Contracted",
     insurer: row.insurer,
-    insuranceExpiry: row.insurance_expiry,
-    roadworthinessExpiry: row.roadworthiness_expiry,
+    insuranceExpiry: row.insurance_expiry ?? "Not declared",
+    roadworthinessExpiry: row.roadworthiness_expiry ?? "Not declared",
+    insuranceDeclared: row.insurance_declared,
+    roadworthinessDeclared: row.roadworthiness_declared,
+    safetyEquipmentDeclared: row.safety_equipment_declared,
+    operatingStatus: row.operating_status,
+    maintenanceStatus: row.maintenance_status,
+    trackingCapability: row.tracking_capability,
     gps: row.gps_status === "active" ? "Active" : row.gps_status === "intermittent" ? "Intermittent" : "Inactive",
     status: row.is_active ? CREDENTIAL_STATUS[row.credential_status] : "Non-compliant",
     location: row.location,
@@ -153,7 +161,15 @@ function toVehicle(row: Api.Vehicle): Vehicle {
 function toDriver(row: Api.Driver, vehicleReg: string): Driver {
   return {
     id: row.id,
+    reference: row.driver_reference,
     name: row.full_name,
+    phone: row.phone ?? "",
+    employment: row.employment_relationship,
+    mineralExperience: row.mineral_haulage_experience,
+    base: row.operating_base,
+    availability: row.availability,
+    emergencyContact: row.emergency_contact ?? "",
+    safetyTrainingDeclared: row.safety_training_declared,
     licence: row.licence_number,
     licenceClass: row.licence_class,
     licenceExpiry: row.licence_expiry,
@@ -161,7 +177,7 @@ function toDriver(row: Api.Driver, vehicleReg: string): Driver {
     experience: `${row.years_experience} years`,
     assignedVehicle: vehicleReg,
     training: row.training,
-    medicalExpiry: row.medical_expiry,
+    medicalExpiry: row.medical_expiry ?? "Not recorded",
     status: row.is_active ? CREDENTIAL_STATUS[row.credential_status] : "Non-compliant",
   };
 }
@@ -426,10 +442,10 @@ export function AppStateProvider({
   const companies = React.useMemo<Company[]>(() => {
     return companiesRaw.map((row) => {
       const application = applicationByCompanyUuid.get(row.id);
-      const vehicles = vehiclesRaw.filter((v) => v.company === row.id).map(toVehicle);
+      const vehicles = vehiclesRaw.filter((v) => v.company === row.id && v.is_active).map(toVehicle);
       const vehicleRegById = new Map(vehiclesRaw.filter((v) => v.company === row.id).map((v) => [v.id, v.registration]));
       const drivers = driversRaw
-        .filter((d) => d.company === row.id)
+        .filter((d) => d.company === row.id && d.is_active)
         .map((d) => toDriver(d, d.assigned_vehicle ? (vehicleRegById.get(d.assigned_vehicle) ?? "") : ""));
       const documents = application
         ? documentsRaw.filter((doc) => doc.application === application.id)
@@ -444,10 +460,10 @@ export function AppStateProvider({
       return {
         id: row.reference,
         name: row.name,
-        regId: row.reference,
+        regId: row.tax_identifier || row.reference,
         rcNumber: row.registration_number,
-        location: "",
-        state: "",
+        location: row.address,
+        state: row.state,
         country: "Nigeria",
         incorporated: row.incorporated_on ?? "",
         fleetSize: vehicles.length,
@@ -466,7 +482,18 @@ export function AppStateProvider({
         contactName: row.contact_name,
         contactEmail: row.contact_email,
         contactPhone: row.contact_phone,
-        website: "",
+        website: row.website,
+        declared: {
+          businessEmail: row.business_email,
+          businessPhone: row.business_phone,
+          localGovernmentArea: row.local_government_area,
+          yearEstablished: row.year_established ? String(row.year_established) : "",
+          logisticsType: row.logistics_type,
+          description: row.business_description,
+          representative: row.representative,
+          officers: row.responsible_officers,
+          operating: row.operating_profile,
+        },
         employees: row.employees,
         annualTonnage: `${row.annual_tonnage} t`,
         services: row.services,

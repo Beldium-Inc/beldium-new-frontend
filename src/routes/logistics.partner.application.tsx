@@ -38,11 +38,15 @@ function ApplicationPage() {
       detail: `${required - missing.length} of ${required} required documents provided`,
       state: missing.length ? "active" : "done",
     },
-    ...STAGES.slice(1),
+    {
+      ...STAGES[1]!,
+      detail: `${c.vehicles.length} vehicles and ${c.drivers.length} drivers registered`,
+    },
+    ...STAGES.slice(2),
   ];
 
   return (
-    <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Application progress" }]}>
+    <AppShell role="partner" breadcrumbs={[{ label: c.name, to: "/logistics/partner" }, { label: "Application progress" }]}>
       <PageHeader title="Application progress" description={`Submitted ${c.submitted} · reviewer ${c.reviewer} · status ${c.status}`} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel className="lg:col-span-2" title="Onboarding stages" bodyClassName="p-5">

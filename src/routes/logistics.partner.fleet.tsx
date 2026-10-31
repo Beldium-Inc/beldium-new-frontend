@@ -37,7 +37,7 @@ function FleetPage() {
   return (
     <AppShell
       role="partner"
-      breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Fleet" }]}
+      breadcrumbs={[{ label: company.name, to: "/logistics/partner" }, { label: "Fleet" }]}
       search={{ value: query, onChange: setQuery, placeholder: "Search registration, VIN, model…" }}
     >
       <PageHeader title="Fleet compliance" description="Each vehicle is a separate compliance object. Beldium continuously monitors insurance, roadworthiness and telematics." />
@@ -84,7 +84,7 @@ function FleetPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-display text-sm font-semibold text-[var(--brand)]">{v.registration}</p>
                   <Pill tone={tone(v.status)}>{v.status}</Pill>
-                  <span className="ml-auto text-[11px] text-muted-foreground">{v.id}</span>
+                  <span className="ml-auto text-[11px] text-muted-foreground">{v.reference || v.id}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {v.year} {v.make} {v.model} · {v.type}
@@ -99,6 +99,12 @@ function FleetPage() {
                 ["Insurer", v.insurer],
                 ["Insurance expiry", v.insuranceExpiry],
                 ["Roadworthiness", v.roadworthinessExpiry],
+                ["Operating status", v.operatingStatus || "Not declared"],
+                ["Maintenance status", v.maintenanceStatus || "Not declared"],
+                ["Tracking capability", v.trackingCapability || "Not declared"],
+                ["Insurance declared", v.insuranceDeclared ? "Yes" : "No"],
+                ["Roadworthiness declared", v.roadworthinessDeclared ? "Yes" : "No"],
+                ["Safety equipment declared", v.safetyEquipmentDeclared ? "Yes" : "No"],
               ].map(([k, val]) => (
                 <div key={k}>
                   <dt className="text-[11px] text-muted-foreground">{k}</dt>

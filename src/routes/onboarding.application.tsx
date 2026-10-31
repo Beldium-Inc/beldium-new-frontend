@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LogisticsCompanyApplicationFlow } from "@/components/onboarding/LogisticsCompanyApplicationFlow";
 import { OrgApplicationFlow } from "@/components/onboarding/OrgApplicationFlow";
 import { RegulatorApplicationFlow } from "@/components/onboarding/RegulatorApplicationFlow";
 import { ProfessionalApplicationFlow } from "@/components/onboarding/ProfessionalApplicationFlow";
@@ -8,8 +9,12 @@ import { useOnboarding } from "@/lib/onboarding/store";
 
 export const Route = createFileRoute("/onboarding/application")({
   component: ApplicationPage,
-  validateSearch: (search: Record<string, unknown>): { step?: "documents" } =>
-    search["step"] === "documents" ? { step: "documents" } : {},
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { step?: "documents"; flow?: "logistics-company" } => ({
+    ...(search["step"] === "documents" ? { step: "documents" as const } : {}),
+    ...(search["flow"] === "logistics-company" ? { flow: "logistics-company" as const } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Compliance Application | Beldium Compliance" },
@@ -27,7 +32,9 @@ export const Route = createFileRoute("/onboarding/application")({
 
 function ApplicationPage() {
   const { role, sector } = useOnboarding();
-  const { step } = Route.useSearch();
+  const { step, flow } = Route.useSearch();
+  if (flow === "logistics-company" || role === "logistics-company")
+    return <LogisticsCompanyApplicationFlow />;
   if (role === "independent") return <ProfessionalApplicationFlow />;
   if (role === "regulator-org" || role === "regulator-officer") return <RegulatorApplicationFlow />;
   if (sector === "quality") {

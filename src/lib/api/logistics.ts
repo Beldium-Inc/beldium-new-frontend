@@ -33,7 +33,8 @@ export type EvidenceStatus = "pending" | "verified" | "rejected";
 
 export type DomainReviewStatus = "pending" | "passed" | "attention" | "failed";
 
-export type CredentialValidity = "current" | "expiring" | "expired";
+/** `undeclared`: a vehicle or driver date was left blank, so it cannot be shown to be current. */
+export type CredentialValidity = "current" | "expiring" | "expired" | "undeclared";
 
 export interface LogisticsListQuery {
   page?: number;
@@ -51,6 +52,12 @@ export interface LogisticsCompany {
   reference: string;
   name: string;
   registration_number: string;
+  tax_identifier: string;
+  business_email: string;
+  business_phone: string;
+  address: string;
+  state: string;
+  website: string;
   contact_name: string;
   contact_email: string;
   contact_phone: string;
@@ -58,8 +65,52 @@ export interface LogisticsCompany {
   employees: number;
   annual_tonnage: string;
   services: string[];
+  local_government_area: string;
+  year_established: number | null;
+  logistics_type: string;
+  business_description: string;
+  representative: LogisticsRepresentative;
+  responsible_officers: LogisticsResponsibleOfficers;
+  operating_profile: LogisticsOperatingProfile;
   created_at: string;
   updated_at: string;
+}
+
+/** Applicant declarations from onboarding. Nothing here has been verified. */
+export interface LogisticsRepresentative {
+  name?: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  relationship?: string;
+  signatory?: string;
+  authority?: boolean;
+}
+
+export interface LogisticsResponsibleOfficers {
+  fleet_manager?: string;
+  operations_manager?: string;
+  transport_safety_manager?: string;
+  compliance_officer?: string;
+  maintenance_manager?: string;
+  dispatch_coordinator?: string;
+}
+
+export interface LogisticsOperatingProfile {
+  primary_service?: string;
+  secondary_services?: string;
+  mineral_experience?: string;
+  minerals_transported?: string;
+  operating_states?: string;
+  transport_corridors?: string;
+  fleet_ownership_model?: string;
+  service_coverage?: string;
+  operating_schedule?: string;
+  dispatch_capability?: string;
+  monthly_capacity?: string;
+  typical_shipment?: string;
+  maximum_load?: string;
+  cargo_characteristics?: string;
 }
 
 export interface NewCompanyInput {
@@ -70,7 +121,14 @@ export interface NewCompanyInput {
   incorporated_on?: string | null | undefined;
   employees?: number | undefined;
   annual_tonnage?: string | number | undefined;
-  services: string[];
+  services?: string[] | undefined;
+  local_government_area?: string | undefined;
+  year_established?: number | null | undefined;
+  logistics_type?: string | undefined;
+  business_description?: string | undefined;
+  representative?: LogisticsRepresentative | undefined;
+  responsible_officers?: LogisticsResponsibleOfficers | undefined;
+  operating_profile?: LogisticsOperatingProfile | undefined;
 }
 
 export function listCompanies(query: LogisticsListQuery = {}): Promise<Paginated<LogisticsCompany>> {
@@ -129,18 +187,25 @@ export function updateLocation(
 export interface Vehicle {
   id: UUID;
   company: UUID;
+  vehicle_reference: string;
   registration: string;
-  vin: string;
+  vin: string | null;
   vehicle_type: string;
   make: string;
   model: string;
   year: number;
   capacity: string;
-  capacity_unit: "tonnes" | "litres" | "seats";
+  capacity_unit: "tonnes" | "kg" | "m3" | "litres" | "seats";
   ownership: "owned" | "leased" | "contracted";
   insurer: string;
-  insurance_expiry: string;
-  roadworthiness_expiry: string;
+  insurance_expiry: string | null;
+  roadworthiness_expiry: string | null;
+  insurance_declared: boolean;
+  roadworthiness_declared: boolean;
+  safety_equipment_declared: boolean;
+  operating_status: string;
+  maintenance_status: string;
+  tracking_capability: string;
   gps_status: "unknown" | "active" | "intermittent" | "inactive";
   location: string;
   is_active: boolean;
@@ -149,10 +214,11 @@ export interface Vehicle {
   updated_at: string;
 }
 
-export type NewVehicleInput = Omit<
+export type NewVehicleInput = Pick<
   Vehicle,
-  "id" | "credential_status" | "created_at" | "updated_at"
->;
+  "company" | "registration" | "vehicle_type" | "make" | "model" | "year" | "capacity" | "capacity_unit" | "ownership"
+> &
+  Partial<Omit<Vehicle, "id" | "credential_status" | "created_at" | "updated_at">>;
 
 export function listVehicles(query: LogisticsListQuery = {}): Promise<Paginated<Vehicle>> {
   return apiFetch<Paginated<Vehicle>>(`${BASE}/vehicles/`, { query });
@@ -172,24 +238,35 @@ export interface Driver {
   id: UUID;
   company: UUID;
   full_name: string;
+  driver_reference: string;
+  /** Hidden from regulators by the API. */
+  phone?: string;
+  employment_relationship: string;
   licence_number: string;
   licence_class: string;
   licence_expiry: string;
   national_id: string;
   years_experience: number;
+  mineral_haulage_experience: string;
+  operating_base: string;
+  availability: string;
+  /** Hidden from regulators by the API. */
+  emergency_contact?: string;
+  safety_training_declared: boolean;
   assigned_vehicle: UUID | null;
   training: string[];
-  medical_expiry: string;
+  medical_expiry: string | null;
   is_active: boolean;
   credential_status: CredentialValidity;
   created_at: string;
   updated_at: string;
 }
 
-export type NewDriverInput = Omit<
+export type NewDriverInput = Pick<
   Driver,
-  "id" | "credential_status" | "created_at" | "updated_at"
->;
+  "company" | "full_name" | "licence_number" | "licence_class" | "licence_expiry"
+> &
+  Partial<Omit<Driver, "id" | "credential_status" | "created_at" | "updated_at">>;
 
 export function listDrivers(query: LogisticsListQuery = {}): Promise<Paginated<Driver>> {
   return apiFetch<Paginated<Driver>>(`${BASE}/drivers/`, { query });

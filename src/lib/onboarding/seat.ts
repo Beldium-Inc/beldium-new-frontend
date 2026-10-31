@@ -21,5 +21,8 @@ export function seatFor(sector: VerticalSlug, role: OnboardingRole | null): stri
     return vertical.roles.find((r) => r.id === "regulator")?.id ?? primary;
   }
 
+  // A haulage company works in the partner portal, not the review desk.
+  if (role === "logistics-company") return "partner";
+
   return primary;
 }

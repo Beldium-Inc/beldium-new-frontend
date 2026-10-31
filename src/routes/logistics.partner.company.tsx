@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Building2, MapPin } from "lucide-react";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { KeyValue, PageHeader, Panel, Pill } from "@/verticals/logistics/bits";
+import { DeclaredProfilePanels } from "@/verticals/logistics/declared-profile";
 import { useApp } from "@/verticals/logistics/store";
 
 export const Route = createFileRoute("/logistics/partner/company")({
@@ -21,7 +22,7 @@ function CompanyPage() {
   const c = myCompany!;
 
   return (
-    <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Company information" }]}>
+    <AppShell role="partner" breadcrumbs={[{ label: c.name, to: "/logistics/partner" }, { label: "Company information" }]}>
       <PageHeader title="Company information" description="Corporate record submitted to Beldium. Changes after submission require a compliance re-check." />
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel className="lg:col-span-2" title="Registered details">
@@ -30,10 +31,15 @@ function CompanyPage() {
               { label: "Legal name", value: c.name },
               { label: "Beldium ID", value: c.id },
               { label: "RC number", value: c.rcNumber },
-              { label: "TIN / Reg ID", value: c.regId },
+              { label: "TIN", value: c.regId },
               { label: "Incorporated", value: c.incorporated },
-              { label: "Head office", value: c.location },
+              { label: "Registered address", value: c.location },
               { label: "State", value: c.state },
+              { label: "Local Government Area", value: c.declared?.localGovernmentArea },
+              { label: "Year established", value: c.declared?.yearEstablished },
+              { label: "Organisation type", value: c.declared?.logisticsType },
+              { label: "Business email", value: c.declared?.businessEmail },
+              { label: "Business telephone", value: c.declared?.businessPhone },
               { label: "Country", value: c.country },
               { label: "Employees", value: `${c.employees}` },
               { label: "Annual tonnage", value: c.annualTonnage },
@@ -50,11 +56,15 @@ function CompanyPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-            Mineral haulage is listed but currently restricted pending authorisation review.
-          </p>
+          {(c.restrictions ?? []).map((r) => (
+            <p key={r.id} className="mt-4 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+              {r.scope} is currently restricted: {r.reason}
+            </p>
+          ))}
         </Panel>
       </div>
+
+      <DeclaredProfilePanels company={c} />
 
       <Panel className="mt-4" title="Operating locations" bodyClassName="p-0">
         <ul className="divide-y divide-border">

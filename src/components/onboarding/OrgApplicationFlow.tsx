@@ -57,7 +57,10 @@ const steps = [
   "Review",
 ];
 
-const ORG_TYPE_ENTRIES = Object.entries(ORGANISATION_TYPE_LABELS) as [OrganisationType, string][];
+// A logistics company has its own application, so this flow does not offer that type.
+const ORG_TYPE_ENTRIES = (Object.entries(ORGANISATION_TYPE_LABELS) as [OrganisationType, string][]).filter(
+  ([type]) => type !== "logistics_company",
+);
 const ORG_TYPE_LABELS = ORG_TYPE_ENTRIES.map(([, label]) => label);
 
 const EVIDENCE_STANDARDS = [

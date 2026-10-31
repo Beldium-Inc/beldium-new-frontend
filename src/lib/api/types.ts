@@ -6,7 +6,12 @@ export type UUID = string;
 export type Timestamp = string;
 
 export type OrganisationType =
-  "mining_company" | "compliance_partner" | "regulator" | "laboratory" | "inspection_body";
+  | "mining_company"
+  | "logistics_company"
+  | "compliance_partner"
+  | "regulator"
+  | "laboratory"
+  | "inspection_body";
 
 export type MembershipRole =
   | "owner"
@@ -114,6 +119,7 @@ export interface Paginated<T> {
 
 export const ORGANISATION_TYPE_LABELS: Record<OrganisationType, string> = {
   mining_company: "Mining company",
+  logistics_company: "Logistics company",
   compliance_partner: "Compliance partner",
   regulator: "Regulator",
   laboratory: "Laboratory",

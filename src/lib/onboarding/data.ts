@@ -123,8 +123,24 @@ export const qualityRoleCatalogue: RoleCatalogueEntry[] = [
   },
 ];
 
+/** Logistics also onboards the haulage companies the partners review. */
+export const logisticsCompanyRole: RoleCatalogueEntry = {
+  role: "logistics-company",
+  title: "Logistics Company",
+  blurb:
+    "A haulage or transport company registering its organisation, fleet and drivers for compliance review.",
+  permissions: [
+    "Register organisation, fleet & drivers",
+    "Upload compliance evidence",
+    "Respond to information requests",
+  ],
+  needsOrganisation: true,
+  registersOnly: true,
+};
+
 export function roleCatalogueFor(sector: VerticalSlug | null): RoleCatalogueEntry[] {
-  return sector === "quality" ? qualityRoleCatalogue : roleCatalogue;
+  if (sector === "quality") return qualityRoleCatalogue;
+  return sector === "logistics" ? [logisticsCompanyRole, ...roleCatalogue] : roleCatalogue;
 }
 
 export const documentCatalogue = [
@@ -149,6 +165,14 @@ export const nigerianStates = [
   "Ekiti",
   "Kaduna",
   "FCT Abuja",
+];
+
+/** Every state, for a haulier declaring where it operates. */
+export const allNigerianStates = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", "Cross River",
+  "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna",
+  "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
+  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
 ];
 
 export const mineralOptions = [

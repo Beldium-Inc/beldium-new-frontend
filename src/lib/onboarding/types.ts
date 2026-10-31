@@ -6,7 +6,8 @@ export type OnboardingRole =
   | "laboratory-analyst"
   | "regulator-org"
   | "regulator-officer"
-  | "independent";
+  | "independent"
+  | "logistics-company";
 
 export type OrgPath = "new" | "existing";
 
