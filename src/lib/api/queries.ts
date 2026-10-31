@@ -36,14 +36,11 @@ import {
   markMessagesRead,
   postMessage,
   reviewComplianceDocument,
-  saveLogisticsSection,
   saveSection,
   submitApplication,
   updatePersonnel,
   uploadDocument,
   type PersonnelInput,
-  type LogisticsSectionData,
-  type LogisticsSectionSlug,
   type SectionData,
   type SectionSlug,
 } from "./compliance";
@@ -296,21 +293,6 @@ export function useSaveSection<S extends SectionSlug>(id: UUID | null, section: 
       queryClient.setQueryData(queryKeys.application(application.id), application);
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
       // The organisation section writes through to the Organisation record.
-      if (section === "organisation") {
-        void queryClient.invalidateQueries({ queryKey: ["organisations"] });
-      }
-    },
-  });
-}
-
-/** Save one Logistics section. Same cache handling as `useSaveSection`. */
-export function useSaveLogisticsSection<S extends LogisticsSectionSlug>(id: UUID | null, section: S) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: LogisticsSectionData[S]) => saveLogisticsSection(id as UUID, section, data),
-    onSuccess: (application) => {
-      queryClient.setQueryData(queryKeys.application(application.id), application);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
       if (section === "organisation") {
         void queryClient.invalidateQueries({ queryKey: ["organisations"] });
       }

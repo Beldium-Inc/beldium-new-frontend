@@ -6,7 +6,7 @@ export type UUID = string;
 export type Timestamp = string;
 
 export type OrganisationType =
-  "mining_company" | "logistics_company" | "compliance_partner" | "regulator" | "laboratory" | "inspection_body";
+  "mining_company" | "compliance_partner" | "regulator" | "laboratory" | "inspection_body";
 
 export type MembershipRole =
   | "owner"
@@ -113,7 +113,6 @@ export interface Paginated<T> {
 }
 
 export const ORGANISATION_TYPE_LABELS: Record<OrganisationType, string> = {
-  logistics_company: "Logistics company",
   mining_company: "Mining company",
   compliance_partner: "Compliance partner",
   regulator: "Regulator",
@@ -351,8 +350,6 @@ export interface ComplianceApplication {
   declaration: Partial<DeclarationData>;
   /** Quality & Control sections; empty for every other sector. */
   quality_profile?: import("./compliance").QualityProfile;
-  /** Logistics sections; empty for every other sector. */
-  logistics_profile?: import("./compliance").LogisticsProfile;
   submitted_at: Timestamp | null;
   reviewed_at: Timestamp | null;
   review_notes: string;
