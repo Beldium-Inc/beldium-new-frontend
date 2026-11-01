@@ -29,10 +29,13 @@ import {
   useDecideComplianceApplication,
   useSetApplicationSector,
 } from "@/lib/api/queries";
+import { useLogisticsApplications, useLogisticsCompanies } from "@/lib/api/logistics-queries";
+import type { LogisticsApplicationStatus } from "@/lib/api/logistics";
 import { dedupeOrganisations, type DedupeReport } from "@/lib/api/organisations";
 import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/lib/session";
 import { VERTICALS } from "@/lib/verticals";
 
 // Client-only, like the /mining layout: the JWT pair lives in localStorage, so
@@ -47,7 +50,17 @@ export const Route = createFileRoute("/staff/compliance-vetting")({ ssr: false, 
 // verified separately on the Mining Organisations register. Laboratories and
 // standards institutions are here because that is what a Quality & Control
 // applicant registers as.
-const PARTNER_TYPES = ["compliance_partner", "inspection_body", "laboratory", "regulator"];
+//
+// logistics_company is listed for one case only: a compliance application filed
+// under that type by mistake would otherwise be invisible to the desk. A haulage
+// company's own application is a logistics one, listed by LogisticsCompanyQueue.
+const PARTNER_TYPES = [
+  "compliance_partner",
+  "inspection_body",
+  "laboratory",
+  "regulator",
+  "logistics_company",
+];
 
 const statusLabel: Record<ApplicationStatus, string> = {
   draft: "Draft",
@@ -432,10 +445,130 @@ function DedupePanel() {
   );
 }
 
+const LOGISTICS_STATUS_LABEL: Record<LogisticsApplicationStatus, string> = {
+  draft: "Draft",
+  submitted: "Submitted",
+  under_review: "Under Review",
+  awaiting_information: "Info Requested",
+  conditionally_approved: "Conditionally Approved",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+
+const LOGISTICS_STATUS_TONE: Record<LogisticsApplicationStatus, string> = {
+  draft: statusTone.draft,
+  submitted: statusTone.under_review,
+  under_review: statusTone.under_review,
+  awaiting_information: statusTone.action_required,
+  conditionally_approved: statusTone.conditionally_approved,
+  approved: statusTone.verified,
+  rejected: statusTone.rejected,
+};
+
+const LOGISTICS_WAITING: LogisticsApplicationStatus[] = [
+  "submitted",
+  "under_review",
+  "awaiting_information",
+];
+
+/**
+ * Haulage companies applying for logistics compliance. These are not partner
+ * applications: they live in the logistics API and are reviewed on the logistics
+ * desk, so each row hands over to that desk rather than deciding here.
+ */
+function LogisticsCompanyQueue() {
+  const applications = useLogisticsApplications();
+  const companies = useLogisticsCompanies();
+  const { signIn: startSession } = useSession();
+  const navigate = useNavigate();
+
+  const rows = (applications.data?.results ?? []).filter((a) => a.status !== "draft");
+  const companyFor = (id: string) => companies.data?.results.find((c) => c.id === id);
+
+  return (
+    <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="border-b border-border px-5 py-4">
+        <h2 className="font-display text-base font-semibold">Logistics company applications</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Haulage companies that have submitted their application. Review and decide them on the
+          logistics desk.
+        </p>
+      </div>
+      {applications.isPending || companies.isPending ? (
+        <div className="p-6 text-sm text-muted-foreground">Loading applications…</div>
+      ) : applications.error || companies.error ? (
+        <div className="p-6 text-sm text-destructive">
+          {applications.error instanceof ApiError
+            ? applications.error.message
+            : "Could not load logistics applications."}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="p-10 text-center text-sm text-muted-foreground">
+          No logistics company applications have been submitted yet.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Reference</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reviewer</TableHead>
+                <TableHead>Documents</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((application) => {
+                const company = companyFor(application.company);
+                return (
+                  <TableRow key={application.id}>
+                    <TableCell className="font-mono text-xs">{company?.reference ?? "-"}</TableCell>
+                    <TableCell className="font-medium">{company?.name ?? "-"}</TableCell>
+                    <TableCell>
+                      <Badge
+                        label={LOGISTICS_STATUS_LABEL[application.status]}
+                        tone={LOGISTICS_STATUS_TONE[application.status]}
+                      />
+                    </TableCell>
+                    <TableCell>{application.reviewer_name || "Unassigned"}</TableCell>
+                    <TableCell>{application.progress.documents_submitted}</TableCell>
+                    <TableCell>{application.submitted_at?.slice(0, 10) ?? "-"}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        disabled={!company}
+                        onClick={() => {
+                          if (!company) return;
+                          startSession("logistics", "operator");
+                          navigate({
+                            to: "/logistics/operator/applications/$companyId",
+                            params: { companyId: company.reference },
+                            search: { tab: "overview" as const },
+                          });
+                        }}
+                      >
+                        Open review
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Page() {
   const { user, status, signOut } = useAuth();
   const navigate = useNavigate();
   const { data, isPending, error } = useApplicationsByOrganisationType(PARTNER_TYPES);
+  const logisticsApplications = useLogisticsApplications();
   const [tab, setTab] = useState<string>("all");
 
   useEffect(() => {
@@ -481,8 +614,12 @@ function Page() {
     ...(all.some((a) => !a.sector) ? [{ key: UNFILED, label: "Sector not recorded" }] : []),
   ];
   const applications = all.filter((a) => inTab(a, tab));
+  const logisticsWaiting = (logisticsApplications.data?.results ?? []).filter((a) =>
+    LOGISTICS_WAITING.includes(a.status),
+  ).length;
   const waiting = (key: string) =>
-    all.filter((a) => inTab(a, key) && REVIEWABLE_STATUSES.includes(a.status)).length;
+    all.filter((a) => inTab(a, key) && REVIEWABLE_STATUSES.includes(a.status)).length +
+    (key === "all" || key === "logistics" ? logisticsWaiting : 0);
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -554,6 +691,8 @@ function Page() {
             );
           })}
         </div>
+
+        {tab === "all" || tab === "logistics" ? <LogisticsCompanyQueue /> : null}
 
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
           {isPending ? (
