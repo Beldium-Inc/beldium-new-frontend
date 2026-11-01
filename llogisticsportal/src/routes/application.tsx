@@ -16,13 +16,13 @@ import {
   missingFiles,
   pendingDocumentFiles,
   submitOperatorApplication,
+  type SubmitProgress,
 } from "@/lib/api/onboarding";
 import { useAuth } from "@/lib/auth";
 import {
   complianceQuestions,
   declarations,
-  documentGroups,
-  documentSubjects,
+  documentChecklist,
   emptyCapability,
   emptyOrganisation,
   getState,
@@ -35,6 +35,7 @@ import {
   uid,
   useDraft,
   type Capability,
+  type ChecklistItem,
   type DocumentRecord,
   type DriverRecord,
   type Organisation,
@@ -163,6 +164,7 @@ function ApplicationPage() {
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sending, setSending] = useState<SubmitProgress | null>(null);
 
   const step = s.wizard?.current ?? 1;
   const completed = s.wizard?.completed ?? [];
@@ -268,12 +270,9 @@ function ApplicationPage() {
         }
         return "";
       case 5: {
-        const owed = outstandingDocuments(cap.services, s.documents, s.vehicles, s.drivers);
+        const owed = outstandingDocuments(s.documents);
         if (owed.length) {
-          const groups = Array.from(new Set(owed.map((o) => o.group)));
-          return `Upload the required documents still missing under: ${groups
-            .map((g) => `${g} (${owed.filter((o) => o.group === g).length})`)
-            .join(", ")}.`;
+          return `Upload the required documents still missing: ${owed.map((o) => o.title).join(", ")}.`;
         }
         const lost = missingFiles(s);
         return lost.length ? `Re-attach the file for: ${lost.map((d) => d.type).join(", ")}.` : "";
@@ -295,7 +294,7 @@ function ApplicationPage() {
     if (!user) return;
     setSubmitting(true);
     try {
-      await submitOperatorApplication(user);
+      await submitOperatorApplication(user, setSending);
       await queryClient.invalidateQueries();
       resetState(user.email);
       navigate({ to: "/submitted" });
@@ -309,6 +308,7 @@ function ApplicationPage() {
       );
     } finally {
       setSubmitting(false);
+      setSending(null);
     }
   }
 
@@ -402,20 +402,27 @@ function ApplicationPage() {
             {step === 2 ? <StepCapability cap={cap} /> : null}
             {step === 3 ? <StepFleet vehicles={s.vehicles} /> : null}
             {step === 4 ? <StepDrivers drivers={s.drivers} vehicles={s.vehicles} /> : null}
-            {step === 5 ? (
-              <StepDocuments
-                docs={s.documents}
-                vehicles={s.vehicles}
-                drivers={s.drivers}
-                orgName={org.name}
-                servicesChosen={cap.services}
-              />
-            ) : null}
+            {step === 5 ? <StepDocuments docs={s.documents} /> : null}
             {step === 6 ? <StepCompliance answers={s.compliance} /> : null}
             {step === 7 ? <StepDeclaration /> : null}
           </div>
 
           {error ? <p className="mt-5 text-sm text-destructive">{error}</p> : null}
+          {sending ? (
+            <div className="mt-5" role="status" aria-live="polite">
+              <div className="mb-2 flex justify-between text-sm text-muted-foreground">
+                <span>{sending.label}…</span>
+                <span>
+                  {sending.done} of {sending.total}
+                </span>
+              </div>
+              <Progress value={(sending.done / sending.total) * 100} />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Keep this tab open until it finishes. Nothing is lost if it stops: sending resumes
+                where it left off.
+              </p>
+            </div>
+          ) : null}
 
           <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
             <Button
@@ -741,72 +748,82 @@ function RepeatList<T extends { id: string }>({
   );
 }
 
-function StepDocuments({
-  docs,
-  vehicles,
-  drivers,
-  orgName,
-  servicesChosen,
-}: {
-  docs: DocumentRecord[];
-  vehicles: VehicleRecord[];
-  drivers: DriverRecord[];
-  orgName: string;
-  servicesChosen: string[];
-}) {
-  const owed = outstandingDocuments(servicesChosen, docs, vehicles, drivers);
+function StepDocuments({ docs }: { docs: DocumentRecord[] }) {
   const [, force] = useState(0);
-  const blank = {
-    number: "",
-    issuingAuthority: "",
-    issueDate: "",
-    expiryDate: "",
-    related: "",
-    fileName: "",
-  };
-  const [open, setOpen] = useState<string | null>(null);
-  const [draft, setDraft] = useState(blank);
+  const owed = outstandingDocuments(docs);
+  const sections = [
+    {
+      heading: "Required for every application",
+      items: documentChecklist.filter((i) => i.required),
+    },
+    {
+      heading: "Provide these if they apply to you",
+      items: documentChecklist.filter((i) => !i.required),
+    },
+  ];
+
+  function attach(item: ChecklistItem, file: File) {
+    const id = uid("DOC");
+    // One file per item: a new choice replaces one that has not been sent yet.
+    const unsent = docs.filter(
+      (d) => d.documentType === item.type && !getState().server.documents[d.id],
+    );
+    unsent.forEach((d) => pendingDocumentFiles.delete(d.id));
+    pendingDocumentFiles.set(id, file);
+    setState({
+      documents: [
+        ...docs.filter((d) => !unsent.includes(d)),
+        {
+          id,
+          group: item.domain,
+          domain: item.domain,
+          type: item.title,
+          documentType: item.type,
+          number: "",
+          issuingAuthority: "",
+          issueDate: "",
+          expiryDate: "",
+          related: "",
+          fileName: file.name,
+        },
+      ],
+    });
+  }
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Every document is required unless it is marked as conditional; vehicle and driver documents
-        are needed for each vehicle and each driver. Uploading does not verify a document: Beldium
-        Logistics Compliance reviews every upload. Files are sent when you submit, so keep this tab
-        open until then.
+        Attach one file for each item. Where an item is a schedule (vehicles, drivers), one document
+        listing every vehicle or every driver is enough. Uploading does not verify a document:
+        Beldium Logistics Compliance reviews every upload. Files are sent when you submit, so keep
+        this tab open until then.
       </p>
-      {documentGroups.map((g) => {
-        const pending = owed.filter((o) => o.group === g.group);
-        const covered = pending.length === 0;
-        const relatedOpts = documentSubjects(g.related, vehicles, drivers, orgName);
+      {sections.map(({ heading, items }) => {
+        const covered = !items.some((i) => owed.includes(i));
         return (
-          <div key={g.group} className="overflow-hidden rounded-md border border-border">
+          <div key={heading} className="overflow-hidden rounded-md border border-border">
             <div className="flex items-center justify-between border-b border-border bg-muted px-4 py-2 text-sm font-medium text-foreground">
-              {g.group}
+              {heading}
               <StatusBadge
                 value={covered ? "Provided" : "Required"}
                 tone={covered ? "success" : "warning"}
               />
             </div>
             <ul className="divide-y divide-border">
-              {g.items.map(({ name: item, domain, note }) => {
-                const key = `${g.group}:${item}`;
-                const uploaded = docs.filter((d) => d.group === g.group && d.type === item);
-                const due = pending.find((o) => o.name === item);
+              {items.map((item) => {
+                const uploaded = docs.filter((d) => d.documentType === item.type);
                 return (
-                  <li key={item} className="px-4 py-2.5 text-sm">
+                  <li key={item.type} className="px-4 py-2.5 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span>
-                        {item}
-                        {note ? (
-                          <span className="ml-1.5 text-xs text-muted-foreground">({note})</span>
-                        ) : null}
-                        {due ? (
-                          <span className="ml-1.5 text-xs font-medium text-warning">
-                            {due.missingFor.length
-                              ? `Required for ${due.missingFor.join(", ")}`
-                              : "Required"}
+                        {item.title}
+                        {item.appliesWhen ? (
+                          <span className="ml-1.5 text-xs text-muted-foreground">
+                            ({item.appliesWhen})
                           </span>
+                        ) : null}
+                        {owed.includes(item) ? (
+                          <span className="ml-1.5 text-xs font-medium text-warning">Required</span>
                         ) : null}
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
@@ -816,35 +833,9 @@ function StepDocuments({
                           return (
                             <span key={u.id} className="inline-flex items-center gap-1">
                               <StatusBadge
-                                value={
-                                  sent
-                                    ? `Uploaded · ${u.related}`
-                                    : ready
-                                      ? `${u.fileName} · ${u.related}`
-                                      : "File missing"
-                                }
+                                value={sent ? "Uploaded" : ready ? u.fileName : "File missing"}
                                 tone={sent ? "success" : ready ? "primary" : "danger"}
                               />
-                              {!ready ? (
-                                <label className="cursor-pointer text-xs font-medium text-primary hover:underline">
-                                  Re-attach
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const f = e.target.files?.[0];
-                                      if (!f) return;
-                                      pendingDocumentFiles.set(u.id, f);
-                                      setState({
-                                        documents: docs.map((d) =>
-                                          d.id === u.id ? { ...d, fileName: f.name } : d,
-                                        ),
-                                      });
-                                      force((n) => n + 1);
-                                    }}
-                                  />
-                                </label>
-                              ) : null}
                               {sent ? null : (
                                 <Button
                                   size="icon"
@@ -861,59 +852,23 @@ function StepDocuments({
                             </span>
                           );
                         })}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setOpen(open === key ? null : key);
-                            setDraft({ ...blank, related: relatedOpts[0] ?? "" });
-                          }}
-                        >
-                          Upload
-                        </Button>
-                      </div>
-                    </div>
-                    {open === key ? (
-                      <div className="mt-3 grid gap-4 rounded-md bg-muted p-4">
-                        {relatedOpts.length > 1 ? (
-                          <Field label={`Related ${g.related.toLowerCase()}`}>
-                            <Choice
-                              value={draft.related}
-                              options={relatedOpts}
-                              onChange={(v) => setDraft({ ...draft, related: v })}
-                            />
-                          </Field>
-                        ) : null}
-                        <Field label="File">
+                        <label className="cursor-pointer text-xs font-medium text-primary hover:underline">
+                          {uploaded.length ? "Replace" : "Upload"}
                           <input
                             type="file"
-                            className="block max-w-full text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground"
+                            className="hidden"
+                            aria-label={`Choose file for ${item.title}`}
                             onChange={(e) => {
-                              // The file is the whole submission: reviewers read the
-                              // number, issuer and dates off the document itself.
                               const f = e.target.files?.[0];
+                              e.target.value = "";
                               if (!f) return;
-                              const id = uid("DOC");
-                              pendingDocumentFiles.set(id, f);
-                              setState({
-                                documents: [
-                                  ...docs,
-                                  {
-                                    id,
-                                    group: g.group,
-                                    domain,
-                                    type: item,
-                                    ...draft,
-                                    fileName: f.name,
-                                  },
-                                ],
-                              });
-                              setOpen(null);
+                              attach(item, f);
+                              force((n) => n + 1);
                             }}
                           />
-                        </Field>
+                        </label>
                       </div>
-                    ) : null}
+                    </div>
                   </li>
                 );
               })}
