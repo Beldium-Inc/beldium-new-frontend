@@ -1,3 +1,4 @@
+import { runPool } from "../batch";
 import { formatPhoneNumber } from "../phone";
 import {
   getState,
@@ -129,7 +130,15 @@ export function missingFiles(d: DraftState) {
   );
 }
 
-export async function submitOperatorApplication(user: User): Promise<{ applicationId: UUID }> {
+/** How many requests go to the API at once while the application is sent. */
+const SEND_CONCURRENCY = 4;
+
+export type SubmitProgress = { label: string; done: number; total: number };
+
+export async function submitOperatorApplication(
+  user: User,
+  onProgress?: (progress: SubmitProgress) => void,
+): Promise<{ applicationId: UUID }> {
   const draft = getState();
   const org = draft.organisation;
   const cap = draft.capability;
@@ -194,12 +203,21 @@ export async function submitOperatorApplication(user: User): Promise<{ applicati
 
   // Sections are re-saved every time: the draft may have changed since.
   const data = sectionData(getState());
-  for (const key of requiredDomains(cap.services)) {
-    await saveLogisticsApplicationSection(applicationId, key, data[key]);
-  }
+  const domains = requiredDomains(cap.services);
+  const newVehicles = getState().vehicles.filter((v) => !getState().server.vehicles[v.id]);
+  const newDrivers = getState().drivers.filter((d) => !getState().server.drivers[d.id]);
+  const newDocuments = getState().documents.filter((d) => !getState().server.documents[d.id]);
+  const total = domains.length + newVehicles.length + newDrivers.length + newDocuments.length + 1;
+  let done = 0;
+  const tick = (label: string) => onProgress?.({ label, done: ++done, total });
+  onProgress?.({ label: "Saving your sections", done, total });
 
-  for (const v of getState().vehicles) {
-    if (getState().server.vehicles[v.id]) continue;
+  await runPool(domains, SEND_CONCURRENCY, async (key) => {
+    await saveLogisticsApplicationSection(applicationId, key, data[key]);
+    tick("Saving your sections");
+  });
+
+  await runPool(newVehicles, SEND_CONCURRENCY, async (v) => {
     const created = await createVehicle({
       company: companyId,
       registration: v.registration,
@@ -219,15 +237,16 @@ export async function submitOperatorApplication(user: User): Promise<{ applicati
       is_active: v.operatingStatus !== "Out of service",
     });
     recordServerId({ vehicles: { ...getState().server.vehicles, [v.id]: created.id } });
-  }
+    tick("Saving vehicles");
+  });
 
   const vehicleByRegistration = (registration: string) => {
     const local = getState().vehicles.find((v) => v.registration === registration);
     return local ? (getState().server.vehicles[local.id] ?? null) : null;
   };
 
-  for (const d of getState().drivers) {
-    if (getState().server.drivers[d.id]) continue;
+  // Drivers can name a vehicle, so they go only once every vehicle has an id.
+  await runPool(newDrivers, SEND_CONCURRENCY, async (d) => {
     const created = await createDriver({
       company: companyId,
       full_name: d.name,
@@ -247,32 +266,41 @@ export async function submitOperatorApplication(user: User): Promise<{ applicati
       is_active: d.safetyStatus !== "Restricted",
     });
     recordServerId({ drivers: { ...getState().server.drivers, [d.id]: created.id } });
-  }
+    tick("Saving drivers");
+  });
 
-  for (const doc of getState().documents) {
-    if (getState().server.documents[doc.id]) continue;
+  // The API treats uploads sharing a document_type as versions of one document,
+  // so those go one after another, in the order they were added. Different
+  // document types go up side by side.
+  const byType = new Map<string, typeof newDocuments>();
+  for (const doc of newDocuments)
+    byType.set(doc.documentType, [...(byType.get(doc.documentType) ?? []), doc]);
+
+  await runPool([...byType.values()], SEND_CONCURRENCY, async (versions) => {
+    for (const doc of versions) {
+      await sendDocument(doc);
+      tick("Uploading documents");
+    }
+  });
+
+  async function sendDocument(doc: (typeof newDocuments)[number]) {
     const file = pendingDocumentFiles.get(doc.id)!;
-    const s = getState();
-    const vehicle = s.vehicles.find((v) => v.registration === doc.related);
-    const driver = s.drivers.find((x) => x.name === doc.related);
     const uploaded = await uploadLogisticsApplicationDocument(applicationId, {
       domain: doc.domain,
-      // The API treats uploads sharing a document_type as versions of one
-      // document, so per-vehicle and per-driver evidence needs its own type.
-      document_type: vehicle || driver ? `${doc.type} (${doc.related})` : doc.type,
+      document_type: doc.documentType,
       title: doc.type,
       file,
       issuer: doc.issuingAuthority,
       reference: doc.number,
       issued_on: orNull(doc.issueDate),
       expires_on: orNull(doc.expiryDate),
-      vehicle: vehicle ? (s.server.vehicles[vehicle.id] ?? null) : null,
-      driver: driver ? (s.server.drivers[driver.id] ?? null) : null,
     });
     pendingDocumentFiles.delete(doc.id);
     recordServerId({ documents: { ...getState().server.documents, [doc.id]: uploaded.id } });
   }
 
+  onProgress?.({ label: "Submitting for review", done, total });
   await submitLogisticsApplication(applicationId);
+  tick("Submitting for review");
   return { applicationId };
 }

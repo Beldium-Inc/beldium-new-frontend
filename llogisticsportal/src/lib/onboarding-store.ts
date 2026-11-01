@@ -49,138 +49,129 @@ export const services = [
 ];
 
 /**
- * The onboarding evidence checklist: Beldium's "Logistics Partner Required
- * Documents" for Nigeria, sections 1 to 6. Section 7 of that list (mineral
- * movement documents) is collected per shipment, not at onboarding.
+ * The document checklist the API measures every Logistics application against.
  *
- * Every item is required unless the list marks it conditional ("where
- * applicable"). Each files under a backend review domain; the API itself only
- * refuses submission when an applicable domain has no current document.
+ * This mirrors LOGISTICS_DOCUMENTS in the backend (compliance/logistics_documents.py)
+ * and the `type` keys must match it exactly: the API counts a document toward
+ * submission only when it is filed under one of the required keys. Keep the two
+ * lists in step. GET /logistics/applications/{id}/checklist/ returns the live
+ * list for an application that already exists.
  */
-export type DocumentItem = {
-  name: string;
+export type ChecklistItem = {
+  /** The key the API files the document under. */
+  type: string;
+  title: string;
+  required: boolean;
+  /** Shown beside an optional item so the operator can tell whether it is theirs. */
+  appliesWhen: string;
   domain: LogisticsDomainKey;
-  note?: string;
-  /** Owed only where it applies to the operator, so never blocks submission. */
-  conditional: boolean;
 };
 
-const WHERE_APPLICABLE = "where applicable";
-const BELDIUM_REQUIREMENT = "Beldium requirement";
-const CONDITIONAL_NOTES = [WHERE_APPLICABLE, "where required", "sample couriers"];
-
-const items = (domain: LogisticsDomainKey, list: (string | [string, string])[]): DocumentItem[] =>
-  list.map((entry) =>
-    typeof entry === "string"
-      ? { name: entry, domain, conditional: false }
-      : {
-          name: entry[0],
-          domain,
-          note: entry[1],
-          conditional: CONDITIONAL_NOTES.includes(entry[1]),
-        },
-  );
-
-export const documentGroups: {
-  group: string;
-  related: "Organisation" | "Vehicle" | "Driver";
-  items: DocumentItem[];
-}[] = [
+export const documentChecklist: ChecklistItem[] = [
   {
-    group: "Organisation and business registration",
-    related: "Organisation",
-    items: items("corporate", [
-      ["CAC Certificate of Incorporation or Business Name Registration", "as applicable"],
-      "Tax Identification Number (TIN)",
-      "Company Profile",
-      "Proof of Registered Business Address",
-      "Authorised Representative Identification",
-      ["Letter of Authorisation", WHERE_APPLICABLE],
-      ["Tax Clearance Certificate", "where required"],
-      ["Transport or Haulage Operating Permit", WHERE_APPLICABLE],
-    ]),
+    type: "logistics_cac_incorporation",
+    title: "CAC incorporation evidence",
+    required: true,
+    appliesWhen: "",
+    domain: "corporate",
   },
   {
-    group: "FRSC and fleet safety",
-    related: "Organisation",
-    items: items("regulatory", [
-      ["FRSC RTSSS Registration/Certification", WHERE_APPLICABLE],
-      "Fleet Register",
-      "Fleet Safety Policy",
-      ["Safety Unit and Safety Manager Details", WHERE_APPLICABLE],
-      "Driver Training Records",
-      "Fleet Vehicle Inspection Records",
-      "Vehicle Maintenance Records",
-      ["Speed Limiter Compliance Evidence", WHERE_APPLICABLE],
-    ]),
+    type: "logistics_tax_documentation",
+    title: "Tax documentation",
+    required: true,
+    appliesWhen: "",
+    domain: "corporate",
   },
   {
-    group: "Vehicle documents",
-    related: "Vehicle",
-    items: [
-      ...items("fleet", [
-        "Vehicle Registration Certificate / Particulars",
-        "Proof of Vehicle Ownership or Lease",
-        ["Valid Roadworthiness Certificate", WHERE_APPLICABLE],
-        "Valid Motor Insurance Certificate",
-        "Vehicle Inspection Report",
-        "Vehicle Maintenance / Service Records",
-        ["Commercial Vehicle or Haulage Permit", WHERE_APPLICABLE],
-        ["Speed Limiter Compliance Evidence", WHERE_APPLICABLE],
-      ]),
-      ...items("data", [["GPS Tracker / Telematics Evidence", BELDIUM_REQUIREMENT]]),
-      ...items("fleet", [
-        "Vehicle Photographs and Load Capacity Evidence",
-        ["Trailer Registration and Documents", WHERE_APPLICABLE],
-      ]),
-    ],
+    type: "logistics_representative_declaration",
+    title: "Authorized representative declaration",
+    required: true,
+    appliesWhen: "",
+    domain: "corporate",
   },
   {
-    group: "Driver documents",
-    related: "Driver",
-    items: items("driver", [
-      ["Valid Driver's Licence", "appropriate vehicle class"],
-      "Driver Identification",
-      "Driver Photograph",
-      "Employment or Engagement Evidence",
-      ["Heavy Vehicle Training Certificate", WHERE_APPLICABLE],
-      "Safety Training Records",
-      ["Medical Fitness Evidence", WHERE_APPLICABLE],
-      ["Driver Competency Assessment", BELDIUM_REQUIREMENT],
-    ]),
+    type: "logistics_transport_authorization",
+    title: "Applicable transport authorization",
+    required: false,
+    appliesWhen: "",
+    domain: "regulatory",
   },
   {
-    group: "Insurance documents",
-    related: "Organisation",
-    items: items("insurance", [
-      "Motor Vehicle Insurance Certificate",
-      ["Goods-in-Transit Insurance", WHERE_APPLICABLE],
-      ["Carrier's Liability Insurance", WHERE_APPLICABLE],
-      ["Public Liability Insurance", WHERE_APPLICABLE],
-      ["Employee Compensation / Insurance Evidence", WHERE_APPLICABLE],
-      ["Shipment-Specific Cargo Insurance", WHERE_APPLICABLE],
-    ]),
+    type: "logistics_mineral_haulage_authorization",
+    title: "Applicable mineral haulage authorization",
+    required: false,
+    appliesWhen: "If you haul minerals or bulk cargo",
+    domain: "mineral",
   },
   {
-    group: "Safety and operational documents",
-    related: "Organisation",
-    items: [
-      ...items("hs", ["Health, Safety and Environment (HSE) Policy", "Transport Safety Policy"]),
-      ...items("operational", ["Journey Management Procedure"]),
-      ...items("hs", ["Emergency Response Procedure", "Incident Reporting Procedure"]),
-      ...items("operational", [
-        "Vehicle Maintenance Procedure",
-        "Driver Management Procedure",
-        "Cargo Loading and Securing Procedure",
-      ]),
-      ...items("mineral", ["Mineral Handling Procedure"]),
-      ...items("operational", ["Security and Cargo Protection Procedure"]),
-      ...items("mineral", [
-        ["Sample Handling Procedure", "sample couriers"],
-        ["Chain of Custody Procedure", WHERE_APPLICABLE],
-      ]),
-      ...items("hs", [["Corrective Action Records", WHERE_APPLICABLE]]),
-    ],
+    type: "logistics_vehicle_schedule",
+    title: "Vehicle registration and roadworthiness schedule",
+    required: true,
+    appliesWhen: "",
+    domain: "fleet",
+  },
+  {
+    type: "logistics_lease_declaration",
+    title: "Lease / contracted fleet declaration",
+    required: false,
+    appliesWhen: "If any vehicle is leased or contracted",
+    domain: "fleet",
+  },
+  {
+    type: "logistics_driver_schedule",
+    title: "Driver licence and competence schedule",
+    required: true,
+    appliesWhen: "",
+    domain: "driver",
+  },
+  {
+    type: "logistics_maintenance_procedures",
+    title: "Maintenance and safety procedures",
+    required: true,
+    appliesWhen: "",
+    domain: "hs",
+  },
+  {
+    type: "logistics_cargo_custody_procedure",
+    title: "Cargo custody and delivery procedure",
+    required: false,
+    appliesWhen: "If you haul minerals or bulk cargo",
+    domain: "mineral",
+  },
+  {
+    type: "logistics_container_seal_procedure",
+    title: "Container seal procedure",
+    required: false,
+    appliesWhen: "If you run container trucks",
+    domain: "operational",
+  },
+  {
+    type: "logistics_vehicle_insurance",
+    title: "Commercial vehicle insurance declaration",
+    required: true,
+    appliesWhen: "",
+    domain: "insurance",
+  },
+  {
+    type: "logistics_hse_declaration",
+    title: "Journey management and HSE declaration",
+    required: true,
+    appliesWhen: "",
+    domain: "hs",
+  },
+  {
+    type: "logistics_hazardous_cargo_procedure",
+    title: "Hazardous cargo handling procedure",
+    required: false,
+    appliesWhen: "If you carry hazardous cargo",
+    domain: "hs",
+  },
+  {
+    type: "logistics_corridor_risk_declaration",
+    title: "Interstate corridor risk declaration",
+    required: false,
+    appliesWhen: "If you operate in more than one state",
+    domain: "operational",
   },
 ];
 
@@ -202,49 +193,10 @@ export function requiredDomains(servicesChosen: string[]): LogisticsDomainKey[] 
   return ALL_DOMAINS.filter((d) => d !== "mineral" || mineral);
 }
 
-/** Who a group's documents are filed against: each vehicle, each driver, or the organisation. */
-export function documentSubjects(
-  related: "Organisation" | "Vehicle" | "Driver",
-  vehicles: { id: string; registration: string }[],
-  drivers: { id: string; name: string }[],
-  orgName: string,
-) {
-  if (related === "Vehicle") return vehicles.map((v) => v.registration || v.id);
-  if (related === "Driver") return drivers.map((d) => d.name || d.id);
-  return [orgName || "Organisation"];
-}
-
-/**
- * Required documents not yet attached. Every item is owed unless it is
- * conditional; vehicle and driver items are owed once per vehicle and driver
- * (`missingFor`). Mineral procedures are owed only by mineral operators.
- */
-export function outstandingDocuments(
-  servicesChosen: string[],
-  docs: { group: string; type: string; related: string }[],
-  vehicles: { id: string; registration: string }[],
-  drivers: { id: string; name: string }[],
-) {
-  const domains = requiredDomains(servicesChosen);
-  return documentGroups.flatMap((g) =>
-    g.items
-      .filter((i) => !i.conditional && domains.includes(i.domain))
-      .map((i) => {
-        const have = docs.filter((d) => d.group === g.group && d.type === i.name);
-        const missingFor =
-          g.related === "Organisation"
-            ? []
-            : documentSubjects(g.related, vehicles, drivers, "").filter(
-                (subject) => !have.some((d) => d.related === subject),
-              );
-        return {
-          group: g.group,
-          name: i.name,
-          missingFor,
-          missing: g.related === "Organisation" ? have.length === 0 : missingFor.length > 0,
-        };
-      })
-      .filter((i) => i.missing),
+/** Required checklist items with no file attached yet. */
+export function outstandingDocuments(docs: { documentType: string }[]) {
+  return documentChecklist.filter(
+    (item) => item.required && !docs.some((d) => d.documentType === item.type),
   );
 }
 
@@ -307,7 +259,10 @@ export type DocumentRecord = {
   id: string;
   group: string;
   domain: LogisticsDomainKey;
+  /** The checklist title, for display. */
   type: string;
+  /** The checklist key the API files it under. */
+  documentType: string;
   number: string;
   issuingAuthority: string;
   issueDate: string;
@@ -429,11 +384,7 @@ function load() {
     // (or already with the API).
     state.documents = state.documents.filter(
       (d) =>
-        state.server.documents[d.id] ||
-        documentGroups.some(
-          (g) =>
-            g.group === d.group && g.items.some((i) => i.name === d.type && i.domain === d.domain),
-        ),
+        state.server.documents[d.id] || documentChecklist.some((i) => i.type === d.documentType),
     );
   } catch {
     /* A corrupt or blocked draft just starts empty. */
