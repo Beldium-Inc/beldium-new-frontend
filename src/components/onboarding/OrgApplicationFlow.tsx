@@ -35,7 +35,7 @@ import {
 import {
   complianceServiceOptions,
   nigerianStates,
-  personnelRoleOptions,
+  STANDARD_PERSONNEL_ROLE,
 } from "@/lib/onboarding/data";
 import { useApplicationContext } from "@/lib/onboarding/application";
 import { useOnboarding } from "@/lib/onboarding/store";
@@ -58,9 +58,9 @@ const steps = [
 ];
 
 // A logistics company has its own application, so this flow does not offer that type.
-const ORG_TYPE_ENTRIES = (Object.entries(ORGANISATION_TYPE_LABELS) as [OrganisationType, string][]).filter(
-  ([type]) => type !== "logistics_company",
-);
+const ORG_TYPE_ENTRIES = (
+  Object.entries(ORGANISATION_TYPE_LABELS) as [OrganisationType, string][]
+).filter(([type]) => type !== "logistics_company");
 const ORG_TYPE_LABELS = ORG_TYPE_ENTRIES.map(([, label]) => label);
 
 const EVIDENCE_STANDARDS = [
@@ -231,7 +231,6 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
   const [signatory, setSignatory] = useState({ signatory_name: "", signatory_position: "" });
   const [person, setPerson] = useState({
     full_name: "",
-    role: personnelRoleOptions[0] ?? "",
     discipline: "",
     qualification: "",
     registration_number: "",
@@ -970,13 +969,6 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                     value={person.full_name}
                     onChange={(v) => setPerson({ ...person, full_name: v })}
                   />
-                  <SelectField
-                    name="role"
-                    label="Role"
-                    value={person.role}
-                    onChange={(v) => setPerson({ ...person, role: v })}
-                    options={personnelRoleOptions}
-                  />
                   <TextField
                     name="discipline"
                     label="Discipline"
@@ -1025,14 +1017,12 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                 </div>
                 <Button
                   className="mt-4"
-                  disabled={
-                    !person.full_name.trim() || !person.role.trim() || createPersonnel.isPending
-                  }
+                  disabled={!person.full_name.trim() || createPersonnel.isPending}
                   onClick={async () => {
                     try {
                       await createPersonnel.mutateAsync({
                         full_name: person.full_name.trim(),
-                        role: person.role.trim(),
+                        role: STANDARD_PERSONNEL_ROLE,
                         discipline: person.discipline.trim(),
                         qualification: person.qualification.trim(),
                         registration_number: person.registration_number.trim(),
@@ -1042,7 +1032,6 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                       });
                       setPerson({
                         full_name: "",
-                        role: personnelRoleOptions[0] ?? "",
                         discipline: "",
                         qualification: "",
                         registration_number: "",
