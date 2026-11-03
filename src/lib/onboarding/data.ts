@@ -128,6 +128,54 @@ export const qualityRoleCatalogue: RoleCatalogueEntry[] = [
   },
 ];
 
+/**
+ * Logistics Compliance roles, worded as in the Logistics Compliance onboarding
+ * specification (section A). Operators, carriers, fleet owners and drivers
+ * register separately on the Logistics Portal, not here.
+ */
+export const logisticsRoleCatalogue: RoleCatalogueEntry[] = [
+  {
+    role: "compliance-org",
+    title: "Compliance Organisation",
+    blurb:
+      "Independent organisation applying to provide verification, inspection, technical, environmental or regulatory assessment services.",
+    permissions: [],
+    needsOrganisation: true,
+  },
+  {
+    role: "compliance-officer",
+    title: "Compliance Officer",
+    blurb: "Authorised professional joining an approved compliance organisation.",
+    permissions: [],
+    needsOrganisation: true,
+    joinOnly: true,
+  },
+  {
+    role: "regulator-org",
+    title: "Regulatory / Oversight Organisation",
+    blurb: "Government agency or other authorised oversight institution.",
+    permissions: [],
+    needsOrganisation: true,
+    oversight: true,
+  },
+  {
+    role: "regulator-officer",
+    title: "Regulatory / Oversight Officer",
+    blurb: "Invited staff member of an approved oversight organisation.",
+    permissions: [],
+    needsOrganisation: true,
+    joinOnly: true,
+    oversight: true,
+  },
+  {
+    role: "independent",
+    title: "Independent Compliance Professional",
+    blurb: "Individual applying for independent verification assignments, subject to approval.",
+    permissions: [],
+    needsOrganisation: false,
+  },
+];
+
 /** Logistics also onboards the haulage companies the partners review. */
 export const logisticsCompanyRole: RoleCatalogueEntry = {
   role: "logistics-company",
@@ -147,7 +195,17 @@ export const logisticsCompanyRole: RoleCatalogueEntry = {
 
 export function roleCatalogueFor(sector: VerticalSlug | null): RoleCatalogueEntry[] {
   if (sector === "quality") return qualityRoleCatalogue;
-  return sector === "logistics" ? [logisticsCompanyRole, ...roleCatalogue] : roleCatalogue;
+  return sector === "logistics" ? [...logisticsRoleCatalogue, logisticsCompanyRole] : roleCatalogue;
+}
+
+/**
+ * Whether someone joining an existing organisation enters its join code
+ * before creating an account. A Q&C officer finds their organisation inside
+ * their own application instead, and an independent professional joins none.
+ */
+export function joinsWithCode(sector: VerticalSlug | null, role: OnboardingRole | null): boolean {
+  if (role === "independent") return false;
+  return !(sector === "quality" && role === "compliance-officer");
 }
 
 /** The account types offered on the account type page for a sector. */
@@ -181,10 +239,43 @@ export const nigerianStates = [
 
 /** Every state, for a haulier declaring where it operates. */
 export const allNigerianStates = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", "Cross River",
-  "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna",
-  "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
-  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT Abuja",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
 ];
 
 export const mineralOptions = [

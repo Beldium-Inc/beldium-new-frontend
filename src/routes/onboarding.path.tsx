@@ -1,17 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthShell, OptionCard, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
+import { joinsWithCode } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 
 export const Route = createFileRoute("/onboarding/path")({ component: PathPage });
 
 function PathPage() {
-  const { orgPath, setOrgPath } = useOnboarding();
+  const { orgPath, setOrgPath, sector, role } = useOnboarding();
   const navigate = useNavigate();
   const selected = orgPath ?? "new";
 
   return (
-    <AuthShell title="Register or Join an Organisation" description="How would you like to continue?">
+    <AuthShell
+      title="Register or Join an Organisation"
+      description="How would you like to continue?"
+    >
       <ProgressHeader step={3} total={6} onBack={() => navigate({ to: "/onboarding/role" })} />
 
       <div className="space-y-4">
@@ -34,7 +38,14 @@ function PathPage() {
           size="lg"
           onClick={() => {
             setOrgPath(selected);
-            navigate({ to: "/onboarding/account" });
+            // Joining starts with the organisation's join code, so the person
+            // sees which organisation they are asking to join before signing up.
+            navigate({
+              to:
+                selected === "existing" && joinsWithCode(sector, role)
+                  ? "/onboarding/join"
+                  : "/onboarding/account",
+            });
           }}
         >
           Continue

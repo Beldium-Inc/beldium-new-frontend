@@ -197,6 +197,8 @@ export const VERTICALS: Vertical[] = [
         label: "Logistics Partner",
         blurb: "Manage your company, fleet, drivers and compliance submissions.",
         home: "/partner",
+        // Operators, carriers and fleet owners use the Logistics Portal.
+        hiddenOnSignIn: true,
       },
       {
         id: "regulator",

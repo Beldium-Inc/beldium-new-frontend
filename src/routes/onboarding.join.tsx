@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
-import { AuthShell, StateChip } from "@/components/onboarding/ui";
+import { AuthShell, ProgressHeader, StateChip } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import {
   type MembershipRole,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { roleCatalogueFor } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 
 export const Route = createFileRoute("/onboarding/join")({
@@ -79,7 +80,7 @@ function formatCode(value: string): string {
 }
 
 function JoinPage() {
-  const { verification } = useOnboarding();
+  const { verification, sector, role: accountType, setOrgPath } = useOnboarding();
   const { status: authStatus } = useAuth();
   const navigate = useNavigate();
   const { code: linkCode } = Route.useSearch();
@@ -125,10 +126,10 @@ function JoinPage() {
   // A code that came with the link is checked straight away.
   const autoChecked = useRef(false);
   useEffect(() => {
-    if (!signedIn || autoChecked.current || !code) return;
+    if (authStatus === "loading" || autoChecked.current || !code) return;
     autoChecked.current = true;
     void check(code);
-  }, [signedIn, code]);
+  }, [authStatus, code]);
 
   const send = async () => {
     if (!found) return;
@@ -153,42 +154,8 @@ function JoinPage() {
     }
   };
 
-  if (!signedIn) {
-    return (
-      <AuthShell
-        title="Join your organisation"
-        description={
-          linkCode
-            ? "You opened a join link. Sign in, or create your account first, and the code will be waiting for you here."
-            : "Sign in, or create your account first. You will then enter the join code your organisation shared with you."
-        }
-      >
-        <div className="flex flex-wrap gap-3">
-          <Button size="lg" onClick={() => navigate({ to: "/signin" })}>
-            {authStatus === "loading" ? "Checking your session…" : "Sign in"}
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => navigate({ to: "/onboarding/sector" })}
-          >
-            Create an account
-          </Button>
-          <Button size="lg" variant="ghost" onClick={() => navigate({ to: "/onboarding/verify" })}>
-            Verify your email
-          </Button>
-        </div>
-      </AuthShell>
-    );
-  }
-
-  return (
-    <AuthShell
-      eyebrow="Step 5 of 5"
-      title="Join an existing organisation"
-      description="Enter the join code your organisation shared with you, or open the join link they sent. An owner or administrator of the organisation then accepts or declines your request, and we email you either way."
-      width="lg"
-    >
+  const codeStep = (
+    <>
       <form
         className="space-y-2"
         onSubmit={(e) => {
@@ -238,6 +205,59 @@ function JoinPage() {
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (!signedIn) {
+    // Part of signup: the person checks the code first, so they know which
+    // organisation they are asking to join, then creates their account. The
+    // request itself is sent once their email is verified.
+    const startedFromSignup = Boolean(sector && accountType);
+    const cameFromRolePage = Boolean(
+      roleCatalogueFor(sector).find((entry) => entry.role === accountType)?.joinOnly,
+    );
+    const continueToAccount = () => {
+      writePendingCode(code.replace(/[^A-Za-z0-9]/g, ""));
+      setOrgPath("existing");
+      navigate({ to: startedFromSignup ? "/onboarding/account" : "/onboarding/sector" });
+    };
+    return (
+      <AuthShell
+        title="Join an existing organisation"
+        description="Enter the join code your organisation shared with you, or open the join link they sent. After you create your account, an owner or administrator accepts or declines your request, and we email you either way."
+      >
+        {startedFromSignup && (
+          <ProgressHeader
+            step={4}
+            total={7}
+            onBack={() =>
+              navigate({ to: cameFromRolePage ? "/onboarding/role" : "/onboarding/path" })
+            }
+          />
+        )}
+
+        {codeStep}
+
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Button size="lg" disabled={!found} onClick={continueToAccount}>
+            {startedFromSignup ? "Continue" : "Create an account"}
+          </Button>
+          <Button size="lg" variant="ghost" onClick={() => navigate({ to: "/signin" })}>
+            I already have an account
+          </Button>
+        </div>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell
+      eyebrow="Last step"
+      title="Join an existing organisation"
+      description="Enter the join code your organisation shared with you, or open the join link they sent. An owner or administrator of the organisation then accepts or declines your request, and we email you either way."
+      width="lg"
+    >
+      {codeStep}
 
       {found?.already_member && (
         <p className="mt-4 text-sm text-muted-foreground">

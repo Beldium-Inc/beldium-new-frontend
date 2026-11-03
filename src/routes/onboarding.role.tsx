@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthShell, OptionCard, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
-import { selectableRolesFor } from "@/lib/onboarding/data";
+import { joinsWithCode, selectableRolesFor } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { VERTICAL_BY_SLUG } from "@/lib/verticals";
 import { useEffect } from "react";
@@ -25,7 +25,12 @@ function RolePage() {
     setRole(selected);
     if (entry.joinOnly || entry.registersOnly) {
       setOrgPath(entry.joinOnly ? "existing" : "new");
-      navigate({ to: "/onboarding/account" });
+      navigate({
+        to:
+          entry.joinOnly && joinsWithCode(sector, selected)
+            ? "/onboarding/join"
+            : "/onboarding/account",
+      });
       return;
     }
     navigate({ to: entry.needsOrganisation ? "/onboarding/path" : "/onboarding/account" });
@@ -59,6 +64,8 @@ function RolePage() {
 
       <p className="mt-6 text-xs text-muted-foreground">
         Beldium Admin accounts are provisioned internally and are not available for public sign-up.
+        {sector === "logistics" &&
+          " Choosing a role identifies your application category; it does not grant verification permissions. Logistics operators, carriers, fleet owners and drivers register on the Logistics Portal."}
       </p>
 
       <div className="mt-7 flex flex-wrap gap-3">

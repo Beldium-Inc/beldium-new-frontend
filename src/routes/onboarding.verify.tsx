@@ -8,6 +8,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { ApiError } from "@/lib/api";
 import { confirmPhoneVerification, requestPhoneVerification } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth";
+import { joinsWithCode } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 
 export const Route = createFileRoute("/onboarding/verify")({
@@ -264,8 +265,8 @@ function PhoneChannel({
       <div className="mt-4 space-y-3">
         {!PHONE_VERIFICATION_ENABLED ? (
           <p className="text-xs text-muted-foreground">
-            Phone verification is temporarily unavailable. You can confirm your number later from your
-            profile.
+            Phone verification is temporarily unavailable. You can confirm your number later from
+            your profile.
           </p>
         ) : !emailVerified ? (
           <p className="text-xs text-muted-foreground">
@@ -314,6 +315,7 @@ function PhoneChannel({
 
 function VerifyPage() {
   const { account, updateAccount, verifyChannel, role, orgPath, sector } = useOnboarding();
+  const joining = orgPath === "existing" && joinsWithCode(sector, role);
   const { user, refetchUser } = useAuth();
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -367,7 +369,11 @@ function VerifyPage() {
       title="Verify your email address"
       description="We sent a six-digit code to your email. Confirming it activates your account and signs you in."
     >
-      <ProgressHeader step={5} total={6} onBack={() => navigate({ to: "/onboarding/account" })} />
+      <ProgressHeader
+        step={joining ? 6 : 5}
+        total={joining ? 7 : 6}
+        onBack={() => navigate({ to: "/onboarding/account" })}
+      />
 
       <div className="space-y-4">
         <EmailChannel

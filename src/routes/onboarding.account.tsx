@@ -11,6 +11,7 @@ import { PasswordGuide, passwordProblem } from "@/components/ui/password-guide";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { joinsWithCode } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
 
@@ -29,7 +30,9 @@ const BACKEND_FIELD_TO_INPUT: Record<string, string> = {
 };
 
 function AccountPage() {
-  const { account, updateAccount } = useOnboarding();
+  const { account, updateAccount, orgPath, sector, role } = useOnboarding();
+  // Someone joining entered their organisation's code on the step before this.
+  const joining = orgPath === "existing" && joinsWithCode(sector, role);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -113,9 +116,17 @@ function AccountPage() {
   return (
     <AuthShell
       title="Create your account"
-      description="These details identify you as a user. Organisation information is captured in the next stage."
+      description={
+        joining
+          ? "These details identify you as a user. Once your email is verified, your request goes to the organisation's administrators for approval."
+          : "These details identify you as a user. Organisation information is captured in the next stage."
+      }
     >
-      <ProgressHeader step={4} total={6} onBack={() => navigate({ to: "/onboarding/role" })} />
+      <ProgressHeader
+        step={joining ? 5 : 4}
+        total={joining ? 7 : 6}
+        onBack={() => navigate({ to: joining ? "/onboarding/join" : "/onboarding/role" })}
+      />
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
