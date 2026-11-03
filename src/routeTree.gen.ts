@@ -81,6 +81,7 @@ import { Route as QualityIndexRouteImport } from './routes/quality.index'
 import { Route as QualityAuditRouteImport } from './routes/quality.audit'
 import { Route as QualityDashboardRouteImport } from './routes/quality.dashboard'
 import { Route as QualityNonconformitiesRouteImport } from './routes/quality.nonconformities'
+import { Route as QualityVaultRouteImport } from './routes/quality.vault'
 import { Route as StaffComplianceVettingRouteImport } from './routes/staff.compliance-vetting'
 import { Route as VerifyHashRouteImport } from './routes/verify.$hash'
 import { Route as WarehousingIndexRouteImport } from './routes/warehousing.index'
@@ -515,6 +516,11 @@ const QualityDashboardRoute = QualityDashboardRouteImport.update({
 const QualityNonconformitiesRoute = QualityNonconformitiesRouteImport.update({
   id: '/nonconformities',
   path: '/nonconformities',
+  getParentRoute: () => QualityRoute,
+} as any)
+const QualityVaultRoute = QualityVaultRouteImport.update({
+  id: '/vault',
+  path: '/vault',
   getParentRoute: () => QualityRoute,
 } as any)
 const StaffComplianceVettingRoute = StaffComplianceVettingRouteImport.update({
@@ -992,6 +998,7 @@ export interface FileRoutesByFullPath {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/export/': typeof ExportIndexRoute
@@ -1131,6 +1138,7 @@ export interface FileRoutesByTo {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/export': typeof ExportIndexRoute
@@ -1279,6 +1287,7 @@ export interface FileRoutesById {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/export/': typeof ExportIndexRoute
@@ -1428,6 +1437,7 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
     | '/export/'
@@ -1567,6 +1577,7 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
     | '/export'
@@ -1714,6 +1725,7 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
     | '/export/'
@@ -2315,6 +2327,13 @@ declare module '@tanstack/react-router' {
       path: '/nonconformities'
       fullPath: '/quality/nonconformities'
       preLoaderRoute: typeof QualityNonconformitiesRouteImport
+      parentRoute: typeof QualityRoute
+    }
+    '/quality/vault': {
+      id: '/quality/vault'
+      path: '/vault'
+      fullPath: '/quality/vault'
+      preLoaderRoute: typeof QualityVaultRouteImport
       parentRoute: typeof QualityRoute
     }
     '/staff/compliance-vetting': {
@@ -3126,6 +3145,7 @@ interface QualityRouteChildren {
   QualityAuditRoute: typeof QualityAuditRoute
   QualityDashboardRoute: typeof QualityDashboardRoute
   QualityNonconformitiesRoute: typeof QualityNonconformitiesRoute
+  QualityVaultRoute: typeof QualityVaultRoute
   QualityIndexRoute: typeof QualityIndexRoute
   QualityApplicationsIdRoute: typeof QualityApplicationsIdRoute
   QualityCertificatesIdRoute: typeof QualityCertificatesIdRoute
@@ -3139,6 +3159,7 @@ const QualityRouteChildren: QualityRouteChildren = {
   QualityAuditRoute: QualityAuditRoute,
   QualityDashboardRoute: QualityDashboardRoute,
   QualityNonconformitiesRoute: QualityNonconformitiesRoute,
+  QualityVaultRoute: QualityVaultRoute,
   QualityIndexRoute: QualityIndexRoute,
   QualityApplicationsIdRoute: QualityApplicationsIdRoute,
   QualityCertificatesIdRoute: QualityCertificatesIdRoute,
