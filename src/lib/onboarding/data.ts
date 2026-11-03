@@ -328,17 +328,9 @@ export const orgCredentialCatalogue = [
   "Quality Assurance Procedure",
 ];
 
-export const personnelRoleOptions = [
-  "Compliance Manager",
-  "Mining Compliance Officer",
-  "Mining Engineer",
-  "Geologist",
-  "Environmental Specialist",
-  "HSE Specialist",
-  "Inspector",
-  "Legal / Regulatory Specialist",
-  "Technical Reviewer",
-];
+// Every person on the personnel step is registered with the same standard
+// role. The applicant no longer picks one; the API still stores it.
+export const STANDARD_PERSONNEL_ROLE = "Key Professional";
 
 export const orgDeclarationItems = [
   {
