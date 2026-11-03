@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  Archive,
   Boxes,
   ChevronsLeft,
   ChevronsRight,
@@ -25,7 +26,8 @@ type AppPath =
   | "/quality/samples"
   | "/quality/certificates"
   | "/quality/nonconformities"
-  | "/quality/audit";
+  | "/quality/audit"
+  | "/quality/vault";
 
 interface NavItem {
   to: AppPath;
@@ -44,6 +46,7 @@ const allNav = {
   certificates: { to: "/quality/certificates", label: "Certificates", icon: FileBadge2 },
   ncr: { to: "/quality/nonconformities", label: "Non-conformities", icon: ShieldAlert },
   audit: { to: "/quality/audit", label: "Audit trail", icon: ScrollText },
+  vault: { to: "/quality/vault", label: "Document vault", icon: Archive },
 } satisfies Record<string, NavItem>;
 
 export const navByRole: Record<Role, NavItem[]> = {
@@ -53,9 +56,10 @@ export const navByRole: Record<Role, NavItem[]> = {
     allNav.samples,
     allNav.certificates,
     allNav.ncr,
+    allNav.vault,
     allNav.audit,
   ],
-  partner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr],
+  partner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr, allNav.vault],
   miner: [allNav.dashboard, allNav.samples, allNav.certificates],
   buyer: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr],
   regulator: [
