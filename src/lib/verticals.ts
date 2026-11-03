@@ -20,6 +20,11 @@ export type VerticalRole = {
   label: string;
   blurb: string;
   home: string;
+  /**
+   * Not offered on the shared sign-in page. The role still exists so other
+   * entry points that hand off into it (the Miner Portal) keep working.
+   */
+  hiddenOnSignIn?: boolean;
 };
 
 export type Vertical = {
@@ -48,6 +53,8 @@ export const VERTICALS: Vertical[] = [
         blurb:
           "Operator view of your organisation, sites, licences, production and outstanding compliance actions.",
         home: "/dashboard",
+        // Miners sign in through the Miner Portal, not the shared sign-in page.
+        hiddenOnSignIn: true,
       },
       {
         id: "regulator",
@@ -249,6 +256,11 @@ export const VERTICAL_BY_SLUG: Record<VerticalSlug, Vertical> = Object.fromEntri
  * there is no separate vertical to exclude here any more.
  */
 export const COMPLIANCE_VERTICALS: Vertical[] = VERTICALS;
+
+/** The roles offered on the shared sign-in page for a vertical. */
+export function signInRoles(vertical: Vertical): VerticalRole[] {
+  return vertical.roles.filter((r) => !r.hiddenOnSignIn);
+}
 
 export function roleIn(slug: VerticalSlug, roleId: string): VerticalRole | undefined {
   return VERTICAL_BY_SLUG[slug].roles.find((r) => r.id === roleId);

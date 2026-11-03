@@ -26,6 +26,7 @@ import {
   COMPLIANCE_VERTICALS,
   VERTICAL_BY_SLUG,
   homeFor,
+  signInRoles,
   type Vertical,
   type VerticalSlug,
 } from "@/lib/verticals";
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/signin")({
 const DISCLAIMER =
   "Beldium issues an independent compliance verification record. It is not a government permit, licence, or customs clearance and does not replace any statutory approval.";
 
-const partnerRoleCount = COMPLIANCE_VERTICALS.reduce((n, v) => n + v.roles.length, 0);
+const partnerRoleCount = COMPLIANCE_VERTICALS.reduce((n, v) => n + signInRoles(v).length, 0);
 
 const VERTICAL_ICON: Record<VerticalSlug, React.ElementType> = {
   mining: Mountain,
@@ -113,7 +114,7 @@ function SignInPage() {
 
   const openSector = (vertical: Vertical) => {
     setPicked(vertical);
-    setRoleId(vertical.roles[0]!.id);
+    setRoleId(signInRoles(vertical)[0]!.id);
   };
 
   const selectRole = (_vertical: Vertical, id: string) => {
@@ -248,7 +249,7 @@ function SignInPage() {
                             {vertical.tagline}
                           </p>
                           <p className="mt-2 text-[11px] text-muted-foreground/80">
-                            {vertical.roles.length} roles
+                            {signInRoles(vertical).length} roles
                           </p>
                         </div>
                         <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
@@ -282,7 +283,7 @@ function SignInPage() {
               </p>
 
               <div className="mt-6 space-y-3">
-                {picked.roles.map((role) => {
+                {signInRoles(picked).map((role) => {
                   const Icon = ROLE_ICON[role.id] ?? ShieldCheck;
                   const active = roleId === role.id;
                   return (

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthShell, OptionCard, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
-import { roleCatalogueFor } from "@/lib/onboarding/data";
+import { selectableRolesFor } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { VERTICAL_BY_SLUG } from "@/lib/verticals";
 import { useEffect } from "react";
@@ -16,7 +16,7 @@ function RolePage() {
   useEffect(() => {
     if (!sector) navigate({ to: "/onboarding/sector", replace: true });
   }, [sector, navigate]);
-  const catalogue = roleCatalogueFor(sector);
+  const catalogue = selectableRolesFor(sector);
   // A role remembered from another sector may not be offered in this one.
   const entry = catalogue.find((r) => r.role === role) ?? catalogue[0]!;
   const selected = entry.role;

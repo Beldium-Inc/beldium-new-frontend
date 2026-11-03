@@ -154,12 +154,49 @@ export function listMyJoinRequests(query: { page?: number } = {}): Promise<Pagin
   return apiFetch<Paginated<JoinRequest>>("/join-requests/", { query: { ...query } });
 }
 
-export function createJoinRequest(input: {
-  organisation: UUID;
+/** Send either the join code an administrator shared, or an organisation id. */
+export interface JoinRequestInput {
+  join_code?: string;
+  organisation?: UUID;
   requested_role?: MembershipRole;
   justification?: string;
-}): Promise<JoinRequest> {
+}
+
+export function createJoinRequest(input: JoinRequestInput): Promise<JoinRequest> {
   return apiFetch<JoinRequest>("/join-requests/", { method: "POST", body: input });
+}
+
+export interface JoinCodeLookup {
+  organisation: UUID;
+  organisation_name: string;
+  organisation_type: OrganisationType;
+  already_member: boolean;
+  pending_request: boolean;
+}
+
+/** Name the organisation behind a join code before asking to join it. */
+export function lookupJoinCode(joinCode: string): Promise<JoinCodeLookup> {
+  return apiFetch<JoinCodeLookup>("/join-requests/lookup/", {
+    method: "POST",
+    body: { join_code: joinCode },
+  });
+}
+
+export interface OrganisationJoinCode {
+  join_code: string;
+  join_url: string;
+}
+
+/** Administrators only: the code and link colleagues use to ask to join. */
+export function getJoinCode(id: UUID): Promise<OrganisationJoinCode> {
+  return apiFetch<OrganisationJoinCode>(`/organisations/${id}/join-code/`);
+}
+
+/** Administrators only. The old code and every link built from it stop working. */
+export function rotateJoinCode(id: UUID): Promise<OrganisationJoinCode> {
+  return apiFetch<OrganisationJoinCode>(`/organisations/${id}/join-code/rotate/`, {
+    method: "POST",
+  });
 }
 
 /** Administrators of the target organisation only. */
