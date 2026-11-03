@@ -7,6 +7,7 @@ import {
   createJoinRequest,
   createOrganisation,
   decideJoinRequest,
+  getJoinCode,
   getOrganisation,
   listInvitations,
   listMembers,
@@ -14,7 +15,9 @@ import {
   listOrganisationJoinRequests,
   listOrganisations,
   organisationDirectory,
+  rotateJoinCode,
   updateOrganisation,
+  type JoinRequestInput,
   type OrganisationInput,
   type OrganisationQuery,
 } from "./organisations";
@@ -60,6 +63,7 @@ export const queryKeys = {
   members: (id: UUID) => ["organisations", id, "members"] as const,
   invitations: (id: UUID) => ["organisations", id, "invitations"] as const,
   organisationJoinRequests: (id: UUID) => ["organisations", id, "join-requests"] as const,
+  joinCode: (id: UUID) => ["organisations", id, "join-code"] as const,
   myJoinRequests: ["join-requests", "mine"] as const,
   applications: ["compliance", "list"] as const,
   application: (id: UUID) => ["compliance", "detail", id] as const,
@@ -160,6 +164,22 @@ export function useOrganisationJoinRequests(id: UUID | null) {
   });
 }
 
+export function useJoinCode(id: UUID | null) {
+  return useQuery({
+    queryKey: queryKeys.joinCode(id ?? "none"),
+    queryFn: () => getJoinCode(id as UUID),
+    enabled: Boolean(id),
+  });
+}
+
+export function useRotateJoinCode(id: UUID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => rotateJoinCode(id),
+    onSuccess: (code) => queryClient.setQueryData(queryKeys.joinCode(id), code),
+  });
+}
+
 export function useMyJoinRequests(options: { enabled?: boolean } = {}) {
   const hasTokens = useHasTokens();
   return useQuery({
@@ -208,11 +228,7 @@ export function useAcceptInvitation() {
 export function useCreateJoinRequest() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      organisation: UUID;
-      requested_role?: MembershipRole;
-      justification?: string;
-    }) => createJoinRequest(input),
+    mutationFn: (input: JoinRequestInput) => createJoinRequest(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests }),
   });
 }

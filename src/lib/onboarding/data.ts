@@ -13,6 +13,11 @@ export type RoleCatalogueEntry = {
   registersOnly?: boolean;
   /** Shown under the blurb, e.g. "Organisation · 11 application steps". */
   note?: string;
+  /**
+   * Not offered on the account type page. The entry stays in the catalogue so
+   * accounts that already hold this role still resolve on later pages.
+   */
+  hiddenOnSignup?: boolean;
 };
 
 export const roleCatalogue: RoleCatalogueEntry[] = [
@@ -136,11 +141,18 @@ export const logisticsCompanyRole: RoleCatalogueEntry = {
   ],
   needsOrganisation: true,
   registersOnly: true,
+  // Logistics companies apply through the Logistics Portal instead.
+  hiddenOnSignup: true,
 };
 
 export function roleCatalogueFor(sector: VerticalSlug | null): RoleCatalogueEntry[] {
   if (sector === "quality") return qualityRoleCatalogue;
   return sector === "logistics" ? [logisticsCompanyRole, ...roleCatalogue] : roleCatalogue;
+}
+
+/** The account types offered on the account type page for a sector. */
+export function selectableRolesFor(sector: VerticalSlug | null): RoleCatalogueEntry[] {
+  return roleCatalogueFor(sector).filter((r) => !r.hiddenOnSignup);
 }
 
 export const documentCatalogue = [

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Copy, Loader2, RefreshCw } from "lucide-react";
 import { AuthShell } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,8 +13,11 @@ import {
   ORGANISATION_ADMIN_ROLES,
   fullName,
   useDecideJoinRequest,
+  useJoinCode,
   useOrganisationJoinRequests,
+  useRotateJoinCode,
   type JoinRequestStatus,
+  type UUID,
 } from "@/lib/api";
 import { useApplicationContext } from "@/lib/onboarding/application";
 
@@ -122,6 +125,8 @@ function AdminReviewPage() {
         </p>
       )}
 
+      {isAdmin && organisation && <JoinCodeCard organisationId={organisation.id} />}
+
       {isAdmin && (
         <div className="mt-5 space-y-3">
           {joinRequests.isLoading && (
@@ -208,5 +213,97 @@ function AdminReviewPage() {
         </div>
       )}
     </AuthShell>
+  );
+}
+
+function JoinCodeCard({ organisationId }: { organisationId: UUID }) {
+  const joinCode = useJoinCode(organisationId);
+  const rotate = useRotateJoinCode(organisationId);
+
+  const copy = async (text: string, what: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${what} copied.`);
+    } catch {
+      toast.error(`Could not copy the ${what.toLowerCase()}. Select it and copy it by hand.`);
+    }
+  };
+
+  const replace = async () => {
+    if (
+      !window.confirm(
+        "Make a new join code? The current code and link stop working straight away. Requests already sent are not affected.",
+      )
+    )
+      return;
+    try {
+      await rotate.mutateAsync();
+      toast.success("New join code ready. Share it with the people you want to invite.");
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "The join code could not be changed.",
+      );
+    }
+  };
+
+  const code = joinCode.data?.join_code ?? "";
+  const shown = code.length > 4 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
+
+  return (
+    <div className="mt-5 rounded-[20px] border border-border p-5">
+      <p className="font-display text-sm font-semibold">Invite colleagues with a code or link</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Share either one with people who work for your organisation. They use it to send a request
+        to join, and nobody gets access until you accept them here. You will get an email for every
+        new request.
+      </p>
+
+      {joinCode.isLoading && (
+        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> Loading the join code…
+        </p>
+      )}
+      {joinCode.isError && (
+        <p className="mt-4 text-sm text-danger">
+          {joinCode.error instanceof ApiError
+            ? joinCode.error.message
+            : "The join code could not be loaded."}
+        </p>
+      )}
+
+      {joinCode.data && (
+        <div className="mt-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-[12px] border border-border bg-muted/40 px-4 py-2 font-mono text-lg tracking-[0.25em]">
+              {shown}
+            </span>
+            <Button size="sm" variant="outline" onClick={() => void copy(code, "Code")}>
+              <Copy className="size-3.5" /> Copy code
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="min-w-0 flex-1 truncate rounded-[12px] border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              {joinCode.data.join_url}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void copy(joinCode.data!.join_url, "Link")}
+            >
+              <Copy className="size-3.5" /> Copy link
+            </Button>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={rotate.isPending}
+            onClick={() => void replace()}
+          >
+            <RefreshCw className="size-3.5" />
+            {rotate.isPending ? "Making a new code…" : "Make a new code"}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
