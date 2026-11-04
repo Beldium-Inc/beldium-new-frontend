@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { qualityDeclarationItems } from "@/lib/onboarding/quality";
+import { signatoryMismatch } from "@/lib/onboarding/signatory";
 
 // Pieces shared by the two Quality & Control application flows.
 
@@ -111,11 +112,23 @@ export const emptyQualityDeclaration: QualityDeclarationState = {
   signature: "",
 };
 
-export function validateQualityDeclaration(value: QualityDeclarationState): Record<string, string> {
+/**
+ * `fullName` is the name the signature has to match exactly, and `whose`
+ * names it in the message ("your full name", "your full legal name").
+ */
+export function validateQualityDeclaration(
+  value: QualityDeclarationState,
+  fullName: string,
+  whose: string,
+): Record<string, string> {
   const errors: Record<string, string> = {};
   if (qualityDeclarationItems.some((item) => !value[item.key]))
     errors["declaration"] = "All three confirmations must be accepted.";
   if (!value.signature.trim()) errors["signature"] = "Type your full name to sign.";
+  else {
+    const mismatch = signatoryMismatch(value.signature, fullName, whose);
+    if (mismatch) errors["signature"] = mismatch;
+  }
   return errors;
 }
 
@@ -123,10 +136,13 @@ export function QualityDeclarationFields({
   value,
   onChange,
   error,
+  fullName,
 }: {
   value: QualityDeclarationState;
   onChange: (value: QualityDeclarationState) => void;
   error?: string | undefined;
+  /** The name the signature must match, shown so the signer can copy it exactly. */
+  fullName: string;
 }) {
   return (
     <div className="space-y-3">
@@ -150,6 +166,11 @@ export function QualityDeclarationFields({
         value={value.signature}
         onChange={(v) => onChange({ ...value, signature: v })}
       />
+      {fullName.trim() && (
+        <p className="text-xs text-muted-foreground">
+          Type your name exactly as {fullName.trim()}.
+        </p>
+      )}
     </div>
   );
 }

@@ -89,7 +89,11 @@ const ROLE_FLOWS = {
     capabilityError: "Select at least one testing method.",
     capabilityOptions: qualityTestingMethodOptions,
     documents: qualityAnalystDocumentCatalogue,
-    steps: baseSteps("Find / Join Laboratory", "Testing Methods & Materials", "Laboratory Experience"),
+    steps: baseSteps(
+      "Find / Join Laboratory",
+      "Testing Methods & Materials",
+      "Laboratory Experience",
+    ),
     descriptions: baseDescriptions(
       "Request membership of the laboratory where you work.",
       "Methods you are trained to run and the materials you have analysed.",
@@ -108,7 +112,12 @@ export function QualityProfessionalApplicationFlow() {
   const navigate = useNavigate();
   const { account, role } = useOnboarding();
   const flow = ROLE_FLOWS[role === "laboratory-analyst" ? "analyst" : "officer"];
-  const { steps, descriptions: stepDescriptions, title: ROLE_TITLE, documents: documentCatalogue } = flow;
+  const {
+    steps,
+    descriptions: stepDescriptions,
+    title: ROLE_TITLE,
+    documents: documentCatalogue,
+  } = flow;
   const { status: authStatus } = useAuth();
   const signedIn = authStatus === "authenticated";
 
@@ -177,8 +186,7 @@ export function QualityProfessionalApplicationFlow() {
         need("job_title", personal.job_title);
         break;
       case 4:
-        if (!capability.capabilities.length)
-          errors["capabilities"] = flow.capabilityError;
+        if (!capability.capabilities.length) errors["capabilities"] = flow.capabilityError;
         if (!capability.minerals.length)
           errors["minerals"] = "Select at least one mineral or material.";
         break;
@@ -194,7 +202,10 @@ export function QualityProfessionalApplicationFlow() {
           if (item.required && !files[item.type]) errors[item.type] = "This document is required.";
         break;
       case 7:
-        Object.assign(errors, validateQualityDeclaration(declaration));
+        Object.assign(
+          errors,
+          validateQualityDeclaration(declaration, personal.full_legal_name, "your full legal name"),
+        );
         break;
     }
     return errors;
@@ -566,6 +577,7 @@ export function QualityProfessionalApplicationFlow() {
                 setDeclaration(value);
               }}
               error={fieldErrors["declaration"]}
+              fullName={personal.full_legal_name}
             />
           )}
         </div>
