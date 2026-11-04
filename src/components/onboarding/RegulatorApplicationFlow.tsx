@@ -9,13 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   authorisationLevels,
   mineralOptions,
-  miningOversightFunctionOptions,
   nigerianStates,
-  oversightCapabilityOptions,
+  regulatorCopyFor,
   regulatorDeclarationItems,
   regulatorDocumentCatalogue,
   regulatorInstitutionTypes,
-  regulatoryResponsibilityOptions,
   regulatoryRoleOptions,
 } from "@/lib/onboarding/data";
 import { qualityRegulatorOfficerDocuments, qualityRegulatorOrgDocuments } from "@/lib/onboarding/quality";
@@ -47,6 +45,7 @@ export function RegulatorApplicationFlow() {
     sector,
     role,
   } = useOnboarding();
+  const copy = regulatorCopyFor(sector);
   const checklist =
     sector === "quality"
       ? role === "regulator-officer"
@@ -116,13 +115,13 @@ export function RegulatorApplicationFlow() {
             <TextField label="Government Ministry / Agency Affiliation" value={regulator.ministry} onChange={(v) => updateRegulator({ ministry: v })} />
             <ChipToggleGroup
               label="Areas of Regulatory Responsibility"
-              options={regulatoryResponsibilityOptions}
+              options={copy.responsibilities}
               selected={regulator.responsibilities}
               onToggle={(v) => updateRegulator({ responsibilities: toggle(regulator.responsibilities, v) })}
             />
             <ChipToggleGroup
-              label="Mining Oversight Functions"
-              options={miningOversightFunctionOptions}
+              label={copy.functionsLabel}
+              options={copy.functions}
               selected={regulator.oversightFunctions}
               onToggle={(v) => updateRegulator({ oversightFunctions: toggle(regulator.oversightFunctions, v) })}
             />
@@ -132,14 +131,16 @@ export function RegulatorApplicationFlow() {
               selected={regulator.jurisdiction}
               onToggle={(v) => updateRegulator({ jurisdiction: toggle(regulator.jurisdiction, v) })}
             />
-            <ChipToggleGroup
-              label="Minerals Covered"
-              options={mineralOptions}
-              selected={regulator.mineralsCovered}
-              onToggle={(v) => updateRegulator({ mineralsCovered: toggle(regulator.mineralsCovered, v) })}
-            />
+            {copy.showMinerals && (
+              <ChipToggleGroup
+                label="Minerals Covered"
+                options={mineralOptions}
+                selected={regulator.mineralsCovered}
+                onToggle={(v) => updateRegulator({ mineralsCovered: toggle(regulator.mineralsCovered, v) })}
+              />
+            )}
             <div className="space-y-2">
-              <YesNoField label="Authority to inspect mining operations" value={regulator.canInspect} onChange={(v) => updateRegulator({ canInspect: v })} />
+              <YesNoField label={copy.inspectLabel} value={regulator.canInspect} onChange={(v) => updateRegulator({ canInspect: v })} />
               <YesNoField label="Authority to review licences / permits" value={regulator.canReviewLicences} onChange={(v) => updateRegulator({ canReviewLicences: v })} />
               <YesNoField label="Authority to issue regulatory decisions" value={regulator.canIssueDecisions} onChange={(v) => updateRegulator({ canIssueDecisions: v })} />
             </div>
@@ -259,7 +260,7 @@ export function RegulatorApplicationFlow() {
           <ChipToggleGroup
             label="Oversight Capabilities"
             hint="Select the oversight functions this organisation performs. Beldium activates only the capabilities it approves."
-            options={oversightCapabilityOptions}
+            options={copy.capabilities}
             selected={regulator.oversightCapabilities}
             onToggle={(v) => updateRegulator({ oversightCapabilities: toggle(regulator.oversightCapabilities, v) })}
           />
@@ -301,7 +302,9 @@ export function RegulatorApplicationFlow() {
                 <InfoRow label="Responsibilities" value={regulator.responsibilities.join(", ") || "-"} />
                 <InfoRow label="Oversight functions" value={regulator.oversightFunctions.join(", ") || "-"} />
                 <InfoRow label="Jurisdiction" value={regulator.jurisdiction.join(", ") || "-"} />
-                <InfoRow label="Minerals covered" value={regulator.mineralsCovered.join(", ") || "-"} />
+                {copy.showMinerals && (
+                  <InfoRow label="Minerals covered" value={regulator.mineralsCovered.join(", ") || "-"} />
+                )}
                 <InfoRow label="Inspection authority" value={regulator.canInspect ? "Yes" : "No"} />
                 <InfoRow label="Licence review authority" value={regulator.canReviewLicences ? "Yes" : "No"} />
                 <InfoRow label="Regulatory decisions" value={regulator.canIssueDecisions ? "Yes" : "No"} />

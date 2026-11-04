@@ -6,35 +6,20 @@ import { AreaField, ChipToggleGroup, SectionCard, SelectField, TextField, YesNoF
 import { DocumentChecklist } from "@/components/onboarding/quality-parts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  independenceQuestions,
-  nigerianStates,
-  professionOptions,
-  professionalDeclarationItems,
-  professionalDocumentCatalogue,
-  reviewCapabilityOptions,
-} from "@/lib/onboarding/data";
+import { nigerianStates, professionalCopyFor } from "@/lib/onboarding/data";
 import { qualityIndependentDocuments } from "@/lib/onboarding/quality";
 import { useOnboarding } from "@/lib/onboarding/store";
 
-const steps = [
-  "Personal Details",
-  "Professional Profile",
-  "Qualifications & Certifications",
-  "Review Expertise",
-  "Mineral Specialisation",
-  "Field Inspection Capability",
-  "Supporting Documents",
-  "Independence & Declaration",
-];
 
 const idTypes = ["National Identification Number (NIN)", "International Passport", "Driver's Licence", "Voter's Card"];
 const employmentStatuses = ["Self-employed / Independent", "Employed", "Consultant", "Retired professional"];
 
 export function ProfessionalApplicationFlow() {
   const { professional, updateProfessional, documents, addDocument, removeDocument, submitApplication, sector } = useOnboarding();
+  const copy = professionalCopyFor(sector);
+  const { steps, independence: independenceQuestions, declarations: professionalDeclarationItems } = copy;
   const checklist = sector === "quality" ? qualityIndependentDocuments : null;
-  const documentOptions = checklist ? checklist.map((d) => d.title) : professionalDocumentCatalogue;
+  const documentOptions = checklist ? checklist.map((d) => d.title) : copy.documents;
   const missingDocuments = (checklist ?? []).filter((d) => d.required && !documents.some((x) => x.category === d.title));
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -87,9 +72,9 @@ export function ProfessionalApplicationFlow() {
         {step === 1 && (
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField label="Job Title" value={professional.jobTitle} onChange={(v) => updateProfessional({ jobTitle: v })} />
-            <SelectField label="Profession / Discipline" value={professional.profession} onChange={(v) => updateProfessional({ profession: v })} options={professionOptions} />
+            <SelectField label="Profession / Discipline" value={professional.profession} onChange={(v) => updateProfessional({ profession: v })} options={copy.professions} />
             <SelectField label="Current Employment Status" value={professional.employmentStatus} onChange={(v) => updateProfessional({ employmentStatus: v })} options={employmentStatuses} />
-            <TextField label="Years of Mining Industry Experience" value={professional.yearsMining} onChange={(v) => updateProfessional({ yearsMining: v })} />
+            <TextField label={copy.yearsSectorLabel} value={professional.yearsMining} onChange={(v) => updateProfessional({ yearsMining: v })} />
             <TextField label="Years of Compliance / Inspection Experience" value={professional.yearsCompliance} onChange={(v) => updateProfessional({ yearsCompliance: v })} />
             <AreaField label="Professional Summary" rows={5} value={professional.summary} onChange={(v) => updateProfessional({ summary: v })} className="sm:col-span-2" />
           </div>
@@ -110,9 +95,9 @@ export function ProfessionalApplicationFlow() {
 
         {step === 3 && (
           <ChipToggleGroup
-            label="Mining Compliance Review Expertise"
-            hint="Select exactly what miner submissions you are qualified to review. Beldium uses these approved capabilities when assigning miner applications."
-            options={reviewCapabilityOptions}
+            label={copy.expertiseLabel}
+            hint={copy.expertiseHint}
+            options={copy.expertise}
             selected={professional.reviewCapabilities}
             onToggle={(v) => updateProfessional({ reviewCapabilities: toggle(professional.reviewCapabilities, v) })}
           />
@@ -121,14 +106,14 @@ export function ProfessionalApplicationFlow() {
         {step === 4 && (
           <div className="space-y-5">
             <div className="rounded-[14px] border border-brand/30 bg-brand-soft/40 px-4 py-3 text-sm">
-              Mineral specialisation: <span className="font-semibold">Lithium</span>
+              {copy.specialisationBanner}: <span className="font-semibold">{copy.specialisationValue}</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField label="Years of Lithium / Hard Rock Mining Experience" value={professional.lithiumYears} onChange={(v) => updateProfessional({ lithiumYears: v })} />
-              <TextField label="Lithium Mining Review Experience" value={professional.lithiumReviewExperience} onChange={(v) => updateProfessional({ lithiumReviewExperience: v })} />
-              <TextField label="Lithium Mine Inspection Experience" value={professional.lithiumInspectionExperience} onChange={(v) => updateProfessional({ lithiumInspectionExperience: v })} />
+              <TextField label={copy.specialisationFields.years} value={professional.lithiumYears} onChange={(v) => updateProfessional({ lithiumYears: v })} />
+              <TextField label={copy.specialisationFields.review} value={professional.lithiumReviewExperience} onChange={(v) => updateProfessional({ lithiumReviewExperience: v })} />
+              <TextField label={copy.specialisationFields.inspection} value={professional.lithiumInspectionExperience} onChange={(v) => updateProfessional({ lithiumInspectionExperience: v })} />
             </div>
-            <AreaField label="Relevant Lithium Projects or Assignments" rows={4} value={professional.lithiumProjects} onChange={(v) => updateProfessional({ lithiumProjects: v })} />
+            <AreaField label={copy.specialisationFields.projects} rows={4} value={professional.lithiumProjects} onChange={(v) => updateProfessional({ lithiumProjects: v })} />
           </div>
         )}
 
@@ -229,7 +214,7 @@ export function ProfessionalApplicationFlow() {
                 <InfoRow label="Full name" value={professional.fullName || "-"} />
                 <InfoRow label="Email" value={professional.email || "-"} />
                 <InfoRow label="Profession" value={professional.profession} />
-                <InfoRow label="Mining experience" value={professional.yearsMining ? `${professional.yearsMining} yrs` : "-"} />
+                <InfoRow label={copy.yearsSectorReview} value={professional.yearsMining ? `${professional.yearsMining} yrs` : "-"} />
                 <InfoRow label="Compliance experience" value={professional.yearsCompliance ? `${professional.yearsCompliance} yrs` : "-"} />
                 <InfoRow label="Review expertise" value={professional.reviewCapabilities.join(", ") || "-"} />
                 <InfoRow label="States covered" value={professional.statesCovered.join(", ") || "-"} />

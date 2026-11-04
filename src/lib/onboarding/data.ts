@@ -313,6 +313,68 @@ export const complianceServiceOptions = [
   "Other",
 ];
 
+/** Services a Logistics Compliance organisation can offer. */
+export const logisticsComplianceServiceOptions = [
+  "Transport Licence / Permit Verification",
+  "Fleet & Vehicle Inspection",
+  "Roadworthiness Verification",
+  "Driver Licence & Credential Verification",
+  "Driver Training & Competency Review",
+  "Insurance Verification",
+  "HSE / Road Safety Assessment",
+  "Mineral Haulage Authorization Review",
+  "Cargo Handling & Load Compliance",
+  "GPS / Telematics Verification",
+  "Regulatory Compliance Review",
+  "Document Verification",
+  "Incident / Accident Investigation",
+  "Other",
+];
+
+/**
+ * Sector wording for the organisation application. The API keeps the same
+ * field names for every sector (e.g. `years_mining_experience`), so only the
+ * labels change here.
+ */
+export type OrgApplicationCopy = {
+  services: string[];
+  yearsExperienceLabel: string;
+  specialistLabels: { mining_engineers: string; geologists: string };
+  inspectionLabel: string;
+  conflict: { owns_assets: string; serves_companies: string; trades: string };
+};
+
+const miningOrgApplicationCopy: OrgApplicationCopy = {
+  services: complianceServiceOptions,
+  yearsExperienceLabel: "Years of Mining Experience",
+  specialistLabels: { mining_engineers: "Mining Engineers", geologists: "Geologists" },
+  inspectionLabel: "Conducts physical site inspections",
+  conflict: {
+    owns_assets: "Does your organisation own mining assets or titles?",
+    serves_companies: "Do you provide services to mining companies?",
+    trades: "Do you trade in minerals?",
+  },
+};
+
+const logisticsOrgApplicationCopy: OrgApplicationCopy = {
+  services: logisticsComplianceServiceOptions,
+  yearsExperienceLabel: "Years of Logistics / Transport Experience",
+  specialistLabels: {
+    mining_engineers: "Fleet / Vehicle Inspectors",
+    geologists: "Transport Safety Specialists",
+  },
+  inspectionLabel: "Conducts physical fleet and depot inspections",
+  conflict: {
+    owns_assets: "Does your organisation own or operate a haulage fleet?",
+    serves_companies: "Do you provide services to logistics or haulage companies?",
+    trades: "Do you trade in minerals or the cargo you would inspect?",
+  },
+};
+
+export function orgApplicationCopyFor(sector: VerticalSlug | null): OrgApplicationCopy {
+  return sector === "logistics" ? logisticsOrgApplicationCopy : miningOrgApplicationCopy;
+}
+
 export const orgCredentialCatalogue = [
   "Certificate of Incorporation",
   "CAC Company Information",
@@ -526,3 +588,160 @@ export const regulatorDeclarationItems = [
 ];
 
 export const authorisationLevels = ["Administrator", "Approver", "Officer", "Read Only"];
+
+/**
+ * Sector wording for the independent-professional application. Logistics
+ * reviewers assess haulage companies, fleets and drivers, not mines.
+ */
+export function professionalCopyFor(sector: VerticalSlug | null) {
+  if (sector !== "logistics") {
+    return {
+      steps: [
+        "Personal Details",
+        "Professional Profile",
+        "Qualifications & Certifications",
+        "Review Expertise",
+        "Mineral Specialisation",
+        "Field Inspection Capability",
+        "Supporting Documents",
+        "Independence & Declaration",
+      ],
+      professions: professionOptions,
+      yearsSectorLabel: "Years of Mining Industry Experience",
+      yearsSectorReview: "Mining experience",
+      expertiseLabel: "Mining Compliance Review Expertise",
+      expertiseHint:
+        "Select exactly what miner submissions you are qualified to review. Beldium uses these approved capabilities when assigning miner applications.",
+      expertise: reviewCapabilityOptions,
+      specialisationBanner: "Mineral specialisation",
+      specialisationValue: "Lithium",
+      specialisationFields: {
+        years: "Years of Lithium / Hard Rock Mining Experience",
+        review: "Lithium Mining Review Experience",
+        inspection: "Lithium Mine Inspection Experience",
+        projects: "Relevant Lithium Projects or Assignments",
+      },
+      documents: professionalDocumentCatalogue,
+      declarations: professionalDeclarationItems,
+      independence: independenceQuestions,
+    };
+  }
+  return {
+    steps: [
+      "Personal Details",
+      "Professional Profile",
+      "Qualifications & Certifications",
+      "Review Expertise",
+      "Haulage Specialisation",
+      "Field Inspection Capability",
+      "Supporting Documents",
+      "Independence & Declaration",
+    ],
+    professions: [
+      "Transport / Fleet Engineer",
+      "Vehicle Inspector",
+      "HSE / Road Safety Professional",
+      "Logistics / Fleet Manager",
+      "Insurance / Risk Specialist",
+      "Legal / Regulatory Specialist",
+      "Compliance Specialist",
+    ],
+    yearsSectorLabel: "Years of Logistics / Transport Experience",
+    yearsSectorReview: "Logistics experience",
+    expertiseLabel: "Logistics Compliance Review Expertise",
+    expertiseHint:
+      "Select exactly what logistics company submissions you are qualified to review. Beldium uses these approved capabilities when assigning logistics applications.",
+    expertise: [
+      "Corporate & Registration Review",
+      "Transport Licence / Permit Verification",
+      "Fleet & Vehicle Inspection",
+      "Roadworthiness Verification",
+      "Driver Licence & Credential Verification",
+      "Insurance Verification",
+      "HSE / Road Safety Review",
+      "Operational Procedures Review",
+      "Mineral Haulage Authorization Review",
+      "GPS / Telematics Verification",
+      "Supporting Document Verification",
+    ],
+    specialisationBanner: "Haulage specialisation",
+    specialisationValue: "Fleet & haulage compliance",
+    specialisationFields: {
+      years: "Years of Fleet / Haulage Compliance Experience",
+      review: "Fleet Compliance Review Experience",
+      inspection: "Fleet / Depot Inspection Experience",
+      projects: "Relevant Logistics Projects or Assignments",
+    },
+    documents: professionalDocumentCatalogue.map((d) =>
+      d === "Evidence of Relevant Mining Experience"
+        ? "Evidence of Relevant Logistics Experience"
+        : d,
+    ),
+    declarations: professionalDeclarationItems.map((d) =>
+      d.key === "confidential"
+        ? { ...d, label: "Logistics company information will remain confidential." }
+        : d,
+    ),
+    independence: [
+      {
+        key: "ownsMining",
+        label: "Do you own or have a financial interest in a logistics or haulage company?",
+      },
+      { key: "tradesMinerals", label: "Do you trade in minerals or the cargo you may inspect?" },
+      {
+        key: "worksForMiner",
+        label: "Do you work for a logistics company you may be assigned to review?",
+      },
+      independenceQuestions[3]!,
+    ],
+  };
+}
+
+/** Sector wording for the regulatory / oversight application. */
+export function regulatorCopyFor(sector: VerticalSlug | null) {
+  if (sector !== "logistics") {
+    return {
+      responsibilities: regulatoryResponsibilityOptions,
+      functionsLabel: "Mining Oversight Functions",
+      functions: miningOversightFunctionOptions,
+      showMinerals: true,
+      inspectLabel: "Authority to inspect mining operations",
+      capabilities: oversightCapabilityOptions,
+    };
+  }
+  return {
+    responsibilities: [
+      "Transport licensing & permits",
+      "Vehicle inspection & roadworthiness",
+      "Driver licensing",
+      "Road safety regulation",
+      "Haulage & cargo enforcement",
+      "Environmental regulation",
+      "Data, statistics & reporting",
+    ],
+    functionsLabel: "Transport Oversight Functions",
+    functions: [
+      "Transport licence and permit oversight",
+      "Fleet and vehicle inspection",
+      "Driver licensing oversight",
+      "Road safety enforcement",
+      "Mineral haulage authorization",
+      "Incident investigation",
+      "Regulatory reporting",
+    ],
+    showMinerals: false,
+    inspectLabel: "Authority to inspect fleets and transport operations",
+    capabilities: [
+      "Transport licence oversight",
+      "Permit verification",
+      "Fleet and vehicle inspection",
+      "Driver credential oversight",
+      "Health and safety oversight",
+      "Regulatory document review",
+      "Compliance enforcement",
+      "Incident review",
+      "Compliance reporting",
+      "Data / regulatory oversight",
+    ],
+  };
+}

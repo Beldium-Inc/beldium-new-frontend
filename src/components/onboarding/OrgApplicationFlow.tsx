@@ -33,11 +33,12 @@ import {
   type OrganisationType,
 } from "@/lib/api";
 import {
-  complianceServiceOptions,
   nigerianStates,
+  orgApplicationCopyFor,
   STANDARD_PERSONNEL_ROLE,
 } from "@/lib/onboarding/data";
 import { useApplicationContext } from "@/lib/onboarding/application";
+import { signatoryMismatch } from "@/lib/onboarding/signatory";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { VERTICAL_BY_SLUG } from "@/lib/verticals";
 
@@ -145,6 +146,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
   const { sector } = useOnboarding();
   const queryClient = useQueryClient();
   const sectorName = sector ? VERTICAL_BY_SLUG[sector].name : "your sector";
+  const copy = orgApplicationCopyFor(sector);
   const navigate = useNavigate();
   const [step, setStep] = useState(startAtDocuments ? DOCUMENTS_STEP : 0);
   /** Per-field validation messages from the last rejected save, by API field name. */
@@ -479,7 +481,18 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
             agreed: conflict.agreed,
           });
           return true;
-        case 8:
+        case 8: {
+          // The declaration is signed by the representative named on step 2.
+          const mismatch = signatoryMismatch(
+            signatory.signatory_name,
+            rep.full_name,
+            "the representative's full name",
+          );
+          if (mismatch) {
+            setFieldErrors({ signatory_name: mismatch });
+            toast.error(mismatch);
+            return false;
+          }
           // `declaration_date` is deliberately not sent: the backend parses it
           // to a Python date and then writes the section straight into a
           // JSONField, which raises and returns 500. The field is optional, so
@@ -490,6 +503,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
             signatory_position: signatory.signatory_position.trim(),
           });
           return true;
+        }
         default:
           // Documents (5), personnel (6) and review (9) save as you act on them.
           return true;
@@ -524,7 +538,9 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
       // is better than anything restated here.
       if (
         error instanceof ApiError &&
-        (error.code === "applicant_not_verified" || error.code === "documents_rejected")
+        (error.code === "applicant_not_verified" ||
+          error.code === "documents_rejected" ||
+          error.code === "signatory_mismatch")
       ) {
         toast.error(error.message);
         return;
@@ -541,11 +557,24 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
    * or evidence the desk rejected and is still waiting on.
    */
   const rejectedDocuments = progress?.documents.rejected ?? [];
+  // A saved declaration is checked against the representative as saved, since
+  // that is what the API compares on submit.
+  const savedDeclaration = application?.declaration ?? {};
+  const signatureMismatch =
+    savedDeclaration.confirmed !== undefined
+      ? signatoryMismatch(
+          savedDeclaration.signatory_name ?? "",
+          application?.representative?.full_name ?? "",
+          "the representative's full name",
+        )
+      : null;
   const blockedReason = progress?.blocking.includes("account")
     ? "Verify your email address before submitting."
     : rejectedDocuments.length
       ? `Replace the rejected ${rejectedDocuments.length > 1 ? "documents" : "document"} first.`
-      : null;
+      : signatureMismatch
+        ? `Sign the declaration again. ${signatureMismatch}`
+        : null;
   const documentsByType = useMemo(
     () => new Map((application?.documents ?? []).map((d) => [d.document_type, d])),
     [application?.documents],
@@ -723,7 +752,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
               <ChipToggleGroup
                 label="Compliance Services Offered"
                 hint="Select every service your organisation is able to deliver."
-                options={complianceServiceOptions}
+                options={copy.services}
                 selected={services.selected_services}
                 onToggle={(v) =>
                   setServices({
@@ -756,7 +785,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
                 name="years_mining_experience"
-                label="Years of Mining Experience"
+                label={copy.yearsExperienceLabel}
                 type="number"
                 value={professional.years_mining_experience}
                 onChange={(v) => setProfessional({ ...professional, years_mining_experience: v })}
@@ -770,14 +799,14 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
               />
               <TextField
                 name="mining_engineers"
-                label="Mining Engineers"
+                label={copy.specialistLabels.mining_engineers}
                 type="number"
                 value={professional.mining_engineers}
                 onChange={(v) => setProfessional({ ...professional, mining_engineers: v })}
               />
               <TextField
                 name="geologists"
-                label="Geologists"
+                label={copy.specialistLabels.geologists}
                 type="number"
                 value={professional.geologists}
                 onChange={(v) => setProfessional({ ...professional, geologists: v })}
@@ -825,7 +854,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           {step === 4 && (
             <div className="space-y-6">
               <YesNoField
-                label="Conducts physical site inspections"
+                label={copy.inspectionLabel}
                 value={inspection.conducts_physical_inspections}
                 onChange={(v) => setInspection({ ...inspection, conducts_physical_inspections: v })}
               />
@@ -1096,17 +1125,17 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
           {step === 7 && (
             <div className="space-y-5">
               <YesNoField
-                label="Does your organisation own mining assets or titles?"
+                label={copy.conflict.owns_assets}
                 value={conflict.owns_assets}
                 onChange={(v) => setConflict({ ...conflict, owns_assets: v })}
               />
               <YesNoField
-                label="Do you provide services to mining companies?"
+                label={copy.conflict.serves_companies}
                 value={conflict.serves_mining_companies}
                 onChange={(v) => setConflict({ ...conflict, serves_mining_companies: v })}
               />
               <YesNoField
-                label="Do you trade in minerals?"
+                label={copy.conflict.trades}
                 value={conflict.trades_minerals}
                 onChange={(v) => setConflict({ ...conflict, trades_minerals: v })}
               />
@@ -1167,6 +1196,11 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
                   value={signatory.signatory_position}
                   onChange={(v) => setSignatory({ ...signatory, signatory_position: v })}
                 />
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                  {rep.full_name.trim()
+                    ? `Type the representative's name exactly as ${rep.full_name.trim()}.`
+                    : "Enter the representative on step 2 first. The signatory name must match it exactly."}
+                </p>
               </div>
             </div>
           )}
@@ -1356,6 +1390,9 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
             still outstanding. The reviewer will see what is missing and can request it. Approval
             needs a complete application, so anything left now will be asked for later.
           </p>
+        )}
+        {step === steps.length - 1 && blockedReason && (
+          <p className="mt-3 text-xs text-destructive">{blockedReason}</p>
         )}
       </FieldErrorProvider>
     </AuthShell>
