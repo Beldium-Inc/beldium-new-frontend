@@ -292,6 +292,14 @@ function ApplicationPage() {
 
   async function submit() {
     if (!user) return;
+    // Steps are checked one at a time as the applicant moves on, so a draft
+    // carried over from before the new checklist can reach this step without it.
+    const owed = outstandingDocuments(getState().documents);
+    if (owed.length) {
+      return setError(
+        `Go back to the Documents step and upload: ${owed.map((o) => o.title).join(", ")}.`,
+      );
+    }
     setSubmitting(true);
     try {
       await submitOperatorApplication(user, setSending);

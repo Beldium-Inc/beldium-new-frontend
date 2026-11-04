@@ -40,6 +40,7 @@ import { listOrganisations } from "@/lib/api/organisations";
 import { useCreateOrganisation } from "@/lib/api/queries";
 import type { Paginated } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth";
+import { signatoryMismatch } from "@/lib/signatory";
 
 const rows = <T,>(page: Paginated<T> | T[]): T[] => (Array.isArray(page) ? page : page.results);
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -113,7 +114,8 @@ const pendingFiles = new Map<string, File>();
 
 function ApplicationPage() {
   const { state, saveApplication } = useMiner();
-  const { status: authStatus } = useAuth();
+  const { status: authStatus, user } = useAuth();
+  const accountName = user ? `${user.first_name} ${user.last_name}` : "";
   const { organisationName } = Route.useSearch();
   const navigate = useNavigate();
   const app = state.application;
@@ -149,6 +151,9 @@ function ApplicationPage() {
     if (step === 8) {
       const dec = app.declaration;
       if (!dec.signatory || !dec.position) return "Enter the signatory name and position.";
+      // The declaration is signed by the account holder submitting it.
+      const mismatch = signatoryMismatch(dec.signatory, accountName, "your full name");
+      if (mismatch) return mismatch;
       if (!dec.accurate || !dec.authorised || !dec.consent) return "All three declarations must be accepted.";
     }
     return "";
@@ -840,6 +845,8 @@ function StepDocuments() {
 
 function StepDeclaration() {
   const { state, saveApplication } = useMiner();
+  const { user } = useAuth();
+  const accountName = user ? `${user.first_name} ${user.last_name}`.trim() : "";
   const app = state.application;
   const dec = app.declaration;
   const setDec = (patch: Partial<typeof dec>) =>
@@ -874,6 +881,11 @@ function StepDeclaration() {
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Signatory full name" value={dec.signatory} onChange={(v) => setDec({ signatory: v })} />
         <Field label="Position held" value={dec.position} onChange={(v) => setDec({ position: v })} />
+        {accountName && (
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Type your name exactly as {accountName}.
+          </p>
+        )}
       </div>
 
       <div className="space-y-3">

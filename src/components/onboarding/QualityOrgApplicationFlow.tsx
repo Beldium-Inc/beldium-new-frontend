@@ -40,7 +40,9 @@ import {
   type QualitySectionData,
   type QualitySectionSlug,
 } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useApplicationContext } from "@/lib/onboarding/application";
+import { signatoryMismatch } from "@/lib/onboarding/signatory";
 import {
   SELECT_PLACEHOLDER,
   qualityCapabilityOptions,
@@ -99,6 +101,9 @@ const toggle = (list: string[], value: string) =>
 
 export function QualityOrgApplicationFlow() {
   const navigate = useNavigate();
+  // The declaration is signed by the account holder who submits it.
+  const { user } = useAuth();
+  const accountName = user ? `${user.first_name} ${user.last_name}` : "";
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -254,7 +259,10 @@ export function QualityOrgApplicationFlow() {
         break;
       }
       case 9:
-        Object.assign(errors, validateQualityDeclaration(declaration));
+        Object.assign(
+          errors,
+          validateQualityDeclaration(declaration, accountName, "your full name"),
+        );
         break;
     }
     return errors;
@@ -369,7 +377,9 @@ export function QualityOrgApplicationFlow() {
     } catch (error) {
       if (
         error instanceof ApiError &&
-        (error.code === "applicant_not_verified" || error.code === "documents_rejected")
+        (error.code === "applicant_not_verified" ||
+          error.code === "documents_rejected" ||
+          error.code === "signatory_mismatch")
       ) {
         toast.error(error.message);
         return;
@@ -405,11 +415,16 @@ export function QualityOrgApplicationFlow() {
 
   const progress = application?.progress;
   const rejectedDocuments = progress?.documents.rejected ?? [];
+  const signatureMismatch = declaration.signature.trim()
+    ? signatoryMismatch(declaration.signature, accountName, "your full name")
+    : null;
   const blockedReason = progress?.blocking.includes("account")
     ? "Verify your email address before submitting."
     : rejectedDocuments.length
       ? `Replace the rejected ${rejectedDocuments.length > 1 ? "documents" : "document"} first.`
-      : null;
+      : signatureMismatch
+        ? `Sign the declaration again. ${signatureMismatch}`
+        : null;
 
   if (loading) {
     return (
@@ -741,6 +756,7 @@ export function QualityOrgApplicationFlow() {
                 setDeclaration(value);
               }}
               error={fieldErrors["declaration"]}
+              fullName={accountName}
             />
           )}
 
