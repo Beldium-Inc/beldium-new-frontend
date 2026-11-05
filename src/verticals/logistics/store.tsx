@@ -27,7 +27,7 @@ import {
   useAssignReviewer,
   useStartReview,
 } from "@/lib/api/logistics-queries";
-import { useCurrentUser } from "@/lib/api/queries";
+import { useCurrentUser, useMyOrganisations } from "@/lib/api/queries";
 import { apiUrl } from "@/lib/api/config";
 import {
   documentDownloadUrl,
@@ -291,8 +291,13 @@ function toNotification(row: Api.Notification): Notification {
   };
 }
 
+export const NOT_VETTED_MESSAGE =
+  "Reviewer access is pending staff vetting. You can view the register, but reviews, verification, requests and decisions are locked until your account is vetted.";
+
 interface Ctx {
   session: Session | null;
+  /** True only for staff, or a compliance operator whose organisation Beldium staff have verified. */
+  canReview: boolean;
   hydrated: boolean;
   signOut: () => void;
 
@@ -367,6 +372,7 @@ export function AppStateProvider({
   onSignOut: () => void;
 }) {
   const currentUser = useCurrentUser();
+  const myOrganisations = useMyOrganisations();
   const me = useLogisticsMe();
   const dashboard = useLogisticsDashboard();
   const companiesQuery = useLogisticsCompanies();
@@ -629,8 +635,21 @@ export function AppStateProvider({
     [requestsRaw],
   );
 
+  // Vetting: staff, or a member of an organisation Beldium staff have verified on
+  // the compliance vetting desk. Anything else (pending, rejected, unknown) is unvetted.
+  const canReview =
+    role === "operator" &&
+    (currentUser.data?.is_staff === true ||
+      (myOrganisations.data?.results ?? []).some(
+        (o) => o.my_role !== null && o.verification_status === "verified",
+      ));
+  const reviewGuard = () => {
+    if (!canReview) throw new Error(NOT_VETTED_MESSAGE);
+  };
+
   const value: Ctx = {
     session,
+    canReview,
     hydrated: !isLoading,
     signOut: onSignOut,
 
@@ -646,6 +665,7 @@ export function AppStateProvider({
     // The API requires a non-empty note with every review, and refuses one
     // outside "under review"; callers await this so they can show that.
     reviewDocument: async (docId, status, notes) => {
+      reviewGuard();
       await reviewDocumentFor.mutateAsync({ id: docId, status, notes });
     },
     addDocumentNote: async (_companyId, docId, text) => {
@@ -653,12 +673,14 @@ export function AppStateProvider({
     },
     addReviewNote: () => {},
     claimApplication: async (companyId) => {
+      reviewGuard();
       const id = applicationIdForCompany(companyId);
       const reviewer = currentUser.data?.id;
       if (!id || !reviewer) throw new Error("This company has no application to claim.");
       await assignReviewerFor.mutateAsync({ id, reviewer });
     },
     startReview: async (companyId) => {
+      reviewGuard();
       const uuid = uuidByReference.get(companyId);
       const application = uuid ? applicationByCompanyUuid.get(uuid) : undefined;
       if (!application) throw new Error("This company has no application to review.");
@@ -669,20 +691,24 @@ export function AppStateProvider({
       if (application.status === "submitted") await startReviewFor.mutateAsync(application.id);
     },
     reviewSection: async (companyId, key, input) => {
+      reviewGuard();
       const id = applicationIdForCompany(companyId);
       if (!id) throw new Error("This company has no application to review.");
       await reviewSectionFor.mutateAsync({ id, key: key as LogisticsDomainKey, ...input });
     },
     createRequest: (companyId, reason, message, items) => {
+      if (!canReview) return;
       const id = applicationIdForCompany(companyId);
       if (!id) return;
       const due = new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10);
       void createRequestFor.mutateAsync({ id, reason, message, items, due_date: due });
     },
     reviewResponse: async (requestId, accepted, notes) => {
+      reviewGuard();
       await reviewResponseFor.mutateAsync({ id: requestId, accepted, notes });
     },
     withdrawRequest: async (requestId, notes) => {
+      reviewGuard();
       await withdrawRequestFor.mutateAsync({ id: requestId, notes });
     },
     respondToRequest: (requestId, message) => {
@@ -691,6 +717,7 @@ export function AppStateProvider({
       void respondFor.mutateAsync({ id: requestId, message, documents: [] });
     },
     recordDecision: async (companyId, decision, summary, conditions) => {
+      reviewGuard();
       const id = applicationIdForCompany(companyId);
       if (!id) throw new Error("This company has no application to decide.");
       const status =
