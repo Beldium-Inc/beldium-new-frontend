@@ -58,10 +58,11 @@ const steps = [
   "Review",
 ];
 
-// A logistics company has its own application, so this flow does not offer that type.
+// Mining and logistics companies register through their own portals, so this
+// compliance application does not offer those types.
 const ORG_TYPE_ENTRIES = (
   Object.entries(ORGANISATION_TYPE_LABELS) as [OrganisationType, string][]
-).filter(([type]) => type !== "logistics_company");
+).filter(([type]) => type !== "logistics_company" && type !== "mining_company");
 const ORG_TYPE_LABELS = ORG_TYPE_ENTRIES.map(([, label]) => label);
 
 const EVIDENCE_STANDARDS = [
@@ -173,7 +174,7 @@ export function OrgApplicationFlow({ startAtDocuments = false }: { startAtDocume
 
   const [org, setOrg] = useState({
     name: "",
-    organisation_type: ORG_TYPE_LABELS[1] ?? "",
+    organisation_type: ORGANISATION_TYPE_LABELS.compliance_partner,
     registration_number: "",
     tax_identifier: "",
     year_established: "",
