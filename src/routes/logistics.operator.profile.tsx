@@ -17,7 +17,7 @@ export const Route = createFileRoute("/logistics/operator/profile")({
 });
 
 function ProfilePage() {
-  const { session, signOut, companies, requests } = useApp();
+  const { session, signOut, companies, requests, canReview } = useApp();
   const navigate = useNavigate();
   const mine = companies.filter((c) => c.claim === "mine");
 
@@ -37,13 +37,29 @@ function ProfilePage() {
             ]}
           />
           <div className="mt-5 flex flex-wrap gap-2">
-            <Pill tone="success">
-              <ShieldCheck className="h-3 w-3" /> Can approve applications
-            </Pill>
-            <Pill tone="success">Can verify documents</Pill>
-            <Pill tone="success">Can raise information requests</Pill>
+            {canReview ? (
+              <>
+                <Pill tone="success">
+                  <ShieldCheck className="h-3 w-3" /> Can approve applications
+                </Pill>
+                <Pill tone="success">Can verify documents</Pill>
+                <Pill tone="success">Can raise information requests</Pill>
+              </>
+            ) : (
+              <>
+                <Pill tone="warning">Pending staff vetting</Pill>
+                <Pill tone="neutral">Approve applications: locked until vetted</Pill>
+                <Pill tone="neutral">Verify documents: locked until vetted</Pill>
+                <Pill tone="neutral">Raise information requests: locked until vetted</Pill>
+              </>
+            )}
             <Pill tone="neutral">Cannot edit partner company data</Pill>
           </div>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            {canReview
+              ? "Your reviewer permissions were granted after Beldium staff vetted your compliance organisation."
+              : "Your account has not been vetted by Beldium staff yet. Until it is, you can view the register and your caseload, but you cannot review partners, verify documents, raise information requests or record decisions."}
+          </p>
           <button
             type="button"
             onClick={() => {
