@@ -30,7 +30,11 @@ export type AccountSetup = {
    */
   documentsOutstanding?: number;
   /** Where the person should go to carry on. */
-  resumeTo: "/onboarding/application" | "/onboarding/dashboard" | "/onboarding/join";
+  resumeTo:
+    | "/onboarding/application"
+    | "/onboarding/dashboard"
+    | "/onboarding/join"
+    | "/onboarding/pending";
 };
 
 /**
@@ -55,7 +59,7 @@ function resolve(
 
   if (!organisation) {
     return hasPendingJoin
-      ? { stage: "join_pending", organisation, application, percent, resumeTo: "/onboarding/join" }
+      ? { stage: "join_pending", organisation, application, percent, resumeTo: "/onboarding/pending" }
       : {
           stage: "no_organisation",
           organisation,

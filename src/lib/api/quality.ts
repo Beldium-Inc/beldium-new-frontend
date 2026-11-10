@@ -95,6 +95,7 @@ export interface QualityApplication {
     capabilities?: string[];
     minerals?: string[];
     sampling?: {
+      offers_sampling?: boolean;
       geographic_coverage?: string[];
       field_sampling_teams?: number;
       tamper_evident_sealing?: string;

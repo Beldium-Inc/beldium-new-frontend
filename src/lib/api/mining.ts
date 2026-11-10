@@ -1,4 +1,5 @@
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchBlob } from "./client";
+import { apiUrl } from "./config";
 import type { Paginated, UUID } from "./types";
 
 // The Mining Compliance register: mine sites, their licensing/admission
@@ -115,7 +116,8 @@ export interface MineSite {
   last_inspection_on: string | null;
   /** Free-form, e.g. {inspector, permit, company}; not strongly typed server-side. */
   verification: Record<string, unknown>;
-  risk_reasons: string[];
+  /** Older rows hold plain strings; newer ones `{label, detail}`. */
+  risk_reasons: (string | { label: string; detail?: string })[];
   production: Record<string, unknown>;
   inventory: Record<string, unknown>;
   transactions: Record<string, unknown>;
@@ -151,7 +153,9 @@ export interface MiningChecklistSection {
   key: SectionKey;
   label: string;
   prompts: { label: string; required: boolean }[];
-  documents: { name: string; issuer: string; expires: boolean }[];
+  required_prompts?: string[];
+  /** Not served by the current checklist endpoint; kept optional. */
+  documents?: { name: string; issuer: string; expires: boolean }[];
 }
 
 export interface MiningChecklist {
@@ -205,6 +209,12 @@ export type InspectionType = "pre_approval" | "routine" | "follow_up" | "inciden
 export type InspectionStatus = "requested" | "scheduled" | "completed" | "overdue";
 export type InspectionResult = "pass" | "pass_with_observations" | "fail" | "";
 
+export interface InspectionFinding {
+  area: string;
+  observation: string;
+  severity: string;
+}
+
 export interface MiningInspection {
   id: UUID;
   reference: string;
@@ -218,7 +228,8 @@ export interface MiningInspection {
   inspector_display: string;
   status: InspectionStatus;
   result: InspectionResult;
-  findings: string;
+  /** A JSON list on the server (`[{area, observation, severity}]`). */
+  findings: InspectionFinding[];
   notes: string;
   completed_at: string | null;
   created_at: string;
@@ -1013,4 +1024,120 @@ export function decideOrganisationVerification(
     method: "POST",
     body: reason ? { reason } : {},
   });
+}
+
+// --- production & inventory ---------------------------------------------------------
+
+export interface ProductionRecord {
+  id: UUID;
+  site: UUID;
+  site_name: string;
+  period_start: string;
+  period_end: string;
+  commodity: string;
+  /** Decimal, serialised as a string by DRF. */
+  tonnage: string;
+  grade: string | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ProductionInput = {
+  site: UUID;
+  period_start: string;
+  period_end: string;
+  commodity: string;
+  tonnage: string;
+  grade?: string | null;
+  notes?: string;
+};
+
+export function listProductionRecords(
+  query: MiningListQuery = {},
+): Promise<Paginated<ProductionRecord>> {
+  return apiFetch<Paginated<ProductionRecord>>(`${BASE}/production/`, { query });
+}
+
+export function createProductionRecord(input: ProductionInput): Promise<ProductionRecord> {
+  return apiFetch<ProductionRecord>(`${BASE}/production/`, { method: "POST", body: input });
+}
+
+export function updateProductionRecord(
+  id: UUID,
+  patch: Partial<ProductionInput>,
+): Promise<ProductionRecord> {
+  return apiFetch<ProductionRecord>(`${BASE}/production/${id}/`, { method: "PATCH", body: patch });
+}
+
+export function deleteProductionRecord(id: UUID): Promise<void> {
+  return apiFetch<void>(`${BASE}/production/${id}/`, { method: "DELETE" });
+}
+
+export interface InventoryItem {
+  id: UUID;
+  site: UUID;
+  site_name: string;
+  /** stockpile / consumable / spare */
+  category: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  threshold: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InventoryInput = {
+  site: UUID;
+  category: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  threshold?: string | null;
+};
+
+export function listInventoryItems(query: MiningListQuery = {}): Promise<Paginated<InventoryItem>> {
+  return apiFetch<Paginated<InventoryItem>>(`${BASE}/inventory/`, { query });
+}
+
+export function createInventoryItem(input: InventoryInput): Promise<InventoryItem> {
+  return apiFetch<InventoryItem>(`${BASE}/inventory/`, { method: "POST", body: input });
+}
+
+export function updateInventoryItem(
+  id: UUID,
+  patch: Partial<InventoryInput>,
+): Promise<InventoryItem> {
+  return apiFetch<InventoryItem>(`${BASE}/inventory/${id}/`, { method: "PATCH", body: patch });
+}
+
+export function deleteInventoryItem(id: UUID): Promise<void> {
+  return apiFetch<void>(`${BASE}/inventory/${id}/`, { method: "DELETE" });
+}
+
+// --- report download ---------------------------------------------------------------
+
+/** The four report kinds `mining/reports.py` compiles. */
+export const MINING_REPORT_KINDS = [
+  { kind: "national_compliance", label: "National compliance summary" },
+  { kind: "environmental_exceedances", label: "Environmental exceedance summary" },
+  { kind: "inspection_programme", label: "Inspection programme review" },
+  { kind: "non_conformity_register", label: "Non-conformity register" },
+] as const;
+
+export const MINING_REPORT_PERIODS: { value: MiningReportPeriod; label: string }[] = [
+  { value: "last_month", label: "Last month" },
+  { value: "last_quarter", label: "Last quarter" },
+  { value: "year_to_date", label: "Year to date" },
+  { value: "all_time", label: "All time" },
+];
+
+/** Compile a report and hand back the PDF. Desk and regulator only. */
+export function downloadMiningReport(input: {
+  kind: MiningReportKind;
+  scope?: ReportScope;
+  period?: MiningReportPeriod;
+}): Promise<Blob> {
+  return apiFetchBlob(apiUrl(miningReportUrl(input)));
 }

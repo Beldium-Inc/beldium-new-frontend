@@ -39,7 +39,7 @@ export const Route = createFileRoute("/onboarding/submitted")({
 });
 
 function SubmittedPage() {
-  const { role, professional, sector, account } = useOnboarding();
+  const { role, professional, sector, account, regulator } = useOnboarding();
   const search = Route.useSearch();
   const navigate = useNavigate();
 
@@ -49,6 +49,34 @@ function SubmittedPage() {
   const organisation = context.organisation;
 
   const isProfessional = role === "independent";
+
+  // Kept in this browser until the access-request endpoint exists (BE-O5).
+  if (role === "regulator-org") {
+    return (
+      <SubmittedShell
+        heading="Access request sent"
+        applicant={regulator.legalName || account.fullName}
+        reference={regulator.ref || "REQ-PENDING"}
+        status="Waiting for Beldium approval"
+        submitted="Just now"
+        onSignIn={() => navigate({ to: "/signin" })}
+      />
+    );
+  }
+
+  // Kept in this browser until the register endpoint takes these companies (BE-O3).
+  if (role === "participant") {
+    return (
+      <SubmittedShell
+        heading="Company application received"
+        applicant={account.fullName}
+        reference={professional.ref || "APP-PENDING"}
+        status="Under Review"
+        submitted="Just now"
+        onSignIn={() => navigate({ to: "/signin" })}
+      />
+    );
+  }
   const isQualityOfficer = sector === "quality" && role === "compliance-officer";
 
   if (isQualityOfficer) {

@@ -207,12 +207,18 @@ function QualityApplicationDetails({ profile: q }: { profile: QualityProfile }) 
       <RowsSection heading="Key personnel" rows={q.personnel?.personnel} />
 
       <Section heading="Sampling & inspection capability" empty={!sampling}>
-        <Field label="Geographic coverage">{list(sampling?.geographic_coverage)}</Field>
-        <Field label="Field sampling teams">{text(sampling?.field_sampling_teams)}</Field>
-        <Field label="Tamper-evident sealing">{text(sampling?.tamper_evident_sealing)}</Field>
-        <Field label="Sampling procedure summary">
-          {text(sampling?.sampling_procedure_summary)}
-        </Field>
+        {sampling?.offers_sampling === false ? (
+          <Field label="Offers field sampling">No, tests delivered samples only</Field>
+        ) : (
+          <>
+            <Field label="Geographic coverage">{list(sampling?.geographic_coverage)}</Field>
+            <Field label="Field sampling teams">{text(sampling?.field_sampling_teams)}</Field>
+            <Field label="Tamper-evident sealing">{text(sampling?.tamper_evident_sealing)}</Field>
+            <Field label="Sampling procedure summary">
+              {text(sampling?.sampling_procedure_summary)}
+            </Field>
+          </>
+        )}
       </Section>
 
       <Section heading="Declaration" empty={!decl}>

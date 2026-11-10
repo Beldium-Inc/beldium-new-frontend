@@ -22,6 +22,14 @@ import {
 import { useStore } from "@/verticals/mining/store";
 import type { SectionKey } from "@/verticals/mining/types";
 
+
+/** YYYY-MM-DD, `n` days from today. Default due date for new requests. */
+function inDays(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 export function RequestInfoDialog({
   open,
   onOpenChange,
@@ -38,7 +46,7 @@ export function RequestInfoDialog({
   const { requestInformation } = useStore();
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
-  const [dueBy, setDueBy] = useState("2026-09-06");
+  const [dueBy, setDueBy] = useState(inDays(14));
   const [priority, setPriority] = useState<"Low" | "Normal" | "High">("Normal");
   const [submitting, setSubmitting] = useState(false);
 

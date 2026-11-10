@@ -593,7 +593,157 @@ export const authorisationLevels = ["Administrator", "Approver", "Officer", "Rea
  * Sector wording for the independent-professional application. Logistics
  * reviewers assess haulage companies, fleets and drivers, not mines.
  */
+/** Wording for the independent-professional flow in the sectors that review companies, not mines. */
+const PROFESSIONAL_SECTOR_COPY: Partial<
+  Record<
+    VerticalSlug,
+    {
+      noun: string;
+      company: string;
+      specialisation: string;
+      professions: string[];
+      expertise: string[];
+    }
+  >
+> = {
+  processing: {
+    noun: "Processing",
+    company: "processing company",
+    specialisation: "Processing specialisation",
+    professions: [
+      "Metallurgist / Process Engineer",
+      "Chemical Engineer",
+      "Environmental Specialist",
+      "HSE Professional",
+      "Mineral Traceability Auditor",
+      "Legal / Regulatory Specialist",
+      "Compliance Specialist",
+    ],
+    expertise: [
+      "Corporate & Registration Review",
+      "Processing Licence Verification",
+      "Plant & Process Inspection",
+      "Feedstock Sourcing & Traceability Review",
+      "Environmental Permit & Tailings Review",
+      "HSE / Occupational Safety Review",
+      "Mass Balance & Output Reconciliation",
+      "Supporting Document Verification",
+    ],
+  },
+  warehousing: {
+    noun: "Warehousing",
+    company: "warehouse operator",
+    specialisation: "Storage specialisation",
+    professions: [
+      "Warehouse / Inventory Auditor",
+      "Security & Custody Specialist",
+      "Fire Safety Professional",
+      "HSE Professional",
+      "Insurance / Risk Specialist",
+      "Compliance Specialist",
+    ],
+    expertise: [
+      "Corporate & Registration Review",
+      "Facility & Storage Inspection",
+      "Inventory & Stock Reconciliation",
+      "Custody & Release Control Review",
+      "Fire Safety & HSE Review",
+      "Insurance Verification",
+      "Bonded Warehouse Compliance",
+      "Supporting Document Verification",
+    ],
+  },
+  export: {
+    noun: "Export",
+    company: "exporter",
+    specialisation: "Export specialisation",
+    professions: [
+      "Trade Compliance Specialist",
+      "Customs / Export Documentation Specialist",
+      "Mineral Traceability Auditor",
+      "AML / KYC Analyst",
+      "Legal / Regulatory Specialist",
+      "Compliance Specialist",
+    ],
+    expertise: [
+      "Corporate & Registration Review",
+      "Export Permit & NEPC Verification",
+      "Consignment Document Review",
+      "Origin & Traceability Verification",
+      "Royalty Payment Verification",
+      "AML / KYC Review",
+      "Supporting Document Verification",
+    ],
+  },
+  marketplace: {
+    noun: "Marketplace",
+    company: "buyer, offtaker or OEM",
+    specialisation: "Trade specialisation",
+    professions: [
+      "KYC / AML Analyst",
+      "Sanctions Screening Specialist",
+      "Supply Chain Due Diligence Specialist",
+      "Commercial / Contracts Specialist",
+      "Legal / Regulatory Specialist",
+      "Compliance Specialist",
+    ],
+    expertise: [
+      "Corporate & Registration Review",
+      "Beneficial Ownership Verification",
+      "Sanctions & PEP Screening",
+      "Responsible Sourcing (OECD) Review",
+      "Contract & Offtake Review",
+      "Supporting Document Verification",
+    ],
+  },
+};
+
 export function professionalCopyFor(sector: VerticalSlug | null) {
+  const sectorCopy = sector ? PROFESSIONAL_SECTOR_COPY[sector] : undefined;
+  if (sectorCopy) {
+    const { noun, company, specialisation } = sectorCopy;
+    return {
+      steps: [
+        "Personal Details",
+        "Professional Profile",
+        "Qualifications & Certifications",
+        "Review Expertise",
+        specialisation,
+        "Field Inspection Capability",
+        "Supporting Documents",
+        "Independence & Declaration",
+      ],
+      professions: sectorCopy.professions,
+      yearsSectorLabel: `Years of ${noun} Industry Experience`,
+      yearsSectorReview: `${noun} experience`,
+      expertiseLabel: `${noun} Compliance Review Expertise`,
+      expertiseHint: `Select exactly what ${company} submissions you are qualified to review. Beldium uses these approved capabilities when assigning applications.`,
+      expertise: sectorCopy.expertise,
+      specialisationBanner: specialisation,
+      specialisationValue: `${noun} compliance`,
+      specialisationFields: {
+        years: `Years of ${noun} Compliance Experience`,
+        review: `${noun} Compliance Review Experience`,
+        inspection: `${noun} Site / Facility Inspection Experience`,
+        projects: `Relevant ${noun} Projects or Assignments`,
+      },
+      documents: professionalDocumentCatalogue.map((d) =>
+        d === "Evidence of Relevant Mining Experience" ? `Evidence of Relevant ${noun} Experience` : d,
+      ),
+      declarations: professionalDeclarationItems.map((d) =>
+        d.key === "confidential" ? { ...d, label: `${noun} applicant information will remain confidential.` } : d,
+      ),
+      independence: [
+        {
+          key: "ownsMining",
+          label: `Do you own or have a financial interest in a ${company} you may review?`,
+        },
+        { key: "tradesMinerals", label: "Do you trade in minerals or the material you may inspect?" },
+        { key: "worksForMiner", label: `Do you work for a ${company} you may be assigned to review?` },
+        independenceQuestions[3]!,
+      ],
+    };
+  }
   if (sector !== "logistics") {
     return {
       steps: [

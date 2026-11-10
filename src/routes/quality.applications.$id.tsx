@@ -207,13 +207,19 @@ function ApplicationDetail() {
                       label="Minerals / materials supported"
                       value={app.onboarding.minerals.join(", ")}
                     />
-                    <Field label="Geographic coverage" value={app.onboarding.coverage.join(", ")} />
-                    <Field label="Field sampling teams" value={app.onboarding.samplingTeams ?? "-"} />
-                    <Field label="Tamper-evident sealing" value={app.onboarding.sealing} />
-                    <Field
-                      label="Sampling procedure summary"
-                      value={app.onboarding.samplingProcedure || "-"}
-                    />
+                    {app.onboarding.offersSampling ? (
+                      <>
+                        <Field label="Geographic coverage" value={app.onboarding.coverage.join(", ")} />
+                        <Field label="Field sampling teams" value={app.onboarding.samplingTeams ?? "-"} />
+                        <Field label="Tamper-evident sealing" value={app.onboarding.sealing} />
+                        <Field
+                          label="Sampling procedure summary"
+                          value={app.onboarding.samplingProcedure || "-"}
+                        />
+                      </>
+                    ) : (
+                      <Field label="Field sampling" value="Not offered: tests delivered samples only" />
+                    )}
                   </dl>
                 </Surface>
               ) : null}

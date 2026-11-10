@@ -13,6 +13,7 @@ import {
   PlusCircle,
   ScrollText,
   Ship,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/verticals/export/store";
@@ -30,6 +31,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/export/exporters", label: "Exporters", icon: Building2 },
     { to: "/export/documents", label: "Documents", icon: FileStack },
     { to: "/export/monitoring", label: "Monitoring", icon: BellRing },
+    { to: "/export/team", label: "Team", icon: Users },
   ],
   exporter: [
     { to: "/export/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -37,12 +39,14 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/export/shipments/new", label: "New shipment", icon: PlusCircle },
     { to: "/export/documents", label: "Documents", icon: FileStack },
     { to: "/export/monitoring", label: "Alerts", icon: BellRing },
+    { to: "/export/team", label: "Team", icon: Users },
   ],
   regulator: [
     { to: "/export/oversight", label: "Oversight", icon: Gauge },
     { to: "/export/shipments", label: "Consignments", icon: Ship },
     { to: "/export/documents", label: "Document register", icon: ScrollText },
     { to: "/export/monitoring", label: "Monitoring", icon: BellRing },
+    { to: "/export/team", label: "Team", icon: Users },
   ],
 };
 

@@ -11,7 +11,11 @@ export type OrganisationType =
   | "compliance_partner"
   | "regulator"
   | "laboratory"
-  | "inspection_body";
+  | "inspection_body"
+  | "processing_company"
+  | "warehouse_operator"
+  | "exporter"
+  | "market_participant";
 
 export type MembershipRole =
   | "owner"
@@ -124,6 +128,10 @@ export const ORGANISATION_TYPE_LABELS: Record<OrganisationType, string> = {
   regulator: "Regulator",
   laboratory: "Laboratory",
   inspection_body: "Inspection body",
+  processing_company: "Processing company",
+  warehouse_operator: "Warehouse operator",
+  exporter: "Exporter",
+  market_participant: "Market participant",
 };
 
 /** All fifteen roles the backend's MembershipRole defines, labelled as it labels them. */

@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApplicationDetails } from "@/components/staff/application-details";
+import { ParticipantQueue, RegulatorAccessQueue } from "@/components/staff/onboarding-queues";
 import { DocumentStatusBadge, DocumentViewer } from "@/components/staff/document-viewer";
 import { useAuth } from "@/lib/auth";
 import {
@@ -36,7 +37,7 @@ import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } fro
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
-import { VERTICALS } from "@/lib/verticals";
+import { VERTICALS, type VerticalSlug } from "@/lib/verticals";
 
 // Client-only, like the /mining layout: the JWT pair lives in localStorage, so
 // a server-rendered pass hydrates with useHasTokens() === false, the auth guard
@@ -693,6 +694,8 @@ function Page() {
         </div>
 
         {tab === "all" || tab === "logistics" ? <LogisticsCompanyQueue /> : null}
+        <RegulatorAccessQueue sector={tab === "all" ? undefined : (tab as VerticalSlug)} />
+        <ParticipantQueue sector={tab === "all" ? undefined : (tab as VerticalSlug)} />
 
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
           {isPending ? (

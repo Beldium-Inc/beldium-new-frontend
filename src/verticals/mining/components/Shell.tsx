@@ -21,6 +21,7 @@ import {
   Mountain,
   Receipt,
   ShieldCheck,
+  Users,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const icons: Record<string, typeof Gauge> = {
   history: History,
   boxes: Boxes,
   receipt: Receipt,
+  users: Users,
 };
 
 const roleLabel = {

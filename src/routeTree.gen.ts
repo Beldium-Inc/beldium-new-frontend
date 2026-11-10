@@ -25,7 +25,9 @@ import { Route as ExportDocumentsRouteImport } from './routes/export.documents'
 import { Route as ExportMonitoringRouteImport } from './routes/export.monitoring'
 import { Route as ExportOversightRouteImport } from './routes/export.oversight'
 import { Route as ExportQueueRouteImport } from './routes/export.queue'
+import { Route as ExportTeamRouteImport } from './routes/export.team'
 import { Route as LogisticsIndexRouteImport } from './routes/logistics.index'
+import { Route as LogisticsTeamRouteImport } from './routes/logistics.team'
 import { Route as MarketplaceIndexRouteImport } from './routes/marketplace.index'
 import { Route as MarketplaceDashboardRouteImport } from './routes/marketplace.dashboard'
 import { Route as MarketplaceDocumentsRouteImport } from './routes/marketplace.documents'
@@ -34,6 +36,7 @@ import { Route as MarketplaceMarketplaceRouteImport } from './routes/marketplace
 import { Route as MarketplaceNotificationsRouteImport } from './routes/marketplace.notifications'
 import { Route as MarketplaceOffersRouteImport } from './routes/marketplace.offers'
 import { Route as MarketplaceOrdersRouteImport } from './routes/marketplace.orders'
+import { Route as MarketplaceTeamRouteImport } from './routes/marketplace.team'
 import { Route as MiningIndexRouteImport } from './routes/mining.index'
 import { Route as MiningActionsRouteImport } from './routes/mining.actions'
 import { Route as MiningAuditRouteImport } from './routes/mining.audit'
@@ -50,14 +53,17 @@ import { Route as MiningReportsRouteImport } from './routes/mining.reports'
 import { Route as MiningReviewsRouteImport } from './routes/mining.reviews'
 import { Route as MiningRiskRouteImport } from './routes/mining.risk'
 import { Route as MiningSamplingRouteImport } from './routes/mining.sampling'
+import { Route as MiningTeamRouteImport } from './routes/mining.team'
 import { Route as MiningTransactionsRouteImport } from './routes/mining.transactions'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as OnboardingAccountRouteImport } from './routes/onboarding.account'
 import { Route as OnboardingAdminRouteImport } from './routes/onboarding.admin'
 import { Route as OnboardingApplicationRouteImport } from './routes/onboarding.application'
 import { Route as OnboardingDashboardRouteImport } from './routes/onboarding.dashboard'
+import { Route as OnboardingInviteRouteImport } from './routes/onboarding.invite'
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingPathRouteImport } from './routes/onboarding.path'
+import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
 import { Route as OnboardingRoleRouteImport } from './routes/onboarding.role'
 import { Route as OnboardingSectorRouteImport } from './routes/onboarding.sector'
 import { Route as OnboardingSubmittedRouteImport } from './routes/onboarding.submitted'
@@ -76,15 +82,18 @@ import { Route as ProcessingNonconformitiesRouteImport } from './routes/processi
 import { Route as ProcessingOnboardingRouteImport } from './routes/processing.onboarding'
 import { Route as ProcessingProcessorsRouteImport } from './routes/processing.processors'
 import { Route as ProcessingReportsRouteImport } from './routes/processing.reports'
+import { Route as ProcessingTeamRouteImport } from './routes/processing.team'
 import { Route as ProcessingTraceabilityRouteImport } from './routes/processing.traceability'
 import { Route as QualityIndexRouteImport } from './routes/quality.index'
 import { Route as QualityAuditRouteImport } from './routes/quality.audit'
 import { Route as QualityDashboardRouteImport } from './routes/quality.dashboard'
 import { Route as QualityNonconformitiesRouteImport } from './routes/quality.nonconformities'
+import { Route as QualityTeamRouteImport } from './routes/quality.team'
 import { Route as QualityVaultRouteImport } from './routes/quality.vault'
 import { Route as StaffComplianceVettingRouteImport } from './routes/staff.compliance-vetting'
 import { Route as VerifyHashRouteImport } from './routes/verify.$hash'
 import { Route as WarehousingIndexRouteImport } from './routes/warehousing.index'
+import { Route as WarehousingTeamRouteImport } from './routes/warehousing.team'
 import { Route as ExportExportersIndexRouteImport } from './routes/export.exporters.index'
 import { Route as ExportExportersIdRouteImport } from './routes/export.exporters.$id'
 import { Route as ExportShipmentsIndexRouteImport } from './routes/export.shipments.index'
@@ -97,6 +106,7 @@ import { Route as LogisticsOperatorAuditRouteImport } from './routes/logistics.o
 import { Route as LogisticsOperatorDocumentsRouteImport } from './routes/logistics.operator.documents'
 import { Route as LogisticsOperatorNotificationsRouteImport } from './routes/logistics.operator.notifications'
 import { Route as LogisticsOperatorProfileRouteImport } from './routes/logistics.operator.profile'
+import { Route as LogisticsOperatorReadinessRouteImport } from './routes/logistics.operator.readiness'
 import { Route as LogisticsOperatorReportsRouteImport } from './routes/logistics.operator.reports'
 import { Route as LogisticsOperatorRequestsRouteImport } from './routes/logistics.operator.requests'
 import { Route as LogisticsOperatorRiskRouteImport } from './routes/logistics.operator.risk'
@@ -153,6 +163,10 @@ import { Route as WarehousingRegulatorIncidentsRouteImport } from './routes/ware
 import { Route as WarehousingRegulatorInspectionsRouteImport } from './routes/warehousing.regulator.inspections'
 import { Route as WarehousingRegulatorReportsRouteImport } from './routes/warehousing.regulator.reports'
 import { Route as LogisticsOperatorApplicationsCompanyIdRouteImport } from './routes/logistics.operator.applications.$companyId'
+import { Route as LogisticsOperatorTransportIndexRouteImport } from './routes/logistics.operator.transport.index'
+import { Route as LogisticsOperatorTransportMovementIdRouteImport } from './routes/logistics.operator.transport.$movementId'
+import { Route as LogisticsRegulatorTransportIndexRouteImport } from './routes/logistics.regulator.transport.index'
+import { Route as LogisticsRegulatorTransportMovementIdRouteImport } from './routes/logistics.regulator.transport.$movementId'
 import { Route as WarehousingPartnerApplicationsIndexRouteImport } from './routes/warehousing.partner.applications.index'
 import { Route as WarehousingPartnerApplicationsIdRouteImport } from './routes/warehousing.partner.applications.$id'
 
@@ -236,9 +250,19 @@ const ExportQueueRoute = ExportQueueRouteImport.update({
   path: '/queue',
   getParentRoute: () => ExportRoute,
 } as any)
+const ExportTeamRoute = ExportTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => ExportRoute,
+} as any)
 const LogisticsIndexRoute = LogisticsIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsTeamRoute = LogisticsTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const MarketplaceIndexRoute = MarketplaceIndexRouteImport.update({
@@ -280,6 +304,11 @@ const MarketplaceOffersRoute = MarketplaceOffersRouteImport.update({
 const MarketplaceOrdersRoute = MarketplaceOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => MarketplaceRoute,
+} as any)
+const MarketplaceTeamRoute = MarketplaceTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => MarketplaceRoute,
 } as any)
 const MiningIndexRoute = MiningIndexRouteImport.update({
@@ -362,6 +391,11 @@ const MiningSamplingRoute = MiningSamplingRouteImport.update({
   path: '/sampling',
   getParentRoute: () => MiningRoute,
 } as any)
+const MiningTeamRoute = MiningTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => MiningRoute,
+} as any)
 const MiningTransactionsRoute = MiningTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -392,6 +426,11 @@ const OnboardingDashboardRoute = OnboardingDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => OnboardingRoute,
 } as any)
+const OnboardingInviteRoute = OnboardingInviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
   id: '/join',
   path: '/join',
@@ -400,6 +439,11 @@ const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
 const OnboardingPathRoute = OnboardingPathRouteImport.update({
   id: '/path',
   path: '/path',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingPendingRoute = OnboardingPendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
   getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingRoleRoute = OnboardingRoleRouteImport.update({
@@ -493,6 +537,11 @@ const ProcessingReportsRoute = ProcessingReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => ProcessingRoute,
 } as any)
+const ProcessingTeamRoute = ProcessingTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => ProcessingRoute,
+} as any)
 const ProcessingTraceabilityRoute = ProcessingTraceabilityRouteImport.update({
   id: '/traceability',
   path: '/traceability',
@@ -518,6 +567,11 @@ const QualityNonconformitiesRoute = QualityNonconformitiesRouteImport.update({
   path: '/nonconformities',
   getParentRoute: () => QualityRoute,
 } as any)
+const QualityTeamRoute = QualityTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => QualityRoute,
+} as any)
 const QualityVaultRoute = QualityVaultRouteImport.update({
   id: '/vault',
   path: '/vault',
@@ -536,6 +590,11 @@ const VerifyHashRoute = VerifyHashRouteImport.update({
 const WarehousingIndexRoute = WarehousingIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => WarehousingRoute,
+} as any)
+const WarehousingTeamRoute = WarehousingTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => WarehousingRoute,
 } as any)
 const ExportExportersIndexRoute = ExportExportersIndexRouteImport.update({
@@ -600,6 +659,12 @@ const LogisticsOperatorProfileRoute =
   LogisticsOperatorProfileRouteImport.update({
     id: '/operator/profile',
     path: '/operator/profile',
+    getParentRoute: () => LogisticsRoute,
+  } as any)
+const LogisticsOperatorReadinessRoute =
+  LogisticsOperatorReadinessRouteImport.update({
+    id: '/operator/readiness',
+    path: '/operator/readiness',
     getParentRoute: () => LogisticsRoute,
   } as any)
 const LogisticsOperatorReportsRoute =
@@ -919,6 +984,30 @@ const LogisticsOperatorApplicationsCompanyIdRoute =
     path: '/$companyId',
     getParentRoute: () => LogisticsOperatorApplicationsRoute,
   } as any)
+const LogisticsOperatorTransportIndexRoute =
+  LogisticsOperatorTransportIndexRouteImport.update({
+    id: '/operator/transport/',
+    path: '/operator/transport/',
+    getParentRoute: () => LogisticsRoute,
+  } as any)
+const LogisticsOperatorTransportMovementIdRoute =
+  LogisticsOperatorTransportMovementIdRouteImport.update({
+    id: '/operator/transport/$movementId',
+    path: '/operator/transport/$movementId',
+    getParentRoute: () => LogisticsRoute,
+  } as any)
+const LogisticsRegulatorTransportIndexRoute =
+  LogisticsRegulatorTransportIndexRouteImport.update({
+    id: '/regulator/transport/',
+    path: '/regulator/transport/',
+    getParentRoute: () => LogisticsRoute,
+  } as any)
+const LogisticsRegulatorTransportMovementIdRoute =
+  LogisticsRegulatorTransportMovementIdRouteImport.update({
+    id: '/regulator/transport/$movementId',
+    path: '/regulator/transport/$movementId',
+    getParentRoute: () => LogisticsRoute,
+  } as any)
 const WarehousingPartnerApplicationsIndexRoute =
   WarehousingPartnerApplicationsIndexRouteImport.update({
     id: '/partner/applications/',
@@ -948,6 +1037,8 @@ export interface FileRoutesByFullPath {
   '/export/monitoring': typeof ExportMonitoringRoute
   '/export/oversight': typeof ExportOversightRoute
   '/export/queue': typeof ExportQueueRoute
+  '/export/team': typeof ExportTeamRoute
+  '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
   '/marketplace/documents': typeof MarketplaceDocumentsRoute
   '/marketplace/finance': typeof MarketplaceFinanceRoute
@@ -955,6 +1046,7 @@ export interface FileRoutesByFullPath {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
+  '/marketplace/team': typeof MarketplaceTeamRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/audit': typeof MiningAuditRoute
   '/mining/compliance': typeof MiningComplianceRoute
@@ -970,13 +1062,16 @@ export interface FileRoutesByFullPath {
   '/mining/reviews': typeof MiningReviewsRoute
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
+  '/mining/team': typeof MiningTeamRoute
   '/mining/transactions': typeof MiningTransactionsRoute
   '/onboarding/account': typeof OnboardingAccountRoute
   '/onboarding/admin': typeof OnboardingAdminRoute
   '/onboarding/application': typeof OnboardingApplicationRoute
   '/onboarding/dashboard': typeof OnboardingDashboardRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/path': typeof OnboardingPathRoute
+  '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/role': typeof OnboardingRoleRoute
   '/onboarding/sector': typeof OnboardingSectorRoute
   '/onboarding/submitted': typeof OnboardingSubmittedRoute
@@ -994,13 +1089,16 @@ export interface FileRoutesByFullPath {
   '/processing/onboarding': typeof ProcessingOnboardingRoute
   '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
   '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/team': typeof ProcessingTeamRoute
   '/processing/traceability': typeof ProcessingTraceabilityRoute
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/team': typeof QualityTeamRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
+  '/warehousing/team': typeof WarehousingTeamRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
@@ -1017,6 +1115,7 @@ export interface FileRoutesByFullPath {
   '/logistics/operator/documents': typeof LogisticsOperatorDocumentsRoute
   '/logistics/operator/notifications': typeof LogisticsOperatorNotificationsRoute
   '/logistics/operator/profile': typeof LogisticsOperatorProfileRoute
+  '/logistics/operator/readiness': typeof LogisticsOperatorReadinessRoute
   '/logistics/operator/reports': typeof LogisticsOperatorReportsRoute
   '/logistics/operator/requests': typeof LogisticsOperatorRequestsRoute
   '/logistics/operator/risk': typeof LogisticsOperatorRiskRoute
@@ -1077,7 +1176,11 @@ export interface FileRoutesByFullPath {
   '/warehousing/partner/': typeof WarehousingPartnerIndexRoute
   '/warehousing/regulator/': typeof WarehousingRegulatorIndexRoute
   '/logistics/operator/applications/$companyId': typeof LogisticsOperatorApplicationsCompanyIdRoute
+  '/logistics/operator/transport/$movementId': typeof LogisticsOperatorTransportMovementIdRoute
+  '/logistics/regulator/transport/$movementId': typeof LogisticsRegulatorTransportMovementIdRoute
   '/warehousing/partner/applications/$id': typeof WarehousingPartnerApplicationsIdRoute
+  '/logistics/operator/transport/': typeof LogisticsOperatorTransportIndexRoute
+  '/logistics/regulator/transport/': typeof LogisticsRegulatorTransportIndexRoute
   '/warehousing/partner/applications/': typeof WarehousingPartnerApplicationsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -1088,6 +1191,8 @@ export interface FileRoutesByTo {
   '/export/monitoring': typeof ExportMonitoringRoute
   '/export/oversight': typeof ExportOversightRoute
   '/export/queue': typeof ExportQueueRoute
+  '/export/team': typeof ExportTeamRoute
+  '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
   '/marketplace/documents': typeof MarketplaceDocumentsRoute
   '/marketplace/finance': typeof MarketplaceFinanceRoute
@@ -1095,6 +1200,7 @@ export interface FileRoutesByTo {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
+  '/marketplace/team': typeof MarketplaceTeamRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/audit': typeof MiningAuditRoute
   '/mining/compliance': typeof MiningComplianceRoute
@@ -1110,13 +1216,16 @@ export interface FileRoutesByTo {
   '/mining/reviews': typeof MiningReviewsRoute
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
+  '/mining/team': typeof MiningTeamRoute
   '/mining/transactions': typeof MiningTransactionsRoute
   '/onboarding/account': typeof OnboardingAccountRoute
   '/onboarding/admin': typeof OnboardingAdminRoute
   '/onboarding/application': typeof OnboardingApplicationRoute
   '/onboarding/dashboard': typeof OnboardingDashboardRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/path': typeof OnboardingPathRoute
+  '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/role': typeof OnboardingRoleRoute
   '/onboarding/sector': typeof OnboardingSectorRoute
   '/onboarding/submitted': typeof OnboardingSubmittedRoute
@@ -1134,13 +1243,16 @@ export interface FileRoutesByTo {
   '/processing/onboarding': typeof ProcessingOnboardingRoute
   '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
   '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/team': typeof ProcessingTeamRoute
   '/processing/traceability': typeof ProcessingTraceabilityRoute
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/team': typeof QualityTeamRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
+  '/warehousing/team': typeof WarehousingTeamRoute
   '/export': typeof ExportIndexRoute
   '/logistics': typeof LogisticsIndexRoute
   '/marketplace': typeof MarketplaceIndexRoute
@@ -1157,6 +1269,7 @@ export interface FileRoutesByTo {
   '/logistics/operator/documents': typeof LogisticsOperatorDocumentsRoute
   '/logistics/operator/notifications': typeof LogisticsOperatorNotificationsRoute
   '/logistics/operator/profile': typeof LogisticsOperatorProfileRoute
+  '/logistics/operator/readiness': typeof LogisticsOperatorReadinessRoute
   '/logistics/operator/reports': typeof LogisticsOperatorReportsRoute
   '/logistics/operator/requests': typeof LogisticsOperatorRequestsRoute
   '/logistics/operator/risk': typeof LogisticsOperatorRiskRoute
@@ -1217,7 +1330,11 @@ export interface FileRoutesByTo {
   '/warehousing/partner': typeof WarehousingPartnerIndexRoute
   '/warehousing/regulator': typeof WarehousingRegulatorIndexRoute
   '/logistics/operator/applications/$companyId': typeof LogisticsOperatorApplicationsCompanyIdRoute
+  '/logistics/operator/transport/$movementId': typeof LogisticsOperatorTransportMovementIdRoute
+  '/logistics/regulator/transport/$movementId': typeof LogisticsRegulatorTransportMovementIdRoute
   '/warehousing/partner/applications/$id': typeof WarehousingPartnerApplicationsIdRoute
+  '/logistics/operator/transport': typeof LogisticsOperatorTransportIndexRoute
+  '/logistics/regulator/transport': typeof LogisticsRegulatorTransportIndexRoute
   '/warehousing/partner/applications': typeof WarehousingPartnerApplicationsIndexRoute
 }
 export interface FileRoutesById {
@@ -1237,6 +1354,8 @@ export interface FileRoutesById {
   '/export/monitoring': typeof ExportMonitoringRoute
   '/export/oversight': typeof ExportOversightRoute
   '/export/queue': typeof ExportQueueRoute
+  '/export/team': typeof ExportTeamRoute
+  '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
   '/marketplace/documents': typeof MarketplaceDocumentsRoute
   '/marketplace/finance': typeof MarketplaceFinanceRoute
@@ -1244,6 +1363,7 @@ export interface FileRoutesById {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
+  '/marketplace/team': typeof MarketplaceTeamRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/audit': typeof MiningAuditRoute
   '/mining/compliance': typeof MiningComplianceRoute
@@ -1259,13 +1379,16 @@ export interface FileRoutesById {
   '/mining/reviews': typeof MiningReviewsRoute
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
+  '/mining/team': typeof MiningTeamRoute
   '/mining/transactions': typeof MiningTransactionsRoute
   '/onboarding/account': typeof OnboardingAccountRoute
   '/onboarding/admin': typeof OnboardingAdminRoute
   '/onboarding/application': typeof OnboardingApplicationRoute
   '/onboarding/dashboard': typeof OnboardingDashboardRoute
+  '/onboarding/invite': typeof OnboardingInviteRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/path': typeof OnboardingPathRoute
+  '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/role': typeof OnboardingRoleRoute
   '/onboarding/sector': typeof OnboardingSectorRoute
   '/onboarding/submitted': typeof OnboardingSubmittedRoute
@@ -1283,13 +1406,16 @@ export interface FileRoutesById {
   '/processing/onboarding': typeof ProcessingOnboardingRoute
   '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
   '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/team': typeof ProcessingTeamRoute
   '/processing/traceability': typeof ProcessingTraceabilityRoute
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/team': typeof QualityTeamRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
+  '/warehousing/team': typeof WarehousingTeamRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
@@ -1306,6 +1432,7 @@ export interface FileRoutesById {
   '/logistics/operator/documents': typeof LogisticsOperatorDocumentsRoute
   '/logistics/operator/notifications': typeof LogisticsOperatorNotificationsRoute
   '/logistics/operator/profile': typeof LogisticsOperatorProfileRoute
+  '/logistics/operator/readiness': typeof LogisticsOperatorReadinessRoute
   '/logistics/operator/reports': typeof LogisticsOperatorReportsRoute
   '/logistics/operator/requests': typeof LogisticsOperatorRequestsRoute
   '/logistics/operator/risk': typeof LogisticsOperatorRiskRoute
@@ -1366,7 +1493,11 @@ export interface FileRoutesById {
   '/warehousing/partner/': typeof WarehousingPartnerIndexRoute
   '/warehousing/regulator/': typeof WarehousingRegulatorIndexRoute
   '/logistics/operator/applications/$companyId': typeof LogisticsOperatorApplicationsCompanyIdRoute
+  '/logistics/operator/transport/$movementId': typeof LogisticsOperatorTransportMovementIdRoute
+  '/logistics/regulator/transport/$movementId': typeof LogisticsRegulatorTransportMovementIdRoute
   '/warehousing/partner/applications/$id': typeof WarehousingPartnerApplicationsIdRoute
+  '/logistics/operator/transport/': typeof LogisticsOperatorTransportIndexRoute
+  '/logistics/regulator/transport/': typeof LogisticsRegulatorTransportIndexRoute
   '/warehousing/partner/applications/': typeof WarehousingPartnerApplicationsIndexRoute
 }
 export interface FileRouteTypes {
@@ -1387,6 +1518,8 @@ export interface FileRouteTypes {
     | '/export/monitoring'
     | '/export/oversight'
     | '/export/queue'
+    | '/export/team'
+    | '/logistics/team'
     | '/marketplace/dashboard'
     | '/marketplace/documents'
     | '/marketplace/finance'
@@ -1394,6 +1527,7 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
+    | '/marketplace/team'
     | '/mining/actions'
     | '/mining/audit'
     | '/mining/compliance'
@@ -1409,13 +1543,16 @@ export interface FileRouteTypes {
     | '/mining/reviews'
     | '/mining/risk'
     | '/mining/sampling'
+    | '/mining/team'
     | '/mining/transactions'
     | '/onboarding/account'
     | '/onboarding/admin'
     | '/onboarding/application'
     | '/onboarding/dashboard'
+    | '/onboarding/invite'
     | '/onboarding/join'
     | '/onboarding/path'
+    | '/onboarding/pending'
     | '/onboarding/role'
     | '/onboarding/sector'
     | '/onboarding/submitted'
@@ -1433,13 +1570,16 @@ export interface FileRouteTypes {
     | '/processing/onboarding'
     | '/processing/processors'
     | '/processing/reports'
+    | '/processing/team'
     | '/processing/traceability'
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/team'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
+    | '/warehousing/team'
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
@@ -1456,6 +1596,7 @@ export interface FileRouteTypes {
     | '/logistics/operator/documents'
     | '/logistics/operator/notifications'
     | '/logistics/operator/profile'
+    | '/logistics/operator/readiness'
     | '/logistics/operator/reports'
     | '/logistics/operator/requests'
     | '/logistics/operator/risk'
@@ -1516,7 +1657,11 @@ export interface FileRouteTypes {
     | '/warehousing/partner/'
     | '/warehousing/regulator/'
     | '/logistics/operator/applications/$companyId'
+    | '/logistics/operator/transport/$movementId'
+    | '/logistics/regulator/transport/$movementId'
     | '/warehousing/partner/applications/$id'
+    | '/logistics/operator/transport/'
+    | '/logistics/regulator/transport/'
     | '/warehousing/partner/applications/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1527,6 +1672,8 @@ export interface FileRouteTypes {
     | '/export/monitoring'
     | '/export/oversight'
     | '/export/queue'
+    | '/export/team'
+    | '/logistics/team'
     | '/marketplace/dashboard'
     | '/marketplace/documents'
     | '/marketplace/finance'
@@ -1534,6 +1681,7 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
+    | '/marketplace/team'
     | '/mining/actions'
     | '/mining/audit'
     | '/mining/compliance'
@@ -1549,13 +1697,16 @@ export interface FileRouteTypes {
     | '/mining/reviews'
     | '/mining/risk'
     | '/mining/sampling'
+    | '/mining/team'
     | '/mining/transactions'
     | '/onboarding/account'
     | '/onboarding/admin'
     | '/onboarding/application'
     | '/onboarding/dashboard'
+    | '/onboarding/invite'
     | '/onboarding/join'
     | '/onboarding/path'
+    | '/onboarding/pending'
     | '/onboarding/role'
     | '/onboarding/sector'
     | '/onboarding/submitted'
@@ -1573,13 +1724,16 @@ export interface FileRouteTypes {
     | '/processing/onboarding'
     | '/processing/processors'
     | '/processing/reports'
+    | '/processing/team'
     | '/processing/traceability'
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/team'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
+    | '/warehousing/team'
     | '/export'
     | '/logistics'
     | '/marketplace'
@@ -1596,6 +1750,7 @@ export interface FileRouteTypes {
     | '/logistics/operator/documents'
     | '/logistics/operator/notifications'
     | '/logistics/operator/profile'
+    | '/logistics/operator/readiness'
     | '/logistics/operator/reports'
     | '/logistics/operator/requests'
     | '/logistics/operator/risk'
@@ -1656,7 +1811,11 @@ export interface FileRouteTypes {
     | '/warehousing/partner'
     | '/warehousing/regulator'
     | '/logistics/operator/applications/$companyId'
+    | '/logistics/operator/transport/$movementId'
+    | '/logistics/regulator/transport/$movementId'
     | '/warehousing/partner/applications/$id'
+    | '/logistics/operator/transport'
+    | '/logistics/regulator/transport'
     | '/warehousing/partner/applications'
   id:
     | '__root__'
@@ -1675,6 +1834,8 @@ export interface FileRouteTypes {
     | '/export/monitoring'
     | '/export/oversight'
     | '/export/queue'
+    | '/export/team'
+    | '/logistics/team'
     | '/marketplace/dashboard'
     | '/marketplace/documents'
     | '/marketplace/finance'
@@ -1682,6 +1843,7 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
+    | '/marketplace/team'
     | '/mining/actions'
     | '/mining/audit'
     | '/mining/compliance'
@@ -1697,13 +1859,16 @@ export interface FileRouteTypes {
     | '/mining/reviews'
     | '/mining/risk'
     | '/mining/sampling'
+    | '/mining/team'
     | '/mining/transactions'
     | '/onboarding/account'
     | '/onboarding/admin'
     | '/onboarding/application'
     | '/onboarding/dashboard'
+    | '/onboarding/invite'
     | '/onboarding/join'
     | '/onboarding/path'
+    | '/onboarding/pending'
     | '/onboarding/role'
     | '/onboarding/sector'
     | '/onboarding/submitted'
@@ -1721,13 +1886,16 @@ export interface FileRouteTypes {
     | '/processing/onboarding'
     | '/processing/processors'
     | '/processing/reports'
+    | '/processing/team'
     | '/processing/traceability'
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/team'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
+    | '/warehousing/team'
     | '/export/'
     | '/logistics/'
     | '/marketplace/'
@@ -1744,6 +1912,7 @@ export interface FileRouteTypes {
     | '/logistics/operator/documents'
     | '/logistics/operator/notifications'
     | '/logistics/operator/profile'
+    | '/logistics/operator/readiness'
     | '/logistics/operator/reports'
     | '/logistics/operator/requests'
     | '/logistics/operator/risk'
@@ -1804,7 +1973,11 @@ export interface FileRouteTypes {
     | '/warehousing/partner/'
     | '/warehousing/regulator/'
     | '/logistics/operator/applications/$companyId'
+    | '/logistics/operator/transport/$movementId'
+    | '/logistics/regulator/transport/$movementId'
     | '/warehousing/partner/applications/$id'
+    | '/logistics/operator/transport/'
+    | '/logistics/regulator/transport/'
     | '/warehousing/partner/applications/'
   fileRoutesById: FileRoutesById
 }
@@ -1937,11 +2110,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExportQueueRouteImport
       parentRoute: typeof ExportRoute
     }
+    '/export/team': {
+      id: '/export/team'
+      path: '/team'
+      fullPath: '/export/team'
+      preLoaderRoute: typeof ExportTeamRouteImport
+      parentRoute: typeof ExportRoute
+    }
     '/logistics/': {
       id: '/logistics/'
       path: '/'
       fullPath: '/logistics/'
       preLoaderRoute: typeof LogisticsIndexRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/team': {
+      id: '/logistics/team'
+      path: '/team'
+      fullPath: '/logistics/team'
+      preLoaderRoute: typeof LogisticsTeamRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/marketplace/': {
@@ -1998,6 +2185,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/marketplace/orders'
       preLoaderRoute: typeof MarketplaceOrdersRouteImport
+      parentRoute: typeof MarketplaceRoute
+    }
+    '/marketplace/team': {
+      id: '/marketplace/team'
+      path: '/team'
+      fullPath: '/marketplace/team'
+      preLoaderRoute: typeof MarketplaceTeamRouteImport
       parentRoute: typeof MarketplaceRoute
     }
     '/mining/': {
@@ -2112,6 +2306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MiningSamplingRouteImport
       parentRoute: typeof MiningRoute
     }
+    '/mining/team': {
+      id: '/mining/team'
+      path: '/team'
+      fullPath: '/mining/team'
+      preLoaderRoute: typeof MiningTeamRouteImport
+      parentRoute: typeof MiningRoute
+    }
     '/mining/transactions': {
       id: '/mining/transactions'
       path: '/transactions'
@@ -2154,6 +2355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingDashboardRouteImport
       parentRoute: typeof OnboardingRoute
     }
+    '/onboarding/invite': {
+      id: '/onboarding/invite'
+      path: '/invite'
+      fullPath: '/onboarding/invite'
+      preLoaderRoute: typeof OnboardingInviteRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
     '/onboarding/join': {
       id: '/onboarding/join'
       path: '/join'
@@ -2166,6 +2374,13 @@ declare module '@tanstack/react-router' {
       path: '/path'
       fullPath: '/onboarding/path'
       preLoaderRoute: typeof OnboardingPathRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/pending': {
+      id: '/onboarding/pending'
+      path: '/pending'
+      fullPath: '/onboarding/pending'
+      preLoaderRoute: typeof OnboardingPendingRouteImport
       parentRoute: typeof OnboardingRoute
     }
     '/onboarding/role': {
@@ -2294,6 +2509,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProcessingReportsRouteImport
       parentRoute: typeof ProcessingRoute
     }
+    '/processing/team': {
+      id: '/processing/team'
+      path: '/team'
+      fullPath: '/processing/team'
+      preLoaderRoute: typeof ProcessingTeamRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
     '/processing/traceability': {
       id: '/processing/traceability'
       path: '/traceability'
@@ -2329,6 +2551,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QualityNonconformitiesRouteImport
       parentRoute: typeof QualityRoute
     }
+    '/quality/team': {
+      id: '/quality/team'
+      path: '/team'
+      fullPath: '/quality/team'
+      preLoaderRoute: typeof QualityTeamRouteImport
+      parentRoute: typeof QualityRoute
+    }
     '/quality/vault': {
       id: '/quality/vault'
       path: '/vault'
@@ -2355,6 +2584,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/warehousing/'
       preLoaderRoute: typeof WarehousingIndexRouteImport
+      parentRoute: typeof WarehousingRoute
+    }
+    '/warehousing/team': {
+      id: '/warehousing/team'
+      path: '/team'
+      fullPath: '/warehousing/team'
+      preLoaderRoute: typeof WarehousingTeamRouteImport
       parentRoute: typeof WarehousingRoute
     }
     '/export/exporters/': {
@@ -2439,6 +2675,13 @@ declare module '@tanstack/react-router' {
       path: '/operator/profile'
       fullPath: '/logistics/operator/profile'
       preLoaderRoute: typeof LogisticsOperatorProfileRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/operator/readiness': {
+      id: '/logistics/operator/readiness'
+      path: '/operator/readiness'
+      fullPath: '/logistics/operator/readiness'
+      preLoaderRoute: typeof LogisticsOperatorReadinessRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/operator/reports': {
@@ -2833,6 +3076,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsOperatorApplicationsCompanyIdRouteImport
       parentRoute: typeof LogisticsOperatorApplicationsRoute
     }
+    '/logistics/operator/transport/': {
+      id: '/logistics/operator/transport/'
+      path: '/operator/transport'
+      fullPath: '/logistics/operator/transport/'
+      preLoaderRoute: typeof LogisticsOperatorTransportIndexRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/operator/transport/$movementId': {
+      id: '/logistics/operator/transport/$movementId'
+      path: '/operator/transport/$movementId'
+      fullPath: '/logistics/operator/transport/$movementId'
+      preLoaderRoute: typeof LogisticsOperatorTransportMovementIdRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/regulator/transport/': {
+      id: '/logistics/regulator/transport/'
+      path: '/regulator/transport'
+      fullPath: '/logistics/regulator/transport/'
+      preLoaderRoute: typeof LogisticsRegulatorTransportIndexRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/regulator/transport/$movementId': {
+      id: '/logistics/regulator/transport/$movementId'
+      path: '/regulator/transport/$movementId'
+      fullPath: '/logistics/regulator/transport/$movementId'
+      preLoaderRoute: typeof LogisticsRegulatorTransportMovementIdRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
     '/warehousing/partner/applications/': {
       id: '/warehousing/partner/applications/'
       path: '/partner/applications'
@@ -2856,6 +3127,7 @@ interface ExportRouteChildren {
   ExportMonitoringRoute: typeof ExportMonitoringRoute
   ExportOversightRoute: typeof ExportOversightRoute
   ExportQueueRoute: typeof ExportQueueRoute
+  ExportTeamRoute: typeof ExportTeamRoute
   ExportIndexRoute: typeof ExportIndexRoute
   ExportExportersIdRoute: typeof ExportExportersIdRoute
   ExportShipmentsIdRoute: typeof ExportShipmentsIdRoute
@@ -2870,6 +3142,7 @@ const ExportRouteChildren: ExportRouteChildren = {
   ExportMonitoringRoute: ExportMonitoringRoute,
   ExportOversightRoute: ExportOversightRoute,
   ExportQueueRoute: ExportQueueRoute,
+  ExportTeamRoute: ExportTeamRoute,
   ExportIndexRoute: ExportIndexRoute,
   ExportExportersIdRoute: ExportExportersIdRoute,
   ExportShipmentsIdRoute: ExportShipmentsIdRoute,
@@ -2897,12 +3170,14 @@ const LogisticsOperatorApplicationsRouteWithChildren =
   )
 
 interface LogisticsRouteChildren {
+  LogisticsTeamRoute: typeof LogisticsTeamRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
   LogisticsOperatorApplicationsRoute: typeof LogisticsOperatorApplicationsRouteWithChildren
   LogisticsOperatorAuditRoute: typeof LogisticsOperatorAuditRoute
   LogisticsOperatorDocumentsRoute: typeof LogisticsOperatorDocumentsRoute
   LogisticsOperatorNotificationsRoute: typeof LogisticsOperatorNotificationsRoute
   LogisticsOperatorProfileRoute: typeof LogisticsOperatorProfileRoute
+  LogisticsOperatorReadinessRoute: typeof LogisticsOperatorReadinessRoute
   LogisticsOperatorReportsRoute: typeof LogisticsOperatorReportsRoute
   LogisticsOperatorRequestsRoute: typeof LogisticsOperatorRequestsRoute
   LogisticsOperatorRiskRoute: typeof LogisticsOperatorRiskRoute
@@ -2923,9 +3198,14 @@ interface LogisticsRouteChildren {
   LogisticsOperatorIndexRoute: typeof LogisticsOperatorIndexRoute
   LogisticsPartnerIndexRoute: typeof LogisticsPartnerIndexRoute
   LogisticsRegulatorIndexRoute: typeof LogisticsRegulatorIndexRoute
+  LogisticsOperatorTransportMovementIdRoute: typeof LogisticsOperatorTransportMovementIdRoute
+  LogisticsRegulatorTransportMovementIdRoute: typeof LogisticsRegulatorTransportMovementIdRoute
+  LogisticsOperatorTransportIndexRoute: typeof LogisticsOperatorTransportIndexRoute
+  LogisticsRegulatorTransportIndexRoute: typeof LogisticsRegulatorTransportIndexRoute
 }
 
 const LogisticsRouteChildren: LogisticsRouteChildren = {
+  LogisticsTeamRoute: LogisticsTeamRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
   LogisticsOperatorApplicationsRoute:
     LogisticsOperatorApplicationsRouteWithChildren,
@@ -2933,6 +3213,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsOperatorDocumentsRoute: LogisticsOperatorDocumentsRoute,
   LogisticsOperatorNotificationsRoute: LogisticsOperatorNotificationsRoute,
   LogisticsOperatorProfileRoute: LogisticsOperatorProfileRoute,
+  LogisticsOperatorReadinessRoute: LogisticsOperatorReadinessRoute,
   LogisticsOperatorReportsRoute: LogisticsOperatorReportsRoute,
   LogisticsOperatorRequestsRoute: LogisticsOperatorRequestsRoute,
   LogisticsOperatorRiskRoute: LogisticsOperatorRiskRoute,
@@ -2953,6 +3234,12 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsOperatorIndexRoute: LogisticsOperatorIndexRoute,
   LogisticsPartnerIndexRoute: LogisticsPartnerIndexRoute,
   LogisticsRegulatorIndexRoute: LogisticsRegulatorIndexRoute,
+  LogisticsOperatorTransportMovementIdRoute:
+    LogisticsOperatorTransportMovementIdRoute,
+  LogisticsRegulatorTransportMovementIdRoute:
+    LogisticsRegulatorTransportMovementIdRoute,
+  LogisticsOperatorTransportIndexRoute: LogisticsOperatorTransportIndexRoute,
+  LogisticsRegulatorTransportIndexRoute: LogisticsRegulatorTransportIndexRoute,
 }
 
 const LogisticsRouteWithChildren = LogisticsRoute._addFileChildren(
@@ -2967,6 +3254,7 @@ interface MarketplaceRouteChildren {
   MarketplaceNotificationsRoute: typeof MarketplaceNotificationsRoute
   MarketplaceOffersRoute: typeof MarketplaceOffersRoute
   MarketplaceOrdersRoute: typeof MarketplaceOrdersRoute
+  MarketplaceTeamRoute: typeof MarketplaceTeamRoute
   MarketplaceIndexRoute: typeof MarketplaceIndexRoute
   MarketplaceComplianceIdRoute: typeof MarketplaceComplianceIdRoute
   MarketplaceRfqsIdRoute: typeof MarketplaceRfqsIdRoute
@@ -2982,6 +3270,7 @@ const MarketplaceRouteChildren: MarketplaceRouteChildren = {
   MarketplaceNotificationsRoute: MarketplaceNotificationsRoute,
   MarketplaceOffersRoute: MarketplaceOffersRoute,
   MarketplaceOrdersRoute: MarketplaceOrdersRoute,
+  MarketplaceTeamRoute: MarketplaceTeamRoute,
   MarketplaceIndexRoute: MarketplaceIndexRoute,
   MarketplaceComplianceIdRoute: MarketplaceComplianceIdRoute,
   MarketplaceRfqsIdRoute: MarketplaceRfqsIdRoute,
@@ -3009,6 +3298,7 @@ interface MiningRouteChildren {
   MiningReviewsRoute: typeof MiningReviewsRoute
   MiningRiskRoute: typeof MiningRiskRoute
   MiningSamplingRoute: typeof MiningSamplingRoute
+  MiningTeamRoute: typeof MiningTeamRoute
   MiningTransactionsRoute: typeof MiningTransactionsRoute
   MiningIndexRoute: typeof MiningIndexRoute
   MiningApplicationsApplicationIdRoute: typeof MiningApplicationsApplicationIdRoute
@@ -3033,6 +3323,7 @@ const MiningRouteChildren: MiningRouteChildren = {
   MiningReviewsRoute: MiningReviewsRoute,
   MiningRiskRoute: MiningRiskRoute,
   MiningSamplingRoute: MiningSamplingRoute,
+  MiningTeamRoute: MiningTeamRoute,
   MiningTransactionsRoute: MiningTransactionsRoute,
   MiningIndexRoute: MiningIndexRoute,
   MiningApplicationsApplicationIdRoute: MiningApplicationsApplicationIdRoute,
@@ -3049,8 +3340,10 @@ interface OnboardingRouteChildren {
   OnboardingAdminRoute: typeof OnboardingAdminRoute
   OnboardingApplicationRoute: typeof OnboardingApplicationRoute
   OnboardingDashboardRoute: typeof OnboardingDashboardRoute
+  OnboardingInviteRoute: typeof OnboardingInviteRoute
   OnboardingJoinRoute: typeof OnboardingJoinRoute
   OnboardingPathRoute: typeof OnboardingPathRoute
+  OnboardingPendingRoute: typeof OnboardingPendingRoute
   OnboardingRoleRoute: typeof OnboardingRoleRoute
   OnboardingSectorRoute: typeof OnboardingSectorRoute
   OnboardingSubmittedRoute: typeof OnboardingSubmittedRoute
@@ -3064,8 +3357,10 @@ const OnboardingRouteChildren: OnboardingRouteChildren = {
   OnboardingAdminRoute: OnboardingAdminRoute,
   OnboardingApplicationRoute: OnboardingApplicationRoute,
   OnboardingDashboardRoute: OnboardingDashboardRoute,
+  OnboardingInviteRoute: OnboardingInviteRoute,
   OnboardingJoinRoute: OnboardingJoinRoute,
   OnboardingPathRoute: OnboardingPathRoute,
+  OnboardingPendingRoute: OnboardingPendingRoute,
   OnboardingRoleRoute: OnboardingRoleRoute,
   OnboardingSectorRoute: OnboardingSectorRoute,
   OnboardingSubmittedRoute: OnboardingSubmittedRoute,
@@ -3116,6 +3411,7 @@ interface ProcessingRouteChildren {
   ProcessingOnboardingRoute: typeof ProcessingOnboardingRoute
   ProcessingProcessorsRoute: typeof ProcessingProcessorsRouteWithChildren
   ProcessingReportsRoute: typeof ProcessingReportsRoute
+  ProcessingTeamRoute: typeof ProcessingTeamRoute
   ProcessingTraceabilityRoute: typeof ProcessingTraceabilityRoute
   ProcessingIndexRoute: typeof ProcessingIndexRoute
 }
@@ -3133,6 +3429,7 @@ const ProcessingRouteChildren: ProcessingRouteChildren = {
   ProcessingOnboardingRoute: ProcessingOnboardingRoute,
   ProcessingProcessorsRoute: ProcessingProcessorsRouteWithChildren,
   ProcessingReportsRoute: ProcessingReportsRoute,
+  ProcessingTeamRoute: ProcessingTeamRoute,
   ProcessingTraceabilityRoute: ProcessingTraceabilityRoute,
   ProcessingIndexRoute: ProcessingIndexRoute,
 }
@@ -3145,6 +3442,7 @@ interface QualityRouteChildren {
   QualityAuditRoute: typeof QualityAuditRoute
   QualityDashboardRoute: typeof QualityDashboardRoute
   QualityNonconformitiesRoute: typeof QualityNonconformitiesRoute
+  QualityTeamRoute: typeof QualityTeamRoute
   QualityVaultRoute: typeof QualityVaultRoute
   QualityIndexRoute: typeof QualityIndexRoute
   QualityApplicationsIdRoute: typeof QualityApplicationsIdRoute
@@ -3159,6 +3457,7 @@ const QualityRouteChildren: QualityRouteChildren = {
   QualityAuditRoute: QualityAuditRoute,
   QualityDashboardRoute: QualityDashboardRoute,
   QualityNonconformitiesRoute: QualityNonconformitiesRoute,
+  QualityTeamRoute: QualityTeamRoute,
   QualityVaultRoute: QualityVaultRoute,
   QualityIndexRoute: QualityIndexRoute,
   QualityApplicationsIdRoute: QualityApplicationsIdRoute,
@@ -3173,6 +3472,7 @@ const QualityRouteWithChildren =
   QualityRoute._addFileChildren(QualityRouteChildren)
 
 interface WarehousingRouteChildren {
+  WarehousingTeamRoute: typeof WarehousingTeamRoute
   WarehousingIndexRoute: typeof WarehousingIndexRoute
   WarehousingOperatorDocumentsRoute: typeof WarehousingOperatorDocumentsRoute
   WarehousingOperatorFacilityRoute: typeof WarehousingOperatorFacilityRoute
@@ -3200,6 +3500,7 @@ interface WarehousingRouteChildren {
 }
 
 const WarehousingRouteChildren: WarehousingRouteChildren = {
+  WarehousingTeamRoute: WarehousingTeamRoute,
   WarehousingIndexRoute: WarehousingIndexRoute,
   WarehousingOperatorDocumentsRoute: WarehousingOperatorDocumentsRoute,
   WarehousingOperatorFacilityRoute: WarehousingOperatorFacilityRoute,

@@ -25,6 +25,7 @@ export const partnerNav: NavItem[] = [
   { label: "Non-Conformities", to: "/mining/nonconformities", icon: "alert", group: "Assurance" },
   { label: "Reports", to: "/mining/reports", icon: "chart", group: "Assurance" },
   { label: "Audit Trail", to: "/mining/audit", icon: "history", group: "Assurance" },
+  { label: "Team", to: "/mining/team", icon: "users", group: "Company" },
 ];
 
 export const minerNav: NavItem[] = [
@@ -40,6 +41,7 @@ export const minerNav: NavItem[] = [
   { label: "Compliance", to: "/mining/compliance", icon: "shield", group: "Compliance" },
   { label: "Action Required", to: "/mining/actions", icon: "alert", group: "Compliance" },
   { label: "Inspections", to: "/mining/inspections", icon: "hardhat", group: "Compliance" },
+  { label: "Team", to: "/mining/team", icon: "users", group: "Company" },
 ];
 
 export const regulatorNav: NavItem[] = [
@@ -53,6 +55,7 @@ export const regulatorNav: NavItem[] = [
   { label: "Risk", to: "/mining/risk", icon: "shield", group: "Monitoring" },
   { label: "Reports", to: "/mining/reports", icon: "chart", group: "Assurance" },
   { label: "Audit History", to: "/mining/audit", icon: "history", group: "Assurance" },
+  { label: "Team", to: "/mining/team", icon: "users", group: "Agency" },
 ];
 
 export function navForRole(role: Role): NavItem[] {

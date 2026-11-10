@@ -15,6 +15,7 @@ export * from "./marketplace";
 export * from "./marketplace-queries";
 export * from "./mining";
 export * from "./mining-queries";
+export * from "./onboarding";
 export * from "./organisations";
 export * from "./processing";
 export * from "./processing-queries";

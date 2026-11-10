@@ -7,7 +7,11 @@ export type OnboardingRole =
   | "regulator-org"
   | "regulator-officer"
   | "independent"
-  | "logistics-company";
+  | "logistics-company"
+  /** Registers one of the sector's own companies (processor, exporter, buyer...). */
+  | "participant"
+  /** Joins one of the sector's own companies that is already on Beldium. */
+  | "participant-member";
 
 export type OrgPath = "new" | "existing";
 
@@ -70,6 +74,11 @@ export interface RegulatorApplication {
   canReviewLicences: boolean;
   canIssueDecisions: boolean;
   oversightCapabilities: string[];
+  /** Sectors the agency asks to see (regulatory access request, BE-O5). */
+  sectorsRequested?: string[];
+  /** Name of the agency letter or appointment document, when one is attached. */
+  authorityLetter?: string;
+  requesterTitle?: string;
 }
 
 

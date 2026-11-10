@@ -11,6 +11,7 @@ import {
   LogOut,
   ScrollText,
   ShieldAlert,
+  Users,
 } from "lucide-react";
 import { useBeldium } from "@/verticals/quality/store";
 import { roleMeta } from "@/verticals/quality/data";
@@ -27,7 +28,8 @@ type AppPath =
   | "/quality/certificates"
   | "/quality/nonconformities"
   | "/quality/audit"
-  | "/quality/vault";
+  | "/quality/vault"
+  | "/quality/team";
 
 interface NavItem {
   to: AppPath;
@@ -47,6 +49,7 @@ const allNav = {
   ncr: { to: "/quality/nonconformities", label: "Non-conformities", icon: ShieldAlert },
   audit: { to: "/quality/audit", label: "Audit trail", icon: ScrollText },
   vault: { to: "/quality/vault", label: "Document vault", icon: Archive },
+  team: { to: "/quality/team", label: "Team", icon: Users },
 } satisfies Record<string, NavItem>;
 
 export const navByRole: Record<Role, NavItem[]> = {
@@ -58,10 +61,11 @@ export const navByRole: Record<Role, NavItem[]> = {
     allNav.ncr,
     allNav.vault,
     allNav.audit,
+    allNav.team,
   ],
-  partner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr, allNav.vault],
-  miner: [allNav.dashboard, allNav.samples, allNav.certificates],
-  buyer: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr],
+  partner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr, allNav.vault, allNav.team],
+  miner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.team],
+  buyer: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr, allNav.team],
   regulator: [
     allNav.dashboard,
     allNav.applications,
@@ -69,6 +73,7 @@ export const navByRole: Record<Role, NavItem[]> = {
     allNav.certificates,
     allNav.ncr,
     allNav.audit,
+    allNav.team,
   ],
 };
 

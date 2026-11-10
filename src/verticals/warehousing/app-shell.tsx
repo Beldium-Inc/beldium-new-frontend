@@ -21,6 +21,7 @@ import {
   Truck,
   BadgeCheck,
   Warehouse,
+  Users,
 } from "lucide-react";
 import { ROLES, roleById, type RoleId } from "@/verticals/warehousing/data";
 import { useSession } from "@/lib/session";
@@ -55,6 +56,7 @@ const ICONS = {
   BadgeCheck,
   ShieldAlert,
   Gauge,
+  Users,
 } as const;
 
 type IconName = keyof typeof ICONS;
@@ -68,6 +70,7 @@ const NAV: Record<RoleId, { to: string; label: string; icon: IconName }[]> = {
     { to: "/warehousing/partner/non-conformities", label: "Non-conformities", icon: "FileWarning" },
     { to: "/warehousing/partner/alerts", label: "Monitoring alerts", icon: "Bell" },
     { to: "/warehousing/partner/audit", label: "Audit history", icon: "ScrollText" },
+    { to: "/warehousing/team", label: "Team", icon: "Users" },
   ],
   operator: [
     { to: "/warehousing/operator", label: "Operations dashboard", icon: "LayoutDashboard" },
@@ -78,6 +81,7 @@ const NAV: Record<RoleId, { to: string; label: string; icon: IconName }[]> = {
     { to: "/warehousing/operator/releases", label: "Release authorisation", icon: "Truck" },
     { to: "/warehousing/operator/documents", label: "Documents", icon: "FileText" },
     { to: "/warehousing/operator/incidents", label: "Incidents", icon: "Siren" },
+    { to: "/warehousing/team", label: "Team", icon: "Users" },
   ],
   regulator: [
     { to: "/warehousing/regulator", label: "Oversight dashboard", icon: "LayoutDashboard" },
@@ -87,6 +91,7 @@ const NAV: Record<RoleId, { to: string; label: string; icon: IconName }[]> = {
     { to: "/warehousing/regulator/inspections", label: "Inspections", icon: "ClipboardCheck" },
     { to: "/warehousing/regulator/incidents", label: "Incidents & alerts", icon: "ShieldAlert" },
     { to: "/warehousing/regulator/reports", label: "Reports", icon: "Gauge" },
+    { to: "/warehousing/team", label: "Team", icon: "Users" },
   ],
 };
 
