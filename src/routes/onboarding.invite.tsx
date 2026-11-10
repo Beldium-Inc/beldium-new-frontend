@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { clearInvitation, rememberInvitation } from "@/lib/onboarding/invite";
 import { useSession } from "@/lib/session";
+import { useOnboarding } from "@/lib/onboarding/store";
 import { homeFor } from "@/lib/verticals";
 
 export const Route = createFileRoute("/onboarding/invite")({
@@ -34,6 +35,10 @@ function InvitePage() {
   const hasTokens = useHasTokens();
   const me = useCurrentUser();
   const { session } = useSession();
+  const { sector: onboardingSector } = useOnboarding();
+  // The sector being signed up in, or signed in to. An invitation from
+  // another sector's organisation is refused by the server.
+  const sector = onboardingSector ?? session?.vertical ?? null;
   const accept = useAcceptInvitation();
   const [joined, setJoined] = useState<{ name: string; role: MembershipRole } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +62,7 @@ function InvitePage() {
   const doAccept = async () => {
     setError(null);
     try {
-      const result = await accept.mutateAsync(token);
+      const result = await accept.mutateAsync({ token, sector });
       clearInvitation();
       const organisation = await getOrganisation(result.organisation_id).catch(() => null);
       setJoined({ name: organisation?.name ?? "the company", role: result.role });

@@ -110,146 +110,16 @@ function partnerSide(sectorName: string, extra: OnboardingOption[] = []): Onboar
   };
 }
 
-/** The sector's own companies: the ones the compliance partners review. */
-function applicantSide(input: {
-  label: string;
-  description: string;
-  register: Pick<OnboardingOption, "label" | "description"> &
-    Partial<Pick<OnboardingOption, "external_url" | "external_label" | "note">>;
-  joinLabel: string;
-  extra?: OnboardingOption[];
-}): OnboardingDashboard {
-  return {
-    key: "applicant",
-    label: input.label,
-    description: input.description,
-    options: [
-      {
-        key: "register",
-        kind: "register",
-        role: "participant",
-        org_path: "new",
-        note: input.register.note ?? "You become the admin",
-        ...input.register,
-      },
-      {
-        key: "join",
-        kind: "join",
-        label: input.joinLabel,
-        description:
-          "Your company is already on Beldium. Use the join code from your administrator, or the link in your invitation email.",
-        role: "participant-member",
-        org_path: "existing",
-        note: "Staff until your admin changes your role",
-      },
-      REGULATORY,
-      ...(input.extra ?? []),
-    ],
-  };
-}
-
 export const FALLBACK: Record<VerticalSlug, OnboardingDashboard[]> = {
-  mining: [
-    applicantSide({
-      label: "Mining company",
-      description: "Miners and producers registering their organisation, sites and licences.",
-      register: {
-        label: "Register a mining company",
-        description:
-          "Mining companies register on the Miner Portal, which takes your sites, licences and production records.",
-        external_url: MINER_PORTAL_URL,
-        external_label: "Continue on the Miner Portal",
-        note: "Opens the Miner Portal",
-      },
-      joinLabel: "Join an existing mining company",
-    }),
-    partnerSide("Mining"),
-  ],
-  processing: [
-    applicantSide({
-      label: "Processing company",
-      description:
-        "Processors, concentrators, smelters and refiners applying for compliance verification.",
-      register: {
-        label: "Register a processing company",
-        description:
-          "Register your company and plants, then complete the processing compliance application.",
-      },
-      joinLabel: "Join an existing processing company",
-    }),
-    partnerSide("Processing"),
-  ],
-  warehousing: [
-    applicantSide({
-      label: "Warehouse operator",
-      description:
-        "Operators of mineral warehouses, depots and bonded stores applying for accreditation.",
-      register: {
-        label: "Register a warehouse operator",
-        description:
-          "Register your company and facilities, then complete the warehouse accreditation application.",
-      },
-      joinLabel: "Join an existing warehouse operator",
-    }),
-    partnerSide("Warehousing"),
-  ],
-  export: [
-    applicantSide({
-      label: "Exporter",
-      description: "Licensed mineral exporters submitting consignments for verification.",
-      register: {
-        label: "Register an exporting company",
-        description:
-          "Register your company and export authorisations, then complete the exporter admission application.",
-      },
-      joinLabel: "Join an existing exporter",
-    }),
-    partnerSide("Export"),
-  ],
-  marketplace: [
-    applicantSide({
-      label: "Buyer, offtaker or OEM",
-      description:
-        "Companies buying verified material, contracting supply or tracing it into manufacturing.",
-      register: {
-        label: "Register a buying company",
-        description:
-          "Register as a buyer, offtaker or OEM, then complete the participant verification (KYC).",
-      },
-      joinLabel: "Join an existing buying company",
-    }),
-    partnerSide("Marketplace"),
-  ],
-  logistics: [
-    applicantSide({
-      label: "Logistics company",
-      description:
-        "Haulage companies, carriers and fleet owners registering their fleet and drivers.",
-      register: {
-        label: "Register a logistics company",
-        description:
-          "Logistics companies register on the Logistics Portal, which takes your fleet, drivers and trips.",
-        external_url: LOGISTICS_PORTAL_URL,
-        external_label: "Continue on the Logistics Portal",
-        note: "Opens the Logistics Portal",
-      },
-      joinLabel: "Join an existing logistics company",
-      extra: [
-        {
-          key: "driver",
-          kind: "specific",
-          label: "Driver",
-          description:
-            "Drivers are added by their company on the Logistics Portal and sign in there.",
-          role: "participant-member",
-          external_url: LOGISTICS_PORTAL_URL,
-          external_label: "Open the Logistics Portal",
-          note: "Added by your company",
-        },
-      ],
-    }),
-    partnerSide("Logistics"),
-  ],
+  // The compliance app's onboarding is for compliance partners and regulators.
+  // Each sector's own companies (miners, hauliers, processors, exporters,
+  // buyers) do not sign up here, so only the partner side is offered.
+  mining: [partnerSide("Mining")],
+  processing: [partnerSide("Processing")],
+  warehousing: [partnerSide("Warehousing")],
+  export: [partnerSide("Export")],
+  marketplace: [partnerSide("Marketplace")],
+  logistics: [partnerSide("Logistics")],
   quality: [
     {
       key: "partner",

@@ -115,7 +115,7 @@ function JoinPage() {
     setCodeError(null);
     setFound(null);
     try {
-      setFound(await lookupJoinCode(clean));
+      setFound(await lookupJoinCode(clean, sector));
     } catch (error) {
       setCodeError(error instanceof ApiError ? error.message : "That code could not be checked.");
     } finally {
@@ -142,6 +142,7 @@ function JoinPage() {
         join_code: code.replace(/[^A-Za-z0-9]/g, ""),
         requested_role: role,
         justification: justification.trim(),
+        ...(sector ? { sector } : {}),
       });
       writePendingCode(null);
       toast.success(
