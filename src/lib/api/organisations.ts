@@ -1,3 +1,4 @@
+import type { VerticalSlug } from "../verticals";
 import { apiFetch } from "./client";
 import type {
   JoinRequest,
@@ -140,12 +141,17 @@ export function listOrganisationJoinRequests(id: UUID): Promise<JoinRequest[]> {
 }
 
 /** Redeem an invitation token. The invitation must match the caller's email. */
+/**
+ * Pass the sector the person is signing up in: an invitation from another
+ * sector's organisation is refused (409 invitation_wrong_sector).
+ */
 export function acceptInvitation(
   token: string,
+  sector?: VerticalSlug | null,
 ): Promise<{ organisation_id: UUID; role: MembershipRole }> {
   return apiFetch<{ organisation_id: UUID; role: MembershipRole }>("/invitations/accept/", {
     method: "POST",
-    body: { token },
+    body: sector ? { token, sector } : { token },
   });
 }
 
@@ -160,6 +166,8 @@ export interface JoinRequestInput {
   organisation?: UUID;
   requested_role?: MembershipRole;
   justification?: string;
+  /** The sector being signed up in; a code from another sector is refused. */
+  sector?: VerticalSlug;
 }
 
 /** The requester withdraws a join request that is still pending (backend task BE-O4). */
@@ -180,10 +188,14 @@ export interface JoinCodeLookup {
 }
 
 /** Name the organisation behind a join code before asking to join it. */
-export function lookupJoinCode(joinCode: string): Promise<JoinCodeLookup> {
+/** With a sector, a code from another sector answers 409 join_code_wrong_sector. */
+export function lookupJoinCode(
+  joinCode: string,
+  sector?: VerticalSlug | null,
+): Promise<JoinCodeLookup> {
   return apiFetch<JoinCodeLookup>("/join-requests/lookup/", {
     method: "POST",
-    body: { join_code: joinCode },
+    body: sector ? { join_code: joinCode, sector } : { join_code: joinCode },
   });
 }
 
@@ -218,10 +230,9 @@ export function updateMember(
 }
 
 export function suspendMember(id: UUID, membershipId: UUID): Promise<OrganisationMembership> {
-  return apiFetch<OrganisationMembership>(
-    `/organisations/${id}/members/${membershipId}/suspend/`,
-    { method: "POST" },
-  );
+  return apiFetch<OrganisationMembership>(`/organisations/${id}/members/${membershipId}/suspend/`, {
+    method: "POST",
+  });
 }
 
 export function activateMember(id: UUID, membershipId: UUID): Promise<OrganisationMembership> {
@@ -238,10 +249,9 @@ export function removeMember(id: UUID, membershipId: UUID): Promise<void> {
 }
 
 export function revokeInvitation(id: UUID, invitationId: UUID): Promise<{ message: string }> {
-  return apiFetch<{ message: string }>(
-    `/organisations/${id}/invitations/${invitationId}/revoke/`,
-    { method: "POST" },
-  );
+  return apiFetch<{ message: string }>(`/organisations/${id}/invitations/${invitationId}/revoke/`, {
+    method: "POST",
+  });
 }
 
 /** Administrators of the target organisation only. */

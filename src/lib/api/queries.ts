@@ -1,3 +1,4 @@
+import type { VerticalSlug } from "../verticals";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { fetchCurrentUser, updateCurrentUser, type CurrentUserPatch } from "./auth";
@@ -226,7 +227,10 @@ export function useCreateInvitation(id: UUID) {
 export function useAcceptInvitation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (token: string) => acceptInvitation(token),
+    mutationFn: (input: string | { token: string; sector?: VerticalSlug | null }) =>
+      typeof input === "string"
+        ? acceptInvitation(input)
+        : acceptInvitation(input.token, input.sector),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["organisations"] }),
   });
 }
@@ -399,7 +403,8 @@ export function useSubmitApplication(id: UUID | null) {
 export function useSetApplicationSector() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; sector: string }) => setApplicationSector(input.id, input.sector),
+    mutationFn: (input: { id: UUID; sector: string }) =>
+      setApplicationSector(input.id, input.sector),
     onSuccess: (application) => {
       queryClient.setQueryData(queryKeys.application(application.id), application);
       void queryClient.invalidateQueries({ queryKey: queryKeys.applications });
@@ -427,7 +432,11 @@ export function useDecideComplianceApplication() {
 export function useReviewComplianceDocument(applicationId: UUID | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { documentId: UUID; status: "verified" | "rejected"; notes?: string | undefined }) =>
+    mutationFn: (input: {
+      documentId: UUID;
+      status: "verified" | "rejected";
+      notes?: string | undefined;
+    }) =>
       reviewComplianceDocument(applicationId as UUID, input.documentId, {
         status: input.status,
         notes: input.notes,
@@ -530,7 +539,9 @@ export function useRemoveMember(id: UUID | null) {
 }
 
 export function useRevokeInvitation(id: UUID | null) {
-  return useMemberMutation(id, (orgId, invitationId: UUID) => revokeInvitation(orgId, invitationId));
+  return useMemberMutation(id, (orgId, invitationId: UUID) =>
+    revokeInvitation(orgId, invitationId),
+  );
 }
 
 export function useCancelJoinRequest() {
