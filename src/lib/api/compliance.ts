@@ -225,6 +225,8 @@ export interface QualitySectionData {
   "quality-equipment": { equipment: QualityEquipment[] };
   "quality-personnel": { personnel: QualityKeyPerson[] };
   "quality-sampling": {
+    /** False for a laboratory that only tests delivered samples; the rest is then empty. */
+    offers_sampling?: boolean;
     geographic_coverage: string[];
     field_sampling_teams: number;
     tamper_evident_sealing: string;

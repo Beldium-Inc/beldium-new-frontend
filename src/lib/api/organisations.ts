@@ -162,6 +162,11 @@ export interface JoinRequestInput {
   justification?: string;
 }
 
+/** The requester withdraws a join request that is still pending (backend task BE-O4). */
+export function cancelJoinRequest(id: UUID): Promise<JoinRequest> {
+  return apiFetch<JoinRequest>(`/join-requests/${id}/cancel/`, { method: "POST" });
+}
+
 export function createJoinRequest(input: JoinRequestInput): Promise<JoinRequest> {
   return apiFetch<JoinRequest>("/join-requests/", { method: "POST", body: input });
 }
@@ -197,6 +202,46 @@ export function rotateJoinCode(id: UUID): Promise<OrganisationJoinCode> {
   return apiFetch<OrganisationJoinCode>(`/organisations/${id}/join-code/rotate/`, {
     method: "POST",
   });
+}
+
+// --- member management (administrators only; the owner cannot be changed) ----------
+
+export function updateMember(
+  id: UUID,
+  membershipId: UUID,
+  patch: { role?: MembershipRole; title?: string },
+): Promise<OrganisationMembership> {
+  return apiFetch<OrganisationMembership>(`/organisations/${id}/members/${membershipId}/`, {
+    method: "PATCH",
+    body: patch,
+  });
+}
+
+export function suspendMember(id: UUID, membershipId: UUID): Promise<OrganisationMembership> {
+  return apiFetch<OrganisationMembership>(
+    `/organisations/${id}/members/${membershipId}/suspend/`,
+    { method: "POST" },
+  );
+}
+
+export function activateMember(id: UUID, membershipId: UUID): Promise<OrganisationMembership> {
+  return apiFetch<OrganisationMembership>(
+    `/organisations/${id}/members/${membershipId}/activate/`,
+    { method: "POST" },
+  );
+}
+
+export function removeMember(id: UUID, membershipId: UUID): Promise<void> {
+  return apiFetch<void>(`/organisations/${id}/members/${membershipId}/remove/`, {
+    method: "DELETE",
+  });
+}
+
+export function revokeInvitation(id: UUID, invitationId: UUID): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(
+    `/organisations/${id}/invitations/${invitationId}/revoke/`,
+    { method: "POST" },
+  );
 }
 
 /** Administrators of the target organisation only. */

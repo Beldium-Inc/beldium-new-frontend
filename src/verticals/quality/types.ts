@@ -101,6 +101,8 @@ export interface Application {
     laboratories: { name: string; location: string; registration_number: string }[];
     equipment: { name: string; serial_number: string; calibration_date: string }[];
     accreditedScope: string;
+    /** False when the laboratory only tests delivered samples. */
+    offersSampling: boolean;
     coverage: string[];
     samplingTeams: number | null;
     sealing: string;

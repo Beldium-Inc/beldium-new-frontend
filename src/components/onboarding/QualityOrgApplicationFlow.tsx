@@ -11,6 +11,7 @@ import {
   SectionCard,
   SelectField,
   TextField,
+  YesNoField,
 } from "@/components/onboarding/fields";
 import { reportError } from "@/components/onboarding/OrgApplicationFlow";
 import {
@@ -143,6 +144,8 @@ export function QualityOrgApplicationFlow() {
   const [equipment, setEquipment] = useState([blankEquipment]);
   const [personnel, setPersonnel] = useState([blankPerson]);
   const [sampling, setSampling] = useState({
+    /** null until the applicant answers; laboratories that only test what they receive answer no. */
+    offers_sampling: null as boolean | null,
     geographic_coverage: [] as string[],
     field_sampling_teams: "",
     tamper_evident_sealing: SELECT_PLACEHOLDER,
@@ -178,7 +181,10 @@ export function QualityOrgApplicationFlow() {
     if (saved.sampling)
       setSampling({
         ...saved.sampling,
+        // Saved before the question existed: those applicants did sample.
+        offers_sampling: saved.sampling.offers_sampling ?? true,
         field_sampling_teams: String(saved.sampling.field_sampling_teams ?? ""),
+        tamper_evident_sealing: saved.sampling.tamper_evident_sealing || SELECT_PLACEHOLDER,
       });
     if (saved.declaration) setDeclaration(saved.declaration);
     setSeeded(true);
@@ -250,6 +256,11 @@ export function QualityOrgApplicationFlow() {
         if (!methods.length) errors["testing_methods"] = "Select at least one testing method.";
         break;
       case 7: {
+        if (sampling.offers_sampling === null) {
+          errors["offers_sampling"] = "Tell us whether you offer field sampling.";
+          break;
+        }
+        if (!sampling.offers_sampling) break;
         if (!sampling.geographic_coverage.length)
           errors["geographic_coverage"] = "Select at least one region.";
         const teams = Number(sampling.field_sampling_teams);
@@ -332,12 +343,25 @@ export function QualityOrgApplicationFlow() {
           });
           break;
         case 7:
-          await saveSection(applicationId, "quality-sampling", {
-            geographic_coverage: sampling.geographic_coverage,
-            field_sampling_teams: Number(sampling.field_sampling_teams),
-            tamper_evident_sealing: sampling.tamper_evident_sealing,
-            sampling_procedure_summary: sampling.sampling_procedure_summary.trim(),
-          });
+          await saveSection(
+            applicationId,
+            "quality-sampling",
+            sampling.offers_sampling
+              ? {
+                  offers_sampling: true,
+                  geographic_coverage: sampling.geographic_coverage,
+                  field_sampling_teams: Number(sampling.field_sampling_teams),
+                  tamper_evident_sealing: sampling.tamper_evident_sealing,
+                  sampling_procedure_summary: sampling.sampling_procedure_summary.trim(),
+                }
+              : {
+                  offers_sampling: false,
+                  geographic_coverage: [],
+                  field_sampling_teams: 0,
+                  tamper_evident_sealing: "",
+                  sampling_procedure_summary: "",
+                },
+          );
           break;
         case 9:
           await saveSection(applicationId, "quality-declaration", {
@@ -660,43 +684,62 @@ export function QualityOrgApplicationFlow() {
           {step === 7 && (
             <div className="space-y-6">
               <div>
-                <ChipToggleGroup
-                  label={required("Geographic coverage")}
-                  options={qualityCoverageOptions}
-                  selected={sampling.geographic_coverage}
-                  onToggle={(v) => {
-                    clearFieldError("geographic_coverage");
-                    setSampling({
-                      ...sampling,
-                      geographic_coverage: toggle(sampling.geographic_coverage, v),
-                    });
+                <YesNoField
+                  label="Do you offer field sampling and site inspection services?"
+                  value={sampling.offers_sampling}
+                  onChange={(v) => {
+                    clearFieldError("offers_sampling");
+                    setSampling({ ...sampling, offers_sampling: v });
                   }}
                 />
-                <FieldNote error={fieldErrors["geographic_coverage"]} />
+                <FieldNote error={fieldErrors["offers_sampling"]} />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Answer no if your laboratory only tests samples that are delivered to it. You can
+                  skip the rest of this step.
+                </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <TextField
-                  name="field_sampling_teams"
-                  label={required("Number of field sampling teams")}
-                  type="number"
-                  value={sampling.field_sampling_teams}
-                  onChange={(v) => setSampling({ ...sampling, field_sampling_teams: v })}
-                />
-                <SelectField
-                  name="tamper_evident_sealing"
-                  label={required("Tamper-evident sealing")}
-                  value={sampling.tamper_evident_sealing}
-                  onChange={(v) => setSampling({ ...sampling, tamper_evident_sealing: v })}
-                  options={SEALING_OPTIONS}
-                />
-              </div>
-              <AreaField
-                name="sampling_procedure_summary"
-                label="Sampling procedure summary"
-                rows={4}
-                value={sampling.sampling_procedure_summary}
-                onChange={(v) => setSampling({ ...sampling, sampling_procedure_summary: v })}
-              />
+              {sampling.offers_sampling && (
+                <>
+                  <div>
+                    <ChipToggleGroup
+                      label={required("Geographic coverage")}
+                      options={qualityCoverageOptions}
+                      selected={sampling.geographic_coverage}
+                      onToggle={(v) => {
+                        clearFieldError("geographic_coverage");
+                        setSampling({
+                          ...sampling,
+                          geographic_coverage: toggle(sampling.geographic_coverage, v),
+                        });
+                      }}
+                    />
+                    <FieldNote error={fieldErrors["geographic_coverage"]} />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <TextField
+                      name="field_sampling_teams"
+                      label={required("Number of field sampling teams")}
+                      type="number"
+                      value={sampling.field_sampling_teams}
+                      onChange={(v) => setSampling({ ...sampling, field_sampling_teams: v })}
+                    />
+                    <SelectField
+                      name="tamper_evident_sealing"
+                      label={required("Tamper-evident sealing")}
+                      value={sampling.tamper_evident_sealing}
+                      onChange={(v) => setSampling({ ...sampling, tamper_evident_sealing: v })}
+                      options={SEALING_OPTIONS}
+                    />
+                  </div>
+                  <AreaField
+                    name="sampling_procedure_summary"
+                    label="Sampling procedure summary"
+                    rows={4}
+                    value={sampling.sampling_procedure_summary}
+                    onChange={(v) => setSampling({ ...sampling, sampling_procedure_summary: v })}
+                  />
+                </>
+              )}
             </div>
           )}
 
@@ -825,25 +868,39 @@ export function QualityOrgApplicationFlow() {
               <SectionCard title="Sampling & Inspection Capability" action={editAction(7)}>
                 <div className="space-y-1">
                   <InfoRow
-                    label="Geographic coverage"
-                    value={sampling.geographic_coverage.join(", ")}
-                  />
-                  <InfoRow
-                    label="Number of field sampling teams"
-                    value={sampling.field_sampling_teams}
-                  />
-                  <InfoRow
-                    label="Tamper-evident sealing"
+                    label="Offers field sampling"
                     value={
-                      sampling.tamper_evident_sealing === SELECT_PLACEHOLDER
+                      sampling.offers_sampling === null
                         ? ""
-                        : sampling.tamper_evident_sealing
+                        : sampling.offers_sampling
+                          ? "Yes"
+                          : "No, tests delivered samples only"
                     }
                   />
-                  <InfoRow
-                    label="Sampling procedure summary"
-                    value={sampling.sampling_procedure_summary}
-                  />
+                  {sampling.offers_sampling && (
+                    <>
+                      <InfoRow
+                        label="Geographic coverage"
+                        value={sampling.geographic_coverage.join(", ")}
+                      />
+                      <InfoRow
+                        label="Number of field sampling teams"
+                        value={sampling.field_sampling_teams}
+                      />
+                      <InfoRow
+                        label="Tamper-evident sealing"
+                        value={
+                          sampling.tamper_evident_sealing === SELECT_PLACEHOLDER
+                            ? ""
+                            : sampling.tamper_evident_sealing
+                        }
+                      />
+                      <InfoRow
+                        label="Sampling procedure summary"
+                        value={sampling.sampling_procedure_summary}
+                      />
+                    </>
+                  )}
                 </div>
               </SectionCard>
 

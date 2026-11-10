@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { pendingInvitation } from "@/lib/onboarding/invite";
 import { useEffect, useState } from "react";
 import { Mail, Smartphone } from "lucide-react";
 import { toast } from "sonner";
@@ -342,6 +343,11 @@ function VerifyPage() {
   }, [search.email, account.email, updateAccount]);
 
   const next = () => {
+    const invitation = pendingInvitation();
+    if (invitation) {
+      navigate({ to: "/onboarding/invite", search: { token: invitation } });
+      return;
+    }
     // A Q&C officer finds their organisation as the first step of their own
     // application, rather than on the separate join page.
     const appliesAsIndividual =

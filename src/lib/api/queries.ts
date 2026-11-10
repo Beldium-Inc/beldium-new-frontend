@@ -3,6 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCurrentUser, updateCurrentUser, type CurrentUserPatch } from "./auth";
 import {
   acceptInvitation,
+  activateMember,
+  cancelJoinRequest,
+  removeMember,
+  revokeInvitation,
+  suspendMember,
+  updateMember,
   createInvitation,
   createJoinRequest,
   createOrganisation,
@@ -487,5 +493,50 @@ export function useApplicationActivity(id: UUID | null) {
     queryKey: queryKeys.activity(id ?? "none"),
     queryFn: () => listActivity(id as UUID),
     enabled: Boolean(id),
+  });
+}
+
+// --- member management ---------------------------------------------------------
+
+function useMemberMutation<TInput>(
+  id: UUID | null,
+  fn: (orgId: UUID, input: TInput) => Promise<unknown>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TInput) => fn(id as UUID, input),
+    onSuccess: () => {
+      if (id) void queryClient.invalidateQueries({ queryKey: ["organisations", id] });
+    },
+  });
+}
+
+export function useUpdateMember(id: UUID | null) {
+  return useMemberMutation(id, (orgId, input: { membershipId: UUID; role: MembershipRole }) =>
+    updateMember(orgId, input.membershipId, { role: input.role }),
+  );
+}
+
+export function useSuspendMember(id: UUID | null) {
+  return useMemberMutation(id, (orgId, membershipId: UUID) => suspendMember(orgId, membershipId));
+}
+
+export function useActivateMember(id: UUID | null) {
+  return useMemberMutation(id, (orgId, membershipId: UUID) => activateMember(orgId, membershipId));
+}
+
+export function useRemoveMember(id: UUID | null) {
+  return useMemberMutation(id, (orgId, membershipId: UUID) => removeMember(orgId, membershipId));
+}
+
+export function useRevokeInvitation(id: UUID | null) {
+  return useMemberMutation(id, (orgId, invitationId: UUID) => revokeInvitation(orgId, invitationId));
+}
+
+export function useCancelJoinRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => cancelJoinRequest(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests }),
   });
 }

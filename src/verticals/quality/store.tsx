@@ -91,6 +91,7 @@ function toApplication(row: Api.QualityApplication): Application {
             laboratories: row.laboratory.laboratories ?? [],
             equipment: row.laboratory.equipment ?? [],
             accreditedScope: row.laboratory.accredited_scope ?? "",
+            offersSampling: row.capability.sampling?.offers_sampling ?? true,
             coverage: row.capability.sampling?.geographic_coverage ?? [],
             samplingTeams: row.capability.sampling?.field_sampling_teams ?? null,
             sealing: row.capability.sampling?.tamper_evident_sealing ?? "",

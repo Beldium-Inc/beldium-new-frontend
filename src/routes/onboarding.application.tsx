@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ParticipantApplicationFlow } from "@/components/onboarding/ParticipantApplicationFlow";
+import { RegulatorAccessRequest } from "@/components/onboarding/RegulatorAccessRequest";
 import { LogisticsCompanyApplicationFlow } from "@/components/onboarding/LogisticsCompanyApplicationFlow";
 import { OrgApplicationFlow } from "@/components/onboarding/OrgApplicationFlow";
 import { RegulatorApplicationFlow } from "@/components/onboarding/RegulatorApplicationFlow";
@@ -36,7 +38,10 @@ function ApplicationPage() {
   if (flow === "logistics-company" || role === "logistics-company")
     return <LogisticsCompanyApplicationFlow />;
   if (role === "independent") return <ProfessionalApplicationFlow />;
-  if (role === "regulator-org" || role === "regulator-officer") return <RegulatorApplicationFlow />;
+  // Regulators ask for read-only access (BE-O5); an officer joins their agency by code.
+  if (role === "regulator-org") return <RegulatorAccessRequest />;
+  if (role === "regulator-officer") return <RegulatorApplicationFlow />;
+  if (role === "participant") return <ParticipantApplicationFlow />;
   if (sector === "quality") {
     if (role === "compliance-officer" || role === "laboratory-analyst")
       return <QualityProfessionalApplicationFlow />;

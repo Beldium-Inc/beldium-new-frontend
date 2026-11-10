@@ -22,6 +22,8 @@ import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { fetchAccountSetup, needsComplianceSetup } from "@/lib/onboarding/setup";
 import { rememberOnboardingSector } from "@/lib/onboarding/store";
+import { fetchOnboardingMe } from "@/lib/api/onboarding";
+import { pendingInvitation } from "@/lib/onboarding/invite";
 import {
   COMPLIANCE_VERTICALS,
   VERTICAL_BY_SLUG,
@@ -133,6 +135,13 @@ function SignInPage() {
     try {
       const user = await authenticate({ email: address, password });
 
+      // Arrived from an invitation email: finish accepting it first.
+      const invitation = pendingInvitation();
+      if (invitation) {
+        navigate({ to: "/onboarding/invite", search: { token: invitation } });
+        return;
+      }
+
       // A compliance account belongs to the one sector it registered in. The
       // API refuses the other sectors' desks anyway; this stops the person at
       // the door and tells them where their account does open.
@@ -146,10 +155,56 @@ function SignInPage() {
         return;
       }
 
+      // The server's word on who this person is in the sector (BE-O6), not
+      // the role picked on this page. A failed call falls back to the pick.
+      const me = user.is_staff ? null : await fetchOnboardingMe(picked.slug).catch(() => null);
+      let role = roleId;
+      if (me) {
+        if (me.membership_status === "suspended") {
+          await endAuth();
+          toast.error(
+            `Your access to ${me.organisation?.name ?? "your company"} is suspended. Ask ${me.admin_name || "your company admin"} to restore it.`,
+          );
+          return;
+        }
+        if (me.membership_status === "pending" && me.pending_join_request) {
+          navigate({ to: "/onboarding/pending" });
+          return;
+        }
+        if (me.membership_status === "pending" && me.regulator_request) {
+          await endAuth();
+          toast.info(
+            "Your agency's access request is waiting for a Beldium operator to approve it.",
+          );
+          return;
+        }
+        if (me.membership_status === "none" && me.regulator_request?.status === "rejected") {
+          await endAuth();
+          toast.error(
+            `Your agency's access request was declined${me.regulator_request.rejection_reason ? `: ${me.regulator_request.rejection_reason}` : "."}`,
+          );
+          return;
+        }
+        if (
+          me.dashboard === "regulator" &&
+          me.granted_sectors.length &&
+          !me.granted_sectors.includes(picked.slug)
+        ) {
+          await endAuth();
+          toast.error(
+            `Your agency has read-only access to ${me.granted_sectors.map((g) => VERTICAL_BY_SLUG[g]?.name ?? g).join(", ")} only.`,
+          );
+          return;
+        }
+        const serverRole =
+          me.dashboard === "regulator" || me.dashboard === "partner" ? me.dashboard : null;
+        if (serverRole && picked.roles.some((r) => r.id === serverRole)) role = serverRole;
+      }
+
       // A compliance desk is only open to an account whose organisation
       // application has been submitted. Anyone who stopped part-way through
       // signup is taken back to where they left off instead.
-      if (setup && needsComplianceSetup(picked.slug, roleId)) {
+      if (setup && role !== "regulator" && needsComplianceSetup(picked.slug, role)) {
         if (setup.stage !== "complete") {
           rememberOnboardingSector(picked.slug);
           toast.info(
@@ -164,8 +219,8 @@ function SignInPage() {
         }
       }
 
-      startSession(picked.slug, roleId);
-      navigate({ to: homeFor(picked.slug, roleId) });
+      startSession(picked.slug, role);
+      navigate({ to: homeFor(picked.slug, role) });
     } catch (error) {
       // An unverified account is not a failed password: send them to finish
       // the signup code rather than making them guess at their credentials.

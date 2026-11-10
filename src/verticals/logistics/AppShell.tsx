@@ -15,6 +15,7 @@ import {
   LogOut,
   MessageSquareWarning,
   PieChart,
+  Route as RouteIcon,
   Search,
   Settings,
   ShieldAlert,
@@ -55,12 +56,20 @@ const NAV: Record<Role, { group: string; items: NavItem[] }[]> = {
       ],
     },
     {
+      group: "Operations",
+      items: [
+        { to: "/logistics/operator/readiness", label: "Fleet & drivers", icon: Truck },
+        { to: "/logistics/operator/transport", label: "Transport", icon: RouteIcon },
+      ],
+    },
+    {
       group: "Governance",
       items: [
         { to: "/logistics/operator/audit", label: "Audit history", icon: History },
         { to: "/logistics/operator/reports", label: "Reports", icon: PieChart },
         { to: "/logistics/operator/notifications", label: "Notifications", icon: Bell },
         { to: "/logistics/operator/profile", label: "My profile", icon: UserCircle },
+        { to: "/logistics/team", label: "Team", icon: Users },
       ],
     },
   ],
@@ -89,6 +98,7 @@ const NAV: Record<Role, { group: string; items: NavItem[] }[]> = {
         { to: "/logistics/partner/drivers", label: "Drivers", icon: Users },
         { to: "/logistics/partner/documents", label: "Documents", icon: FileText },
         { to: "/logistics/partner/activity", label: "Activity", icon: History },
+        { to: "/logistics/team", label: "Team", icon: Users },
       ],
     },
   ],
@@ -100,6 +110,7 @@ const NAV: Record<Role, { group: string; items: NavItem[] }[]> = {
         { to: "/logistics/regulator/operators", label: "Registered operators", icon: Building2 },
         { to: "/logistics/regulator/compliance", label: "Compliance status", icon: Gauge },
         { to: "/logistics/regulator/expiring", label: "Expiring credentials", icon: FileClock },
+        { to: "/logistics/regulator/transport", label: "Transport", icon: RouteIcon },
       ],
     },
     {
@@ -108,6 +119,7 @@ const NAV: Record<Role, { group: string; items: NavItem[] }[]> = {
         { to: "/logistics/regulator/alerts", label: "Regulatory alerts", icon: ShieldAlert },
         { to: "/logistics/regulator/reports", label: "Reports", icon: PieChart },
         { to: "/logistics/regulator/notifications", label: "Notifications", icon: Bell },
+        { to: "/logistics/team", label: "Team", icon: Users },
       ],
     },
   ],

@@ -8,6 +8,16 @@ import {
 
 import {
   addScoreFactor,
+  createInventoryItem,
+  createProductionRecord,
+  deleteInventoryItem,
+  deleteProductionRecord,
+  listInventoryItems,
+  listProductionRecords,
+  updateInventoryItem,
+  updateProductionRecord,
+  type InventoryInput,
+  type ProductionInput,
   approveApplication,
   claimApplication,
   closeInfoRequest,
@@ -119,6 +129,8 @@ export const miningKeys = {
   expiringLicences: ["mining", "licences", "expiring"] as const,
   documents: (query: MiningListQuery = {}) => ["mining", "documents", query] as const,
   audit: (query: MiningListQuery = {}) => ["mining", "audit", query] as const,
+  production: (query: MiningListQuery = {}) => ["mining", "production", query] as const,
+  inventory: (query: MiningListQuery = {}) => ["mining", "inventory", query] as const,
 };
 
 /** Lists are large and change slowly; a dashboard remount shouldn't refetch all of them. */
@@ -832,5 +844,77 @@ export function useDecideOrganisation() {
       invalidateMining(queryClient);
       void queryClient.invalidateQueries({ queryKey: ["organisations"] });
     },
+  });
+}
+
+// --- production & inventory ---------------------------------------------------------
+
+export function useProductionRecords(query: MiningListQuery = FULL_PAGE) {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: miningKeys.production(query),
+    queryFn: () => listProductionRecords(query),
+    enabled: hasTokens,
+    staleTime: LIST_STALE_TIME,
+  });
+}
+
+export function useCreateProductionRecord() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ProductionInput) => createProductionRecord(input),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useUpdateProductionRecord() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; patch: Partial<ProductionInput> }) =>
+      updateProductionRecord(input.id, input.patch),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useDeleteProductionRecord() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => deleteProductionRecord(id),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useInventoryItems(query: MiningListQuery = FULL_PAGE) {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: miningKeys.inventory(query),
+    queryFn: () => listInventoryItems(query),
+    enabled: hasTokens,
+    staleTime: LIST_STALE_TIME,
+  });
+}
+
+export function useCreateInventoryItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: InventoryInput) => createInventoryItem(input),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useUpdateInventoryItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: UUID; patch: Partial<InventoryInput> }) =>
+      updateInventoryItem(input.id, input.patch),
+    onSuccess: () => invalidateMining(queryClient),
+  });
+}
+
+export function useDeleteInventoryItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => deleteInventoryItem(id),
+    onSuccess: () => invalidateMining(queryClient),
   });
 }

@@ -24,5 +24,19 @@ export function seatFor(sector: VerticalSlug, role: OnboardingRole | null): stri
   // A haulage company works in the partner portal, not the review desk.
   if (role === "logistics-company") return "partner";
 
+  // The sector's own companies land on their applicant seat, not the desk.
+  if (role === "participant" || role === "participant-member") {
+    const applicantSeat: Record<VerticalSlug, string> = {
+      mining: "miner",
+      processing: "processor",
+      warehousing: "operator",
+      export: "exporter",
+      marketplace: "buyer",
+      logistics: "partner",
+      quality: "miner",
+    };
+    return vertical.roles.find((r) => r.id === applicantSeat[sector])?.id ?? primary;
+  }
+
   return primary;
 }

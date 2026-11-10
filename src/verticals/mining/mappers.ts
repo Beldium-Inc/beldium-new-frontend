@@ -359,7 +359,9 @@ export function toMineSite(row: ApiMineSite): MineSite {
       gps: Boolean(verification?.gps),
     },
     scoreFactors: row.score_factors.map(toScoreFactor),
-    riskReasons: row.risk_reasons,
+    riskReasons: (Array.isArray(row.risk_reasons) ? row.risk_reasons : []).map((r) =>
+      typeof r === "string" ? r : [r.label, r.detail].filter(Boolean).join(": "),
+    ),
     sections: [],
     production: Array.isArray(row.production)
       ? (row.production as unknown as MineSite["production"])

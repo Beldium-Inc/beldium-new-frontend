@@ -25,6 +25,7 @@ import { useStore } from "@/verticals/mining/store";
 import type { NonConformity, Severity } from "@/verticals/mining/types";
 import { Chip, StatusChip } from "./chips";
 import { Field } from "./primitives";
+import { useSiteNames } from "./listkit";
 
 const categories = [
   "Environmental",
@@ -37,6 +38,14 @@ const categories = [
   "Financial",
   "Quality",
 ];
+
+
+/** YYYY-MM-DD, `n` days from today. Default due date for new requests. */
+function inDays(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
 
 export function CreateNonConformity({
   siteId,
@@ -52,7 +61,7 @@ export function CreateNonConformity({
   const [severity, setSeverity] = useState<Severity>("Major");
   const [requiredAction, setRequiredAction] = useState("");
   const [responsiblePerson, setResponsiblePerson] = useState("");
-  const [deadline, setDeadline] = useState("2026-09-30");
+  const [deadline, setDeadline] = useState(inDays(14));
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -197,6 +206,7 @@ export function NonConformityCard({
   canRespond: boolean;
 }) {
   const { decideCorrectiveAction, submitCorrectiveAction } = useStore();
+  const siteName = useSiteNames();
   const [note, setNote] = useState("");
   const [response, setResponse] = useState("");
   const [attachment, setAttachment] = useState("");
@@ -251,7 +261,7 @@ export function NonConformityCard({
           <p className="inline-flex items-center gap-1.5">
             <CalendarClock className="size-3.5" /> Due {nc.deadline}
           </p>
-          <p className="mt-1">Site {nc.siteId}</p>
+          <p className="mt-1">{siteName(nc.siteId)}</p>
         </div>
       </header>
 

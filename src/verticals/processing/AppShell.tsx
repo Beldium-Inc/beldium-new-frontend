@@ -19,6 +19,7 @@ import {
   Search,
   Siren,
   Factory,
+  Users,
   X,
 } from "lucide-react";
 import { useAppState } from "@/verticals/processing/store";
@@ -62,6 +63,7 @@ function buildOperatorNav(counts: NavBadgeCounts): { group: string; items: NavIt
       items: [
         { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
         { to: "/processing/audit", label: "Audit Trail", icon: History },
+        { to: "/processing/team", label: "Team", icon: Users },
       ],
     },
   ];
@@ -82,6 +84,7 @@ const APPLICANT_NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
       { to: "/processing/incidents", label: "Incidents", icon: Siren },
+      { to: "/processing/team", label: "Team", icon: Users },
     ],
   },
 ];
@@ -123,6 +126,7 @@ function buildRegulatorNav(counts: NavBadgeCounts): { group: string; items: NavI
         { to: "/processing/reports", label: "Reports", icon: FileBarChart },
         { to: "/processing/audit", label: "Audit History", icon: History },
         { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
+        { to: "/processing/team", label: "Team", icon: Users },
       ],
     },
   ];

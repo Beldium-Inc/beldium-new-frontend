@@ -14,6 +14,7 @@ import {
   Search,
   ShieldCheck,
   Tags,
+  Users,
   X,
 } from "lucide-react";
 import { ROLE_LABEL, ROLE_PERSONA, useDemo } from "@/verticals/marketplace/store";
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/marketplace/documents", label: "Documents", icon: FileText },
   { to: "/marketplace/compliance", label: "Compliance", icon: ShieldCheck },
   { to: "/marketplace/notifications", label: "Notifications", icon: Bell },
+  { to: "/marketplace/team", label: "Team", icon: Users },
 ] as const;
 
 export function AppShell({
