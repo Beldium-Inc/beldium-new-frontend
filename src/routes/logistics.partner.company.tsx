@@ -9,7 +9,11 @@ export const Route = createFileRoute("/logistics/partner/company")({
   head: () => ({
     meta: [
       { title: "Company information | Beldium Logistics Partner Portal" },
-      { name: "description", content: "Registered company details, operating locations and service scope held by Beldium." },
+      {
+        name: "description",
+        content:
+          "Registered company details, operating locations and service scope held by Beldium.",
+      },
       { property: "og:title", content: "Company information | Beldium Logistics Partner Portal" },
       { property: "og:description", content: "Your registered corporate profile on Beldium." },
     ],
@@ -22,8 +26,14 @@ function CompanyPage() {
   const c = myCompany!;
 
   return (
-    <AppShell role="partner" breadcrumbs={[{ label: c.name, to: "/logistics/partner" }, { label: "Company information" }]}>
-      <PageHeader title="Company information" description="Corporate record submitted to Beldium. Changes after submission require a compliance re-check." />
+    <AppShell
+      role="partner"
+      breadcrumbs={[{ label: c.name, to: "/logistics/partner" }, { label: "Company information" }]}
+    >
+      <PageHeader
+        title="Company information"
+        description="Corporate record submitted to Beldium. Changes after submission require a compliance re-check."
+      />
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel className="lg:col-span-2" title="Registered details">
           <KeyValue
@@ -57,7 +67,10 @@ function CompanyPage() {
             ))}
           </ul>
           {(c.restrictions ?? []).map((r) => (
-            <p key={r.id} className="mt-4 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+            <p
+              key={r.id}
+              className="mt-4 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground"
+            >
               {r.scope} is currently restricted: {r.reason}
             </p>
           ))}
@@ -71,7 +84,11 @@ function CompanyPage() {
           {c.operatingLocations.map((l) => (
             <li key={l.name} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
-                {l.type === "Head Office" ? <Building2 className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
+                {l.type === "Head Office" ? (
+                  <Building2 className="h-4 w-4" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-[var(--brand)]">{l.name}</p>

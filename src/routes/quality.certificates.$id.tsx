@@ -168,7 +168,10 @@ function CertificateDetail() {
                 </table>
               </div>
             ) : (
-              <EmptyState title="Source sample archived" hint="The linked sample record is not in this workspace." />
+              <EmptyState
+                title="Source sample archived"
+                hint="The linked sample record is not in this workspace."
+              />
             )}
           </Surface>
         </div>
@@ -216,7 +219,11 @@ function CertificateDetail() {
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Open non-conformities</span>
                 <span className="font-medium text-navy">
-                  {state.nonConformities.filter((n) => n.against === cert.issuedBy && n.status !== "closed").length}
+                  {
+                    state.nonConformities.filter(
+                      (n) => n.against === cert.issuedBy && n.status !== "closed",
+                    ).length
+                  }
                 </span>
               </div>
             </div>

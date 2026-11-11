@@ -14,7 +14,12 @@ export interface NavItem {
 export const partnerNav: NavItem[] = [
   { label: "Dashboard", to: "/mining/dashboard", icon: "gauge", group: "Overview" },
   { label: "Applications", to: "/mining/applications", icon: "inbox", group: "Intake" },
-  { label: "Mining Organisations", to: "/mining/organisations", icon: "building", group: "Register" },
+  {
+    label: "Mining Organisations",
+    to: "/mining/organisations",
+    icon: "building",
+    group: "Register",
+  },
   { label: "Mining Sites", to: "/mining/sites", icon: "mountain", group: "Register" },
   { label: "Pending Reviews", to: "/mining/reviews", icon: "clipboard", group: "Review" },
   { label: "Documents & Licences", to: "/mining/documents", icon: "files", group: "Review" },
@@ -37,7 +42,12 @@ export const minerNav: NavItem[] = [
   { label: "Inventory", to: "/mining/inventory", icon: "boxes", group: "Operations" },
   { label: "Transactions", to: "/mining/transactions", icon: "receipt", group: "Operations" },
   { label: "Sampling & Quality", to: "/mining/sampling", icon: "flask", group: "Operations" },
-  { label: "Environmental & Safety", to: "/mining/environmental", icon: "leaf", group: "Compliance" },
+  {
+    label: "Environmental & Safety",
+    to: "/mining/environmental",
+    icon: "leaf",
+    group: "Compliance",
+  },
   { label: "Compliance", to: "/mining/compliance", icon: "shield", group: "Compliance" },
   { label: "Action Required", to: "/mining/actions", icon: "alert", group: "Compliance" },
   { label: "Inspections", to: "/mining/inspections", icon: "hardhat", group: "Compliance" },

@@ -6,7 +6,14 @@ import { Panel, StatusPill, toneForStatus } from "@/verticals/warehousing/compli
 import { labelStatus } from "@/verticals/warehousing/data";
 import { useDemo } from "@/verticals/warehousing/store";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/warehousing/partner/applications/")({
@@ -32,7 +39,9 @@ function ApplicationsPage() {
 
   const rows = state.applications.filter((a) => {
     const w = state.warehouses.find((x) => x.id === a.warehouse);
-    const matchQuery = `${w?.name ?? ""} ${w?.reference ?? ""}`.toLowerCase().includes(query.toLowerCase());
+    const matchQuery = `${w?.name ?? ""} ${w?.reference ?? ""}`
+      .toLowerCase()
+      .includes(query.toLowerCase());
     const matchFilter =
       filter === "All"
         ? true
@@ -45,7 +54,11 @@ function ApplicationsPage() {
   });
 
   return (
-    <AppShell role="partner" title="Applications" subtitle="Warehouse registration files assigned to Beldium Compliance Partners">
+    <AppShell
+      role="partner"
+      title="Applications"
+      subtitle="Warehouse registration files assigned to Beldium Compliance Partners"
+    >
       <Panel
         title={`${rows.length} application${rows.length === 1 ? "" : "s"}`}
         description="Select a reference to open the full review workspace."
@@ -95,8 +108,12 @@ function ApplicationsPage() {
                   <TableCell className="text-sm text-muted-foreground">
                     {a.progress.complete}/{a.progress.total}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{a.submitted_at ?? "-"}</TableCell>
-                  <TableCell className="font-heading font-semibold">{a.risk.compliance_score}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {a.submitted_at ?? "-"}
+                  </TableCell>
+                  <TableCell className="font-heading font-semibold">
+                    {a.risk.compliance_score}
+                  </TableCell>
                   <TableCell>
                     <StatusPill tone={toneForStatus(a.status)}>{labelStatus(a.status)}</StatusPill>
                   </TableCell>

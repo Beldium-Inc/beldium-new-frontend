@@ -21,10 +21,15 @@ function ShipmentsPage() {
   const { state, user } = useStore();
   const [q, setQ] = React.useState("");
 
-  const mine = user?.role === "exporter" ? state.shipments.filter((s) => s.exporter === user.exporterId) : state.shipments;
+  const mine =
+    user?.role === "exporter"
+      ? state.shipments.filter((s) => s.exporter === user.exporterId)
+      : state.shipments;
 
   const rows = mine.filter((s) =>
-    `${s.reference} ${s.destination_country} ${s.port_of_loading}`.toLowerCase().includes(q.toLowerCase()),
+    `${s.reference} ${s.destination_country} ${s.port_of_loading}`
+      .toLowerCase()
+      .includes(q.toLowerCase()),
   );
 
   return (
@@ -69,7 +74,8 @@ function ShipmentsPage() {
                     {product?.name ?? "Product"} · {s.quantity} {s.unit} · {exporter?.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {s.port_of_loading} → {s.port_of_discharge}, {s.destination_country} · ETD {s.expected_ship_date}
+                    {s.port_of_loading} → {s.port_of_discharge}, {s.destination_country} · ETD{" "}
+                    {s.expected_ship_date}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-6">
@@ -84,7 +90,9 @@ function ShipmentsPage() {
             );
           })}
           {rows.length === 0 && (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground">No shipments found.</p>
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+              No shipments found.
+            </p>
           )}
         </div>
       </Panel>

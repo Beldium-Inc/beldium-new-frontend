@@ -12,21 +12,53 @@ export function GeoPanel({ site }: { site: MineSite }) {
     <Panel
       title="Geolocation & boundary"
       description="Schematic cadastral view rendered locally from stored coordinates."
-      actions={<Chip tone={encroach ? "warning" : "success"}>{encroach ? "Boundary anomaly" : "Within boundary"}</Chip>}
+      actions={
+        <Chip tone={encroach ? "warning" : "success"}>
+          {encroach ? "Boundary anomaly" : "Within boundary"}
+        </Chip>
+      }
     >
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="relative overflow-hidden rounded-md border border-border bg-muted">
-          <svg viewBox="0 0 100 100" className="h-72 w-full" role="img" aria-label="Schematic site boundary map">
+          <svg
+            viewBox="0 0 100 100"
+            className="h-72 w-full"
+            role="img"
+            aria-label="Schematic site boundary map"
+          >
             <defs>
               <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M10 0 L0 0 0 10" fill="none" stroke="var(--color-border)" strokeWidth="0.4" />
+                <path
+                  d="M10 0 L0 0 0 10"
+                  fill="none"
+                  stroke="var(--color-border)"
+                  strokeWidth="0.4"
+                />
               </pattern>
             </defs>
             <rect width="100" height="100" fill="url(#grid)" />
-            <path d="M0,72 C22,64 34,80 52,74 C70,68 84,84 100,78" fill="none" stroke="var(--color-chart-5)" strokeWidth="1.4" opacity="0.8" />
-            <polygon points={boundary} fill="var(--color-brand-soft)" fillOpacity="0.75" stroke="var(--color-brand)" strokeWidth="1" />
+            <path
+              d="M0,72 C22,64 34,80 52,74 C70,68 84,84 100,78"
+              fill="none"
+              stroke="var(--color-chart-5)"
+              strokeWidth="1.4"
+              opacity="0.8"
+            />
+            <polygon
+              points={boundary}
+              fill="var(--color-brand-soft)"
+              fillOpacity="0.75"
+              stroke="var(--color-brand)"
+              strokeWidth="1"
+            />
             {encroach && (
-              <polygon points="82,74 96,66 98,84 84,88" fill="var(--color-danger)" fillOpacity="0.45" stroke="var(--color-danger)" strokeWidth="0.9" />
+              <polygon
+                points="82,74 96,66 98,84 84,88"
+                fill="var(--color-danger)"
+                fillOpacity="0.45"
+                stroke="var(--color-danger)"
+                strokeWidth="0.9"
+              />
             )}
             <circle cx="50" cy="48" r="2.2" fill="var(--color-brand)" />
             <text x="53" y="47" fontSize="3.4" fill="var(--color-brand)">
@@ -43,10 +75,12 @@ export function GeoPanel({ site }: { site: MineSite }) {
           </svg>
           <div className="flex flex-wrap items-center gap-3 border-t border-border bg-surface px-4 py-2.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-brand-soft ring-1 ring-brand" /> Licensed cadastral unit
+              <span className="size-2.5 rounded-sm bg-brand-soft ring-1 ring-brand" /> Licensed
+              cadastral unit
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-danger/50 ring-1 ring-danger" /> Observed activity outside boundary
+              <span className="size-2.5 rounded-sm bg-danger/50 ring-1 ring-danger" /> Observed
+              activity outside boundary
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-0.5 w-4 bg-chart-5" /> Watercourse
@@ -69,7 +103,9 @@ export function GeoPanel({ site }: { site: MineSite }) {
           </Field>
           <Field label="Local government area" value={`${site.lga}, ${site.state} State`} />
           <Field label="GPS verification">
-            <Chip tone={site.verification.gps ? "success" : "warning"}>{site.verification.gps ? "Verified" : "Re-survey required"}</Chip>
+            <Chip tone={site.verification.gps ? "success" : "warning"}>
+              {site.verification.gps ? "Verified" : "Re-survey required"}
+            </Chip>
           </Field>
           <Field label="Imagery source">
             <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">

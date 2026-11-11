@@ -112,7 +112,11 @@ const applicationStatusMap: Record<ExportApplicationStatus, { label: string; ton
   rejected: { label: "Rejected", tone: "danger" },
 };
 
-export function ApplicationStatusPill({ status }: { status: ExportApplicationStatus | "not_started" }) {
+export function ApplicationStatusPill({
+  status,
+}: {
+  status: ExportApplicationStatus | "not_started";
+}) {
   if (status === "not_started") return <Pill tone="neutral">Not started</Pill>;
   const s = applicationStatusMap[status];
   return <Pill tone={s.tone}>{s.label}</Pill>;

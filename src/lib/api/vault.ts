@@ -124,7 +124,10 @@ export function addVaultVersion(id: UUID, file: File, note: string): Promise<Vau
   const form = new FormData();
   form.append("file", file);
   form.append("note", note);
-  return apiFetch<VaultDocument>(`${BASE}/documents/${id}/versions/`, { method: "POST", body: form });
+  return apiFetch<VaultDocument>(`${BASE}/documents/${id}/versions/`, {
+    method: "POST",
+    body: form,
+  });
 }
 
 export function approveVaultDocument(id: UUID, note: string): Promise<VaultDocument> {

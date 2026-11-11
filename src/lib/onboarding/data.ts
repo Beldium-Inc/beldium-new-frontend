@@ -728,18 +728,28 @@ export function professionalCopyFor(sector: VerticalSlug | null) {
         projects: `Relevant ${noun} Projects or Assignments`,
       },
       documents: professionalDocumentCatalogue.map((d) =>
-        d === "Evidence of Relevant Mining Experience" ? `Evidence of Relevant ${noun} Experience` : d,
+        d === "Evidence of Relevant Mining Experience"
+          ? `Evidence of Relevant ${noun} Experience`
+          : d,
       ),
       declarations: professionalDeclarationItems.map((d) =>
-        d.key === "confidential" ? { ...d, label: `${noun} applicant information will remain confidential.` } : d,
+        d.key === "confidential"
+          ? { ...d, label: `${noun} applicant information will remain confidential.` }
+          : d,
       ),
       independence: [
         {
           key: "ownsMining",
           label: `Do you own or have a financial interest in a ${company} you may review?`,
         },
-        { key: "tradesMinerals", label: "Do you trade in minerals or the material you may inspect?" },
-        { key: "worksForMiner", label: `Do you work for a ${company} you may be assigned to review?` },
+        {
+          key: "tradesMinerals",
+          label: "Do you trade in minerals or the material you may inspect?",
+        },
+        {
+          key: "worksForMiner",
+          label: `Do you work for a ${company} you may be assigned to review?`,
+        },
         independenceQuestions[3]!,
       ],
     };

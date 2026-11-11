@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type {
   ConflictDeclaration,
   InfoRequest,
@@ -19,7 +27,6 @@ import type {
   VerificationState,
 } from "./types";
 import { VERTICAL_BY_SLUG, type VerticalSlug } from "../verticals";
-
 
 const STORAGE_KEY = "beldium.onboarding.v1";
 
@@ -172,7 +179,6 @@ const emptyCapability: InspectionCapability = {
   averageTurnaround: "",
 };
 
-
 const emptyConflict: ConflictDeclaration = {
   hasConflict: null,
   relationship: "",
@@ -241,7 +247,6 @@ const initialState: OnboardingState = {
   messages: seedMessages,
 };
 
-
 interface Ctx extends OnboardingState {
   hydrated: boolean;
   setSector: (sector: VerticalSlug) => void;
@@ -264,9 +269,16 @@ interface Ctx extends OnboardingState {
   raiseInfoRequests: (items: { subject: string; detail: string }[]) => void;
   respondToInfoRequest: (id: string, response: string) => void;
 
-  addJoinRequest: (input: { organisationName: string; role: string; justification: string }) => void;
+  addJoinRequest: (input: {
+    organisationName: string;
+    role: string;
+    justification: string;
+  }) => void;
   decideJoinRequest: (id: string, decision: "Approved" | "Declined", note: string) => void;
-  setVerification: (state: VerificationState, opts?: { conditions?: string[]; findings?: ReviewFinding[]; note?: string }) => void;
+  setVerification: (
+    state: VerificationState,
+    opts?: { conditions?: string[]; findings?: ReviewFinding[]; note?: string },
+  ) => void;
   resolveFinding: (id: string) => void;
   markWelcomeSeen: () => void;
   resetOnboarding: () => void;
@@ -331,7 +343,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
-
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -344,242 +355,318 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   }, [state, hydrated]);
 
-  const push = useCallback((s: OnboardingState, entry: Omit<OnboardingTimelineEntry, "id" | "at">): OnboardingState => ({
-    ...s,
-    timeline: [{ id: uid("tl"), at: stamp(), ...entry }, ...s.timeline].slice(0, 60),
-  }), []);
+  const push = useCallback(
+    (s: OnboardingState, entry: Omit<OnboardingTimelineEntry, "id" | "at">): OnboardingState => ({
+      ...s,
+      timeline: [{ id: uid("tl"), at: stamp(), ...entry }, ...s.timeline].slice(0, 60),
+    }),
+    [],
+  );
 
-  const log = useCallback((entry: Omit<OnboardingTimelineEntry, "id" | "at">) => {
-    setState((s) => push(s, entry));
-  }, [push]);
-
-  const value = useMemo<Ctx>(() => ({
-    ...state,
-    hydrated,
-    log,
-    setSector: (sector) =>
-      setState((s) =>
-        push({ ...s, sector }, {
-          actor: "You",
-          title: "Sector selected",
-          detail: `Application scoped to ${VERTICAL_BY_SLUG[sector].name}.`,
-          tone: "neutral",
-        }),
-      ),
-    setRole: (role) =>
-      setState((s) => push({ ...s, role }, { actor: "You", title: "Role selected", detail: `Account type set to ${role}.`, tone: "neutral" })),
-    setOrgPath: (orgPath) => setState((s) => ({ ...s, orgPath })),
-    updateAccount: (patch) => setState((s) => ({ ...s, account: { ...s.account, ...patch } })),
-    verifyChannel: (channel) =>
-      setState((s) =>
-        push(
-          { ...s, account: { ...s.account, [channel === "email" ? "emailVerified" : "phoneVerified"]: true } },
-          { actor: "You", title: `${channel === "email" ? "Email" : "Phone"} verified`, detail: `One-time code confirmed for ${channel === "email" ? s.account.email : s.account.phone}.`, tone: "positive" },
-        ),
-      ),
-    updateApplication: (patch) => setState((s) => ({ ...s, application: { ...s.application, ...patch } })),
-    addDocument: (doc) =>
-      setState((s) =>
-        push({ ...s, documents: [{ id: uid("doc"), status: "Uploaded", ...doc }, ...s.documents] }, {
-          actor: "You",
-          title: "Document attached",
-          detail: `${doc.category}: ${doc.name}`,
-          tone: "neutral",
-        }),
-      ),
-    removeDocument: (id) => setState((s) => ({ ...s, documents: s.documents.filter((d) => d.id !== id) })),
-    addPersonnel: (p) =>
-      setState((s) =>
-        push({ ...s, personnel: [{ id: uid("per"), ...p }, ...s.personnel] }, {
-          actor: "You",
-          title: "Personnel added",
-          detail: `${p.name}: ${p.position}`,
-          tone: "neutral",
-        }),
-      ),
-    removePersonnel: (id) => setState((s) => ({ ...s, personnel: s.personnel.filter((p) => p.id !== id) })),
-    updateCapability: (patch) => setState((s) => ({ ...s, capability: { ...s.capability, ...patch } })),
-    updateConflict: (patch) => setState((s) => ({ ...s, conflict: { ...s.conflict, ...patch } })),
-    updateProfessional: (patch) => setState((s) => ({ ...s, professional: { ...s.professional, ...patch } })),
-    updateRegulator: (patch) => setState((s) => ({ ...s, regulator: { ...s.regulator, ...patch } })),
-    setDeclaration: (key, val) => setState((s) => ({ ...s, declarations: { ...s.declarations, [key]: val } })),
-    submitApplication: () => {
-      const ref = `APP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`;
-      setState((s) =>
-        push(
-          {
-            ...s,
-            application: { ...s.application, ref },
-            professional: { ...s.professional, ref },
-            regulator: { ...s.regulator, ref },
-            verification: "Under Review",
-            submittedAt: stamp(),
-            findings: [],
-            conditions: [],
-          },
-          { actor: "You", title: "Application submitted", detail: `Reference ${ref} sent to the Beldium verification team.`, tone: "positive" },
-        ),
-      );
-      return ref;
+  const log = useCallback(
+    (entry: Omit<OnboardingTimelineEntry, "id" | "at">) => {
+      setState((s) => push(s, entry));
     },
-    approveApplication: (capabilities) => {
-      setState((s) => {
-        const isRegulator = s.role === "regulator-org" || s.role === "regulator-officer";
-        const requested =
-          capabilities ??
-          (s.role === "independent"
-            ? s.professional.reviewCapabilities
-            : isRegulator
-              ? s.regulator.oversightCapabilities
-              : s.application.services);
-        const idLabel = isRegulator ? "Beldium Regulatory Organisation ID" : "Beldium Compliance ID";
-        const partnerId = `BLD-${isRegulator ? "RO" : "CP"}-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-        return push(
-          {
-            ...s,
-            verification: "Verified",
-            partnerId,
-            approvedCapabilities: requested,
-            findings: [],
-            conditions: [],
-            messages: [
-              {
-                id: uid("msg"),
-                from: "Beldium verification team",
-                body: `Application approved. ${idLabel} ${partnerId} has been issued and your approved capabilities are now active.`,
-                at: stamp(),
-              },
-              ...s.messages,
-            ],
-          },
-          {
-            actor: "Beldium verification team",
-            title: "Application approved",
-            detail: `Verified: ${idLabel} ${partnerId} issued with ${requested.length} approved capabilities.`,
-            tone: "positive",
-          },
-        );
-      });
-    },
-    raiseInfoRequests: (items) =>
-      setState((s) =>
-        push(
-          {
-            ...s,
-            verification: "Information Required",
-            infoRequests: [
-              ...items.map((i) => ({ id: uid("ir"), subject: i.subject, detail: i.detail, raisedAt: stamp(), status: "Open" as const })),
-              ...s.infoRequests,
-            ],
-          },
-          {
-            actor: "Beldium verification team",
-            title: "Information requested",
-            detail: `${items.length} item(s) require your response before verification can continue.`,
-            tone: "warning",
-          },
-        ),
-      ),
-    respondToInfoRequest: (id, response) =>
-      setState((s) => {
-        const infoRequests = s.infoRequests.map((r) => (r.id === id ? { ...r, status: "Responded" as const, response } : r));
-        const allDone = infoRequests.every((r) => r.status === "Responded");
-        return push(
-          { ...s, infoRequests, verification: allDone ? "Under Review" : s.verification },
-          {
-            actor: "You",
-            title: "Information supplied",
-            detail: allDone ? "All information requests answered, application returned to review." : "Response submitted to the review team.",
-            tone: "positive",
-          },
-        );
-      }),
+    [push],
+  );
 
-    addJoinRequest: (input) =>
-      setState((s) =>
-        push(
-          {
-            ...s,
-            joinRequests: [
-              {
-                id: uid("jr"),
-                organisationName: input.organisationName,
-                requesterName: s.account.fullName || "You",
-                requesterEmail: s.account.email || "you@example.demo",
-                role: input.role,
-                justification: input.justification,
-                submittedAt: stamp(),
-                status: "Pending",
+  const value = useMemo<Ctx>(
+    () => ({
+      ...state,
+      hydrated,
+      log,
+      setSector: (sector) =>
+        setState((s) =>
+          push(
+            { ...s, sector },
+            {
+              actor: "You",
+              title: "Sector selected",
+              detail: `Application scoped to ${VERTICAL_BY_SLUG[sector].name}.`,
+              tone: "neutral",
+            },
+          ),
+        ),
+      setRole: (role) =>
+        setState((s) =>
+          push(
+            { ...s, role },
+            {
+              actor: "You",
+              title: "Role selected",
+              detail: `Account type set to ${role}.`,
+              tone: "neutral",
+            },
+          ),
+        ),
+      setOrgPath: (orgPath) => setState((s) => ({ ...s, orgPath })),
+      updateAccount: (patch) => setState((s) => ({ ...s, account: { ...s.account, ...patch } })),
+      verifyChannel: (channel) =>
+        setState((s) =>
+          push(
+            {
+              ...s,
+              account: {
+                ...s.account,
+                [channel === "email" ? "emailVerified" : "phoneVerified"]: true,
               },
-              ...s.joinRequests,
-            ],
-            verification: "Under Review",
-          },
-          { actor: "You", title: "Join request sent", detail: `Access request sent to the administrator of ${input.organisationName}.`, tone: "neutral" },
+            },
+            {
+              actor: "You",
+              title: `${channel === "email" ? "Email" : "Phone"} verified`,
+              detail: `One-time code confirmed for ${channel === "email" ? s.account.email : s.account.phone}.`,
+              tone: "positive",
+            },
+          ),
         ),
-      ),
-    decideJoinRequest: (id, decision, note) =>
-      setState((s) =>
-        push(
-          {
-            ...s,
-            joinRequests: s.joinRequests.map((j) => (j.id === id ? { ...j, status: decision, decisionNote: note } : j)),
-            verification:
-              decision === "Approved" && s.joinRequests.some((j) => j.id === id && j.requesterEmail === s.account.email)
-                ? "Verified"
-                : s.verification,
-          },
-          {
-            actor: "Organisation administrator",
-            title: `Join request ${decision.toLowerCase()}`,
-            detail: note || `Request ${decision.toLowerCase()} by the organisation administrator.`,
-            tone: decision === "Approved" ? "positive" : "negative",
-          },
+      updateApplication: (patch) =>
+        setState((s) => ({ ...s, application: { ...s.application, ...patch } })),
+      addDocument: (doc) =>
+        setState((s) =>
+          push(
+            { ...s, documents: [{ id: uid("doc"), status: "Uploaded", ...doc }, ...s.documents] },
+            {
+              actor: "You",
+              title: "Document attached",
+              detail: `${doc.category}: ${doc.name}`,
+              tone: "neutral",
+            },
+          ),
         ),
-      ),
-    setVerification: (verification, opts) =>
-      setState((s) =>
-        push(
-          {
-            ...s,
-            verification,
-            conditions: opts?.conditions ?? (verification === "Conditionally Verified" ? s.conditions : []),
-            findings: opts?.findings ?? (verification === "Information Required" ? s.findings : []),
-          },
-          {
-            actor: "Beldium verification team",
-            title: `Status: ${verification}`,
-            detail: opts?.note ?? `Verification status moved to ${verification}.`,
-            tone:
-              verification === "Verified"
-                ? "positive"
-                : verification === "Rejected"
-                  ? "negative"
-                  : verification === "Conditionally Verified"
-                    ? "neutral"
-                    : "warning",
-          },
+      removeDocument: (id) =>
+        setState((s) => ({ ...s, documents: s.documents.filter((d) => d.id !== id) })),
+      addPersonnel: (p) =>
+        setState((s) =>
+          push(
+            { ...s, personnel: [{ id: uid("per"), ...p }, ...s.personnel] },
+            {
+              actor: "You",
+              title: "Personnel added",
+              detail: `${p.name}: ${p.position}`,
+              tone: "neutral",
+            },
+          ),
         ),
-      ),
-    resolveFinding: (id) =>
-      setState((s) => {
-        const findings = s.findings.map((f) => (f.id === id ? { ...f, status: "Resolved" as const } : f));
-        const allResolved = findings.every((f) => f.status === "Resolved");
-        return push(
-          { ...s, findings, verification: allResolved ? "Under Review" : s.verification },
-          {
-            actor: "You",
-            title: "Information supplied",
-            detail: allResolved
-              ? "All outstanding items answered, application returned to review."
-              : "Response submitted for an outstanding item.",
-            tone: "positive",
-          },
+      removePersonnel: (id) =>
+        setState((s) => ({ ...s, personnel: s.personnel.filter((p) => p.id !== id) })),
+      updateCapability: (patch) =>
+        setState((s) => ({ ...s, capability: { ...s.capability, ...patch } })),
+      updateConflict: (patch) => setState((s) => ({ ...s, conflict: { ...s.conflict, ...patch } })),
+      updateProfessional: (patch) =>
+        setState((s) => ({ ...s, professional: { ...s.professional, ...patch } })),
+      updateRegulator: (patch) =>
+        setState((s) => ({ ...s, regulator: { ...s.regulator, ...patch } })),
+      setDeclaration: (key, val) =>
+        setState((s) => ({ ...s, declarations: { ...s.declarations, [key]: val } })),
+      submitApplication: () => {
+        const ref = `APP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`;
+        setState((s) =>
+          push(
+            {
+              ...s,
+              application: { ...s.application, ref },
+              professional: { ...s.professional, ref },
+              regulator: { ...s.regulator, ref },
+              verification: "Under Review",
+              submittedAt: stamp(),
+              findings: [],
+              conditions: [],
+            },
+            {
+              actor: "You",
+              title: "Application submitted",
+              detail: `Reference ${ref} sent to the Beldium verification team.`,
+              tone: "positive",
+            },
+          ),
         );
-      }),
-    markWelcomeSeen: () => setState((s) => ({ ...s, welcomeSeen: true })),
-    resetOnboarding: () => setState({ ...initialState }),
-  }), [state, hydrated, log, push]);
+        return ref;
+      },
+      approveApplication: (capabilities) => {
+        setState((s) => {
+          const isRegulator = s.role === "regulator-org" || s.role === "regulator-officer";
+          const requested =
+            capabilities ??
+            (s.role === "independent"
+              ? s.professional.reviewCapabilities
+              : isRegulator
+                ? s.regulator.oversightCapabilities
+                : s.application.services);
+          const idLabel = isRegulator
+            ? "Beldium Regulatory Organisation ID"
+            : "Beldium Compliance ID";
+          const partnerId = `BLD-${isRegulator ? "RO" : "CP"}-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+          return push(
+            {
+              ...s,
+              verification: "Verified",
+              partnerId,
+              approvedCapabilities: requested,
+              findings: [],
+              conditions: [],
+              messages: [
+                {
+                  id: uid("msg"),
+                  from: "Beldium verification team",
+                  body: `Application approved. ${idLabel} ${partnerId} has been issued and your approved capabilities are now active.`,
+                  at: stamp(),
+                },
+                ...s.messages,
+              ],
+            },
+            {
+              actor: "Beldium verification team",
+              title: "Application approved",
+              detail: `Verified: ${idLabel} ${partnerId} issued with ${requested.length} approved capabilities.`,
+              tone: "positive",
+            },
+          );
+        });
+      },
+      raiseInfoRequests: (items) =>
+        setState((s) =>
+          push(
+            {
+              ...s,
+              verification: "Information Required",
+              infoRequests: [
+                ...items.map((i) => ({
+                  id: uid("ir"),
+                  subject: i.subject,
+                  detail: i.detail,
+                  raisedAt: stamp(),
+                  status: "Open" as const,
+                })),
+                ...s.infoRequests,
+              ],
+            },
+            {
+              actor: "Beldium verification team",
+              title: "Information requested",
+              detail: `${items.length} item(s) require your response before verification can continue.`,
+              tone: "warning",
+            },
+          ),
+        ),
+      respondToInfoRequest: (id, response) =>
+        setState((s) => {
+          const infoRequests = s.infoRequests.map((r) =>
+            r.id === id ? { ...r, status: "Responded" as const, response } : r,
+          );
+          const allDone = infoRequests.every((r) => r.status === "Responded");
+          return push(
+            { ...s, infoRequests, verification: allDone ? "Under Review" : s.verification },
+            {
+              actor: "You",
+              title: "Information supplied",
+              detail: allDone
+                ? "All information requests answered, application returned to review."
+                : "Response submitted to the review team.",
+              tone: "positive",
+            },
+          );
+        }),
+
+      addJoinRequest: (input) =>
+        setState((s) =>
+          push(
+            {
+              ...s,
+              joinRequests: [
+                {
+                  id: uid("jr"),
+                  organisationName: input.organisationName,
+                  requesterName: s.account.fullName || "You",
+                  requesterEmail: s.account.email || "you@example.demo",
+                  role: input.role,
+                  justification: input.justification,
+                  submittedAt: stamp(),
+                  status: "Pending",
+                },
+                ...s.joinRequests,
+              ],
+              verification: "Under Review",
+            },
+            {
+              actor: "You",
+              title: "Join request sent",
+              detail: `Access request sent to the administrator of ${input.organisationName}.`,
+              tone: "neutral",
+            },
+          ),
+        ),
+      decideJoinRequest: (id, decision, note) =>
+        setState((s) =>
+          push(
+            {
+              ...s,
+              joinRequests: s.joinRequests.map((j) =>
+                j.id === id ? { ...j, status: decision, decisionNote: note } : j,
+              ),
+              verification:
+                decision === "Approved" &&
+                s.joinRequests.some((j) => j.id === id && j.requesterEmail === s.account.email)
+                  ? "Verified"
+                  : s.verification,
+            },
+            {
+              actor: "Organisation administrator",
+              title: `Join request ${decision.toLowerCase()}`,
+              detail:
+                note || `Request ${decision.toLowerCase()} by the organisation administrator.`,
+              tone: decision === "Approved" ? "positive" : "negative",
+            },
+          ),
+        ),
+      setVerification: (verification, opts) =>
+        setState((s) =>
+          push(
+            {
+              ...s,
+              verification,
+              conditions:
+                opts?.conditions ?? (verification === "Conditionally Verified" ? s.conditions : []),
+              findings:
+                opts?.findings ?? (verification === "Information Required" ? s.findings : []),
+            },
+            {
+              actor: "Beldium verification team",
+              title: `Status: ${verification}`,
+              detail: opts?.note ?? `Verification status moved to ${verification}.`,
+              tone:
+                verification === "Verified"
+                  ? "positive"
+                  : verification === "Rejected"
+                    ? "negative"
+                    : verification === "Conditionally Verified"
+                      ? "neutral"
+                      : "warning",
+            },
+          ),
+        ),
+      resolveFinding: (id) =>
+        setState((s) => {
+          const findings = s.findings.map((f) =>
+            f.id === id ? { ...f, status: "Resolved" as const } : f,
+          );
+          const allResolved = findings.every((f) => f.status === "Resolved");
+          return push(
+            { ...s, findings, verification: allResolved ? "Under Review" : s.verification },
+            {
+              actor: "You",
+              title: "Information supplied",
+              detail: allResolved
+                ? "All outstanding items answered, application returned to review."
+                : "Response submitted for an outstanding item.",
+              tone: "positive",
+            },
+          );
+        }),
+      markWelcomeSeen: () => setState((s) => ({ ...s, welcomeSeen: true })),
+      resetOnboarding: () => setState({ ...initialState }),
+    }),
+    [state, hydrated, log, push],
+  );
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
 }
@@ -592,8 +679,21 @@ export function useOnboarding() {
 
 export function demoFindings(): ReviewFinding[] {
   return [
-    { id: uid("fd"), area: "Corporate", requirement: "Upload a CAC status report dated within the last 90 days.", status: "Outstanding", raisedAt: stamp() },
-    { id: uid("fd"), area: "Licence", requirement: "Licence coordinates do not match the declared site polygon, provide a surveyor's report.", status: "Outstanding", raisedAt: stamp() },
+    {
+      id: uid("fd"),
+      area: "Corporate",
+      requirement: "Upload a CAC status report dated within the last 90 days.",
+      status: "Outstanding",
+      raisedAt: stamp(),
+    },
+    {
+      id: uid("fd"),
+      area: "Licence",
+      requirement:
+        "Licence coordinates do not match the declared site polygon, provide a surveyor's report.",
+      status: "Outstanding",
+      raisedAt: stamp(),
+    },
   ];
 }
 

@@ -69,7 +69,8 @@ export function stageLabel(stage: LifecycleStage): string {
   return LIFECYCLE_STAGES.find((s) => s.id === stage)?.label ?? stage;
 }
 
-export type EcosystemRfqStatus = "open" | "accepted" | "partially_accepted" | "declined" | "expired";
+export type EcosystemRfqStatus =
+  "open" | "accepted" | "partially_accepted" | "declined" | "expired";
 
 export interface EcosystemRfq {
   id: UUID;
@@ -97,8 +98,14 @@ export interface EcosystemRfq {
 }
 
 export type BatchStage =
-  | "stockpile" | "allocated" | "in_transit" | "warehouse"
-  | "processing" | "export_ready" | "shipped" | "delivered";
+  | "stockpile"
+  | "allocated"
+  | "in_transit"
+  | "warehouse"
+  | "processing"
+  | "export_ready"
+  | "shipped"
+  | "delivered";
 
 export interface MaterialBatch {
   id: UUID;
@@ -201,7 +208,8 @@ export interface ActionRequiredItem {
   id: string;
   title: string;
   detail: string;
-  domain: "marketplace" | "quality" | "logistics" | "warehousing" | "processing" | "export" | "finance";
+  domain:
+    "marketplace" | "quality" | "logistics" | "warehousing" | "processing" | "export" | "finance";
   severity: "high" | "medium" | "low";
   due_at: string | null;
   transaction_id: string | null;
@@ -246,7 +254,9 @@ export function fetchEcosystemDashboard(signal?: AbortSignal): Promise<Ecosystem
 
 // --- RFQs ---------------------------------------------------------------
 
-export function listEcosystemRfqs(query: EcosystemListQuery = {}): Promise<Paginated<EcosystemRfq>> {
+export function listEcosystemRfqs(
+  query: EcosystemListQuery = {},
+): Promise<Paginated<EcosystemRfq>> {
   return apiFetch<Paginated<EcosystemRfq>>(`${BASE}/rfqs/`, { query });
 }
 
@@ -290,12 +300,20 @@ export function updateBatch(id: UUID, patch: Partial<MaterialBatch>): Promise<Ma
 
 // --- Logistics moves --------------------------------------------------------
 
-export function listLogisticsMoves(query: EcosystemListQuery = {}): Promise<Paginated<LogisticsMove>> {
+export function listLogisticsMoves(
+  query: EcosystemListQuery = {},
+): Promise<Paginated<LogisticsMove>> {
   return apiFetch<Paginated<LogisticsMove>>(`${BASE}/logistics-moves/`, { query });
 }
 
-export function updateLogisticsMove(id: UUID, patch: Partial<LogisticsMove>): Promise<LogisticsMove> {
-  return apiFetch<LogisticsMove>(`${BASE}/logistics-moves/${id}/`, { method: "PATCH", body: patch });
+export function updateLogisticsMove(
+  id: UUID,
+  patch: Partial<LogisticsMove>,
+): Promise<LogisticsMove> {
+  return apiFetch<LogisticsMove>(`${BASE}/logistics-moves/${id}/`, {
+    method: "PATCH",
+    body: patch,
+  });
 }
 
 // --- Commitments -------------------------------------------------------------

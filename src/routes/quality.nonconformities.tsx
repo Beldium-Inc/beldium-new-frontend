@@ -3,7 +3,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { AppShell } from "@/verticals/quality/shell";
-import { EmptyState, PageHeader, Pill, SectionTitle, Stat, StatusPill, Surface } from "@/verticals/quality/ui";
+import {
+  EmptyState,
+  PageHeader,
+  Pill,
+  SectionTitle,
+  Stat,
+  StatusPill,
+  Surface,
+} from "@/verticals/quality/ui";
 import { useBeldium } from "@/verticals/quality/store";
 import type { NonConformity } from "@/verticals/quality/types";
 
@@ -31,8 +39,14 @@ export const Route = createFileRoute("/quality/nonconformities")({
 });
 
 function NonConformitiesPage() {
-  const { state, role, raiseNonConformity, addCorrectiveAction, advanceCorrectiveAction, closeNonConformity } =
-    useBeldium();
+  const {
+    state,
+    role,
+    raiseNonConformity,
+    addCorrectiveAction,
+    advanceCorrectiveAction,
+    closeNonConformity,
+  } = useBeldium();
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState({
     title: "",
@@ -65,12 +79,25 @@ function NonConformitiesPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Open" value={state.nonConformities.filter((n) => n.status === "open").length} />
-        <Stat label="CAPA submitted" value={state.nonConformities.filter((n) => n.status === "capa_submitted").length} tone="pale" />
-        <Stat label="Closed" value={state.nonConformities.filter((n) => n.status === "closed").length} />
+        <Stat
+          label="Open"
+          value={state.nonConformities.filter((n) => n.status === "open").length}
+        />
+        <Stat
+          label="CAPA submitted"
+          value={state.nonConformities.filter((n) => n.status === "capa_submitted").length}
+          tone="pale"
+        />
+        <Stat
+          label="Closed"
+          value={state.nonConformities.filter((n) => n.status === "closed").length}
+        />
         <Stat
           label="Actions overdue"
-          value={state.nonConformities.flatMap((n) => n.capa).filter((c) => c.status !== "complete").length}
+          value={
+            state.nonConformities.flatMap((n) => n.capa).filter((c) => c.status !== "complete")
+              .length
+          }
           sub="pending completion"
         />
       </div>
@@ -80,7 +107,9 @@ function NonConformitiesPage() {
           <SectionTitle title="New non-conformity" />
           <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
             <label className="block sm:col-span-2">
-              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Title</span>
+              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Title
+              </span>
               <input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -89,7 +118,9 @@ function NonConformitiesPage() {
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Against</span>
+              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Against
+              </span>
               <input
                 value={form.against}
                 onChange={(e) => setForm({ ...form, against: e.target.value })}
@@ -97,10 +128,14 @@ function NonConformitiesPage() {
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Severity</span>
+              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Severity
+              </span>
               <select
                 value={form.severity}
-                onChange={(e) => setForm({ ...form, severity: e.target.value as NonConformity["severity"] })}
+                onChange={(e) =>
+                  setForm({ ...form, severity: e.target.value as NonConformity["severity"] })
+                }
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-link"
               >
                 <option value="minor">Minor</option>
@@ -109,7 +144,9 @@ function NonConformitiesPage() {
               </select>
             </label>
             <label className="block sm:col-span-2">
-              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Detail</span>
+              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Detail
+              </span>
               <textarea
                 rows={3}
                 value={form.detail}
@@ -165,10 +202,15 @@ function NonConformitiesPage() {
                 </p>
                 <div className="mt-2 divide-y divide-border rounded-2xl border border-border">
                   {n.capa.length === 0 ? (
-                    <p className="px-4 py-4 text-sm text-muted-foreground">No actions submitted yet.</p>
+                    <p className="px-4 py-4 text-sm text-muted-foreground">
+                      No actions submitted yet.
+                    </p>
                   ) : (
                     n.capa.map((c) => (
-                      <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                      <div
+                        key={c.id}
+                        className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+                      >
                         <div>
                           <p className="text-sm font-medium text-navy">{c.action}</p>
                           <p className="text-xs text-muted-foreground">

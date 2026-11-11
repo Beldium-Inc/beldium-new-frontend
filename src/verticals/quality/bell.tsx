@@ -4,10 +4,7 @@ import { Bell } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { QualityNotification } from "@/lib/api/quality";
-import {
-  useMarkQualityNotificationRead,
-  useQualityNotifications,
-} from "@/lib/api/quality-queries";
+import { useMarkQualityNotificationRead, useQualityNotifications } from "@/lib/api/quality-queries";
 import { cn } from "@/lib/utils";
 
 function timeAgo(iso: string): string {
@@ -62,9 +59,7 @@ export function QualityNotificationBell() {
         </p>
         <div className="max-h-96 overflow-y-auto">
           {items.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-              Nothing new yet.
-            </p>
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">Nothing new yet.</p>
           ) : (
             items.map((n) => (
               <button

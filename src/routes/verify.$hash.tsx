@@ -99,8 +99,7 @@ function VerifyPage() {
       </div>
 
       <p className="mt-6 max-w-md text-center text-xs text-muted-foreground">
-        Beldium issues an independent verification record. It is not a government permit or
-        licence.
+        Beldium issues an independent verification record. It is not a government permit or licence.
       </p>
     </div>
   );

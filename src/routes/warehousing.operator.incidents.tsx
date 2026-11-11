@@ -7,24 +7,37 @@ import { useDemo } from "@/verticals/warehousing/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { WarehousingIncidentCategory, WarehousingIncidentSeverity } from "@/lib/api/warehousing";
+import type {
+  WarehousingIncidentCategory,
+  WarehousingIncidentSeverity,
+} from "@/lib/api/warehousing";
 import { useWarehousingApplicationRequests } from "@/lib/api/warehousing-queries";
 
 export const Route = createFileRoute("/warehousing/operator/incidents")({
   head: () => ({
     meta: [
       { title: "Incidents | Beldium Warehouse Operator" },
-      { name: "description", content: "Report and track safety, environmental, security and stock-integrity incidents; respond to reviewer information requests." },
+      {
+        name: "description",
+        content:
+          "Report and track safety, environmental, security and stock-integrity incidents; respond to reviewer information requests.",
+      },
     ],
   }),
   component: IncidentsPage,
 });
 
-const CATEGORIES: WarehousingIncidentCategory[] = ["safety", "environmental", "security", "stock_integrity"];
+const CATEGORIES: WarehousingIncidentCategory[] = [
+  "safety",
+  "environmental",
+  "security",
+  "stock_integrity",
+];
 const SEVERITIES: WarehousingIncidentSeverity[] = ["low", "medium", "high"];
 
 function IncidentsPage() {
-  const { state, myWarehouse, myApplication, reportIncident, closeIncident, respondToRequest } = useDemo();
+  const { state, myWarehouse, myApplication, reportIncident, closeIncident, respondToRequest } =
+    useDemo();
   const requests = useWarehousingApplicationRequests(myApplication?.id ?? null);
   const [message, setMessage] = useState<Record<string, string>>({});
 
@@ -42,8 +55,15 @@ function IncidentsPage() {
   });
 
   return (
-    <AppShell role="operator" title="Incidents" subtitle="Report site incidents and respond to reviewer information requests">
-      <Panel title="Report an incident" description="Safety, environmental, security and stock-integrity events on site.">
+    <AppShell
+      role="operator"
+      title="Incidents"
+      subtitle="Report site incidents and respond to reviewer information requests"
+    >
+      <Panel
+        title="Report an incident"
+        description="Safety, environmental, security and stock-integrity events on site."
+      >
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
             placeholder="Incident title"
@@ -58,19 +78,27 @@ function IncidentsPage() {
           <select
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
             value={form.category}
-            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as WarehousingIncidentCategory }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, category: e.target.value as WarehousingIncidentCategory }))
+            }
           >
             {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c.replace("_", " ")}</option>
+              <option key={c} value={c}>
+                {c.replace("_", " ")}
+              </option>
             ))}
           </select>
           <select
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
             value={form.severity}
-            onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value as WarehousingIncidentSeverity }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, severity: e.target.value as WarehousingIncidentSeverity }))
+            }
           >
             {SEVERITIES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
           <select
@@ -80,7 +108,9 @@ function IncidentsPage() {
           >
             <option value="">Select facility</option>
             {facilities.map((f) => (
-              <option key={f.id} value={f.id}>{f.name}</option>
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
             ))}
           </select>
           <Input
@@ -127,13 +157,17 @@ function IncidentsPage() {
                 <p className="text-sm font-medium text-foreground">{i.title}</p>
                 <div className="flex gap-2">
                   <StatusPill tone={toneForStatus(i.severity)}>{i.severity}</StatusPill>
-                  <StatusPill tone={toneForStatus(i.status)}>{i.status.replace("_", " ")}</StatusPill>
+                  <StatusPill tone={toneForStatus(i.status)}>
+                    {i.status.replace("_", " ")}
+                  </StatusPill>
                 </div>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {i.category.replace("_", " ")} · {i.location || "-"} · {i.occurred_on}
               </p>
-              {i.description && <p className="mt-1 text-sm text-muted-foreground">{i.description}</p>}
+              {i.description && (
+                <p className="mt-1 text-sm text-muted-foreground">{i.description}</p>
+              )}
               {i.status !== "closed" && (
                 <Button
                   size="sm"
@@ -155,7 +189,11 @@ function IncidentsPage() {
         </div>
       </Panel>
 
-      <Panel title="Information requests" description="Respond with a message; the reviewer decides whether to accept it." className="mt-6">
+      <Panel
+        title="Information requests"
+        description="Respond with a message; the reviewer decides whether to accept it."
+        className="mt-6"
+      >
         <div className="space-y-3">
           {(requests.data ?? []).map((r) => (
             <div key={r.id} className="rounded-xl border border-border/70 p-4">
@@ -164,7 +202,9 @@ function IncidentsPage() {
                 <StatusPill tone={toneForStatus(r.status)}>{r.status}</StatusPill>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{r.message}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Due {r.due_date} · items: {r.items.join(", ")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Due {r.due_date} · items: {r.items.join(", ")}
+              </p>
               {r.status === "open" && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <input
@@ -191,7 +231,9 @@ function IncidentsPage() {
             </div>
           ))}
           {(requests.data ?? []).length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">No information requests.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No information requests.
+            </p>
           )}
         </div>
       </Panel>

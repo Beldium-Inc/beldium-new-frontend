@@ -270,7 +270,9 @@ function SampleDetail() {
                       <th className="px-6 py-3 font-semibold">Result</th>
                       <th className="px-6 py-3 font-semibold">Specification</th>
                       <th className="px-6 py-3 font-semibold">Verdict</th>
-                      {canRecordResults ? <th className="px-6 py-3 font-semibold">Record</th> : null}
+                      {canRecordResults ? (
+                        <th className="px-6 py-3 font-semibold">Record</th>
+                      ) : null}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -441,7 +443,8 @@ function SampleDetail() {
 
 function describeLimit(l: { min: string; max: string; unit: string; method: string }): string {
   const bounds = [l.min ? `min ${l.min}` : "", l.max ? `max ${l.max}` : ""].filter(Boolean);
-  const range = bounds.length > 0 ? bounds.join(" · ") + (l.unit ? ` ${l.unit}` : "") : "No limit set";
+  const range =
+    bounds.length > 0 ? bounds.join(" · ") + (l.unit ? ` ${l.unit}` : "") : "No limit set";
   return l.method ? `${range} · ${l.method}` : range;
 }
 

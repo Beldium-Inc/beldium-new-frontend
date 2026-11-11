@@ -63,7 +63,14 @@ export const navByRole: Record<Role, NavItem[]> = {
     allNav.audit,
     allNav.team,
   ],
-  partner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr, allNav.vault, allNav.team],
+  partner: [
+    allNav.dashboard,
+    allNav.samples,
+    allNav.certificates,
+    allNav.ncr,
+    allNav.vault,
+    allNav.team,
+  ],
   miner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.team],
   buyer: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr, allNav.team],
   regulator: [

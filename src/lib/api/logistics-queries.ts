@@ -622,9 +622,7 @@ export function useCreateCondition() {
 export function useSubmitConditionEvidence() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (
-      input: { id: UUID } & Parameters<typeof submitConditionEvidence>[1],
-    ) => {
+    mutationFn: (input: { id: UUID } & Parameters<typeof submitConditionEvidence>[1]) => {
       const { id, ...rest } = input;
       return submitConditionEvidence(id, rest);
     },
@@ -635,7 +633,8 @@ export function useSubmitConditionEvidence() {
 export function useReviewCondition() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; notes: string }) => reviewCondition(input.id, { notes: input.notes }),
+    mutationFn: (input: { id: UUID; notes: string }) =>
+      reviewCondition(input.id, { notes: input.notes }),
     onSuccess: () => invalidateLogistics(queryClient),
   });
 }
@@ -652,7 +651,8 @@ export function useCreateRestriction() {
 export function useResolveRestriction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; notes: string }) => resolveRestriction(input.id, { notes: input.notes }),
+    mutationFn: (input: { id: UUID; notes: string }) =>
+      resolveRestriction(input.id, { notes: input.notes }),
     onSuccess: () => invalidateLogistics(queryClient),
   });
 }

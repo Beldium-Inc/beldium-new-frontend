@@ -59,13 +59,23 @@ const describeError = (err: unknown) =>
 type Tab = "overview" | "review" | "documents" | "risk" | "requests" | "decision" | "activity";
 
 export const Route = createFileRoute("/logistics/operator/applications/$companyId")({
-  validateSearch: (search: Record<string, unknown>) => ({ tab: (search["tab"] as Tab) ?? "overview" }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search["tab"] as Tab) ?? "overview",
+  }),
   head: () => ({
     meta: [
       { title: "Company review | Beldium Compliance Operations" },
-      { name: "description", content: "Nine-domain compliance review with inline document verification and approval decision." },
+      {
+        name: "description",
+        content:
+          "Nine-domain compliance review with inline document verification and approval decision.",
+      },
       { property: "og:title", content: "Company review | Beldium Compliance Operations" },
-      { property: "og:description", content: "Corporate, regulatory, fleet, driver, insurance, H&S, operational, mineral and platform checks." },
+      {
+        property: "og:description",
+        content:
+          "Corporate, regulatory, fleet, driver, insurance, H&S, operational, mineral and platform checks.",
+      },
     ],
   }),
   component: CompanyReview,
@@ -91,11 +101,20 @@ function CompanyReview() {
 
   if (!company) {
     return (
-      <AppShell role="operator" breadcrumbs={[{ label: "Applications", to: "/logistics/operator/applications" }, { label: "Unknown" }]}>
+      <AppShell
+        role="operator"
+        breadcrumbs={[
+          { label: "Applications", to: "/logistics/operator/applications" },
+          { label: "Unknown" },
+        ]}
+      >
         <Panel>
           <p className="text-sm text-muted-foreground">
             No application found for {companyId}.{" "}
-            <Link to="/logistics/operator/applications" className="text-[var(--link)] hover:underline">
+            <Link
+              to="/logistics/operator/applications"
+              className="text-[var(--link)] hover:underline"
+            >
               Back to applications
             </Link>
           </p>
@@ -104,7 +123,12 @@ function CompanyReview() {
     );
   }
 
-  const setTab = (t: Tab) => navigate({ to: "/logistics/operator/applications/$companyId", params: { companyId }, search: { tab: t } });
+  const setTab = (t: Tab) =>
+    navigate({
+      to: "/logistics/operator/applications/$companyId",
+      params: { companyId },
+      search: { tab: t },
+    });
   const rich = company.checks.length > 0;
 
   return (
@@ -176,7 +200,9 @@ function CompanyReview() {
             onClick={() => setTab(t.key)}
             className={cn(
               "rounded-lg px-3.5 py-2 text-xs font-medium whitespace-nowrap transition",
-              tab === t.key ? "bg-[var(--brand)] text-white" : "text-muted-foreground hover:bg-muted hover:text-[var(--brand)]",
+              tab === t.key
+                ? "bg-[var(--brand)] text-white"
+                : "text-muted-foreground hover:bg-muted hover:text-[var(--brand)]",
             )}
           >
             {t.label}
@@ -185,7 +211,10 @@ function CompanyReview() {
       </div>
 
       {!rich && tab !== "requests" && tab !== "decision" ? (
-        <Panel title="Summary record" description="This operator holds a summary compliance record in the prototype dataset.">
+        <Panel
+          title="Summary record"
+          description="This operator holds a summary compliance record in the prototype dataset."
+        >
           <KeyValue
             items={[
               { label: "Registered name", value: company.name },
@@ -226,7 +255,10 @@ function OverviewTab({ company }: { company: Company }) {
   return (
     <div className="grid gap-4 xl:grid-cols-3">
       <div className="space-y-4 xl:col-span-2">
-        <Panel title="Company information" description="Verified against Corporate Affairs Commission records">
+        <Panel
+          title="Company information"
+          description="Verified against Corporate Affairs Commission records"
+        >
           <KeyValue
             items={[
               { label: "Registered name", value: company.name },
@@ -275,7 +307,15 @@ function OverviewTab({ company }: { company: Company }) {
                       {v.make} {v.model} · {v.type}
                     </p>
                   </div>
-                  <Pill tone={v.status === "Compliant" ? "success" : v.status === "Attention" ? "warning" : "danger"}>
+                  <Pill
+                    tone={
+                      v.status === "Compliant"
+                        ? "success"
+                        : v.status === "Attention"
+                          ? "warning"
+                          : "danger"
+                    }
+                  >
                     {v.status}
                   </Pill>
                 </li>
@@ -293,7 +333,15 @@ function OverviewTab({ company }: { company: Company }) {
                       {d.licenceClass} · expires {d.licenceExpiry}
                     </p>
                   </div>
-                  <Pill tone={d.status === "Compliant" ? "success" : d.status === "Attention" ? "warning" : "danger"}>
+                  <Pill
+                    tone={
+                      d.status === "Compliant"
+                        ? "success"
+                        : d.status === "Attention"
+                          ? "warning"
+                          : "danger"
+                    }
+                  >
                     {d.status}
                   </Pill>
                 </li>
@@ -306,7 +354,9 @@ function OverviewTab({ company }: { company: Company }) {
       <div className="space-y-4">
         <Panel title="Compliance score" description="Weighted across nine domains">
           <div className="mb-4 flex items-end gap-2">
-            <span className="font-display text-4xl leading-none font-semibold text-[var(--brand)]">{company.riskScore}</span>
+            <span className="font-display text-4xl leading-none font-semibold text-[var(--brand)]">
+              {company.riskScore}
+            </span>
             <span className="pb-1 text-sm text-muted-foreground">/ 100</span>
             <span className="ml-auto pb-1">
               <RiskBadge risk={company.risk} />
@@ -665,7 +715,11 @@ function DocumentsTab({ company }: { company: Company }) {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
-      <Panel title="Submitted documents" description={`${company.documents.length} files`} bodyClassName="p-0">
+      <Panel
+        title="Submitted documents"
+        description={`${company.documents.length} files`}
+        bodyClassName="p-0"
+      >
         <div className="flex flex-wrap gap-1.5 border-b border-border p-3">
           {categories.map((c) => (
             <button
@@ -674,7 +728,9 @@ function DocumentsTab({ company }: { company: Company }) {
               onClick={() => setFilter(c)}
               className={cn(
                 "rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
-                filter === c ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-border text-muted-foreground hover:border-[var(--link)]/50",
+                filter === c
+                  ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                  : "border-border text-muted-foreground hover:border-[var(--link)]/50",
               )}
             >
               {c}
@@ -694,7 +750,9 @@ function DocumentsTab({ company }: { company: Company }) {
               >
                 <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--link)]" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-[var(--brand)]">{d.name}</span>
+                  <span className="block truncate text-sm font-medium text-[var(--brand)]">
+                    {d.name}
+                  </span>
                   <span className="block text-[11px] text-muted-foreground">
                     {d.category} · {d.type} · {d.size}
                   </span>
@@ -794,7 +852,9 @@ function DocumentsTab({ company }: { company: Company }) {
 
             <div className="space-y-4">
               <div className="rounded-xl border border-border p-4">
-                <p className="mb-3 font-display text-xs font-semibold text-[var(--brand)]">Document metadata</p>
+                <p className="mb-3 font-display text-xs font-semibold text-[var(--brand)]">
+                  Document metadata
+                </p>
                 <dl className="space-y-2 text-xs">
                   {[
                     ["Issuer", selected.issuer],
@@ -817,9 +877,12 @@ function DocumentsTab({ company }: { company: Company }) {
 
               {selected.reviewTags?.length ? (
                 <div className="rounded-xl border border-border p-4">
-                  <p className="font-display text-xs font-semibold text-[var(--brand)]">File checks</p>
+                  <p className="font-display text-xs font-semibold text-[var(--brand)]">
+                    File checks
+                  </p>
                   <p className="mt-0.5 mb-3 text-[11px] text-muted-foreground">
-                    Read automatically from the file's metadata. Advisory only, and shown to reviewers only.
+                    Read automatically from the file's metadata. Advisory only, and shown to
+                    reviewers only.
                   </p>
                   <ul className="space-y-2.5">
                     {selected.reviewTags.map((t) => (
@@ -833,7 +896,9 @@ function DocumentsTab({ company }: { company: Company }) {
               ) : null}
 
               <div className="rounded-xl border border-border p-4">
-                <p className="mb-2 font-display text-xs font-semibold text-[var(--brand)]">Document notes</p>
+                <p className="mb-2 font-display text-xs font-semibold text-[var(--brand)]">
+                  Document notes
+                </p>
                 <ul className="mb-3 space-y-2">
                   {notes.length === 0 ? (
                     <li className="text-xs text-muted-foreground">No notes recorded.</li>
@@ -1100,8 +1165,15 @@ export function RequestInfoModal({
     <div className="fixed inset-0 z-50 grid place-items-center bg-[var(--brand)]/40 p-4">
       <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-xl">
         <header className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h3 className="font-display text-sm font-semibold text-[var(--brand)]">Request additional information</h3>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-md p-1 text-muted-foreground hover:bg-muted">
+          <h3 className="font-display text-sm font-semibold text-[var(--brand)]">
+            Request additional information
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-md p-1 text-muted-foreground hover:bg-muted"
+          >
             <X className="h-4 w-4" />
           </button>
         </header>
@@ -1119,7 +1191,9 @@ export function RequestInfoModal({
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--brand)]">Required items (one per line)</label>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--brand)]">
+              Required items (one per line)
+            </label>
             <textarea
               rows={3}
               value={items}
@@ -1129,7 +1203,9 @@ export function RequestInfoModal({
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--brand)]">Message to partner</label>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--brand)]">
+              Message to partner
+            </label>
             <textarea
               rows={4}
               value={message}
@@ -1140,7 +1216,11 @@ export function RequestInfoModal({
           </div>
         </div>
         <footer className="flex justify-end gap-2 border-t border-border px-5 py-3.5">
-          <button type="button" onClick={onClose} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-[var(--brand)]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-[var(--brand)]"
+          >
             Cancel
           </button>
           <button
@@ -1151,7 +1231,10 @@ export function RequestInfoModal({
                 companyId,
                 reason ?? "Additional information required",
                 message.trim(),
-                items.split("\n").map((i) => i.trim()).filter(Boolean),
+                items
+                  .split("\n")
+                  .map((i) => i.trim())
+                  .filter(Boolean),
               );
               toast.success("Information request sent to partner");
               onClose();
@@ -1183,7 +1266,9 @@ function RequestsTab({ company }: { company: Company }) {
     }
     setBusy(id);
     const call =
-      action === "withdraw" ? withdrawRequest(id, note) : reviewResponse(id, action === "accept", note);
+      action === "withdraw"
+        ? withdrawRequest(id, note)
+        : reviewResponse(id, action === "accept", note);
     call
       .then(() => {
         toast.success(
@@ -1221,8 +1306,16 @@ function RequestsTab({ company }: { company: Company }) {
           {list.map((r) => (
             <li key={r.id} className="px-5 py-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-display text-sm font-semibold text-[var(--brand)]">{r.reason}</span>
-                <Pill tone={r.status === "Open" ? "warning" : r.status === "Responded" ? "info" : "success"}>{r.status}</Pill>
+                <span className="font-display text-sm font-semibold text-[var(--brand)]">
+                  {r.reason}
+                </span>
+                <Pill
+                  tone={
+                    r.status === "Open" ? "warning" : r.status === "Responded" ? "info" : "success"
+                  }
+                >
+                  {r.status}
+                </Pill>
                 <span className="ml-auto text-xs text-muted-foreground">
                   {r.id} · raised {r.raisedAt} by {r.raisedBy} · due {r.due}
                 </span>
@@ -1239,7 +1332,9 @@ function RequestsTab({ company }: { company: Company }) {
               ) : null}
               {r.response ? (
                 <div className="mt-3 rounded-lg border border-[#b9d3fb] bg-[var(--brand-soft)]/50 px-3 py-2 text-xs">
-                  <p className="font-medium text-[var(--brand)]">Partner response · {r.response.at}</p>
+                  <p className="font-medium text-[var(--brand)]">
+                    Partner response · {r.response.at}
+                  </p>
                   <p className="mt-0.5 text-muted-foreground">{r.response.message}</p>
                   {r.response.files.map((f) => (
                     <p key={f} className="mt-1 flex items-center gap-1.5 text-[var(--link)]">
@@ -1300,7 +1395,11 @@ function RequestsTab({ company }: { company: Company }) {
               ) : null}
             </li>
           ))}
-          {list.length === 0 ? <li className="px-5 py-10 text-center text-sm text-muted-foreground">No requests raised.</li> : null}
+          {list.length === 0 ? (
+            <li className="px-5 py-10 text-center text-sm text-muted-foreground">
+              No requests raised.
+            </li>
+          ) : null}
         </ul>
       </Panel>
       {open ? <RequestInfoModal companyId={company.id} onClose={() => setOpen(false)} /> : null}
@@ -1633,7 +1732,11 @@ function DecisionTab({ company }: { company: Company }) {
 
 function ActivityTab({ company }: { company: Company }) {
   return (
-    <Panel title="Case activity" description="Chronological record for this application" bodyClassName="p-0">
+    <Panel
+      title="Case activity"
+      description="Chronological record for this application"
+      bodyClassName="p-0"
+    >
       <ul className="divide-y divide-border">
         {[...company.activity].reverse().map((a) => (
           <li key={a.id} className="flex gap-3 px-5 py-4">
@@ -1643,7 +1746,17 @@ function ActivityTab({ company }: { company: Company }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-medium text-[var(--brand)]">{a.action}</p>
-                <Pill tone={a.channel === "System" ? "info" : a.channel === "Partner" ? "neutral" : "success"}>{a.channel}</Pill>
+                <Pill
+                  tone={
+                    a.channel === "System"
+                      ? "info"
+                      : a.channel === "Partner"
+                        ? "neutral"
+                        : "success"
+                  }
+                >
+                  {a.channel}
+                </Pill>
                 <span className="ml-auto text-xs text-muted-foreground">{a.at}</span>
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">

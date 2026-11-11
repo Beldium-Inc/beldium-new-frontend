@@ -22,7 +22,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { EmptyState, Field, PageHeader, Pill, Stat, Surface } from "@/verticals/quality/ui";
 import { ApiError } from "@/lib/api/errors";
 import {
@@ -74,7 +80,10 @@ function formatDate(value: string): string {
 }
 
 function titleFromFile(name: string): string {
-  return name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+  return name
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
 }
 
 function StatusBadge({ status }: { status: VaultStatus }) {
@@ -224,7 +233,9 @@ function VaultBody({ vault, maxUploadBytes }: { vault: VaultSector; maxUploadByt
           ) : null}
 
           {documents.isLoading ? (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground">Loading documents…</p>
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+              Loading documents…
+            </p>
           ) : rows.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <FolderOpen className="mx-auto size-8 text-muted-foreground" />
@@ -309,7 +320,11 @@ function FolderButton({
         active ? "bg-pale font-semibold text-navy" : "text-muted-foreground hover:bg-muted",
       )}
     >
-      {active ? <FolderOpen className="size-4 shrink-0" /> : <FolderClosed className="size-4 shrink-0" />}
+      {active ? (
+        <FolderOpen className="size-4 shrink-0" />
+      ) : (
+        <FolderClosed className="size-4 shrink-0" />
+      )}
       <span className="flex-1 truncate">{label}</span>
       <span className="text-xs">{count}</span>
     </button>
@@ -467,8 +482,14 @@ function UploadDialog({
         ) : null}
 
         <label className="block">
-          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Folder</span>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
+          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Folder
+          </span>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={inputClass}
+          >
             {vault.categories.map((c) => (
               <option key={c.code} value={c.code}>
                 {c.name}
@@ -479,7 +500,9 @@ function UploadDialog({
 
         {files.length <= 1 ? (
           <label className="block">
-            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Title</span>
+            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Title
+            </span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -506,9 +529,18 @@ function UploadDialog({
           />
         </label>
 
-        <button type="button" className={primaryButton} disabled={busy || !files.length} onClick={submit}>
+        <button
+          type="button"
+          className={primaryButton}
+          disabled={busy || !files.length}
+          onClick={submit}
+        >
           <Upload className="size-4" />
-          {busy ? "Uploading…" : files.length > 1 ? `Back up ${files.length} files` : "Back up document"}
+          {busy
+            ? "Uploading…"
+            : files.length > 1
+              ? `Back up ${files.length} files`
+              : "Back up document"}
         </button>
       </DialogContent>
     </Dialog>
@@ -580,7 +612,10 @@ function DocumentSheet({
                   try {
                     const result = await verify.mutateAsync(doc.id);
                     if (result.intact) toast.success("The stored copy matches its fingerprint.");
-                    else toast.error("The stored copy does not match its fingerprint. Tell the Beldium desk.");
+                    else
+                      toast.error(
+                        "The stored copy does not match its fingerprint. Tell the Beldium desk.",
+                      );
                   } catch (error) {
                     toast.error(errorMessage(error));
                   }
@@ -609,7 +644,11 @@ function DocumentSheet({
                   e.target.value = "";
                   if (!file) return;
                   try {
-                    const created = await addVersion.mutateAsync({ id: doc.id, file, note: versionNote });
+                    const created = await addVersion.mutateAsync({
+                      id: doc.id,
+                      file,
+                      note: versionNote,
+                    });
                     setVersionNote("");
                     toast.success(`Version ${created.version} backed up`);
                     onOpenVersion(created.id);
@@ -668,7 +707,11 @@ function DocumentSheet({
               <Field label="Size" value={formatSize(doc.size_bytes)} />
               <Field
                 label="Approved by"
-                value={doc.approved_by ? `${doc.approved_by}, ${formatDate(doc.approved_at!)}` : "Not yet"}
+                value={
+                  doc.approved_by
+                    ? `${doc.approved_by}, ${formatDate(doc.approved_at!)}`
+                    : "Not yet"
+                }
               />
             </dl>
             {doc.description ? (
@@ -691,7 +734,9 @@ function DocumentSheet({
                     type="button"
                     className={cn(
                       "flex-1 text-left",
-                      version.id === doc.id ? "font-semibold text-navy" : "text-link hover:underline",
+                      version.id === doc.id
+                        ? "font-semibold text-navy"
+                        : "text-link hover:underline",
                     )}
                     onClick={() => onOpenVersion(version.id)}
                   >
@@ -716,7 +761,9 @@ function DocumentSheet({
 
             {isDesk && detail.data!.activity.length ? (
               <>
-                <h4 className="mt-8 text-xs font-semibold tracking-wide text-navy uppercase">Activity</h4>
+                <h4 className="mt-8 text-xs font-semibold tracking-wide text-navy uppercase">
+                  Activity
+                </h4>
                 <ul className="mt-2 space-y-2">
                   {detail.data!.activity.map((entry) => (
                     <li key={entry.id} className="text-xs text-muted-foreground">

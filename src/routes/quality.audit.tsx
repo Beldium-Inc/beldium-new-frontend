@@ -33,7 +33,9 @@ function AuditPage() {
   const [q, setQ] = React.useState("");
 
   const entries = [
-    ...state.applications.flatMap((a) => a.audit.map((e) => ({ ...e, ctx: a.ref, kind: "Application" }))),
+    ...state.applications.flatMap((a) =>
+      a.audit.map((e) => ({ ...e, ctx: a.ref, kind: "Application" })),
+    ),
     ...state.samples.flatMap((s) => s.audit.map((e) => ({ ...e, ctx: s.ref, kind: "Sample" }))),
   ]
     .filter((e) =>
@@ -53,7 +55,11 @@ function AuditPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Total entries" value={entries.length} />
-        <Stat label="Application events" value={entries.filter((e) => e.kind === "Application").length} tone="pale" />
+        <Stat
+          label="Application events"
+          value={entries.filter((e) => e.kind === "Application").length}
+          tone="pale"
+        />
         <Stat label="Sample events" value={entries.filter((e) => e.kind === "Sample").length} />
         <Stat label="Distinct actors" value={new Set(entries.map((e) => e.actor)).size} />
       </div>
@@ -76,7 +82,10 @@ function AuditPage() {
             <EmptyState title="No matching events" />
           ) : (
             entries.map((e, i) => (
-              <div key={`${e.id}-${i}`} className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
+              <div
+                key={`${e.id}-${i}`}
+                className="flex flex-wrap items-start justify-between gap-3 px-6 py-4"
+              >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-navy">{e.action}</p>

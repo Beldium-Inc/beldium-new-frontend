@@ -70,14 +70,22 @@ function RfqDetail() {
     >
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Target volume" value={fmtTonnes(rfq.volumeTonnes)} hint={rfq.deliveryWindow} />
+          <Metric
+            label="Target volume"
+            value={fmtTonnes(rfq.volumeTonnes)}
+            hint={rfq.deliveryWindow}
+          />
           <Metric
             label="Aggregated"
             value={`${pct}%`}
             hint={`${fmtTonnes(filled)} from ${allocations.length} verified miners`}
             tone={pct >= 100 ? "success" : "warning"}
           />
-          <Metric label="Indicative commitment" value={fmtUsd(commitment)} hint={`at $${rfq.targetPriceUsd}/t`} />
+          <Metric
+            label="Indicative commitment"
+            value={fmtUsd(commitment)}
+            hint={`at $${rfq.targetPriceUsd}/t`}
+          />
           <Metric
             label="Status"
             value={rfq.status.replace(/_/g, " ")}
@@ -93,12 +101,16 @@ function RfqDetail() {
               <Button variant="outline" size="sm" onClick={() => autoAggregate(rfq.id)}>
                 Re-run matching
               </Button>
-              <Button size="sm" onClick={() => {
-                dispatchNotifications(rfq.id);
-                toast.success("Notifications dispatched", {
-                  description: "SMS, email and in-app messages queued to eligible verified miners.",
-                });
-              }}>
+              <Button
+                size="sm"
+                onClick={() => {
+                  dispatchNotifications(rfq.id);
+                  toast.success("Notifications dispatched", {
+                    description:
+                      "SMS, email and in-app messages queued to eligible verified miners.",
+                  });
+                }}
+              >
                 <Send className="size-4" /> Notify eligible miners
               </Button>
             </div>
@@ -127,8 +139,8 @@ function RfqDetail() {
               ))}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Only miners with verified compliance status are eligible for aggregation. Restricted and
-              under-review producers are excluded automatically.
+              Only miners with verified compliance status are eligible for aggregation. Restricted
+              and under-review producers are excluded automatically.
             </p>
           </div>
 
@@ -255,11 +267,17 @@ function RfqDetail() {
             <dl className="space-y-3 text-sm">
               <Row label="Miners accepted" value={`${accepted.length} of ${allocations.length}`} />
               <Row label="Accepted volume" value={fmtTonnes(acceptedTonnes)} />
-              <Row label="Coverage of request" value={`${Math.round((acceptedTonnes / rfq.volumeTonnes) * 100)}%`} />
-              <Row label="Weighted price" value={`$${(
-                accepted.reduce((s, a) => s + a.priceUsdPerTonne * a.tonnes, 0) /
+              <Row
+                label="Coverage of request"
+                value={`${Math.round((acceptedTonnes / rfq.volumeTonnes) * 100)}%`}
+              />
+              <Row
+                label="Weighted price"
+                value={`$${(
+                  accepted.reduce((s, a) => s + a.priceUsdPerTonne * a.tonnes, 0) /
                   (acceptedTonnes || 1)
-              ).toFixed(2)}/t`} />
+                ).toFixed(2)}/t`}
+              />
             </dl>
 
             <div className="mt-4 grid gap-2">

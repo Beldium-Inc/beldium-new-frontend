@@ -61,7 +61,9 @@ const STATUS_LABEL: Record<Api.LogisticsApplicationStatus, LogisticsApplicationS
   rejected: "Rejected",
 };
 
-export function applicationStatusLabel(status: Api.LogisticsApplicationStatus | "not_started"): LogisticsApplicationStatus {
+export function applicationStatusLabel(
+  status: Api.LogisticsApplicationStatus | "not_started",
+): LogisticsApplicationStatus {
   return status === "not_started" ? "Not Started" : STATUS_LABEL[status];
 }
 

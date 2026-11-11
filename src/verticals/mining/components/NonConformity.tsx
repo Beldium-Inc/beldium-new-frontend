@@ -39,7 +39,6 @@ const categories = [
   "Quality",
 ];
 
-
 /** YYYY-MM-DD, `n` days from today. Default due date for new requests. */
 function inDays(n: number): string {
   const d = new Date();

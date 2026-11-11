@@ -60,8 +60,17 @@ type TabKey = (typeof tabs)[number]["key"];
 
 function ApplicationDetail() {
   const { id } = useParams({ from: "/quality/applications/$id" });
-  const { state, role, can, uploadDocument, setDocStatus, resolveFlag, decideApplication, assignApplication, raiseNonConformity } =
-    useBeldium();
+  const {
+    state,
+    role,
+    can,
+    uploadDocument,
+    setDocStatus,
+    resolveFlag,
+    decideApplication,
+    assignApplication,
+    raiseNonConformity,
+  } = useBeldium();
   const [tab, setTab] = React.useState<TabKey>("organisation");
   const [note, setNote] = React.useState("");
 
@@ -152,13 +161,19 @@ function ApplicationDetail() {
           {tab === "organisation" ? (
             <div className="space-y-6">
               <Surface>
-                <SectionTitle title="Organisation profile" hint="Legal identity checked against registry data" />
+                <SectionTitle
+                  title="Organisation profile"
+                  hint="Legal identity checked against registry data"
+                />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
                   <Field label="Legal name" value={app.organisation.legalName} />
                   <Field label="Trading name" value={app.organisation.tradingName} />
                   <Field label="Registration no." value={app.organisation.registrationNo} />
                   <Field label="Incorporated" value={app.organisation.incorporated} />
-                  <Field label="Jurisdiction" value={`${app.organisation.city}, ${app.organisation.country}`} />
+                  <Field
+                    label="Jurisdiction"
+                    value={`${app.organisation.city}, ${app.organisation.country}`}
+                  />
                   <Field
                     label="Website"
                     value={<span className="text-link">{app.organisation.website}</span>}
@@ -177,7 +192,10 @@ function ApplicationDetail() {
               </Surface>
 
               <Surface>
-                <SectionTitle title="Beneficial ownership" hint="Screened against PEP and sanctions lists" />
+                <SectionTitle
+                  title="Beneficial ownership"
+                  hint="Screened against PEP and sanctions lists"
+                />
                 <div className="divide-y divide-border">
                   {app.organisation.beneficialOwners.map((o) => (
                     <div key={o.name} className="flex items-center justify-between px-6 py-4">
@@ -185,7 +203,11 @@ function ApplicationDetail() {
                         <p className="text-sm font-medium text-navy">{o.name}</p>
                         <p className="text-xs text-muted-foreground">{o.share}% holding</p>
                       </div>
-                      {o.pep ? <Pill tone="warning">PEP match</Pill> : <Pill tone="success">clear</Pill>}
+                      {o.pep ? (
+                        <Pill tone="warning">PEP match</Pill>
+                      ) : (
+                        <Pill tone="success">clear</Pill>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -209,8 +231,14 @@ function ApplicationDetail() {
                     />
                     {app.onboarding.offersSampling ? (
                       <>
-                        <Field label="Geographic coverage" value={app.onboarding.coverage.join(", ")} />
-                        <Field label="Field sampling teams" value={app.onboarding.samplingTeams ?? "-"} />
+                        <Field
+                          label="Geographic coverage"
+                          value={app.onboarding.coverage.join(", ")}
+                        />
+                        <Field
+                          label="Field sampling teams"
+                          value={app.onboarding.samplingTeams ?? "-"}
+                        />
                         <Field label="Tamper-evident sealing" value={app.onboarding.sealing} />
                         <Field
                           label="Sampling procedure summary"
@@ -218,25 +246,40 @@ function ApplicationDetail() {
                         />
                       </>
                     ) : (
-                      <Field label="Field sampling" value="Not offered: tests delivered samples only" />
+                      <Field
+                        label="Field sampling"
+                        value="Not offered: tests delivered samples only"
+                      />
                     )}
                   </dl>
                 </Surface>
               ) : null}
               <Surface>
-                <SectionTitle title="Lead assessor" hint="Professional competence for material assessment" />
+                <SectionTitle
+                  title="Lead assessor"
+                  hint="Professional competence for material assessment"
+                />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2">
                   <Field label="Name" value={app.capability.leadAssessor} />
                   <Field label="Credential" value={app.capability.credential} />
                   <Field label="Experience" value={`${app.capability.yearsExperience} years`} />
-                  <Field label="Registry" value={`${app.capability.registry} (${app.capability.registryId})`} />
+                  <Field
+                    label="Registry"
+                    value={`${app.capability.registry} (${app.capability.registryId})`}
+                  />
                 </dl>
               </Surface>
               <Surface>
-                <SectionTitle title="Technical staff competency" hint="Signed-off competency per declared method" />
+                <SectionTitle
+                  title="Technical staff competency"
+                  hint="Signed-off competency per declared method"
+                />
                 <div className="divide-y divide-border">
                   {app.capability.staff.map((s) => (
-                    <div key={s.name} className="flex flex-wrap items-center justify-between gap-2 px-6 py-4">
+                    <div
+                      key={s.name}
+                      className="flex flex-wrap items-center justify-between gap-2 px-6 py-4"
+                    >
                       <div>
                         <p className="text-sm font-medium text-navy">{s.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -308,7 +351,10 @@ function ApplicationDetail() {
                 </Surface>
               ) : null}
               <Surface>
-                <SectionTitle title="Facility accreditation" hint="Checked against the accreditation body register" />
+                <SectionTitle
+                  title="Facility accreditation"
+                  hint="Checked against the accreditation body register"
+                />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
                   <Field label="Facility" value={app.laboratory.facility} />
                   <Field label="Standard" value={app.laboratory.accreditation} />
@@ -382,7 +428,10 @@ function ApplicationDetail() {
                       <EmptyState title="No documents in this category" />
                     ) : (
                       docsByCategory(cat).map((d) => (
-                        <div key={d.id} className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
+                        <div
+                          key={d.id}
+                          className="flex flex-wrap items-start justify-between gap-3 px-6 py-4"
+                        >
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-navy">{d.name}</p>
                             <p className="text-xs text-muted-foreground">
@@ -390,7 +439,9 @@ function ApplicationDetail() {
                               {d.expires ? ` · expires ${d.expires}` : " · no expiry"}
                             </p>
                             {d.conditionalOn ? (
-                              <p className="mt-1 text-xs text-link">Triggered by: {d.conditionalOn}</p>
+                              <p className="mt-1 text-xs text-link">
+                                Triggered by: {d.conditionalOn}
+                              </p>
                             ) : null}
                             {d.note ? (
                               <p className="mt-1 text-xs text-warning-foreground">{d.note}</p>
@@ -404,7 +455,9 @@ function ApplicationDetail() {
                                 onClick={() =>
                                   openApplicationDocument(app.id, d.id).catch((error: unknown) =>
                                     toast.error(
-                                      error instanceof Error ? error.message : "Could not open the file",
+                                      error instanceof Error
+                                        ? error.message
+                                        : "Could not open the file",
                                     ),
                                   )
                                 }
@@ -472,13 +525,22 @@ function ApplicationDetail() {
           {tab === "risk" ? (
             <div className="space-y-6">
               <Surface>
-                <SectionTitle title="Risk flags" hint="Automated screening adjudicated by the operator" />
+                <SectionTitle
+                  title="Risk flags"
+                  hint="Automated screening adjudicated by the operator"
+                />
                 <div className="divide-y divide-border">
                   {app.riskFlags.length === 0 ? (
-                    <EmptyState title="No risk flags raised" hint="Screening returned a clean profile." />
+                    <EmptyState
+                      title="No risk flags raised"
+                      hint="Screening returned a clean profile."
+                    />
                   ) : (
                     app.riskFlags.map((f) => (
-                      <div key={f.id} className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
+                      <div
+                        key={f.id}
+                        className="flex flex-wrap items-start justify-between gap-3 px-6 py-4"
+                      >
                         <div className="flex gap-3">
                           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning-foreground" />
                           <div>
@@ -572,7 +634,9 @@ function ApplicationDetail() {
                 )}
                 {app.decisionNote ? (
                   <div className="mx-6 mb-6 rounded-2xl bg-pale/60 p-4 text-sm text-navy">
-                    <p className="text-xs font-semibold tracking-wide uppercase">Last recorded rationale</p>
+                    <p className="text-xs font-semibold tracking-wide uppercase">
+                      Last recorded rationale
+                    </p>
                     <p className="mt-1">{app.decisionNote}</p>
                   </div>
                 ) : null}
