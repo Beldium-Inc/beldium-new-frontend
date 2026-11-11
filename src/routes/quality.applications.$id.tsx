@@ -23,6 +23,7 @@ import {
   Surface,
 } from "@/verticals/quality/ui";
 import { useBeldium } from "@/verticals/quality/store";
+import { usePendingActions } from "@/verticals/quality/pending-actions";
 import type { ApplicationStatus, PartnerDocument } from "@/verticals/quality/types";
 
 export const Route = createFileRoute("/quality/applications/$id")({
@@ -73,6 +74,7 @@ function ApplicationDetail() {
   } = useBeldium();
   const [tab, setTab] = React.useState<TabKey>("organisation");
   const [note, setNote] = React.useState("");
+  const actions = usePendingActions();
 
   const app = state.applications.find((a) => a.id === id);
   const canDecide = can.decide;
@@ -88,16 +90,17 @@ function ApplicationDetail() {
   const docsByCategory = (cat: PartnerDocument["category"]) =>
     app.documents.filter((d) => d.category === cat);
 
-  const decide = (status: ApplicationStatus) => {
-    decideApplication(app.id, status, note);
-    setNote("");
-    toast.success(
+  const decide = async (status: ApplicationStatus) => {
+    const ok = await actions.run(
+      `decide:${app.id}`,
+      () => decideApplication(app.id, status, note),
       status === "approved"
         ? `${app.organisation.legalName} listed as a Quality & Control Partner`
         : status === "rejected"
           ? "Application rejected and applicant notified"
           : "Information request sent to applicant",
     );
+    if (ok) setNote("");
   };
 
   return (
@@ -122,10 +125,14 @@ function ApplicationDetail() {
             {canDecide && app.status === "submitted" ? (
               <button
                 type="button"
-                onClick={() => {
-                  assignApplication(app.id);
-                  toast.success("Application assigned to you");
-                }}
+                disabled={actions.isBusy(`assign:${app.id}`)}
+                onClick={() =>
+                  void actions.run(
+                    `assign:${app.id}`,
+                    () => assignApplication(app.id),
+                    "Application assigned to you",
+                  )
+                }
                 className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-navy-foreground hover:bg-navy/90"
               >
                 Take review
@@ -492,20 +499,28 @@ function ApplicationDetail() {
                               <>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setDocStatus(app.id, d.id, "verified");
-                                    toast.success(`${d.name} verified`);
-                                  }}
+                                  disabled={actions.isBusy(`doc:${d.id}`)}
+                                  onClick={() =>
+                                    void actions.run(
+                                      `doc:${d.id}`,
+                                      () => setDocStatus(app.id, d.id, "verified"),
+                                      `${d.name} verified`,
+                                    )
+                                  }
                                   className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                                 >
                                   Verify
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setDocStatus(app.id, d.id, "flagged");
-                                    toast("Document flagged for follow-up");
-                                  }}
+                                  disabled={actions.isBusy(`doc:${d.id}`)}
+                                  onClick={() =>
+                                    void actions.run(
+                                      `doc:${d.id}`,
+                                      () => setDocStatus(app.id, d.id, "flagged"),
+                                      "Document flagged for follow-up",
+                                    )
+                                  }
                                   className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-danger-foreground hover:border-danger"
                                 >
                                   Flag
@@ -556,25 +571,34 @@ function ApplicationDetail() {
                             <>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  resolveFlag(app.id, f.id);
-                                  toast.success("Flag cleared, risk score reduced");
-                                }}
+                                disabled={actions.isBusy(`flag:${f.id}`)}
+                                onClick={() =>
+                                  void actions.run(
+                                    `flag:${f.id}`,
+                                    () => resolveFlag(app.id, f.id),
+                                    "Flag cleared, risk score reduced",
+                                  )
+                                }
                                 className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                               >
                                 Clear
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  raiseNonConformity({
-                                    title: f.title,
-                                    against: app.organisation.legalName,
-                                    severity: f.severity === "high" ? "major" : "minor",
-                                    detail: f.detail,
-                                  });
-                                  toast.success("Non-conformity raised");
-                                }}
+                                disabled={actions.isBusy(`ncr:${f.id}`)}
+                                onClick={() =>
+                                  void actions.run(
+                                    `ncr:${f.id}`,
+                                    () =>
+                                      raiseNonConformity({
+                                        title: f.title,
+                                        against: app.organisation.legalName,
+                                        severity: f.severity === "high" ? "major" : "minor",
+                                        detail: f.detail,
+                                      }),
+                                    "Non-conformity raised",
+                                  )
+                                }
                                 className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                               >
                                 Raise NCR
@@ -605,21 +629,24 @@ function ApplicationDetail() {
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => decide("approved")}
+                        disabled={actions.isBusy(`decide:${app.id}`)}
+                        onClick={() => void decide("approved")}
                         className="rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-navy-foreground hover:bg-navy/90"
                       >
                         Approve &amp; list partner
                       </button>
                       <button
                         type="button"
-                        onClick={() => decide("info_requested")}
+                        disabled={actions.isBusy(`decide:${app.id}`)}
+                        onClick={() => void decide("info_requested")}
                         className="rounded-xl border border-warning bg-warning/20 px-4 py-2.5 text-sm font-semibold text-warning-foreground"
                       >
                         Request information
                       </button>
                       <button
                         type="button"
-                        onClick={() => decide("rejected")}
+                        disabled={actions.isBusy(`decide:${app.id}`)}
+                        onClick={() => void decide("rejected")}
                         className="rounded-xl border border-danger bg-danger/15 px-4 py-2.5 text-sm font-semibold text-danger-foreground"
                       >
                         Reject

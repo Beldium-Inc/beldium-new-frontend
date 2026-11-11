@@ -13,6 +13,8 @@ import {
   Surface,
 } from "@/verticals/quality/ui";
 import { useBeldium, useBuyerSpecList } from "@/verticals/quality/store";
+import { usePendingActions } from "@/verticals/quality/pending-actions";
+import { useVerifiedLaboratories } from "@/lib/api/quality-queries";
 import type { TestResult } from "@/verticals/quality/types";
 
 export const Route = createFileRoute("/quality/samples/$id")({
@@ -61,11 +63,16 @@ function SampleDetail() {
     raiseNonConformity,
   } = useBeldium();
   const buyerSpecs = useBuyerSpecList();
+  const actions = usePendingActions();
 
   const sample = state.samples.find((s) => s.id === id);
   const [methods, setMethods] = React.useState<string[]>([methodOptions[0]!]);
   const [priority, setPriority] = React.useState<"standard" | "expedited">("standard");
   const [reviewNote, setReviewNote] = React.useState("");
+  const [laboratory, setLaboratory] = React.useState("");
+  const isOperatorView = role === "operator";
+  // Only the quality desk assigns laboratories, so the list is fetched for it alone.
+  const laboratories = useVerifiedLaboratories(isOperatorView);
 
   if (!sample) {
     return (
@@ -82,6 +89,8 @@ function SampleDetail() {
   const cert = state.certificates.find((c) => c.sampleRef === sample.ref);
 
   const canRecordResults = isPartner || isOperator;
+  // The verdict and the certificate are Beldium decisions. The laboratory
+  // partner never sees these controls.
 
   return (
     <>
@@ -138,20 +147,40 @@ function SampleDetail() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        addCustody(sample.id, "Handover to transporter", "Regional depot", true);
-                        toast.success("Custody event recorded");
-                      }}
+                      disabled={actions.isBusy(`custody:${sample.id}`)}
+                      onClick={() =>
+                        void actions.run(
+                          `custody:${sample.id}`,
+                          () =>
+                            addCustody(
+                              sample.id,
+                              "Handover to transporter",
+                              "Regional depot",
+                              true,
+                            ),
+                          "Custody event recorded",
+                        )
+                      }
                       className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                     >
                       <Truck className="size-3.5" /> Handover
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        addCustody(sample.id, "Received at laboratory", sample.partnerOrg, true);
-                        toast.success("Receipt recorded at laboratory");
-                      }}
+                      disabled={actions.isBusy(`custody:${sample.id}`)}
+                      onClick={() =>
+                        void actions.run(
+                          `custody:${sample.id}`,
+                          () =>
+                            addCustody(
+                              sample.id,
+                              "Received at laboratory",
+                              sample.partnerOrg,
+                              true,
+                            ),
+                          "Receipt recorded at laboratory",
+                        )
+                      }
                       className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                     >
                       <ShieldCheck className="size-3.5" /> Receive
@@ -219,6 +248,30 @@ function SampleDetail() {
                     </button>
                   ))}
                 </div>
+                {isOperatorView ? (
+                  <label className="mt-4 block space-y-1.5">
+                    <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                      Laboratory
+                    </span>
+                    <select
+                      value={laboratory}
+                      onChange={(e) => setLaboratory(e.target.value)}
+                      className="w-full max-w-md rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-link"
+                    >
+                      <option value="">Choose a verified laboratory</option>
+                      {(laboratories.data?.results ?? []).map((lab) => (
+                        <option key={lab.id} value={lab.id}>
+                          {lab.name}
+                        </option>
+                      ))}
+                    </select>
+                    {laboratories.isSuccess && laboratories.data.results.length === 0 ? (
+                      <span className="block text-xs text-muted-foreground">
+                        No verified laboratory is available to assign.
+                      </span>
+                    ) : null}
+                  </label>
+                ) : null}
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <select
                     value={priority}
@@ -230,19 +283,29 @@ function SampleDetail() {
                   </select>
                   <button
                     type="button"
-                    onClick={() => {
+                    disabled={actions.isBusy(`test-request:${sample.id}`)}
+                    onClick={async () => {
                       if (methods.length === 0) {
                         toast.error("Select at least one method");
                         return;
                       }
-                      createTestRequest(sample.id, {
-                        methods,
-                        priority,
-                        turnaround: priority === "expedited" ? "48 hours" : "5 working days",
-                      });
-                      toast.success("Test request submitted to the laboratory");
+                      if (isOperatorView && !laboratory) {
+                        toast.error("Choose a laboratory first");
+                        return;
+                      }
+                      await actions.run(
+                        `test-request:${sample.id}`,
+                        () =>
+                          createTestRequest(sample.id, {
+                            methods,
+                            priority,
+                            turnaround: priority === "expedited" ? "48 hours" : "5 working days",
+                            laboratory: isOperatorView ? laboratory : undefined,
+                          }),
+                        "Test request submitted to the laboratory",
+                      );
                     }}
-                    className="rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-navy-foreground hover:bg-navy/90"
+                    className="rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-navy-foreground hover:bg-navy/90 disabled:opacity-50"
                   >
                     Submit test request
                   </button>
@@ -281,10 +344,14 @@ function SampleDetail() {
                         key={`${r.id}:${r.value}:${r.unit}:${r.uncertainty}`}
                         result={r}
                         editable={canRecordResults}
-                        onSave={(input) => {
-                          updateResult(sample.id, r.id, input);
-                          toast.success(`${r.analyte} recorded`);
-                        }}
+                        saving={actions.isBusy(`result:${r.id}`)}
+                        onSave={(input) =>
+                          actions.run(
+                            `result:${r.id}`,
+                            () => updateResult(sample.id, r.id, input),
+                            `${r.analyte} recorded`,
+                          )
+                        }
                       />
                     ))}
                   </tbody>
@@ -308,7 +375,7 @@ function SampleDetail() {
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{sample.qualityReview.note}</p>
               </div>
-            ) : isPartner ? (
+            ) : isOperator ? (
               <div className="px-6 py-5">
                 <textarea
                   rows={3}
@@ -322,10 +389,14 @@ function SampleDetail() {
                     <button
                       key={v}
                       type="button"
-                      onClick={() => {
-                        submitQualityReview(sample.id, v, reviewNote);
-                        setReviewNote("");
-                        toast.success(`Quality review recorded: ${v}`);
+                      disabled={actions.isBusy(`review:${sample.id}`)}
+                      onClick={async () => {
+                        const ok = await actions.run(
+                          `review:${sample.id}`,
+                          () => submitQualityReview(sample.id, v, reviewNote),
+                          `Quality review recorded: ${v}`,
+                        );
+                        if (ok) setReviewNote("");
                       }}
                       className={
                         v === "pass"
@@ -381,14 +452,23 @@ function SampleDetail() {
                     <StatusPill value={cert.status} />
                   </div>
                 </div>
-              ) : isPartner && sample.qualityReview && sample.qualityReview.verdict !== "fail" ? (
+              ) : isOperator && sample.qualityReview && sample.qualityReview.verdict !== "fail" ? (
                 <button
                   type="button"
+                  disabled={actions.isBusy(`issue:${sample.id}`)}
                   onClick={async () => {
-                    const newId = await issueCertificate(sample.id);
-                    if (!newId) return;
-                    toast.success("Certificate issued");
-                    navigate({ to: "/quality/certificates/$id", params: { id: newId } });
+                    const created: { id: string | null } = { id: null };
+                    const ok = await actions.run(
+                      `issue:${sample.id}`,
+                      async () => {
+                        created.id = await issueCertificate(sample.id);
+                        return created.id !== null;
+                      },
+                      "Certificate issued",
+                    );
+                    if (ok && created.id) {
+                      navigate({ to: "/quality/certificates/$id", params: { id: created.id } });
+                    }
                   }}
                   className="w-full rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-navy-foreground hover:bg-navy/90"
                 >
@@ -403,15 +483,20 @@ function SampleDetail() {
               {isOperator ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    raiseNonConformity({
-                      title: `Deviation on ${sample.ref}`,
-                      against: sample.partnerOrg,
-                      severity: "major",
-                      detail: `Raised from sample dossier ${sample.ref} (${sample.material}, lot ${sample.lot}).`,
-                    });
-                    toast.success("Non-conformity raised against the partner");
-                  }}
+                  disabled={actions.isBusy(`nc:${sample.id}`)}
+                  onClick={() =>
+                    void actions.run(
+                      `nc:${sample.id}`,
+                      () =>
+                        raiseNonConformity({
+                          title: `Deviation on ${sample.ref}`,
+                          against: sample.partnerOrg,
+                          severity: "major",
+                          detail: `Raised from sample dossier ${sample.ref} (${sample.material}, lot ${sample.lot}).`,
+                        }),
+                      "Non-conformity raised against the partner",
+                    )
+                  }
                   className="mt-3 w-full rounded-xl border border-danger bg-danger/10 px-4 py-2.5 text-sm font-semibold text-danger-foreground"
                 >
                   Raise non-conformity
@@ -451,11 +536,13 @@ function describeLimit(l: { min: string; max: string; unit: string; method: stri
 function ResultRow({
   result,
   editable,
+  saving,
   onSave,
 }: {
   result: TestResult;
   editable: boolean;
-  onSave: (input: { value: string; unit: string; uncertainty: string }) => void;
+  saving: boolean;
+  onSave: (input: { value: string; unit: string; uncertainty: string }) => Promise<boolean>;
 }) {
   const [value, setValue] = React.useState(result.value);
   const [unit, setUnit] = React.useState(result.unit);
@@ -501,8 +588,8 @@ function ResultRow({
             />
             <button
               type="button"
-              disabled={!value.trim()}
-              onClick={() => onSave({ value: value.trim(), unit, uncertainty })}
+              disabled={!value.trim() || saving}
+              onClick={() => void onSave({ value: value.trim(), unit, uncertainty })}
               className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-navy hover:border-link hover:text-link disabled:opacity-50"
             >
               Save

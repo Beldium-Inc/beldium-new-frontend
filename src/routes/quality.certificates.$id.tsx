@@ -1,5 +1,5 @@
+import * as React from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { toast } from "sonner";
 import { ArrowLeft, BadgeCheck, Link2, ShieldX } from "lucide-react";
 import { AppShell } from "@/verticals/quality/shell";
 import {
@@ -12,6 +12,8 @@ import {
   Surface,
 } from "@/verticals/quality/ui";
 import { useBeldium } from "@/verticals/quality/store";
+import { usePendingActions } from "@/verticals/quality/pending-actions";
+import { ReasonDialog } from "@/verticals/quality/reason-dialog";
 
 export const Route = createFileRoute("/quality/certificates/$id")({
   head: () => ({
@@ -39,6 +41,8 @@ export const Route = createFileRoute("/quality/certificates/$id")({
 function CertificateDetail() {
   const { id } = useParams({ from: "/quality/certificates/$id" });
   const { state, role, can, revokeCertificate } = useBeldium();
+  const actions = usePendingActions();
+  const [revokeOpen, setRevokeOpen] = React.useState(false);
   const cert = state.certificates.find((c) => c.id === id);
 
   if (!cert) {
@@ -69,16 +73,31 @@ function CertificateDetail() {
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill value={cert.status} />
             {canRevoke && cert.status === "active" ? (
-              <button
-                type="button"
-                onClick={() => {
-                  revokeCertificate(cert.id);
-                  toast("Certificate revoked: public verification will now fail");
-                }}
-                className="inline-flex items-center gap-2 rounded-xl border border-danger bg-danger/15 px-4 py-2 text-sm font-semibold text-danger-foreground"
-              >
-                <ShieldX className="size-4" /> Revoke
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setRevokeOpen(true)}
+                  disabled={actions.isBusy(`revoke:${cert.id}`)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-danger bg-danger/15 px-4 py-2 text-sm font-semibold text-danger-foreground disabled:opacity-50"
+                >
+                  <ShieldX className="size-4" /> Revoke
+                </button>
+                <ReasonDialog
+                  open={revokeOpen}
+                  onOpenChange={setRevokeOpen}
+                  title="Revoke this certificate?"
+                  description="Public verification of this certificate will fail from now on. The reason is kept on the record."
+                  confirmLabel="Revoke certificate"
+                  busy={actions.isBusy(`revoke:${cert.id}`)}
+                  onConfirm={(reason) =>
+                    actions.run(
+                      `revoke:${cert.id}`,
+                      () => revokeCertificate(cert.id, reason),
+                      "Certificate revoked",
+                    )
+                  }
+                />
+              </>
             ) : null}
           </div>
         }

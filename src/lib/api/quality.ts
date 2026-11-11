@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchBlob } from "./client";
 import { apiUrl } from "./config";
 import { readTokens } from "./tokens";
 import type { Paginated, UUID } from "./types";
@@ -352,11 +352,28 @@ export function addCustodyEvent(
   return apiFetch<Sample>(`${BASE}/samples/${id}/custody/`, { method: "POST", body: input });
 }
 
+/**
+ * `laboratory` is an organisation id. Only the quality desk may send it, and the
+ * API refuses a laboratory that is not verified. Leave it out for everyone else.
+ */
 export function createTestRequest(
   id: UUID,
-  input: { methods: string[]; priority: "standard" | "expedited"; turnaround: string },
+  input: {
+    methods: string[];
+    priority: "standard" | "expedited";
+    turnaround: string;
+    laboratory?: UUID | undefined;
+  },
 ): Promise<Sample> {
-  return apiFetch<Sample>(`${BASE}/samples/${id}/test-request/`, { method: "POST", body: input });
+  return apiFetch<Sample>(`${BASE}/samples/${id}/test-request/`, {
+    method: "POST",
+    body: {
+      methods: input.methods,
+      priority: input.priority,
+      turnaround: input.turnaround,
+      ...(input.laboratory ? { laboratory: input.laboratory } : {}),
+    },
+  });
 }
 
 /**
@@ -404,8 +421,12 @@ export function issueCertificate(sampleId: UUID): Promise<Certificate> {
   return apiFetch<Certificate>(`${BASE}/samples/${sampleId}/certificate/`, { method: "POST" });
 }
 
-export function revokeCertificate(id: UUID): Promise<Certificate> {
-  return apiFetch<Certificate>(`${BASE}/certificates/${id}/revoke/`, { method: "POST" });
+/** The reason is stored on the server with the revocation. */
+export function revokeCertificate(id: UUID, reason: string): Promise<Certificate> {
+  return apiFetch<Certificate>(`${BASE}/certificates/${id}/revoke/`, {
+    method: "POST",
+    body: { reason },
+  });
 }
 
 // --- buyer specs --------------------------------------------------------------
@@ -465,9 +486,11 @@ export function advanceCorrectiveAction(ncId: UUID, actionId: UUID): Promise<Cor
   });
 }
 
-export function closeQualityNonConformity(id: UUID): Promise<QualityNonConformity> {
+/** The reason is stored on the server with the closure. */
+export function closeQualityNonConformity(id: UUID, reason: string): Promise<QualityNonConformity> {
   return apiFetch<QualityNonConformity>(`${BASE}/non-conformities/${id}/close/`, {
     method: "POST",
+    body: { reason },
   });
 }
 
@@ -502,13 +525,10 @@ export function uploadQualityApplicationDocument(
  * The download route is authenticated, so a plain link would arrive without it.
  */
 export async function openApplicationDocument(appId: UUID, docId: string): Promise<void> {
-  const tokens = readTokens();
-  const response = await fetch(
+  const blob = await apiFetchBlob(
     apiUrl(`${BASE}/applications/${appId}/documents/${docId}/download/`),
-    { headers: tokens ? { Authorization: `Bearer ${tokens.access}` } : {} },
   );
-  if (!response.ok) throw new Error("The document could not be opened.");
-  const url = URL.createObjectURL(await response.blob());
+  const url = URL.createObjectURL(blob);
   window.open(url, "_blank", "noopener");
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

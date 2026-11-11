@@ -227,12 +227,17 @@ interface Ctx {
   can: { review: boolean; decide: boolean };
   state: State;
   logout: () => void;
-  setDocStatus: (appId: string, docId: string, status: DocStatus) => void;
+  /**
+   * Action methods resolve to true only after the server accepts the change.
+   * Failures are reported to the user and resolve to false, so callers show
+   * a success message only when this is true.
+   */
+  setDocStatus: (appId: string, docId: string, status: DocStatus) => Promise<boolean>;
   /** Resolves true once the file is stored; failures are reported to the user. */
   uploadDocument: (appId: string, docId: string, file: File) => Promise<boolean>;
-  resolveFlag: (appId: string, flagId: string) => void;
-  decideApplication: (appId: string, status: ApplicationStatus, note: string) => void;
-  assignApplication: (appId: string) => void;
+  resolveFlag: (appId: string, flagId: string) => Promise<boolean>;
+  decideApplication: (appId: string, status: ApplicationStatus, note: string) => Promise<boolean>;
+  assignApplication: (appId: string) => Promise<boolean>;
   registerSample: (input: {
     material: string;
     lot: string;
@@ -241,30 +246,46 @@ interface Ctx {
     massKg: number;
     buyerSpecId: string;
   }) => Promise<string | null>;
-  addCustody: (sampleId: string, action: string, location: string, sealIntact: boolean) => void;
+  addCustody: (
+    sampleId: string,
+    action: string,
+    location: string,
+    sealIntact: boolean,
+  ) => Promise<boolean>;
+  /**
+   * `laboratory` is an organisation id. Only the quality desk may send it, and
+   * the laboratory must be verified; the API refuses anything else.
+   */
   createTestRequest: (
     sampleId: string,
-    input: { methods: string[]; priority: "standard" | "expedited"; turnaround: string },
-  ) => void;
+    input: {
+      methods: string[];
+      priority: "standard" | "expedited";
+      turnaround: string;
+      laboratory?: string | undefined;
+    },
+  ) => Promise<boolean>;
   /** The API derives the verdict from the measured value and the spec limit. */
   updateResult: (
     sampleId: string,
     resultId: string,
     input: { value?: string; unit?: string; uncertainty?: string },
-  ) => void;
-  submitQualityReview: (sampleId: string, verdict: ResultVerdict, note: string) => void;
+  ) => Promise<boolean>;
+  submitQualityReview: (sampleId: string, verdict: ResultVerdict, note: string) => Promise<boolean>;
   setSampleStatus: (sampleId: string, status: SampleStatus) => void;
   issueCertificate: (sampleId: string) => Promise<string | null>;
-  revokeCertificate: (certId: string) => void;
+  /** The reason is kept on the server record. Callers must confirm first. */
+  revokeCertificate: (certId: string, reason: string) => Promise<boolean>;
   raiseNonConformity: (input: {
     title: string;
     against: string;
     severity: NonConformity["severity"];
     detail: string;
-  }) => void;
-  addCorrectiveAction: (ncrId: string, action: Omit<CorrectiveAction, "id">) => void;
-  advanceCorrectiveAction: (ncrId: string, actionId: string) => void;
-  closeNonConformity: (ncrId: string) => void;
+  }) => Promise<boolean>;
+  addCorrectiveAction: (ncrId: string, action: Omit<CorrectiveAction, "id">) => Promise<boolean>;
+  advanceCorrectiveAction: (ncrId: string, actionId: string) => Promise<boolean>;
+  /** The reason is kept on the server record. Callers must confirm first. */
+  closeNonConformity: (ncrId: string, reason: string) => Promise<boolean>;
 
   isLoading: boolean;
   error: ApiError | null;
@@ -276,6 +297,20 @@ function reportFailure(error: unknown): void {
   toast.error(
     error instanceof ApiError ? error.message : "Something went wrong. Please try again.",
   );
+}
+
+/**
+ * Run one server call. Resolves true only when the server accepted it; a failure
+ * is reported and resolves false.
+ */
+async function runAction(call: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await call();
+    return true;
+  } catch (error) {
+    reportFailure(error);
+    return false;
+  }
 }
 
 const BeldiumContext = React.createContext<Ctx | null>(null);
@@ -381,18 +416,12 @@ export function BeldiumProvider({
         return false;
       }
     },
-    setDocStatus: (appId, docId, status) => {
-      setDocStatusFor.mutateAsync({ appId, docId, status }).catch(reportFailure);
-    },
-    resolveFlag: (appId, flagId) => {
-      resolveFlagFor.mutateAsync({ appId, flagId }).catch(reportFailure);
-    },
-    decideApplication: (appId, status, note) => {
-      decideApplicationFor.mutateAsync({ id: appId, status, note }).catch(reportFailure);
-    },
-    assignApplication: (appId) => {
-      assignApplicationFor.mutateAsync(appId).catch(reportFailure);
-    },
+    setDocStatus: (appId, docId, status) =>
+      runAction(() => setDocStatusFor.mutateAsync({ appId, docId, status })),
+    resolveFlag: (appId, flagId) => runAction(() => resolveFlagFor.mutateAsync({ appId, flagId })),
+    decideApplication: (appId, status, note) =>
+      runAction(() => decideApplicationFor.mutateAsync({ id: appId, status, note })),
+    assignApplication: (appId) => runAction(() => assignApplicationFor.mutateAsync(appId)),
     registerSample: async (input) => {
       try {
         const created = await registerSampleFor.mutateAsync({
@@ -409,20 +438,16 @@ export function BeldiumProvider({
         return null;
       }
     },
-    addCustody: (sampleId, action, location, sealIntact) => {
-      addCustodyFor
-        .mutateAsync({ id: sampleId, action, location, seal_intact: sealIntact })
-        .catch(reportFailure);
-    },
-    createTestRequest: (sampleId, input) => {
-      createTestRequestFor.mutateAsync({ id: sampleId, ...input }).catch(reportFailure);
-    },
-    updateResult: (sampleId, resultId, input) => {
-      updateTestResultFor.mutateAsync({ sampleId, resultId, ...input }).catch(reportFailure);
-    },
-    submitQualityReview: (sampleId, verdict, note) => {
-      submitQualityReviewFor.mutateAsync({ id: sampleId, verdict, note }).catch(reportFailure);
-    },
+    addCustody: (sampleId, action, location, sealIntact) =>
+      runAction(() =>
+        addCustodyFor.mutateAsync({ id: sampleId, action, location, seal_intact: sealIntact }),
+      ),
+    createTestRequest: (sampleId, input) =>
+      runAction(() => createTestRequestFor.mutateAsync({ id: sampleId, ...input })),
+    updateResult: (sampleId, resultId, input) =>
+      runAction(() => updateTestResultFor.mutateAsync({ sampleId, resultId, ...input })),
+    submitQualityReview: (sampleId, verdict, note) =>
+      runAction(() => submitQualityReviewFor.mutateAsync({ id: sampleId, verdict, note })),
     setSampleStatus: () => {
       // No screen currently drives a bare status change outside the mutations above.
     },
@@ -435,28 +460,22 @@ export function BeldiumProvider({
         return null;
       }
     },
-    revokeCertificate: (certId) => {
-      revokeCertificateFor.mutateAsync(certId).catch(reportFailure);
-    },
-    raiseNonConformity: (input) => {
-      raiseNonConformityFor.mutateAsync(input).catch(reportFailure);
-    },
-    addCorrectiveAction: (ncrId, action) => {
-      addCorrectiveActionFor
-        .mutateAsync({
+    revokeCertificate: (certId, reason) =>
+      runAction(() => revokeCertificateFor.mutateAsync({ id: certId, reason })),
+    raiseNonConformity: (input) => runAction(() => raiseNonConformityFor.mutateAsync(input)),
+    addCorrectiveAction: (ncrId, action) =>
+      runAction(() =>
+        addCorrectiveActionFor.mutateAsync({
           id: ncrId,
           action: action.action,
           owner: action.owner,
           due: action.due,
-        })
-        .catch(reportFailure);
-    },
-    advanceCorrectiveAction: (ncrId, actionId) => {
-      advanceCorrectiveActionFor.mutateAsync({ ncId: ncrId, actionId }).catch(reportFailure);
-    },
-    closeNonConformity: (ncrId) => {
-      closeNonConformityFor.mutateAsync(ncrId).catch(reportFailure);
-    },
+        }),
+      ),
+    advanceCorrectiveAction: (ncrId, actionId) =>
+      runAction(() => advanceCorrectiveActionFor.mutateAsync({ ncId: ncrId, actionId })),
+    closeNonConformity: (ncrId, reason) =>
+      runAction(() => closeNonConformityFor.mutateAsync({ id: ncrId, reason })),
 
     isLoading,
     error: firstError instanceof ApiError ? firstError : null,
