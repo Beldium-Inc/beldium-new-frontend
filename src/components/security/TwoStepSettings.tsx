@@ -443,3 +443,52 @@ function Enabled({
     </div>
   );
 }
+
+/**
+ * The setup flow on its own, for the signup verification step: start, scan,
+ * confirm, save the backup codes. Calls `onDone` once the codes are saved.
+ */
+export function AuthenticatorSetup({ email, onDone }: { email: string; onDone: () => void }) {
+  const queryClient = useQueryClient();
+  const [pairing, setPairing] = useState<{ secret: string; otpauth_url: string } | null>(null);
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
+
+  const start = useMutation({
+    mutationFn: startMfaSetup,
+    onSuccess: setPairing,
+    onError: (cause) => toast.error(errorText(cause, "Could not start setup.")),
+  });
+
+  if (backupCodes) {
+    return (
+      <BackupCodes
+        codes={backupCodes}
+        email={email}
+        onDone={() => {
+          setBackupCodes(null);
+          void queryClient.invalidateQueries({ queryKey: MFA_KEY });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser });
+          onDone();
+        }}
+      />
+    );
+  }
+  if (pairing) {
+    return (
+      <Pairing
+        pairing={pairing}
+        onCancel={() => setPairing(null)}
+        onConfirmed={(codes) => {
+          setPairing(null);
+          setBackupCodes(codes);
+        }}
+      />
+    );
+  }
+  return (
+    <Button size="sm" disabled={start.isPending} onClick={() => start.mutate()}>
+      <ShieldCheck className="mr-1.5 h-4 w-4" />
+      {start.isPending ? "Starting…" : "Set up authenticator app"}
+    </Button>
+  );
+}
