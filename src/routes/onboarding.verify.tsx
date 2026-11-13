@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { pendingInvitation } from "@/lib/onboarding/invite";
 import { useEffect, useState } from "react";
-import { Mail, Smartphone } from "lucide-react";
+import { KeyRound, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { AuthenticatorSetup } from "@/components/security/TwoStepSettings";
 import { ApiError } from "@/lib/api";
-import { confirmPhoneVerification, requestPhoneVerification } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth";
 import { joinsWithCode } from "@/lib/onboarding/data";
 import { useOnboarding } from "@/lib/onboarding/store";
@@ -23,12 +23,6 @@ export const Route = createFileRoute("/onboarding/verify")({
 });
 
 const RESEND_COOLDOWN_SECONDS = 45;
-
-// SMS sending is temporarily disabled on the backend (no approved Termii
-// sender ID yet). Phone verification here is already optional and doesn't
-// block onboarding, but grey it out so people don't wait on a code that
-// won't arrive. Flip back to true once SMS sending is re-enabled.
-const PHONE_VERIFICATION_ENABLED = false;
 
 function ChannelShell({
   icon,
@@ -201,114 +195,62 @@ function EmailChannel({
 }
 
 /**
- * The phone channel is a real OTP, but both of its endpoints need a signed-in
- * account, and the token pair only arrives when the email code is consumed.
- * So this stays locked until the email is verified, rather than pretending the
- * two are independent.
+ * Two-step sign-in with an authenticator app, in place of the old SMS step.
+ * Setting up needs a signed-in account, and the token pair only arrives when
+ * the email code is consumed, so this stays locked until then.
  */
-function PhoneChannel({
-  phone,
-  verified,
+function AuthenticatorChannel({
+  email,
+  enabled,
   emailVerified,
-  onVerified,
+  later,
+  onLater,
+  onEnabled,
 }: {
-  phone: string;
-  verified: boolean;
+  email: string;
+  enabled: boolean;
   emailVerified: boolean;
-  onVerified: () => void;
+  later: boolean;
+  onLater: () => void;
+  onEnabled: () => void;
 }) {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const send = async () => {
-    if (sending) return;
-    setSending(true);
-    setError(null);
-    try {
-      const { message } = await requestPhoneVerification(phone);
-      setSent(true);
-      toast.info(message);
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Could not send a code to that number.");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const check = async (value: string) => {
-    setCode(value);
-    if (value.length < 6 || checking) return;
-    setChecking(true);
-    try {
-      await confirmPhoneVerification({ phone_number: phone, code: value });
-      setError(null);
-      onVerified();
-      toast.success("Mobile number confirmed.");
-    } catch (cause) {
-      setCode("");
-      setError(cause instanceof ApiError ? cause.message : "That code could not be checked.");
-    } finally {
-      setChecking(false);
-    }
-  };
-
   return (
     <ChannelShell
-      icon={<Smartphone className="size-4" />}
-      title="Mobile number"
-      target={phone}
-      verified={verified}
-      dimmed={!PHONE_VERIFICATION_ENABLED}
+      icon={<KeyRound className="size-4" />}
+      title="Authenticator app"
+      target="Google Authenticator, Microsoft Authenticator, Authy or similar"
+      verified={enabled}
+      dimmed={!emailVerified}
     >
       <div className="mt-4 space-y-3">
-        {!PHONE_VERIFICATION_ENABLED ? (
+        {!emailVerified ? (
           <p className="text-xs text-muted-foreground">
-            Phone verification is temporarily unavailable. You can confirm your number later from
-            your profile.
+            Confirm your email address first. Setting up the app needs a signed-in account.
           </p>
-        ) : !emailVerified ? (
+        ) : enabled ? (
           <p className="text-xs text-muted-foreground">
-            Confirm your email address first. Verifying your number needs a signed-in account.
+            Two-step sign-in is on. Sign-in will ask for a code from the app after your password.
           </p>
-        ) : !sent ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Button size="sm" variant="secondary" disabled={sending} onClick={() => void send()}>
-              {sending ? "Sending…" : "Send code by SMS"}
-            </Button>
-            <span className="text-xs text-muted-foreground">
-              Optional. You can confirm your number later from your profile.
-            </span>
-          </div>
+        ) : later ? (
+          <p className="text-xs text-muted-foreground">
+            You can turn it on any time from the Security page of your dashboard.
+          </p>
         ) : (
           <>
-            <InputOTP
-              maxLength={6}
-              value={code}
-              onChange={(value) => void check(value)}
-              disabled={checking}
-              containerClassName="justify-start"
+            <p className="text-sm text-muted-foreground">
+              After your password, sign-in will ask for a 6-digit code from the app on your phone,
+              so a stolen password alone cannot get into your account.
+            </p>
+            <AuthenticatorSetup email={email} onDone={onEnabled} />
+            <button
+              type="button"
+              className="block text-xs text-muted-foreground underline-offset-4 hover:underline"
+              onClick={onLater}
             >
-              <InputOTPGroup>
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTPSlot key={i} index={i} />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-            <Button
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs"
-              disabled={sending}
-              onClick={() => void send()}
-            >
-              Send another code
-            </Button>
+              Set it up later from the Security page
+            </button>
           </>
         )}
-        {error && <p className="text-xs text-danger">{error}</p>}
       </div>
     </ChannelShell>
   );
@@ -327,14 +269,15 @@ function VerifyPage() {
   // a local draft and can disagree with it after a reload, a second tab, or a
   // visit from a different device.
   const emailVerified = user ? Boolean(user.email_verified_at) : account.emailVerified;
-  const phoneVerified = user ? Boolean(user.phone_verified_at) : account.phoneVerified;
-  const phone = user?.phone_number || account.phone;
+  const mfaEnabled = Boolean(user?.mfa_enabled);
+  // Two-step sign-in can be set up later from the Security page.
+  const [setUpLater, setSetUpLater] = useState(false);
+  const readyToContinue = emailVerified && (mfaEnabled || setUpLater);
 
   // Keep the local draft in step, so the rest of the flow reads one answer.
   useEffect(() => {
     if (emailVerified && !account.emailVerified) verifyChannel("email");
-    if (phoneVerified && !account.phoneVerified) verifyChannel("phone");
-  }, [emailVerified, phoneVerified, account.emailVerified, account.phoneVerified, verifyChannel]);
+  }, [emailVerified, account.emailVerified, verifyChannel]);
 
   // Arriving from sign-in carries the address in the URL; adopt it so the rest
   // of the flow reads the same value.
@@ -373,7 +316,7 @@ function VerifyPage() {
   return (
     <AuthShell
       title="Verify your email address"
-      description="We sent a six-digit code to your email. Confirming it activates your account and signs you in."
+      description="We sent a six-digit code to your email. Confirming it activates your account and signs you in. Then protect your account with an authenticator app."
     >
       <ProgressHeader
         step={joining ? 6 : 5}
@@ -391,20 +334,23 @@ function VerifyPage() {
             void refetchUser();
           }}
         />
-        <PhoneChannel
-          phone={phone}
-          verified={phoneVerified}
+        <AuthenticatorChannel
+          email={email}
+          enabled={mfaEnabled}
           emailVerified={emailVerified}
-          onVerified={() => {
-            verifyChannel("phone");
-            void refetchUser();
-          }}
+          later={setUpLater}
+          onLater={() => setSetUpLater(true)}
+          onEnabled={() => void refetchUser()}
         />
       </div>
 
       <div className="mt-7 flex flex-wrap gap-3">
-        <Button size="lg" disabled={!emailVerified} onClick={next}>
-          {emailVerified ? "Continue" : "Verify your email to continue"}
+        <Button size="lg" disabled={!readyToContinue} onClick={next}>
+          {!emailVerified
+            ? "Verify your email to continue"
+            : readyToContinue
+              ? "Continue"
+              : "Set up your authenticator app to continue"}
         </Button>
         <Button size="lg" variant="ghost" onClick={() => navigate({ to: "/onboarding/account" })}>
           Change details
