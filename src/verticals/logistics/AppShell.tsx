@@ -23,6 +23,7 @@ import {
   UserCircle,
   Users,
   X,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/verticals/logistics/store";
@@ -70,6 +71,7 @@ const NAV: Record<Role, { group: string; items: NavItem[] }[]> = {
         { to: "/logistics/operator/notifications", label: "Notifications", icon: Bell },
         { to: "/logistics/operator/profile", label: "My profile", icon: UserCircle },
         { to: "/logistics/team", label: "Team", icon: Users },
+        { to: "/logistics/security", label: "Security", icon: KeyRound },
       ],
     },
   ],
@@ -99,6 +101,7 @@ const NAV: Record<Role, { group: string; items: NavItem[] }[]> = {
         { to: "/logistics/partner/documents", label: "Documents", icon: FileText },
         { to: "/logistics/partner/activity", label: "Activity", icon: History },
         { to: "/logistics/team", label: "Team", icon: Users },
+        { to: "/logistics/security", label: "Security", icon: KeyRound },
       ],
     },
   ],
@@ -120,6 +123,7 @@ const NAV: Record<Role, { group: string; items: NavItem[] }[]> = {
         { to: "/logistics/regulator/reports", label: "Reports", icon: PieChart },
         { to: "/logistics/regulator/notifications", label: "Notifications", icon: Bell },
         { to: "/logistics/team", label: "Team", icon: Users },
+        { to: "/logistics/security", label: "Security", icon: KeyRound },
       ],
     },
   ],

@@ -16,6 +16,7 @@ import {
   Tags,
   Users,
   X,
+  KeyRound,
 } from "lucide-react";
 import { ROLE_LABEL, ROLE_PERSONA, useDemo } from "@/verticals/marketplace/store";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/marketplace/compliance", label: "Compliance", icon: ShieldCheck },
   { to: "/marketplace/notifications", label: "Notifications", icon: Bell },
   { to: "/marketplace/team", label: "Team", icon: Users },
+  { to: "/marketplace/security", label: "Security", icon: KeyRound },
 ] as const;
 
 export function AppShell({
