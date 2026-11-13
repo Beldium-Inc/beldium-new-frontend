@@ -13,12 +13,23 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
 import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
+import {
+  cleanJoinCode,
+  formatJoinCode,
+  readPendingJoinCode,
+  writePendingJoinCode,
+} from "@/lib/join-code";
 
 const title = "Create a miner account - Beldium Miner Hub";
 const description =
   "Register a new mining organisation, request to join an existing organisation, or sign up as an individual miner.";
 
 export const Route = createFileRoute("/signup")({
+  // /join sends people here with role=org_staff once they have checked their code.
+  validateSearch: (search: Record<string, unknown>): { role?: SignupRole } => {
+    const role = search["role"];
+    return role === "org_admin" || role === "org_staff" || role === "individual" ? { role } : {};
+  },
   head: () => ({
     meta: [
       { title },
@@ -52,7 +63,7 @@ const roles: { id: SignupRole; icon: typeof Building2; title: string; body: stri
     id: "org_staff",
     icon: Users,
     title: "Join an existing organisation",
-    body: "Your organisation is already on Beldium. Send a join request to its admin.",
+    body: "Your organisation is already on Beldium. Use the join code its administrator shared with you.",
   },
   {
     id: "individual",
@@ -65,7 +76,8 @@ const roles: { id: SignupRole; icon: typeof Building2; title: string; body: stri
 function SignupPage() {
   const { signUp } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<SignupRole>("org_admin");
+  const { role: initialRole } = Route.useSearch();
+  const [role, setRole] = useState<SignupRole>(initialRole ?? "org_admin");
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -73,6 +85,10 @@ function SignupPage() {
     organisationName: "",
     password: "",
   });
+  // Filled in from a join link opened before signup.
+  const [joinCode, setJoinCode] = useState(() =>
+    typeof window === "undefined" ? "" : formatJoinCode(readPendingJoinCode()),
+  );
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -93,8 +109,12 @@ function SignupPage() {
       setError(weak);
       return;
     }
-    if (role !== "individual" && !form.organisationName) {
+    if (role === "org_admin" && !form.organisationName) {
       setError("Enter the mining organisation name.");
+      return;
+    }
+    if (role === "org_staff" && cleanJoinCode(joinCode).length < 8) {
+      setError("Enter the 8 character join code your organisation shared with you.");
       return;
     }
     if (!agreedTerms) {
@@ -114,12 +134,14 @@ function SignupPage() {
         last_name: rest.join(" "),
         phone_number: phone,
       });
+      // The join request is sent from /join once the email is verified.
+      if (role === "org_staff") writePendingJoinCode(joinCode);
       navigate({
         to: "/verify",
         search: {
           email: form.email.trim(),
           role,
-          organisationName: form.organisationName || undefined,
+          organisationName: role === "org_admin" ? form.organisationName || undefined : undefined,
         },
       });
     } catch (cause) {
@@ -206,23 +228,34 @@ function SignupPage() {
           />
         </div>
 
-        {role !== "individual" ? (
+        {role === "org_admin" ? (
           <div className="space-y-2">
-            <Label htmlFor="organisationName">
-              {role === "org_admin" ? "Mining organisation legal name" : "Organisation you are joining"}
-            </Label>
+            <Label htmlFor="organisationName">Mining organisation legal name</Label>
             <Input
               id="organisationName"
               value={form.organisationName}
               onChange={set("organisationName")}
               placeholder="Zambezi Minerals Ltd"
             />
-            {role === "org_staff" ? (
-              <p className="text-xs text-muted-foreground">
-                A join request is sent to the organisation admin for approval. You will get read-only access until it is
-                approved.
-              </p>
-            ) : null}
+          </div>
+        ) : null}
+
+        {role === "org_staff" ? (
+          <div className="space-y-2">
+            <Label htmlFor="joinCode">Organisation join code</Label>
+            <Input
+              id="joinCode"
+              value={joinCode}
+              onChange={(e) => setJoinCode(formatJoinCode(e.target.value))}
+              className="font-mono tracking-[0.2em] uppercase"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="ABCD-2345"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your organisation's owner or administrator finds this on their Team page. After you
+              verify your email, you pick your role and send the request; they accept or decline it.
+            </p>
           </div>
         ) : null}
 

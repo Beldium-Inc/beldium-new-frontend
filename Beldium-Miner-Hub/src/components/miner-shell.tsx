@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Ship,
   Truck,
+  UserPlus,
   Users,
   Wallet,
   Warehouse,
@@ -52,6 +53,7 @@ const reviewNav = [
   { title: "Submitted application", url: "/portal/application-record", icon: FileText },
   { title: "Notifications", url: "/portal/notifications", icon: Bell },
   { title: "Organisation", url: "/portal/organisation", icon: Users },
+  { title: "Team", url: "/portal/team", icon: UserPlus },
   { title: "Settings", url: "/portal/settings", icon: Settings },
 ];
 
@@ -66,6 +68,7 @@ const verifiedNav = [
   ] },
   { group: "Operations", items: [
     { title: "My Organisation", url: "/portal/organisation", icon: Users },
+    { title: "Team", url: "/portal/team", icon: UserPlus },
     { title: "Mining Sites", url: "/portal/sites", icon: Mountain },
     { title: "Production", url: "/portal/production", icon: Gauge },
     { title: "Mineral Inventory", url: "/portal/inventory", icon: Boxes },
@@ -98,6 +101,7 @@ const organisationVerifiedNav = [
   ] },
   { group: "Operations", items: [
     { title: "My Organisation", url: "/portal/organisation", icon: Users },
+    { title: "Team", url: "/portal/team", icon: UserPlus },
     { title: "Mining Sites", url: "/portal/sites", icon: Mountain },
   ] },
   { group: "Governance", items: [
@@ -231,7 +235,7 @@ function SetupBanner() {
           }
         : {
             title: "Your account setup isn't finished",
-            body: "Complete your organisation application to be verified and unlock your workspace.",
+            body: "Register your mining organisation, or join one that is already on Beldium with the code its administrator shared.",
           };
 
   return (
@@ -243,13 +247,26 @@ function SetupBanner() {
           <p className="text-sm text-muted-foreground">{copy.body}</p>
         </div>
       </div>
-      {stage !== "join_pending" ? (
-        <Button asChild size="sm">
-          <Link to="/application" search={{ organisationName: setup.data?.organisation?.name }}>
-            Continue application
-          </Link>
-        </Button>
-      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {stage === "join_pending" ? (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/join">View my request</Link>
+          </Button>
+        ) : (
+          <>
+            {stage === "no_organisation" ? (
+              <Button asChild size="sm" variant="outline">
+                <Link to="/join">Join with a code</Link>
+              </Button>
+            ) : null}
+            <Button asChild size="sm">
+              <Link to="/application" search={{ organisationName: setup.data?.organisation?.name }}>
+                Continue application
+              </Link>
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

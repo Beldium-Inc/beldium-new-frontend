@@ -4,11 +4,14 @@ import { useSyncExternalStore } from "react";
 import { fetchCurrentUser, updateCurrentUser, type CurrentUserPatch } from "./auth";
 import {
   acceptInvitation,
+  activateMember,
+  cancelJoinRequest,
   createInvitation,
   createJoinRequest,
   createOrganisation,
   decideJoinRequest,
   decideOrganisation,
+  getJoinCode,
   getOrganisation,
   getOrganisationTimeline,
   listInvitations,
@@ -17,8 +20,14 @@ import {
   listOrganisationJoinRequests,
   listOrganisations,
   organisationDirectory,
+  removeMember,
+  revokeInvitation,
+  rotateJoinCode,
   submitOrganisation,
+  suspendMember,
+  updateMember,
   updateOrganisation,
+  type JoinRequestInput,
   type OrganisationInput,
   type OrganisationQuery,
 } from "./organisations";
@@ -40,6 +49,7 @@ export const queryKeys = {
   invitations: (id: UUID) => ["organisations", id, "invitations"] as const,
   organisationJoinRequests: (id: UUID) => ["organisations", id, "join-requests"] as const,
   myJoinRequests: ["join-requests", "mine"] as const,
+  joinCode: (id: UUID) => ["organisations", id, "join-code"] as const,
 };
 
 /**
@@ -230,12 +240,74 @@ export function useAcceptInvitation() {
 export function useCreateJoinRequest() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      organisation: UUID;
-      requested_role?: MembershipRole;
-      justification?: string;
-    }) => createJoinRequest(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests }),
+    mutationFn: (input: JoinRequestInput) => createJoinRequest(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests });
+      void queryClient.invalidateQueries({ queryKey: ["miner-setup"] });
+    },
+  });
+}
+
+export function useCancelJoinRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: UUID) => cancelJoinRequest(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests });
+      void queryClient.invalidateQueries({ queryKey: ["miner-setup"] });
+    },
+  });
+}
+
+/** Administrators only. */
+export function useJoinCode(id: UUID | null) {
+  return useQuery({
+    queryKey: queryKeys.joinCode(id ?? "none"),
+    queryFn: () => getJoinCode(id as UUID),
+    enabled: Boolean(id),
+  });
+}
+
+export function useRotateJoinCode(id: UUID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => rotateJoinCode(id),
+    onSuccess: (data) => queryClient.setQueryData(queryKeys.joinCode(id), data),
+  });
+}
+
+function useMemberMutation<TArgs>(id: UUID, fn: (args: TArgs) => Promise<unknown>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.members(id) }),
+  });
+}
+
+export function useUpdateMember(id: UUID) {
+  return useMemberMutation(id, (input: { membershipId: UUID; role?: MembershipRole; title?: string }) => {
+    const { membershipId, ...patch } = input;
+    return updateMember(id, membershipId, patch);
+  });
+}
+
+export function useSuspendMember(id: UUID) {
+  return useMemberMutation(id, (membershipId: UUID) => suspendMember(id, membershipId));
+}
+
+export function useActivateMember(id: UUID) {
+  return useMemberMutation(id, (membershipId: UUID) => activateMember(id, membershipId));
+}
+
+export function useRemoveMember(id: UUID) {
+  return useMemberMutation(id, (membershipId: UUID) => removeMember(id, membershipId));
+}
+
+export function useRevokeInvitation(id: UUID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (invitationId: UUID) => revokeInvitation(id, invitationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.invitations(id) }),
   });
 }
 
@@ -248,6 +320,7 @@ export function useDecideJoinRequest() {
         ...(input.notes ? { notes: input.notes } : {}),
       }),
     onSuccess: () => {
+      // Covers the organisation's request list and its member list.
       void queryClient.invalidateQueries({ queryKey: ["organisations"] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests });
     },

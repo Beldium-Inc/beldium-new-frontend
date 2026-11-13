@@ -8,6 +8,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
+import { readPendingJoinCode } from "@/lib/join-code";
 import { fetchMinerSetup } from "@/lib/setup";
 
 const title = "Sign in - Beldium Miner Hub";
@@ -48,6 +49,10 @@ function AuthPage() {
       // Anyone who stopped part-way through signup goes back to the
       // application instead of landing on an empty workspace.
       const setup = await fetchMinerSetup().catch(() => null);
+      if (setup?.stage === "no_organisation" && readPendingJoinCode()) {
+        navigate({ to: "/join" });
+        return;
+      }
       if (setup && (setup.stage === "no_organisation" || setup.stage === "unsubmitted")) {
         navigate({
           to: "/application",
