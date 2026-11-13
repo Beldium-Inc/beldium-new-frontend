@@ -120,12 +120,100 @@ export function listMyJoinRequests(query: { page?: number } = {}): Promise<Pagin
   return apiFetch<Paginated<JoinRequest>>("/join-requests/", { query: { ...query } });
 }
 
-export function createJoinRequest(input: {
-  organisation: UUID;
+/** The sector the Miner Hub signs people up in. A code from another sector's company is refused. */
+export const MINER_SECTOR = "mining";
+
+export interface JoinRequestInput {
+  /** The code or link an organisation administrator shared. */
+  join_code: string;
   requested_role?: MembershipRole;
   justification?: string;
-}): Promise<JoinRequest> {
-  return apiFetch<JoinRequest>("/join-requests/", { method: "POST", body: input });
+  sector?: string;
+}
+
+export function createJoinRequest(input: JoinRequestInput): Promise<JoinRequest> {
+  return apiFetch<JoinRequest>("/join-requests/", {
+    method: "POST",
+    body: { sector: MINER_SECTOR, ...input },
+  });
+}
+
+/** The requester withdraws a request that is still pending. */
+export function cancelJoinRequest(id: UUID): Promise<JoinRequest> {
+  return apiFetch<JoinRequest>(`/join-requests/${id}/cancel/`, { method: "POST" });
+}
+
+export interface JoinCodeLookup {
+  organisation: UUID;
+  organisation_name: string;
+  organisation_type: OrganisationType;
+  already_member: boolean;
+  pending_request: boolean;
+}
+
+/**
+ * Name the organisation behind a join code before asking to join it. Open
+ * before sign in. A code from a non-mining company answers 409.
+ */
+export function lookupJoinCode(joinCode: string): Promise<JoinCodeLookup> {
+  return apiFetch<JoinCodeLookup>("/join-requests/lookup/", {
+    method: "POST",
+    body: { join_code: joinCode, sector: MINER_SECTOR },
+  });
+}
+
+export interface OrganisationJoinCode {
+  join_code: string;
+  join_url: string;
+}
+
+/** Administrators only: the code colleagues use to ask to join. */
+export function getJoinCode(id: UUID): Promise<OrganisationJoinCode> {
+  return apiFetch<OrganisationJoinCode>(`/organisations/${id}/join-code/`);
+}
+
+/** Administrators only. The old code and every link built from it stop working. */
+export function rotateJoinCode(id: UUID): Promise<OrganisationJoinCode> {
+  return apiFetch<OrganisationJoinCode>(`/organisations/${id}/join-code/rotate/`, {
+    method: "POST",
+  });
+}
+
+// --- member management (administrators only; the owner cannot be changed) ---
+
+export function updateMember(
+  id: UUID,
+  membershipId: UUID,
+  patch: { role?: MembershipRole; title?: string },
+): Promise<OrganisationMembership> {
+  return apiFetch<OrganisationMembership>(`/organisations/${id}/members/${membershipId}/`, {
+    method: "PATCH",
+    body: patch,
+  });
+}
+
+export function suspendMember(id: UUID, membershipId: UUID): Promise<OrganisationMembership> {
+  return apiFetch<OrganisationMembership>(`/organisations/${id}/members/${membershipId}/suspend/`, {
+    method: "POST",
+  });
+}
+
+export function activateMember(id: UUID, membershipId: UUID): Promise<OrganisationMembership> {
+  return apiFetch<OrganisationMembership>(`/organisations/${id}/members/${membershipId}/activate/`, {
+    method: "POST",
+  });
+}
+
+export function removeMember(id: UUID, membershipId: UUID): Promise<void> {
+  return apiFetch<void>(`/organisations/${id}/members/${membershipId}/remove/`, {
+    method: "DELETE",
+  });
+}
+
+export function revokeInvitation(id: UUID, invitationId: UUID): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/organisations/${id}/invitations/${invitationId}/revoke/`, {
+    method: "POST",
+  });
 }
 
 /** Administrators of the target organisation only. */

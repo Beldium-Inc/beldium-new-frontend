@@ -11,8 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
 import { confirmPhoneVerification, requestPhoneVerification } from "@/lib/api/auth";
-import { organisationDirectory } from "@/lib/api/organisations";
-import { useCreateJoinRequest, useUpdateCurrentUser } from "@/lib/api/queries";
+import { useUpdateCurrentUser } from "@/lib/api/queries";
 
 const title = "Verify your account - Beldium Miner Hub";
 const description = "Confirm your email address and mobile number before starting your mining organisation application.";
@@ -47,7 +46,6 @@ export const Route = createFileRoute("/verify")({
 function VerifyPage() {
   const { email, role, organisationName } = Route.useSearch();
   const { user, confirmEmail, resendCode, refetchUser } = useAuth();
-  const createJoinRequest = useCreateJoinRequest();
   const updateUser = useUpdateCurrentUser();
   const [newPhone, setNewPhone] = useState("");
   const navigate = useNavigate();
@@ -147,19 +145,10 @@ function VerifyPage() {
         navigate({ to: "/application", search: { organisationName } });
         return;
       }
-      if (role === "org_staff" && organisationName) {
-        const matches = await organisationDirectory({ search: organisationName, page_size: 5 });
-        const match = matches.results.find(
-          (org) => org.name.trim().toLowerCase() === organisationName.trim().toLowerCase(),
-        );
-        if (!match) {
-          setError(
-            `No verified organisation named "${organisationName}" was found. Check the exact name with your admin.`,
-          );
-          return;
-        }
-        await createJoinRequest.mutateAsync({ organisation: match.id });
-        navigate({ to: user ? "/portal" : "/auth" });
+      if (role === "org_staff") {
+        // Joining works on the code the administrator shared (kept from
+        // signup), and the person picks their role and adds a note there.
+        navigate({ to: user ? "/join" : "/auth" });
         return;
       }
       navigate({ to: user ? "/portal" : "/auth" });
@@ -316,10 +305,16 @@ function VerifyPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {role === "org_admin"
                 ? "Your organisation application is now unlocked."
-                : "You can continue to your workspace."}
+                : role === "org_staff"
+                  ? "Next, send your request to join your organisation."
+                  : "You can continue to your workspace."}
             </p>
             <Button className="mt-4 w-full" disabled={busy} onClick={continueAfterVerification}>
-              {role === "org_admin" ? "Create organisation & start application" : "Continue"}
+              {role === "org_admin"
+                ? "Create organisation & start application"
+                : role === "org_staff"
+                  ? "Continue to join request"
+                  : "Continue"}
             </Button>
           </div>
         ) : null}
