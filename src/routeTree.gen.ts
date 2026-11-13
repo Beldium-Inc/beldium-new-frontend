@@ -25,8 +25,10 @@ import { Route as ExportDocumentsRouteImport } from './routes/export.documents'
 import { Route as ExportMonitoringRouteImport } from './routes/export.monitoring'
 import { Route as ExportOversightRouteImport } from './routes/export.oversight'
 import { Route as ExportQueueRouteImport } from './routes/export.queue'
+import { Route as ExportSecurityRouteImport } from './routes/export.security'
 import { Route as ExportTeamRouteImport } from './routes/export.team'
 import { Route as LogisticsIndexRouteImport } from './routes/logistics.index'
+import { Route as LogisticsSecurityRouteImport } from './routes/logistics.security'
 import { Route as LogisticsTeamRouteImport } from './routes/logistics.team'
 import { Route as MarketplaceIndexRouteImport } from './routes/marketplace.index'
 import { Route as MarketplaceDashboardRouteImport } from './routes/marketplace.dashboard'
@@ -36,6 +38,7 @@ import { Route as MarketplaceMarketplaceRouteImport } from './routes/marketplace
 import { Route as MarketplaceNotificationsRouteImport } from './routes/marketplace.notifications'
 import { Route as MarketplaceOffersRouteImport } from './routes/marketplace.offers'
 import { Route as MarketplaceOrdersRouteImport } from './routes/marketplace.orders'
+import { Route as MarketplaceSecurityRouteImport } from './routes/marketplace.security'
 import { Route as MarketplaceTeamRouteImport } from './routes/marketplace.team'
 import { Route as MiningIndexRouteImport } from './routes/mining.index'
 import { Route as MiningActionsRouteImport } from './routes/mining.actions'
@@ -53,6 +56,7 @@ import { Route as MiningReportsRouteImport } from './routes/mining.reports'
 import { Route as MiningReviewsRouteImport } from './routes/mining.reviews'
 import { Route as MiningRiskRouteImport } from './routes/mining.risk'
 import { Route as MiningSamplingRouteImport } from './routes/mining.sampling'
+import { Route as MiningSecurityRouteImport } from './routes/mining.security'
 import { Route as MiningTeamRouteImport } from './routes/mining.team'
 import { Route as MiningTransactionsRouteImport } from './routes/mining.transactions'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
@@ -82,17 +86,20 @@ import { Route as ProcessingNonconformitiesRouteImport } from './routes/processi
 import { Route as ProcessingOnboardingRouteImport } from './routes/processing.onboarding'
 import { Route as ProcessingProcessorsRouteImport } from './routes/processing.processors'
 import { Route as ProcessingReportsRouteImport } from './routes/processing.reports'
+import { Route as ProcessingSecurityRouteImport } from './routes/processing.security'
 import { Route as ProcessingTeamRouteImport } from './routes/processing.team'
 import { Route as ProcessingTraceabilityRouteImport } from './routes/processing.traceability'
 import { Route as QualityIndexRouteImport } from './routes/quality.index'
 import { Route as QualityAuditRouteImport } from './routes/quality.audit'
 import { Route as QualityDashboardRouteImport } from './routes/quality.dashboard'
 import { Route as QualityNonconformitiesRouteImport } from './routes/quality.nonconformities'
+import { Route as QualitySecurityRouteImport } from './routes/quality.security'
 import { Route as QualityTeamRouteImport } from './routes/quality.team'
 import { Route as QualityVaultRouteImport } from './routes/quality.vault'
 import { Route as StaffComplianceVettingRouteImport } from './routes/staff.compliance-vetting'
 import { Route as VerifyHashRouteImport } from './routes/verify.$hash'
 import { Route as WarehousingIndexRouteImport } from './routes/warehousing.index'
+import { Route as WarehousingSecurityRouteImport } from './routes/warehousing.security'
 import { Route as WarehousingTeamRouteImport } from './routes/warehousing.team'
 import { Route as ExportExportersIndexRouteImport } from './routes/export.exporters.index'
 import { Route as ExportExportersIdRouteImport } from './routes/export.exporters.$id'
@@ -250,6 +257,11 @@ const ExportQueueRoute = ExportQueueRouteImport.update({
   path: '/queue',
   getParentRoute: () => ExportRoute,
 } as any)
+const ExportSecurityRoute = ExportSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => ExportRoute,
+} as any)
 const ExportTeamRoute = ExportTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -258,6 +270,11 @@ const ExportTeamRoute = ExportTeamRouteImport.update({
 const LogisticsIndexRoute = LogisticsIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsSecurityRoute = LogisticsSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const LogisticsTeamRoute = LogisticsTeamRouteImport.update({
@@ -304,6 +321,11 @@ const MarketplaceOffersRoute = MarketplaceOffersRouteImport.update({
 const MarketplaceOrdersRoute = MarketplaceOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => MarketplaceRoute,
+} as any)
+const MarketplaceSecurityRoute = MarketplaceSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => MarketplaceRoute,
 } as any)
 const MarketplaceTeamRoute = MarketplaceTeamRouteImport.update({
@@ -389,6 +411,11 @@ const MiningRiskRoute = MiningRiskRouteImport.update({
 const MiningSamplingRoute = MiningSamplingRouteImport.update({
   id: '/sampling',
   path: '/sampling',
+  getParentRoute: () => MiningRoute,
+} as any)
+const MiningSecurityRoute = MiningSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => MiningRoute,
 } as any)
 const MiningTeamRoute = MiningTeamRouteImport.update({
@@ -537,6 +564,11 @@ const ProcessingReportsRoute = ProcessingReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => ProcessingRoute,
 } as any)
+const ProcessingSecurityRoute = ProcessingSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => ProcessingRoute,
+} as any)
 const ProcessingTeamRoute = ProcessingTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -567,6 +599,11 @@ const QualityNonconformitiesRoute = QualityNonconformitiesRouteImport.update({
   path: '/nonconformities',
   getParentRoute: () => QualityRoute,
 } as any)
+const QualitySecurityRoute = QualitySecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => QualityRoute,
+} as any)
 const QualityTeamRoute = QualityTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -590,6 +627,11 @@ const VerifyHashRoute = VerifyHashRouteImport.update({
 const WarehousingIndexRoute = WarehousingIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => WarehousingRoute,
+} as any)
+const WarehousingSecurityRoute = WarehousingSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => WarehousingRoute,
 } as any)
 const WarehousingTeamRoute = WarehousingTeamRouteImport.update({
@@ -1037,7 +1079,9 @@ export interface FileRoutesByFullPath {
   '/export/monitoring': typeof ExportMonitoringRoute
   '/export/oversight': typeof ExportOversightRoute
   '/export/queue': typeof ExportQueueRoute
+  '/export/security': typeof ExportSecurityRoute
   '/export/team': typeof ExportTeamRoute
+  '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
   '/marketplace/documents': typeof MarketplaceDocumentsRoute
@@ -1046,6 +1090,7 @@ export interface FileRoutesByFullPath {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
+  '/marketplace/security': typeof MarketplaceSecurityRoute
   '/marketplace/team': typeof MarketplaceTeamRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/audit': typeof MiningAuditRoute
@@ -1062,6 +1107,7 @@ export interface FileRoutesByFullPath {
   '/mining/reviews': typeof MiningReviewsRoute
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
+  '/mining/security': typeof MiningSecurityRoute
   '/mining/team': typeof MiningTeamRoute
   '/mining/transactions': typeof MiningTransactionsRoute
   '/onboarding/account': typeof OnboardingAccountRoute
@@ -1089,15 +1135,18 @@ export interface FileRoutesByFullPath {
   '/processing/onboarding': typeof ProcessingOnboardingRoute
   '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
   '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/security': typeof ProcessingSecurityRoute
   '/processing/team': typeof ProcessingTeamRoute
   '/processing/traceability': typeof ProcessingTraceabilityRoute
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/security': typeof QualitySecurityRoute
   '/quality/team': typeof QualityTeamRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
+  '/warehousing/security': typeof WarehousingSecurityRoute
   '/warehousing/team': typeof WarehousingTeamRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
@@ -1191,7 +1240,9 @@ export interface FileRoutesByTo {
   '/export/monitoring': typeof ExportMonitoringRoute
   '/export/oversight': typeof ExportOversightRoute
   '/export/queue': typeof ExportQueueRoute
+  '/export/security': typeof ExportSecurityRoute
   '/export/team': typeof ExportTeamRoute
+  '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
   '/marketplace/documents': typeof MarketplaceDocumentsRoute
@@ -1200,6 +1251,7 @@ export interface FileRoutesByTo {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
+  '/marketplace/security': typeof MarketplaceSecurityRoute
   '/marketplace/team': typeof MarketplaceTeamRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/audit': typeof MiningAuditRoute
@@ -1216,6 +1268,7 @@ export interface FileRoutesByTo {
   '/mining/reviews': typeof MiningReviewsRoute
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
+  '/mining/security': typeof MiningSecurityRoute
   '/mining/team': typeof MiningTeamRoute
   '/mining/transactions': typeof MiningTransactionsRoute
   '/onboarding/account': typeof OnboardingAccountRoute
@@ -1243,15 +1296,18 @@ export interface FileRoutesByTo {
   '/processing/onboarding': typeof ProcessingOnboardingRoute
   '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
   '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/security': typeof ProcessingSecurityRoute
   '/processing/team': typeof ProcessingTeamRoute
   '/processing/traceability': typeof ProcessingTraceabilityRoute
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/security': typeof QualitySecurityRoute
   '/quality/team': typeof QualityTeamRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
+  '/warehousing/security': typeof WarehousingSecurityRoute
   '/warehousing/team': typeof WarehousingTeamRoute
   '/export': typeof ExportIndexRoute
   '/logistics': typeof LogisticsIndexRoute
@@ -1354,7 +1410,9 @@ export interface FileRoutesById {
   '/export/monitoring': typeof ExportMonitoringRoute
   '/export/oversight': typeof ExportOversightRoute
   '/export/queue': typeof ExportQueueRoute
+  '/export/security': typeof ExportSecurityRoute
   '/export/team': typeof ExportTeamRoute
+  '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
   '/marketplace/documents': typeof MarketplaceDocumentsRoute
@@ -1363,6 +1421,7 @@ export interface FileRoutesById {
   '/marketplace/notifications': typeof MarketplaceNotificationsRoute
   '/marketplace/offers': typeof MarketplaceOffersRoute
   '/marketplace/orders': typeof MarketplaceOrdersRoute
+  '/marketplace/security': typeof MarketplaceSecurityRoute
   '/marketplace/team': typeof MarketplaceTeamRoute
   '/mining/actions': typeof MiningActionsRoute
   '/mining/audit': typeof MiningAuditRoute
@@ -1379,6 +1438,7 @@ export interface FileRoutesById {
   '/mining/reviews': typeof MiningReviewsRoute
   '/mining/risk': typeof MiningRiskRoute
   '/mining/sampling': typeof MiningSamplingRoute
+  '/mining/security': typeof MiningSecurityRoute
   '/mining/team': typeof MiningTeamRoute
   '/mining/transactions': typeof MiningTransactionsRoute
   '/onboarding/account': typeof OnboardingAccountRoute
@@ -1406,15 +1466,18 @@ export interface FileRoutesById {
   '/processing/onboarding': typeof ProcessingOnboardingRoute
   '/processing/processors': typeof ProcessingProcessorsRouteWithChildren
   '/processing/reports': typeof ProcessingReportsRoute
+  '/processing/security': typeof ProcessingSecurityRoute
   '/processing/team': typeof ProcessingTeamRoute
   '/processing/traceability': typeof ProcessingTraceabilityRoute
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/security': typeof QualitySecurityRoute
   '/quality/team': typeof QualityTeamRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
+  '/warehousing/security': typeof WarehousingSecurityRoute
   '/warehousing/team': typeof WarehousingTeamRoute
   '/export/': typeof ExportIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
@@ -1518,7 +1581,9 @@ export interface FileRouteTypes {
     | '/export/monitoring'
     | '/export/oversight'
     | '/export/queue'
+    | '/export/security'
     | '/export/team'
+    | '/logistics/security'
     | '/logistics/team'
     | '/marketplace/dashboard'
     | '/marketplace/documents'
@@ -1527,6 +1592,7 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
+    | '/marketplace/security'
     | '/marketplace/team'
     | '/mining/actions'
     | '/mining/audit'
@@ -1543,6 +1609,7 @@ export interface FileRouteTypes {
     | '/mining/reviews'
     | '/mining/risk'
     | '/mining/sampling'
+    | '/mining/security'
     | '/mining/team'
     | '/mining/transactions'
     | '/onboarding/account'
@@ -1570,15 +1637,18 @@ export interface FileRouteTypes {
     | '/processing/onboarding'
     | '/processing/processors'
     | '/processing/reports'
+    | '/processing/security'
     | '/processing/team'
     | '/processing/traceability'
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/security'
     | '/quality/team'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
+    | '/warehousing/security'
     | '/warehousing/team'
     | '/export/'
     | '/logistics/'
@@ -1672,7 +1742,9 @@ export interface FileRouteTypes {
     | '/export/monitoring'
     | '/export/oversight'
     | '/export/queue'
+    | '/export/security'
     | '/export/team'
+    | '/logistics/security'
     | '/logistics/team'
     | '/marketplace/dashboard'
     | '/marketplace/documents'
@@ -1681,6 +1753,7 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
+    | '/marketplace/security'
     | '/marketplace/team'
     | '/mining/actions'
     | '/mining/audit'
@@ -1697,6 +1770,7 @@ export interface FileRouteTypes {
     | '/mining/reviews'
     | '/mining/risk'
     | '/mining/sampling'
+    | '/mining/security'
     | '/mining/team'
     | '/mining/transactions'
     | '/onboarding/account'
@@ -1724,15 +1798,18 @@ export interface FileRouteTypes {
     | '/processing/onboarding'
     | '/processing/processors'
     | '/processing/reports'
+    | '/processing/security'
     | '/processing/team'
     | '/processing/traceability'
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/security'
     | '/quality/team'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
+    | '/warehousing/security'
     | '/warehousing/team'
     | '/export'
     | '/logistics'
@@ -1834,7 +1911,9 @@ export interface FileRouteTypes {
     | '/export/monitoring'
     | '/export/oversight'
     | '/export/queue'
+    | '/export/security'
     | '/export/team'
+    | '/logistics/security'
     | '/logistics/team'
     | '/marketplace/dashboard'
     | '/marketplace/documents'
@@ -1843,6 +1922,7 @@ export interface FileRouteTypes {
     | '/marketplace/notifications'
     | '/marketplace/offers'
     | '/marketplace/orders'
+    | '/marketplace/security'
     | '/marketplace/team'
     | '/mining/actions'
     | '/mining/audit'
@@ -1859,6 +1939,7 @@ export interface FileRouteTypes {
     | '/mining/reviews'
     | '/mining/risk'
     | '/mining/sampling'
+    | '/mining/security'
     | '/mining/team'
     | '/mining/transactions'
     | '/onboarding/account'
@@ -1886,15 +1967,18 @@ export interface FileRouteTypes {
     | '/processing/onboarding'
     | '/processing/processors'
     | '/processing/reports'
+    | '/processing/security'
     | '/processing/team'
     | '/processing/traceability'
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/security'
     | '/quality/team'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
+    | '/warehousing/security'
     | '/warehousing/team'
     | '/export/'
     | '/logistics/'
@@ -2110,6 +2194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExportQueueRouteImport
       parentRoute: typeof ExportRoute
     }
+    '/export/security': {
+      id: '/export/security'
+      path: '/security'
+      fullPath: '/export/security'
+      preLoaderRoute: typeof ExportSecurityRouteImport
+      parentRoute: typeof ExportRoute
+    }
     '/export/team': {
       id: '/export/team'
       path: '/team'
@@ -2122,6 +2213,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/logistics/'
       preLoaderRoute: typeof LogisticsIndexRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/security': {
+      id: '/logistics/security'
+      path: '/security'
+      fullPath: '/logistics/security'
+      preLoaderRoute: typeof LogisticsSecurityRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/team': {
@@ -2185,6 +2283,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/marketplace/orders'
       preLoaderRoute: typeof MarketplaceOrdersRouteImport
+      parentRoute: typeof MarketplaceRoute
+    }
+    '/marketplace/security': {
+      id: '/marketplace/security'
+      path: '/security'
+      fullPath: '/marketplace/security'
+      preLoaderRoute: typeof MarketplaceSecurityRouteImport
       parentRoute: typeof MarketplaceRoute
     }
     '/marketplace/team': {
@@ -2304,6 +2409,13 @@ declare module '@tanstack/react-router' {
       path: '/sampling'
       fullPath: '/mining/sampling'
       preLoaderRoute: typeof MiningSamplingRouteImport
+      parentRoute: typeof MiningRoute
+    }
+    '/mining/security': {
+      id: '/mining/security'
+      path: '/security'
+      fullPath: '/mining/security'
+      preLoaderRoute: typeof MiningSecurityRouteImport
       parentRoute: typeof MiningRoute
     }
     '/mining/team': {
@@ -2509,6 +2621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProcessingReportsRouteImport
       parentRoute: typeof ProcessingRoute
     }
+    '/processing/security': {
+      id: '/processing/security'
+      path: '/security'
+      fullPath: '/processing/security'
+      preLoaderRoute: typeof ProcessingSecurityRouteImport
+      parentRoute: typeof ProcessingRoute
+    }
     '/processing/team': {
       id: '/processing/team'
       path: '/team'
@@ -2551,6 +2670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QualityNonconformitiesRouteImport
       parentRoute: typeof QualityRoute
     }
+    '/quality/security': {
+      id: '/quality/security'
+      path: '/security'
+      fullPath: '/quality/security'
+      preLoaderRoute: typeof QualitySecurityRouteImport
+      parentRoute: typeof QualityRoute
+    }
     '/quality/team': {
       id: '/quality/team'
       path: '/team'
@@ -2584,6 +2710,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/warehousing/'
       preLoaderRoute: typeof WarehousingIndexRouteImport
+      parentRoute: typeof WarehousingRoute
+    }
+    '/warehousing/security': {
+      id: '/warehousing/security'
+      path: '/security'
+      fullPath: '/warehousing/security'
+      preLoaderRoute: typeof WarehousingSecurityRouteImport
       parentRoute: typeof WarehousingRoute
     }
     '/warehousing/team': {
@@ -3127,6 +3260,7 @@ interface ExportRouteChildren {
   ExportMonitoringRoute: typeof ExportMonitoringRoute
   ExportOversightRoute: typeof ExportOversightRoute
   ExportQueueRoute: typeof ExportQueueRoute
+  ExportSecurityRoute: typeof ExportSecurityRoute
   ExportTeamRoute: typeof ExportTeamRoute
   ExportIndexRoute: typeof ExportIndexRoute
   ExportExportersIdRoute: typeof ExportExportersIdRoute
@@ -3142,6 +3276,7 @@ const ExportRouteChildren: ExportRouteChildren = {
   ExportMonitoringRoute: ExportMonitoringRoute,
   ExportOversightRoute: ExportOversightRoute,
   ExportQueueRoute: ExportQueueRoute,
+  ExportSecurityRoute: ExportSecurityRoute,
   ExportTeamRoute: ExportTeamRoute,
   ExportIndexRoute: ExportIndexRoute,
   ExportExportersIdRoute: ExportExportersIdRoute,
@@ -3170,6 +3305,7 @@ const LogisticsOperatorApplicationsRouteWithChildren =
   )
 
 interface LogisticsRouteChildren {
+  LogisticsSecurityRoute: typeof LogisticsSecurityRoute
   LogisticsTeamRoute: typeof LogisticsTeamRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
   LogisticsOperatorApplicationsRoute: typeof LogisticsOperatorApplicationsRouteWithChildren
@@ -3205,6 +3341,7 @@ interface LogisticsRouteChildren {
 }
 
 const LogisticsRouteChildren: LogisticsRouteChildren = {
+  LogisticsSecurityRoute: LogisticsSecurityRoute,
   LogisticsTeamRoute: LogisticsTeamRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
   LogisticsOperatorApplicationsRoute:
@@ -3254,6 +3391,7 @@ interface MarketplaceRouteChildren {
   MarketplaceNotificationsRoute: typeof MarketplaceNotificationsRoute
   MarketplaceOffersRoute: typeof MarketplaceOffersRoute
   MarketplaceOrdersRoute: typeof MarketplaceOrdersRoute
+  MarketplaceSecurityRoute: typeof MarketplaceSecurityRoute
   MarketplaceTeamRoute: typeof MarketplaceTeamRoute
   MarketplaceIndexRoute: typeof MarketplaceIndexRoute
   MarketplaceComplianceIdRoute: typeof MarketplaceComplianceIdRoute
@@ -3270,6 +3408,7 @@ const MarketplaceRouteChildren: MarketplaceRouteChildren = {
   MarketplaceNotificationsRoute: MarketplaceNotificationsRoute,
   MarketplaceOffersRoute: MarketplaceOffersRoute,
   MarketplaceOrdersRoute: MarketplaceOrdersRoute,
+  MarketplaceSecurityRoute: MarketplaceSecurityRoute,
   MarketplaceTeamRoute: MarketplaceTeamRoute,
   MarketplaceIndexRoute: MarketplaceIndexRoute,
   MarketplaceComplianceIdRoute: MarketplaceComplianceIdRoute,
@@ -3298,6 +3437,7 @@ interface MiningRouteChildren {
   MiningReviewsRoute: typeof MiningReviewsRoute
   MiningRiskRoute: typeof MiningRiskRoute
   MiningSamplingRoute: typeof MiningSamplingRoute
+  MiningSecurityRoute: typeof MiningSecurityRoute
   MiningTeamRoute: typeof MiningTeamRoute
   MiningTransactionsRoute: typeof MiningTransactionsRoute
   MiningIndexRoute: typeof MiningIndexRoute
@@ -3323,6 +3463,7 @@ const MiningRouteChildren: MiningRouteChildren = {
   MiningReviewsRoute: MiningReviewsRoute,
   MiningRiskRoute: MiningRiskRoute,
   MiningSamplingRoute: MiningSamplingRoute,
+  MiningSecurityRoute: MiningSecurityRoute,
   MiningTeamRoute: MiningTeamRoute,
   MiningTransactionsRoute: MiningTransactionsRoute,
   MiningIndexRoute: MiningIndexRoute,
@@ -3411,6 +3552,7 @@ interface ProcessingRouteChildren {
   ProcessingOnboardingRoute: typeof ProcessingOnboardingRoute
   ProcessingProcessorsRoute: typeof ProcessingProcessorsRouteWithChildren
   ProcessingReportsRoute: typeof ProcessingReportsRoute
+  ProcessingSecurityRoute: typeof ProcessingSecurityRoute
   ProcessingTeamRoute: typeof ProcessingTeamRoute
   ProcessingTraceabilityRoute: typeof ProcessingTraceabilityRoute
   ProcessingIndexRoute: typeof ProcessingIndexRoute
@@ -3429,6 +3571,7 @@ const ProcessingRouteChildren: ProcessingRouteChildren = {
   ProcessingOnboardingRoute: ProcessingOnboardingRoute,
   ProcessingProcessorsRoute: ProcessingProcessorsRouteWithChildren,
   ProcessingReportsRoute: ProcessingReportsRoute,
+  ProcessingSecurityRoute: ProcessingSecurityRoute,
   ProcessingTeamRoute: ProcessingTeamRoute,
   ProcessingTraceabilityRoute: ProcessingTraceabilityRoute,
   ProcessingIndexRoute: ProcessingIndexRoute,
@@ -3442,6 +3585,7 @@ interface QualityRouteChildren {
   QualityAuditRoute: typeof QualityAuditRoute
   QualityDashboardRoute: typeof QualityDashboardRoute
   QualityNonconformitiesRoute: typeof QualityNonconformitiesRoute
+  QualitySecurityRoute: typeof QualitySecurityRoute
   QualityTeamRoute: typeof QualityTeamRoute
   QualityVaultRoute: typeof QualityVaultRoute
   QualityIndexRoute: typeof QualityIndexRoute
@@ -3457,6 +3601,7 @@ const QualityRouteChildren: QualityRouteChildren = {
   QualityAuditRoute: QualityAuditRoute,
   QualityDashboardRoute: QualityDashboardRoute,
   QualityNonconformitiesRoute: QualityNonconformitiesRoute,
+  QualitySecurityRoute: QualitySecurityRoute,
   QualityTeamRoute: QualityTeamRoute,
   QualityVaultRoute: QualityVaultRoute,
   QualityIndexRoute: QualityIndexRoute,
@@ -3472,6 +3617,7 @@ const QualityRouteWithChildren =
   QualityRoute._addFileChildren(QualityRouteChildren)
 
 interface WarehousingRouteChildren {
+  WarehousingSecurityRoute: typeof WarehousingSecurityRoute
   WarehousingTeamRoute: typeof WarehousingTeamRoute
   WarehousingIndexRoute: typeof WarehousingIndexRoute
   WarehousingOperatorDocumentsRoute: typeof WarehousingOperatorDocumentsRoute
@@ -3500,6 +3646,7 @@ interface WarehousingRouteChildren {
 }
 
 const WarehousingRouteChildren: WarehousingRouteChildren = {
+  WarehousingSecurityRoute: WarehousingSecurityRoute,
   WarehousingTeamRoute: WarehousingTeamRoute,
   WarehousingIndexRoute: WarehousingIndexRoute,
   WarehousingOperatorDocumentsRoute: WarehousingOperatorDocumentsRoute,

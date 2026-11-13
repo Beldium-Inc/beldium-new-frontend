@@ -21,6 +21,7 @@ import {
   Factory,
   Users,
   X,
+  KeyRound,
 } from "lucide-react";
 import { useAppState } from "@/verticals/processing/store";
 import { Pill } from "@/verticals/processing/bpc";
@@ -64,6 +65,7 @@ function buildOperatorNav(counts: NavBadgeCounts): { group: string; items: NavIt
         { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
         { to: "/processing/audit", label: "Audit Trail", icon: History },
         { to: "/processing/team", label: "Team", icon: Users },
+        { to: "/processing/security", label: "Security", icon: KeyRound },
       ],
     },
   ];
@@ -85,6 +87,7 @@ const APPLICANT_NAV: { group: string; items: NavItem[] }[] = [
       { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
       { to: "/processing/incidents", label: "Incidents", icon: Siren },
       { to: "/processing/team", label: "Team", icon: Users },
+      { to: "/processing/security", label: "Security", icon: KeyRound },
     ],
   },
 ];
@@ -127,6 +130,7 @@ function buildRegulatorNav(counts: NavBadgeCounts): { group: string; items: NavI
         { to: "/processing/audit", label: "Audit History", icon: History },
         { to: "/processing/traceability", label: "Operational Traceability", icon: Boxes },
         { to: "/processing/team", label: "Team", icon: Users },
+        { to: "/processing/security", label: "Security", icon: KeyRound },
       ],
     },
   ];
