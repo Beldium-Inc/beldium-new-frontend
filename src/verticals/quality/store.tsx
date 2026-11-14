@@ -233,6 +233,11 @@ interface Ctx {
   canDo: (record: Api.QualityRecordType, action: Api.QualityAction) => boolean;
   /** Record types this person sees only in a restricted view. */
   restrictedViews: Api.QualityRecordType[];
+  /**
+   * True when the server requires an authenticator app for this role and none
+   * is set up yet. Every Q&C call is refused until it is (backend G8).
+   */
+  secondStepOutstanding: boolean;
   state: State;
   logout: () => void;
   /**
@@ -421,6 +426,9 @@ export function BeldiumProvider({
     roleCodes: capabilities.data?.role_codes ?? [],
     canDo,
     restrictedViews: capabilities.data?.restricted_views ?? [],
+    secondStepOutstanding: Boolean(
+      capabilities.data?.second_factor_required && !capabilities.data?.second_factor_enrolled,
+    ),
     state: { applications, samples, certificates, nonConformities },
     logout: onSignOut,
     uploadDocument: async (appId, docId, file) => {

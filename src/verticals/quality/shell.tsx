@@ -126,7 +126,8 @@ export const navByRole: Record<Role, NavItem[]> = {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, ready, logout, error, retry, canDo, roleCodes } = useBeldium();
+  const { user, ready, logout, error, retry, canDo, roleCodes, secondStepOutstanding } =
+    useBeldium();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = React.useState(false);
@@ -154,6 +155,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       // ignore write failures (private mode, disabled storage)
     }
   }, [collapsed]);
+
+  // A role that needs an authenticator app sees only the Security page until
+  // it is set up; every other Q&C call would be refused by the server.
+  const blocked = secondStepOutstanding && pathname !== "/quality/security";
 
   if (error && !user) {
     return (
@@ -300,7 +305,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           }
         />
-        <main className="px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main className="px-4 py-6 sm:px-8 sm:py-8">
+          {blocked ? (
+            <div className="mx-auto max-w-xl rounded-[24px] border border-border bg-card p-8 text-center shadow-[var(--shadow-card)]">
+              <h1 className="font-display text-xl font-semibold text-navy">
+                Set up two-step sign-in first
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Your role needs an authenticator app at sign in. Set it up on the Security page,
+                then come back here.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <Link
+                  to="/quality/security"
+                  className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-navy-foreground"
+                >
+                  Open Security
+                </Link>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="rounded-xl border border-border px-4 py-2 text-sm font-medium"
+                >
+                  I have set it up
+                </button>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );

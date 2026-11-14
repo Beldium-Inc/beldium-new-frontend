@@ -55,6 +55,8 @@ export interface QualityCapabilities {
   permissions?: Partial<Record<QualityRecordType, QualityAction[]>>;
   restricted_views?: QualityRecordType[];
   second_factor_enrolled?: boolean;
+  /** True when this role must use an authenticator app (backend G8 enforcement). */
+  second_factor_required?: boolean;
 }
 
 export type QualityApplicationStatus =
