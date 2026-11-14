@@ -223,8 +223,14 @@ interface Ctx {
   ready: boolean;
   user: { role: Role; name: string; title: string; org: string; initials: string } | null;
   role: Role | null;
-  /** What the API says this caller may do; the session role is only a view preference. */
+  /** What the API says this caller may do. Nothing here comes from the sign in page. */
   can: { review: boolean; decide: boolean };
+  /** The Q&C role codes the server says this person holds (backend G3). */
+  roleCodes: Api.QualityRoleCode[];
+  /** True when the access grid lets this person do `action` on `record`. */
+  canDo: (record: Api.QualityRecordType, action: Api.QualityAction) => boolean;
+  /** Record types this person sees only in a restricted view. */
+  restrictedViews: Api.QualityRecordType[];
   state: State;
   logout: () => void;
   /**
@@ -319,12 +325,9 @@ const EMPTY_LIST = { results: [] };
 
 export function BeldiumProvider({
   children,
-  role,
   onSignOut,
 }: {
   children: React.ReactNode;
-  /** Seeded from the shared session, this dashboard no longer signs anyone in. */
-  role: Role;
   onSignOut: () => void;
 }) {
   const currentUser = useCurrentUser();
@@ -351,11 +354,19 @@ export function BeldiumProvider({
   const advanceCorrectiveActionFor = useAdvanceCorrectiveAction();
   const closeNonConformityFor = useCloseQualityNonConformity();
 
-  const effectiveRole: Role = capabilities.data?.role ?? role;
+  // The role comes from the server only (task E9). There is no fallback to a
+  // role chosen at sign in or kept in the browser: no server role, no access.
+  const effectiveRole: Role | null = capabilities.data?.role ?? null;
+  const permissions = capabilities.data?.permissions;
+  const canDo = React.useCallback(
+    (record: Api.QualityRecordType, action: Api.QualityAction) =>
+      Boolean(permissions?.[record]?.includes(action)),
+    [permissions],
+  );
 
   const user = React.useMemo(() => {
     const account = currentUser.data;
-    if (!account) return null;
+    if (!account || !effectiveRole) return null;
     const name = [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
     const parts = name.split(/\s+/).filter(Boolean);
     const initials =
@@ -405,6 +416,9 @@ export function BeldiumProvider({
       review: capabilities.data?.can_review ?? false,
       decide: capabilities.data?.can_decide ?? false,
     },
+    roleCodes: capabilities.data?.role_codes ?? [],
+    canDo,
+    restrictedViews: capabilities.data?.restricted_views ?? [],
     state: { applications, samples, certificates, nonConformities },
     logout: onSignOut,
     uploadDocument: async (appId, docId, file) => {

@@ -2,10 +2,8 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { BeldiumProvider } from "@/verticals/quality/store";
-import type { Role } from "@/verticals/quality/types";
 import { useSession } from "@/lib/session";
 import { useSignOut } from "@/lib/sign-out";
-import { roleIn } from "@/lib/verticals";
 
 export const Route = createFileRoute("/quality")({
   head: () => ({
@@ -26,8 +24,9 @@ function QualityLayout() {
   const signOut = useSignOut();
   const navigate = useNavigate();
 
-  const role = session?.vertical === "quality" ? session.role : null;
-  const valid = role !== null && roleIn("quality", role) !== undefined;
+  // The Q&C role is read from the server inside BeldiumProvider (task E9).
+  // The session only says this person signed in to the Q&C workspace.
+  const valid = session?.vertical === "quality";
 
   useEffect(() => {
     if (hydrated && !valid) navigate({ to: "/signin" });
@@ -46,7 +45,7 @@ function QualityLayout() {
   return (
     // data-vertical scopes this dashboard's theme tokens (see src/styles.css).
     <div data-vertical="quality">
-      <BeldiumProvider role={role as Role} onSignOut={signOut}>
+      <BeldiumProvider onSignOut={signOut}>
         <Outlet />
       </BeldiumProvider>
     </div>

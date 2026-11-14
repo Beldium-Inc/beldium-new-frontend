@@ -11,11 +11,50 @@ const BASE = "/quality";
 
 export type QualityRole = "operator" | "partner" | "miner" | "buyer" | "regulator";
 
+/** The 12 Q&C role codes from the access grid (backend G3). */
+export type QualityRoleCode =
+  "QC" | "CEO" | "TL" | "SUP" | "SMP" | "INS" | "LAB" | "LOG" | "EXP" | "BYR" | "ADM" | "LGL";
+
+export type QualityAction = "create" | "read" | "update" | "approve";
+
+/** Record types are the rows of the access grid, in snake case. */
+export type QualityRecordType =
+  | "supplier_profile"
+  | "batch_declaration"
+  | "site_inspection_report"
+  | "sampling_record"
+  | "chain_of_custody"
+  | "test_request"
+  | "assay_report"
+  | "quality_decision"
+  | "ncr_capa"
+  | "evidence_package"
+  | "verification_certificate"
+  | "partner_register"
+  | "audit_log"
+  | "reports"
+  | "users_and_roles";
+
+export interface QualityRoleHolding {
+  role_code: QualityRoleCode;
+  organisation_id: UUID | null;
+  organisation_name: string;
+  valid_from: string;
+  valid_to: string | null;
+}
+
 export interface QualityCapabilities {
   role: QualityRole | null;
   can_review: boolean;
   can_decide: boolean;
   is_staff: boolean;
+  /** Present once the backend serves G3. Older answers leave these out. */
+  user_id?: UUID;
+  roles?: QualityRoleHolding[];
+  role_codes?: QualityRoleCode[];
+  permissions?: Partial<Record<QualityRecordType, QualityAction[]>>;
+  restricted_views?: QualityRecordType[];
+  second_factor_enrolled?: boolean;
 }
 
 export type QualityApplicationStatus =

@@ -88,7 +88,9 @@ import { Route as QualityIndexRouteImport } from './routes/quality.index'
 import { Route as QualityAuditRouteImport } from './routes/quality.audit'
 import { Route as QualityDashboardRouteImport } from './routes/quality.dashboard'
 import { Route as QualityNonconformitiesRouteImport } from './routes/quality.nonconformities'
+import { Route as QualitySettingsRouteImport } from './routes/quality.settings'
 import { Route as QualityTeamRouteImport } from './routes/quality.team'
+import { Route as QualityUsersRouteImport } from './routes/quality.users'
 import { Route as QualityVaultRouteImport } from './routes/quality.vault'
 import { Route as StaffComplianceVettingRouteImport } from './routes/staff.compliance-vetting'
 import { Route as VerifyHashRouteImport } from './routes/verify.$hash'
@@ -567,9 +569,19 @@ const QualityNonconformitiesRoute = QualityNonconformitiesRouteImport.update({
   path: '/nonconformities',
   getParentRoute: () => QualityRoute,
 } as any)
+const QualitySettingsRoute = QualitySettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => QualityRoute,
+} as any)
 const QualityTeamRoute = QualityTeamRouteImport.update({
   id: '/team',
   path: '/team',
+  getParentRoute: () => QualityRoute,
+} as any)
+const QualityUsersRoute = QualityUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => QualityRoute,
 } as any)
 const QualityVaultRoute = QualityVaultRouteImport.update({
@@ -1094,7 +1106,9 @@ export interface FileRoutesByFullPath {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/settings': typeof QualitySettingsRoute
   '/quality/team': typeof QualityTeamRoute
+  '/quality/users': typeof QualityUsersRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -1248,7 +1262,9 @@ export interface FileRoutesByTo {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/settings': typeof QualitySettingsRoute
   '/quality/team': typeof QualityTeamRoute
+  '/quality/users': typeof QualityUsersRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -1411,7 +1427,9 @@ export interface FileRoutesById {
   '/quality/audit': typeof QualityAuditRoute
   '/quality/dashboard': typeof QualityDashboardRoute
   '/quality/nonconformities': typeof QualityNonconformitiesRoute
+  '/quality/settings': typeof QualitySettingsRoute
   '/quality/team': typeof QualityTeamRoute
+  '/quality/users': typeof QualityUsersRoute
   '/quality/vault': typeof QualityVaultRoute
   '/staff/compliance-vetting': typeof StaffComplianceVettingRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -1575,7 +1593,9 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/settings'
     | '/quality/team'
+    | '/quality/users'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
@@ -1729,7 +1749,9 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/settings'
     | '/quality/team'
+    | '/quality/users'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
@@ -1891,7 +1913,9 @@ export interface FileRouteTypes {
     | '/quality/audit'
     | '/quality/dashboard'
     | '/quality/nonconformities'
+    | '/quality/settings'
     | '/quality/team'
+    | '/quality/users'
     | '/quality/vault'
     | '/staff/compliance-vetting'
     | '/verify/$hash'
@@ -2551,11 +2575,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QualityNonconformitiesRouteImport
       parentRoute: typeof QualityRoute
     }
+    '/quality/settings': {
+      id: '/quality/settings'
+      path: '/settings'
+      fullPath: '/quality/settings'
+      preLoaderRoute: typeof QualitySettingsRouteImport
+      parentRoute: typeof QualityRoute
+    }
     '/quality/team': {
       id: '/quality/team'
       path: '/team'
       fullPath: '/quality/team'
       preLoaderRoute: typeof QualityTeamRouteImport
+      parentRoute: typeof QualityRoute
+    }
+    '/quality/users': {
+      id: '/quality/users'
+      path: '/users'
+      fullPath: '/quality/users'
+      preLoaderRoute: typeof QualityUsersRouteImport
       parentRoute: typeof QualityRoute
     }
     '/quality/vault': {
@@ -3442,7 +3480,9 @@ interface QualityRouteChildren {
   QualityAuditRoute: typeof QualityAuditRoute
   QualityDashboardRoute: typeof QualityDashboardRoute
   QualityNonconformitiesRoute: typeof QualityNonconformitiesRoute
+  QualitySettingsRoute: typeof QualitySettingsRoute
   QualityTeamRoute: typeof QualityTeamRoute
+  QualityUsersRoute: typeof QualityUsersRoute
   QualityVaultRoute: typeof QualityVaultRoute
   QualityIndexRoute: typeof QualityIndexRoute
   QualityApplicationsIdRoute: typeof QualityApplicationsIdRoute
@@ -3457,7 +3497,9 @@ const QualityRouteChildren: QualityRouteChildren = {
   QualityAuditRoute: QualityAuditRoute,
   QualityDashboardRoute: QualityDashboardRoute,
   QualityNonconformitiesRoute: QualityNonconformitiesRoute,
+  QualitySettingsRoute: QualitySettingsRoute,
   QualityTeamRoute: QualityTeamRoute,
+  QualityUsersRoute: QualityUsersRoute,
   QualityVaultRoute: QualityVaultRoute,
   QualityIndexRoute: QualityIndexRoute,
   QualityApplicationsIdRoute: QualityApplicationsIdRoute,

@@ -11,8 +11,11 @@ import {
   LogOut,
   ScrollText,
   ShieldAlert,
+  SlidersHorizontal,
+  UserCog,
   Users,
 } from "lucide-react";
+import type { QualityAction, QualityRecordType } from "@/lib/api/quality";
 import { useBeldium } from "@/verticals/quality/store";
 import { roleMeta } from "@/verticals/quality/data";
 import type { Role } from "@/verticals/quality/types";
@@ -29,7 +32,9 @@ type AppPath =
   | "/quality/nonconformities"
   | "/quality/audit"
   | "/quality/vault"
-  | "/quality/team";
+  | "/quality/team"
+  | "/quality/users"
+  | "/quality/settings";
 
 interface NavItem {
   to: AppPath;
@@ -50,7 +55,30 @@ const allNav = {
   audit: { to: "/quality/audit", label: "Audit trail", icon: ScrollText },
   vault: { to: "/quality/vault", label: "Document vault", icon: Archive },
   team: { to: "/quality/team", label: "Team", icon: Users },
+  users: { to: "/quality/users", label: "Users and roles", icon: UserCog },
+  settings: { to: "/quality/settings", label: "Rule settings", icon: SlidersHorizontal },
 } satisfies Record<string, NavItem>;
+
+/**
+ * The menu for this person. The base list follows the server role; the
+ * audit log, users and settings entries follow the access grid from
+ * /quality/me/ (task E9), so the menu never offers what the server refuses.
+ */
+function navFor(
+  role: Role,
+  canDo: (record: QualityRecordType, action: QualityAction) => boolean,
+  roleCodes: string[],
+): NavItem[] {
+  const items = navByRole[role].filter((item) => item.to !== "/quality/audit");
+  const extra: NavItem[] = [];
+  if (canDo("audit_log", "read")) extra.push(allNav.audit);
+  if (canDo("users_and_roles", "read")) extra.push(allNav.users);
+  if (roleCodes.some((code) => ["QC", "CEO", "TL"].includes(code))) extra.push(allNav.settings);
+  const teamIndex = items.findIndex((item) => item.to === "/quality/team");
+  return teamIndex === -1
+    ? [...items, ...extra]
+    : [...items.slice(0, teamIndex), ...extra, ...items.slice(teamIndex)];
+}
 
 export const navByRole: Record<Role, NavItem[]> = {
   operator: [
@@ -85,7 +113,7 @@ export const navByRole: Record<Role, NavItem[]> = {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, ready, logout, error, retry } = useBeldium();
+  const { user, ready, logout, error, retry, canDo, roleCodes } = useBeldium();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = React.useState(false);
@@ -137,7 +165,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const items = navByRole[user.role];
+  const items = navFor(user.role, canDo, roleCodes);
 
   const sidebar = (
     <div
