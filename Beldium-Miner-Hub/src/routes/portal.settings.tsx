@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/miner-shell";
 import { StatusChip } from "@/components/status-chip";
+import { TwoStepSettings } from "@/components/two-step-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -42,7 +43,11 @@ function SettingsPage() {
 
   useEffect(() => {
     if (user) {
-      setForm({ first_name: user.first_name, last_name: user.last_name, phone_number: user.phone_number });
+      setForm({
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone_number: user.phone_number,
+      });
     }
   }, [user]);
 
@@ -86,8 +91,12 @@ function SettingsPage() {
                   updateUser.mutate(
                     { ...form, phone_number: formatPhoneNumber(form.phone_number) },
                     {
-                    onError: (cause) => setError(cause instanceof ApiError ? cause.message : "Could not save changes."),
-                  });
+                      onError: (cause) =>
+                        setError(
+                          cause instanceof ApiError ? cause.message : "Could not save changes.",
+                        ),
+                    },
+                  );
                 }}
               >
                 Save changes
@@ -127,7 +136,9 @@ function SettingsPage() {
 
           <section className="rounded-md border border-border bg-card p-5">
             <h2 className="text-sm font-semibold text-card-foreground">Session</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">Sign out of the miner workspace on this device.</p>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Sign out of the miner workspace on this device.
+            </p>
             <Button
               variant="outline"
               size="sm"
@@ -141,6 +152,11 @@ function SettingsPage() {
             </Button>
           </section>
         </div>
+        {user ? (
+          <div className="lg:col-span-2">
+            <TwoStepSettings email={user.email} />
+          </div>
+        ) : null}
       </div>
     </>
   );

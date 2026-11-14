@@ -6,6 +6,7 @@ import {
   Boxes,
   FlaskConical,
   Factory,
+  KeyRound,
   Landmark,
   Mountain,
   ShieldCheck,
@@ -17,7 +18,7 @@ import {
 import { toast } from "sonner";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, getPlatformStats } from "@/lib/api";
+import { ApiError, getPlatformStats, type User } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { fetchAccountSetup, needsComplianceSetup } from "@/lib/onboarding/setup";
@@ -39,10 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
-import { SecondFactorStep } from "@/components/auth/second-factor-step";
-import type { SecondFactorChallenge } from "@/lib/api/auth";
 import { fetchQualityCapabilities } from "@/lib/api/quality";
-import type { User } from "@/lib/api/types";
 
 export const Route = createFileRoute("/signin")({
   ssr: false,
@@ -95,7 +93,7 @@ function SignInPage() {
   // Two things happen on submit: the API authenticates the person, and the
   // local session records which dashboard and role they chose to work in.
   const { session, hydrated, signIn: startSession } = useSession();
-  const { signIn: authenticate, signOut: endAuth } = useAuth();
+  const { signIn: authenticate, completeMfa, signOut: endAuth } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const stats = useQuery({
@@ -110,9 +108,12 @@ function SignInPage() {
   const [password, setPassword] = React.useState("");
   const [remember, setRemember] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
-  const [challenge, setChallenge] = React.useState<SecondFactorChallenge | null>(null);
   // Q&C roles come from the server (task E9), so the page does not offer a pick.
   const serverRoles = picked?.slug === "quality";
+  // Set when the password was right and the account asks for an authenticator code.
+  const [mfaToken, setMfaToken] = React.useState<string | null>(null);
+  const [mfaCode, setMfaCode] = React.useState("");
+  const [useBackupCode, setUseBackupCode] = React.useState(false);
 
   // Already signed in: go straight back to that workspace.
   React.useEffect(() => {
@@ -141,11 +142,15 @@ function SignInPage() {
     setSubmitting(true);
     try {
       const result = await authenticate({ email: address, password });
-      if (result.status === "second_factor") {
-        setChallenge(result.challenge);
+      if (result.kind === "mfa_required") {
+        // Password right; the tokens wait for the authenticator code.
+        setMfaToken(result.mfaToken);
+        setMfaCode("");
+        setUseBackupCode(false);
+        setPassword("");
         return;
       }
-      await continueAs(result.user);
+      await finishSignIn(result.user);
     } catch (error) {
       // An unverified account is not a failed password: send them to finish
       // the signup code rather than making them guess at their credentials.
@@ -160,110 +165,136 @@ function SignInPage() {
     }
   };
 
-  /** Everything after the API has accepted who this is. */
-  const continueAs = async (user: User) => {
-    if (!picked || !roleId) return;
-    {
-      // Arrived from an invitation email: finish accepting it first.
-      const invitation = pendingInvitation();
-      if (invitation) {
-        navigate({ to: "/onboarding/invite", search: { token: invitation } });
-        return;
+  const submitMfa = async () => {
+    if (!mfaToken || submitting) return;
+    const value = mfaCode.trim();
+    if (!useBackupCode && value.replace(/\D/g, "").length !== 6) {
+      toast.error("Enter the 6-digit code from your authenticator app.");
+      return;
+    }
+    if (useBackupCode && value.replace(/[^a-z0-9]/gi, "").length !== 8) {
+      toast.error("Enter one of your backup codes, like abcd-2345.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const user = await completeMfa({ mfaToken, code: value });
+      setMfaToken(null);
+      await finishSignIn(user);
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        (error.code === "mfa_challenge_expired" || error.code === "mfa_challenge_invalid")
+      ) {
+        // The five-minute window ran out: back to the password.
+        setMfaToken(null);
       }
+      toast.error(error instanceof ApiError ? error.message : "That code could not be checked.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-      // A compliance account belongs to the one sector it registered in. The
-      // API refuses the other sectors' desks anyway; this stops the person at
-      // the door and tells them where their account does open.
-      const setup = user.is_staff ? null : await fetchAccountSetup(queryClient);
-      const registered = setup?.application?.sector;
-      if (registered && registered !== picked.slug) {
+  /** Everything after the API has accepted the person: route them to the right desk. */
+  const finishSignIn = async (user: User) => {
+    if (!picked || !roleId) return;
+    // Arrived from an invitation email: finish accepting it first.
+    const invitation = pendingInvitation();
+    if (invitation) {
+      navigate({ to: "/onboarding/invite", search: { token: invitation } });
+      return;
+    }
+
+    // A compliance account belongs to the one sector it registered in. The
+    // API refuses the other sectors' desks anyway; this stops the person at
+    // the door and tells them where their account does open.
+    const setup = user.is_staff ? null : await fetchAccountSetup(queryClient);
+    const registered = setup?.application?.sector;
+    if (registered && registered !== picked.slug) {
+      await endAuth();
+      toast.error(
+        `This account is registered for ${VERTICAL_BY_SLUG[registered as VerticalSlug]?.name ?? registered}. Sign in under that sector instead.`,
+      );
+      return;
+    }
+
+    // The server's word on who this person is in the sector (BE-O6), not
+    // the role picked on this page. A failed call falls back to the pick.
+    const me = user.is_staff ? null : await fetchOnboardingMe(picked.slug).catch(() => null);
+    let role = roleId;
+    if (me) {
+      if (me.membership_status === "suspended") {
         await endAuth();
         toast.error(
-          `This account is registered for ${VERTICAL_BY_SLUG[registered as VerticalSlug]?.name ?? registered}. Sign in under that sector instead.`,
+          `Your access to ${me.organisation?.name ?? "your company"} is suspended. Ask ${me.admin_name || "your company admin"} to restore it.`,
         );
         return;
       }
-
-      // The server's word on who this person is in the sector (BE-O6), not
-      // the role picked on this page. A failed call falls back to the pick.
-      const me = user.is_staff ? null : await fetchOnboardingMe(picked.slug).catch(() => null);
-      let role = roleId;
-      if (me) {
-        if (me.membership_status === "suspended") {
-          await endAuth();
-          toast.error(
-            `Your access to ${me.organisation?.name ?? "your company"} is suspended. Ask ${me.admin_name || "your company admin"} to restore it.`,
-          );
-          return;
-        }
-        if (me.membership_status === "pending" && me.pending_join_request) {
-          navigate({ to: "/onboarding/pending" });
-          return;
-        }
-        if (me.membership_status === "pending" && me.regulator_request) {
-          await endAuth();
-          toast.info(
-            "Your agency's access request is waiting for a Beldium operator to approve it.",
-          );
-          return;
-        }
-        if (me.membership_status === "none" && me.regulator_request?.status === "rejected") {
-          await endAuth();
-          toast.error(
-            `Your agency's access request was declined${me.regulator_request.rejection_reason ? `: ${me.regulator_request.rejection_reason}` : "."}`,
-          );
-          return;
-        }
-        if (
-          me.dashboard === "regulator" &&
-          me.granted_sectors.length &&
-          !me.granted_sectors.includes(picked.slug)
-        ) {
-          await endAuth();
-          toast.error(
-            `Your agency has read-only access to ${me.granted_sectors.map((g) => VERTICAL_BY_SLUG[g]?.name ?? g).join(", ")} only.`,
-          );
-          return;
-        }
-        const serverRole =
-          me.dashboard === "regulator" || me.dashboard === "partner" ? me.dashboard : null;
-        if (serverRole && picked.roles.some((r) => r.id === serverRole)) role = serverRole;
+      if (me.membership_status === "pending" && me.pending_join_request) {
+        navigate({ to: "/onboarding/pending" });
+        return;
       }
-
-      // A compliance desk is only open to an account whose organisation
-      // application has been submitted. Anyone who stopped part-way through
-      // signup is taken back to where they left off instead.
-      if (setup && role !== "regulator" && needsComplianceSetup(picked.slug, role)) {
-        if (setup.stage !== "complete") {
-          rememberOnboardingSector(picked.slug);
-          toast.info(
-            setup.stage === "join_pending"
-              ? "Your request to join an organisation is still waiting for its administrator."
-              : setup.stage === "draft"
-                ? `Your registration is ${setup.percent}% complete. Finish and submit it to open your workspace.`
-                : "Finish setting up your organisation to open your workspace.",
-          );
-          navigate({ to: setup.resumeTo });
-          return;
-        }
+      if (me.membership_status === "pending" && me.regulator_request) {
+        await endAuth();
+        toast.info("Your agency's access request is waiting for a Beldium operator to approve it.");
+        return;
       }
-
-      if (picked.slug === "quality") {
-        // The server's Q&C role, never the one picked on this page.
-        const capabilities = await fetchQualityCapabilities().catch(() => null);
-        if (!capabilities?.role) {
-          await endAuth();
-          toast.error(
-            "This account has no Quality & Control role yet. Ask the Q&C desk to assign one.",
-          );
-          return;
-        }
-        role = capabilities.role;
+      if (me.membership_status === "none" && me.regulator_request?.status === "rejected") {
+        await endAuth();
+        toast.error(
+          `Your agency's access request was declined${me.regulator_request.rejection_reason ? `: ${me.regulator_request.rejection_reason}` : "."}`,
+        );
+        return;
       }
-
-      startSession(picked.slug, role);
-      navigate({ to: homeFor(picked.slug, role) });
+      if (
+        me.dashboard === "regulator" &&
+        me.granted_sectors.length &&
+        !me.granted_sectors.includes(picked.slug)
+      ) {
+        await endAuth();
+        toast.error(
+          `Your agency has read-only access to ${me.granted_sectors.map((g) => VERTICAL_BY_SLUG[g]?.name ?? g).join(", ")} only.`,
+        );
+        return;
+      }
+      const serverRole =
+        me.dashboard === "regulator" || me.dashboard === "partner" ? me.dashboard : null;
+      if (serverRole && picked.roles.some((r) => r.id === serverRole)) role = serverRole;
     }
+
+    // A compliance desk is only open to an account whose organisation
+    // application has been submitted. Anyone who stopped part-way through
+    // signup is taken back to where they left off instead.
+    if (setup && role !== "regulator" && needsComplianceSetup(picked.slug, role)) {
+      if (setup.stage !== "complete") {
+        rememberOnboardingSector(picked.slug);
+        toast.info(
+          setup.stage === "join_pending"
+            ? "Your request to join an organisation is still waiting for its administrator."
+            : setup.stage === "draft"
+              ? `Your registration is ${setup.percent}% complete. Finish and submit it to open your workspace.`
+              : "Finish setting up your organisation to open your workspace.",
+        );
+        navigate({ to: setup.resumeTo });
+        return;
+      }
+    }
+
+    if (picked.slug === "quality") {
+      // The server's Q&C role, never the one picked on this page (task E9).
+      const capabilities = await fetchQualityCapabilities().catch(() => null);
+      if (!capabilities?.role) {
+        await endAuth();
+        toast.error(
+          "This account has no Quality & Control role yet. Ask the Q&C desk to assign one.",
+        );
+        return;
+      }
+      role = capabilities.role;
+    }
+
+    startSession(picked.slug, role);
+    navigate({ to: homeFor(picked.slug, role) });
   };
 
   return (
@@ -310,24 +341,73 @@ function SignInPage() {
         </div>
 
         <div className="rounded-2xl bg-card p-6 text-card-foreground shadow-raised sm:p-8">
-          {challenge !== null ? (
-            <SecondFactorStep
-              challenge={challenge}
-              onCancel={() => {
-                setChallenge(null);
-                setPassword("");
-              }}
-              onDone={async (user) => {
-                setChallenge(null);
-                try {
-                  await continueAs(user);
-                } catch (error) {
-                  toast.error(
-                    error instanceof ApiError ? error.message : "Sign-in failed. Please try again.",
-                  );
-                }
-              }}
-            />
+          {picked && mfaToken ? (
+            <>
+              <button
+                onClick={() => {
+                  setMfaToken(null);
+                  setMfaCode("");
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="size-3.5" /> Back to sign in
+              </button>
+              <div className="mt-4 flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+                  <KeyRound className="size-5" />
+                </span>
+                <div>
+                  <h2 className="font-display text-xl font-semibold">Two-step sign-in</h2>
+                  <p className="text-sm text-muted-foreground">{picked.name}</p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">
+                {useBackupCode
+                  ? "Enter one of the backup codes you saved when you set up your authenticator app. Each works once."
+                  : "Open your authenticator app and enter the 6-digit code it shows for Beldium."}
+              </p>
+              <form
+                className="mt-6 space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void submitMfa();
+                }}
+              >
+                <div className="space-y-1.5">
+                  <Label htmlFor="mfa-code">
+                    {useBackupCode ? "Backup code" : "Authentication code"}
+                  </Label>
+                  <Input
+                    id="mfa-code"
+                    autoFocus
+                    value={mfaCode}
+                    autoComplete="one-time-code"
+                    inputMode={useBackupCode ? "text" : "numeric"}
+                    maxLength={useBackupCode ? 9 : 6}
+                    className="font-mono tracking-[0.35em]"
+                    placeholder={useBackupCode ? "abcd-2345" : "000000"}
+                    onChange={(e) =>
+                      setMfaCode(useBackupCode ? e.target.value : e.target.value.replace(/\D/g, ""))
+                    }
+                  />
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                  {submitting ? "Checking…" : "Verify and sign in"}
+                </Button>
+                <button
+                  type="button"
+                  className="w-full text-center text-xs font-medium text-brand underline"
+                  onClick={() => {
+                    setUseBackupCode((v) => !v);
+                    setMfaCode("");
+                  }}
+                >
+                  {useBackupCode
+                    ? "Use my authenticator app instead"
+                    : "Lost your phone? Use a backup code"}
+                </button>
+              </form>
+            </>
           ) : picked === null ? (
             <>
               <h2 className="font-display text-xl font-semibold">Sign in to your sector</h2>

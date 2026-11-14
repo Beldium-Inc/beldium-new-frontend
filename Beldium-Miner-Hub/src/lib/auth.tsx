@@ -3,7 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import {
   fetchCurrentUser,
+  isMfaChallenge,
   login,
+  verifyMfa,
   logout,
   register,
   resendVerification,
@@ -20,6 +22,10 @@ import type { User } from "./api/types";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
+/** Signed in, or the password was right and an authenticator code is needed. */
+export type SignInResult =
+  { kind: "signed_in"; user: User } | { kind: "mfa_required"; mfaToken: string };
+
 type AuthContextValue = {
   user: User | null;
   status: AuthStatus;
@@ -27,7 +33,9 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   /** Set when /auth/me/ failed, e.g. the API is unreachable. */
   error: Error | null;
-  signIn: (input: { email: string; password: string }) => Promise<User>;
+  signIn: (input: { email: string; password: string }) => Promise<SignInResult>;
+  /** Second step after `mfa_required`: a code from the authenticator app, or a backup code. */
+  completeMfa: (input: { mfaToken: string; code: string }) => Promise<User>;
   signUp: (input: RegisterInput) => Promise<RegisterResponse>;
   confirmEmail: (input: { email: string; code: string }) => Promise<User>;
   resendCode: (email: string) => Promise<{ message: string }>;
@@ -68,7 +76,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       error: query.error ?? null,
 
       signIn: async (input) => {
-        await login(input);
+        const result = await login(input);
+        if (isMfaChallenge(result)) return { kind: "mfa_required", mfaToken: result.mfa_token };
+        return { kind: "signed_in", user: await loadUser() };
+      },
+
+      completeMfa: async ({ mfaToken, code }) => {
+        await verifyMfa({ mfa_token: mfaToken, code });
         return loadUser();
       },
 

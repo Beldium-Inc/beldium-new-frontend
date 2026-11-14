@@ -22,6 +22,7 @@ import {
   BadgeCheck,
   Warehouse,
   Users,
+  KeyRound,
 } from "lucide-react";
 import { ROLES, roleById, type RoleId } from "@/verticals/warehousing/data";
 import { useSession } from "@/lib/session";
@@ -40,6 +41,7 @@ import { BeldiumLogo } from "@/components/beldium-logo";
 import { DashboardHeader } from "@/components/dashboard-header";
 
 const ICONS = {
+  KeyRound,
   LayoutDashboard,
   FileText,
   ClipboardCheck,
@@ -71,6 +73,7 @@ const NAV: Record<RoleId, { to: string; label: string; icon: IconName }[]> = {
     { to: "/warehousing/partner/alerts", label: "Monitoring alerts", icon: "Bell" },
     { to: "/warehousing/partner/audit", label: "Audit history", icon: "ScrollText" },
     { to: "/warehousing/team", label: "Team", icon: "Users" },
+    { to: "/warehousing/security", label: "Security", icon: "KeyRound" },
   ],
   operator: [
     { to: "/warehousing/operator", label: "Operations dashboard", icon: "LayoutDashboard" },
@@ -82,6 +85,7 @@ const NAV: Record<RoleId, { to: string; label: string; icon: IconName }[]> = {
     { to: "/warehousing/operator/documents", label: "Documents", icon: "FileText" },
     { to: "/warehousing/operator/incidents", label: "Incidents", icon: "Siren" },
     { to: "/warehousing/team", label: "Team", icon: "Users" },
+    { to: "/warehousing/security", label: "Security", icon: "KeyRound" },
   ],
   regulator: [
     { to: "/warehousing/regulator", label: "Oversight dashboard", icon: "LayoutDashboard" },
@@ -92,6 +96,7 @@ const NAV: Record<RoleId, { to: string; label: string; icon: IconName }[]> = {
     { to: "/warehousing/regulator/incidents", label: "Incidents & alerts", icon: "ShieldAlert" },
     { to: "/warehousing/regulator/reports", label: "Reports", icon: "Gauge" },
     { to: "/warehousing/team", label: "Team", icon: "Users" },
+    { to: "/warehousing/security", label: "Security", icon: "KeyRound" },
   ],
 };
 

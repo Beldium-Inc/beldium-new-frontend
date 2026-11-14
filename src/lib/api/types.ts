@@ -51,6 +51,8 @@ export interface User {
   /** Null until a phone OTP is confirmed. Separate from email verification. */
   phone_verified_at: Timestamp | null;
   is_staff: boolean;
+  /** Sign-in asks for an authenticator code after the password. */
+  mfa_enabled?: boolean;
   created_at: Timestamp;
 }
 

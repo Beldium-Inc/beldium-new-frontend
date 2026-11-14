@@ -2,10 +2,10 @@ import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import {
-  completeSecondFactor,
   fetchCurrentUser,
+  isMfaChallenge,
   login,
-  type SecondFactorChallenge,
+  verifyMfa,
   logout,
   register,
   resendVerification,
@@ -23,9 +23,9 @@ import type { User } from "./api/types";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
+/** Signed in, or the password was right and an authenticator code is needed. */
 export type SignInResult =
-  | { status: "signed_in"; user: User }
-  | { status: "second_factor"; challenge: SecondFactorChallenge };
+  { kind: "signed_in"; user: User } | { kind: "mfa_required"; mfaToken: string };
 
 type AuthContextValue = {
   user: User | null;
@@ -34,9 +34,9 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   /** Set when /auth/me/ failed, e.g. the API is unreachable. */
   error: Error | null;
-  /** May stop at a second factor challenge; finish it with `finishSecondFactor`. */
   signIn: (input: { email: string; password: string }) => Promise<SignInResult>;
-  finishSecondFactor: (input: { challenge_token: string; code: string }) => Promise<User>;
+  /** Second step after `mfa_required`: a code from the authenticator app, or a backup code. */
+  completeMfa: (input: { mfaToken: string; code: string }) => Promise<User>;
   signUp: (input: RegisterInput) => Promise<RegisterResponse>;
   confirmEmail: (input: { email: string; code: string }) => Promise<User>;
   resendCode: (email: string) => Promise<{ message: string }>;
@@ -78,26 +78,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       signIn: async (input) => {
         const result = await login(input);
-        if (result.status === "second_factor") return result;
-        return { status: "signed_in", user: await loadUser() };
+        if (isMfaChallenge(result)) return { kind: "mfa_required", mfaToken: result.mfa_token };
+        return { kind: "signed_in", user: await loadUser() };
       },
 
-      finishSecondFactor: async (input) => {
-        await completeSecondFactor(input);
+      completeMfa: async ({ mfaToken, code }) => {
+        await verifyMfa({ mfa_token: mfaToken, code });
         return loadUser();
       },
 
       signUp: (input) => register(input),
 
       confirmEmail: async (input) => {
-        const answer = await verifyEmail(input);
-        if (answer.second_factor_required) {
-          // The account owes a second factor, so no session was opened here.
-          throw Object.assign(
-            new Error("Email verified. Sign in to finish with your authenticator app."),
-            { name: "SecondFactorDue" },
-          );
-        }
+        await verifyEmail(input);
         return loadUser();
       },
 

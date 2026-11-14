@@ -59,12 +59,17 @@ function PortalHome() {
   if (!org) {
     return (
       <PageHeader
-        title="Start your organisation application"
-        description="Register your mining organisation to unlock your workspace."
+        title="Set up your workspace"
+        description="Register your mining organisation, or join one already on Beldium with the code its administrator shared."
         actions={
-          <Button asChild>
-            <Link to="/application">Start application</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/join">Join with a code</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/application">Start application</Link>
+            </Button>
+          </div>
         }
       />
     );

@@ -14,6 +14,7 @@ import {
   ScrollText,
   Ship,
   Users,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/verticals/export/store";
@@ -32,6 +33,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/export/documents", label: "Documents", icon: FileStack },
     { to: "/export/monitoring", label: "Monitoring", icon: BellRing },
     { to: "/export/team", label: "Team", icon: Users },
+    { to: "/export/security", label: "Security", icon: KeyRound },
   ],
   exporter: [
     { to: "/export/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -40,6 +42,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/export/documents", label: "Documents", icon: FileStack },
     { to: "/export/monitoring", label: "Alerts", icon: BellRing },
     { to: "/export/team", label: "Team", icon: Users },
+    { to: "/export/security", label: "Security", icon: KeyRound },
   ],
   regulator: [
     { to: "/export/oversight", label: "Oversight", icon: Gauge },
@@ -47,6 +50,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/export/documents", label: "Document register", icon: ScrollText },
     { to: "/export/monitoring", label: "Monitoring", icon: BellRing },
     { to: "/export/team", label: "Team", icon: Users },
+    { to: "/export/security", label: "Security", icon: KeyRound },
   ],
 };
 

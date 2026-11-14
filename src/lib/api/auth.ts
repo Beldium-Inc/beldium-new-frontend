@@ -23,31 +23,6 @@ export interface RegisterResponse {
 
 export interface VerifyEmailResponse extends Partial<TokenPair> {
   message: string;
-  second_factor_required?: boolean;
-  challenge_token?: string;
-  enrolment_required?: boolean;
-}
-
-/** After a correct password, when the account owes a second factor (backend G8). */
-export interface SecondFactorChallenge {
-  second_factor_required: true;
-  challenge_token: string;
-  methods: string[];
-  enrolment_required: boolean;
-  expires_in: number;
-}
-
-export type LoginResult =
-  | { status: "signed_in"; tokens: TokenPair }
-  | { status: "second_factor"; challenge: SecondFactorChallenge };
-
-function isChallenge(value: unknown): value is SecondFactorChallenge {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { second_factor_required?: unknown }).second_factor_required === true &&
-    typeof (value as { challenge_token?: unknown }).challenge_token === "string"
-  );
 }
 
 /**
@@ -75,7 +50,6 @@ export async function verifyEmail(input: {
     body: input,
     auth: false,
   });
-  // An account that owes a second factor gets a challenge here, not tokens.
   if (typeof response.access === "string") writeTokens({ access: response.access });
   return response;
 }
@@ -92,68 +66,72 @@ export function resendVerification(email: string): Promise<{ message: string }> 
   });
 }
 
+/** A correct password on an account with two-step sign-in: the tokens wait for a code. */
+export interface MfaChallenge {
+  mfa_required: true;
+  mfa_token: string;
+}
+
+export type LoginResult = TokenPair | MfaChallenge;
+
+export function isMfaChallenge(result: LoginResult): result is MfaChallenge {
+  return "mfa_required" in result && result.mfa_required === true;
+}
+
 /**
- * Exchange credentials for a session. Internal and partner accounts may get a
- * second factor challenge instead of tokens; finish it with
- * `completeSecondFactor`. Throws `email_not_verified` (403) on an unverified
- * account.
+ * Exchange credentials for a token pair, or for a two-step challenge when the
+ * account has an authenticator app. Throws `email_not_verified` (403) on an
+ * unverified account.
  */
 export async function login(input: { email: string; password: string }): Promise<LoginResult> {
-  const answer = await apiFetch<TokenPair | SecondFactorChallenge>("/auth/token/", {
+  const result = await apiFetch<LoginResult>("/auth/token/", {
     method: "POST",
     body: input,
     auth: false,
   });
-  if (isChallenge(answer)) return { status: "second_factor", challenge: answer };
-  writeTokens(answer);
-  return { status: "signed_in", tokens: answer };
+  if (!isMfaChallenge(result)) writeTokens(result);
+  return result;
 }
 
-/** Swap a challenge and a code from the authenticator app (or a recovery code) for a session. */
-export async function completeSecondFactor(input: {
-  challenge_token: string;
-  code: string;
-}): Promise<void> {
-  const tokens = await apiFetch<TokenPair>("/auth/token/second-factor/", {
+/** Second sign-in step: the challenge plus an authenticator or backup code. */
+export async function verifyMfa(input: { mfa_token: string; code: string }): Promise<TokenPair> {
+  const tokens = await apiFetch<TokenPair>("/auth/mfa/verify/", {
     method: "POST",
     body: input,
     auth: false,
   });
   writeTokens(tokens);
+  return tokens;
 }
 
-export interface SecondFactorEnrolment {
-  method: "totp";
-  secret: string;
-  otpauth_uri: string;
+// --- managing the authenticator app (signed in) ---
+
+export interface MfaStatus {
+  enabled: boolean;
+  confirmed_at: string | null;
+  backup_codes_remaining: number;
 }
 
-/** Start linking an authenticator app, from a sign in challenge or when signed in. */
-export function startSecondFactorEnrolment(
-  challengeToken?: string,
-): Promise<SecondFactorEnrolment> {
-  return apiFetch<SecondFactorEnrolment>("/auth/second-factor/enrol/", {
-    method: "POST",
-    body: { method: "totp", ...(challengeToken ? { challenge_token: challengeToken } : {}) },
-    auth: !challengeToken,
-  });
+export function fetchMfaStatus(): Promise<MfaStatus> {
+  return apiFetch<MfaStatus>("/auth/mfa/");
 }
 
-/** Confirm the app with its first code. Returns the recovery codes, shown once. */
-export async function confirmSecondFactorEnrolment(input: {
-  code: string;
-  challenge_token?: string | undefined;
-}): Promise<string[]> {
-  const answer = await apiFetch<{ recovery_codes: string[]; access?: string }>(
-    "/auth/second-factor/enrol/confirm/",
-    {
-      method: "POST",
-      body: input.challenge_token ? input : { code: input.code },
-      auth: !input.challenge_token,
-    },
-  );
-  if (typeof answer.access === "string") writeTokens({ access: answer.access });
-  return answer.recovery_codes;
+/** Starts (or restarts) pairing. Returns the secret and the otpauth:// link for the QR code. */
+export function startMfaSetup(): Promise<{ secret: string; otpauth_url: string }> {
+  return apiFetch("/auth/mfa/setup/", { method: "POST" });
+}
+
+/** Finishes pairing. The backup codes come back once and are never shown again. */
+export function confirmMfaSetup(code: string): Promise<{ enabled: true; backup_codes: string[] }> {
+  return apiFetch("/auth/mfa/confirm/", { method: "POST", body: { code } });
+}
+
+export function disableMfa(input: { password: string; code: string }): Promise<{ enabled: false }> {
+  return apiFetch("/auth/mfa/disable/", { method: "POST", body: input });
+}
+
+export function regenerateBackupCodes(code: string): Promise<{ backup_codes: string[] }> {
+  return apiFetch("/auth/mfa/backup-codes/", { method: "POST", body: { code } });
 }
 
 export function fetchCurrentUser(signal?: AbortSignal): Promise<User> {

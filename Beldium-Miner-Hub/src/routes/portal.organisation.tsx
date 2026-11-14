@@ -1,13 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { PageHeader } from "@/components/miner-shell";
 import { StatusChip } from "@/components/status-chip";
+import { Button } from "@/components/ui/button";
 import { fullName, MEMBERSHIP_ROLE_LABELS } from "@/lib/api/types";
-import {
-  useMyJoinRequests,
-  useMyOrganisations,
-  useOrganisationMembers,
-} from "@/lib/api/queries";
+import { useMyOrganisations, useOrganisationMembers } from "@/lib/api/queries";
 
 const title = "Organisation & members - Beldium Miner Hub";
 const description = "Organisation profile, team members, roles and pending join requests.";
@@ -30,7 +27,6 @@ function OrganisationPage() {
   const organisations = useMyOrganisations();
   const org = organisations.data?.results[0] ?? null;
   const members = useOrganisationMembers(org?.id ?? null);
-  const joinRequests = useMyJoinRequests();
 
   if (!org) {
     return <p className="text-sm text-muted-foreground">No organisation on record yet.</p>;
@@ -81,28 +77,16 @@ function OrganisationPage() {
           </ul>
         </section>
 
-        <section className="rounded-md border border-border bg-card lg:col-span-2">
-          <h2 className="border-b border-border px-5 py-3 text-sm font-semibold text-card-foreground">
-            Join requests
-          </h2>
-          <ul className="divide-y divide-border">
-            {(joinRequests.data?.results ?? []).map((jr) => (
-              <li key={jr.id} className="flex items-center justify-between gap-4 px-5 py-3 text-sm">
-                <div>
-                  <div className="font-medium text-card-foreground">{fullName(jr.requester)}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {jr.organisation_name} · {MEMBERSHIP_ROLE_LABELS[jr.requested_role]}
-                  </div>
-                </div>
-                <StatusChip tone={jr.status === "approved" ? "success" : jr.status === "rejected" ? "danger" : "warning"}>
-                  {jr.status}
-                </StatusChip>
-              </li>
-            ))}
-            {(joinRequests.data?.results ?? []).length === 0 ? (
-              <li className="px-5 py-6 text-sm text-muted-foreground">No pending join requests.</li>
-            ) : null}
-          </ul>
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-5 py-4 lg:col-span-2">
+          <div>
+            <h2 className="text-sm font-semibold text-card-foreground">Team and access</h2>
+            <p className="text-xs text-muted-foreground">
+              Join requests, invitations, roles and your organisation's join code are on the Team page.
+            </p>
+          </div>
+          <Button asChild size="sm">
+            <Link to="/portal/team">Open Team</Link>
+          </Button>
         </section>
       </div>
     </>

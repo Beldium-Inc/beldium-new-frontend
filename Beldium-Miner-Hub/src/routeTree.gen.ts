@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicationRouteImport } from './routes/application'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as JoinRouteImport } from './routes/join'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SubmittedRouteImport } from './routes/submitted'
@@ -37,6 +38,7 @@ import { Route as PortalRequestsRouteImport } from './routes/portal.requests'
 import { Route as PortalRfqsRouteImport } from './routes/portal.rfqs'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalSitesRouteImport } from './routes/portal.sites'
+import { Route as PortalTeamRouteImport } from './routes/portal.team'
 import { Route as PortalTransactionsRouteImport } from './routes/portal.transactions'
 import { Route as PortalWarehousingRouteImport } from './routes/portal.warehousing'
 import { Route as PortalSitesIndexRouteImport } from './routes/portal.sites.index'
@@ -57,6 +59,11 @@ const ApplicationRoute = ApplicationRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRoute = PortalRouteImport.update({
@@ -184,6 +191,11 @@ const PortalSitesRoute = PortalSitesRouteImport.update({
   path: '/sites',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalTeamRoute = PortalTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalTransactionsRoute = PortalTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -220,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
+  '/join': typeof JoinRoute
   '/portal': typeof PortalRouteWithChildren
   '/signup': typeof SignupRoute
   '/submitted': typeof SubmittedRoute
@@ -244,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/portal/rfqs': typeof PortalRfqsRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/sites': typeof PortalSitesRouteWithChildren
+  '/portal/team': typeof PortalTeamRoute
   '/portal/transactions': typeof PortalTransactionsRouteWithChildren
   '/portal/warehousing': typeof PortalWarehousingRoute
   '/portal/': typeof PortalIndexRoute
@@ -256,6 +270,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
+  '/join': typeof JoinRoute
   '/signup': typeof SignupRoute
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
@@ -278,6 +293,7 @@ export interface FileRoutesByTo {
   '/portal/requests': typeof PortalRequestsRoute
   '/portal/rfqs': typeof PortalRfqsRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/team': typeof PortalTeamRoute
   '/portal/warehousing': typeof PortalWarehousingRoute
   '/portal': typeof PortalIndexRoute
   '/portal/sites/$siteId': typeof PortalSitesSiteIdRoute
@@ -290,6 +306,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
+  '/join': typeof JoinRoute
   '/portal': typeof PortalRouteWithChildren
   '/signup': typeof SignupRoute
   '/submitted': typeof SubmittedRoute
@@ -314,6 +331,7 @@ export interface FileRoutesById {
   '/portal/rfqs': typeof PortalRfqsRoute
   '/portal/settings': typeof PortalSettingsRoute
   '/portal/sites': typeof PortalSitesRouteWithChildren
+  '/portal/team': typeof PortalTeamRoute
   '/portal/transactions': typeof PortalTransactionsRouteWithChildren
   '/portal/warehousing': typeof PortalWarehousingRoute
   '/portal/': typeof PortalIndexRoute
@@ -328,6 +346,7 @@ export interface FileRouteTypes {
     | '/'
     | '/application'
     | '/auth'
+    | '/join'
     | '/portal'
     | '/signup'
     | '/submitted'
@@ -352,6 +371,7 @@ export interface FileRouteTypes {
     | '/portal/rfqs'
     | '/portal/settings'
     | '/portal/sites'
+    | '/portal/team'
     | '/portal/transactions'
     | '/portal/warehousing'
     | '/portal/'
@@ -364,6 +384,7 @@ export interface FileRouteTypes {
     | '/'
     | '/application'
     | '/auth'
+    | '/join'
     | '/signup'
     | '/submitted'
     | '/verify'
@@ -386,6 +407,7 @@ export interface FileRouteTypes {
     | '/portal/requests'
     | '/portal/rfqs'
     | '/portal/settings'
+    | '/portal/team'
     | '/portal/warehousing'
     | '/portal'
     | '/portal/sites/$siteId'
@@ -397,6 +419,7 @@ export interface FileRouteTypes {
     | '/'
     | '/application'
     | '/auth'
+    | '/join'
     | '/portal'
     | '/signup'
     | '/submitted'
@@ -421,6 +444,7 @@ export interface FileRouteTypes {
     | '/portal/rfqs'
     | '/portal/settings'
     | '/portal/sites'
+    | '/portal/team'
     | '/portal/transactions'
     | '/portal/warehousing'
     | '/portal/'
@@ -434,6 +458,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApplicationRoute: typeof ApplicationRoute
   AuthRoute: typeof AuthRoute
+  JoinRoute: typeof JoinRoute
   PortalRoute: typeof PortalRouteWithChildren
   SignupRoute: typeof SignupRoute
   SubmittedRoute: typeof SubmittedRoute
@@ -461,6 +486,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal': {
@@ -638,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSitesRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/team': {
+      id: '/portal/team'
+      path: '/team'
+      fullPath: '/portal/team'
+      preLoaderRoute: typeof PortalTeamRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/transactions': {
       id: '/portal/transactions'
       path: '/transactions'
@@ -731,6 +770,7 @@ interface PortalRouteChildren {
   PortalRfqsRoute: typeof PortalRfqsRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
   PortalSitesRoute: typeof PortalSitesRouteWithChildren
+  PortalTeamRoute: typeof PortalTeamRoute
   PortalTransactionsRoute: typeof PortalTransactionsRouteWithChildren
   PortalWarehousingRoute: typeof PortalWarehousingRoute
   PortalIndexRoute: typeof PortalIndexRoute
@@ -757,6 +797,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalRfqsRoute: PortalRfqsRoute,
   PortalSettingsRoute: PortalSettingsRoute,
   PortalSitesRoute: PortalSitesRouteWithChildren,
+  PortalTeamRoute: PortalTeamRoute,
   PortalTransactionsRoute: PortalTransactionsRouteWithChildren,
   PortalWarehousingRoute: PortalWarehousingRoute,
   PortalIndexRoute: PortalIndexRoute,
@@ -769,6 +810,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApplicationRoute: ApplicationRoute,
   AuthRoute: AuthRoute,
+  JoinRoute: JoinRoute,
   PortalRoute: PortalRouteWithChildren,
   SignupRoute: SignupRoute,
   SubmittedRoute: SubmittedRoute,

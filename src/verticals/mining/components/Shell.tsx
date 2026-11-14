@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   Users,
   X,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -51,6 +52,7 @@ const icons: Record<string, typeof Gauge> = {
   boxes: Boxes,
   receipt: Receipt,
   users: Users,
+  key: KeyRound,
 };
 
 const roleLabel = {

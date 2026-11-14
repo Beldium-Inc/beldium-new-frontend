@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CheckCircle2, Mail, Smartphone } from "lucide-react";
+import { CheckCircle2, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -10,18 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/errors";
-import { confirmPhoneVerification, requestPhoneVerification } from "@/lib/api/auth";
-import { organisationDirectory } from "@/lib/api/organisations";
-import { useCreateJoinRequest, useUpdateCurrentUser } from "@/lib/api/queries";
+import { AuthenticatorSetup } from "@/components/two-step-settings";
 
 const title = "Verify your account - Beldium Miner Hub";
-const description = "Confirm your email address and mobile number before starting your mining organisation application.";
-
-// SMS sending is temporarily disabled on the backend (no approved Termii
-// sender ID yet), so phone verification can't be completed. Skip the gate
-// and grey out the step until that's sorted — flip this back to true to
-// re-enable.
-const PHONE_VERIFICATION_ENABLED = false;
+const description =
+  "Confirm your email address and set up two-step sign-in before starting your mining organisation application.";
 
 const searchSchema = z.object({
   email: z.string().optional(),
@@ -47,22 +40,19 @@ export const Route = createFileRoute("/verify")({
 function VerifyPage() {
   const { email, role, organisationName } = Route.useSearch();
   const { user, confirmEmail, resendCode, refetchUser } = useAuth();
-  const createJoinRequest = useCreateJoinRequest();
-  const updateUser = useUpdateCurrentUser();
-  const [newPhone, setNewPhone] = useState("");
   const navigate = useNavigate();
 
   const [emailCode, setEmailCode] = useState("");
-  const [phoneCode, setPhoneCode] = useState("");
-  const [phoneRequested, setPhoneRequested] = useState(false);
+  // Two-step sign-in can be set up later from Settings; this records that choice.
+  const [setUpLater, setSetUpLater] = useState(false);
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const targetEmail = user?.email ?? email;
   const emailVerified = Boolean(user?.email_verified_at);
-  const phoneVerified = Boolean(user?.phone_verified_at);
-  const bothVerified = PHONE_VERIFICATION_ENABLED ? emailVerified && phoneVerified : emailVerified;
+  const mfaEnabled = Boolean(user?.mfa_enabled);
+  const readyToContinue = emailVerified && (mfaEnabled || setUpLater);
 
   if (!targetEmail) {
     return (
@@ -88,54 +78,6 @@ function VerifyPage() {
     }
   }
 
-  async function requestPhoneCode(number = user?.phone_number) {
-    if (!number) return setError("Add a phone number to your account first.");
-    setBusy(true);
-    setError("");
-    try {
-      await requestPhoneVerification(number);
-      setPhoneRequested(true);
-      setNote("A verification code was sent by SMS.");
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Could not send the SMS code.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveNewPhone() {
-    const number = newPhone.trim();
-    if (!/^\+[1-9]\d{7,14}$/.test(number)) {
-      return setError("Enter the number with its country code, e.g. +2348012345678.");
-    }
-    setBusy(true);
-    setError("");
-    try {
-      await updateUser.mutateAsync({ phone_number: number });
-    } catch (cause) {
-      setBusy(false);
-      return setError(cause instanceof ApiError ? cause.message : "Could not save the phone number.");
-    }
-    setBusy(false);
-    await requestPhoneCode(number);
-  }
-
-  async function submitPhoneCode() {
-    if (!user?.phone_number) return;
-    if (phoneCode.length !== 6) return setNote("Enter the 6-digit SMS code.");
-    setBusy(true);
-    setError("");
-    try {
-      await confirmPhoneVerification({ phone_number: user.phone_number, code: phoneCode });
-      await refetchUser();
-      setNote("Phone verified.");
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Could not verify the code.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function continueAfterVerification() {
     setBusy(true);
     setError("");
@@ -147,19 +89,10 @@ function VerifyPage() {
         navigate({ to: "/application", search: { organisationName } });
         return;
       }
-      if (role === "org_staff" && organisationName) {
-        const matches = await organisationDirectory({ search: organisationName, page_size: 5 });
-        const match = matches.results.find(
-          (org) => org.name.trim().toLowerCase() === organisationName.trim().toLowerCase(),
-        );
-        if (!match) {
-          setError(
-            `No verified organisation named "${organisationName}" was found. Check the exact name with your admin.`,
-          );
-          return;
-        }
-        await createJoinRequest.mutateAsync({ organisation: match.id });
-        navigate({ to: user ? "/portal" : "/auth" });
+      if (role === "org_staff") {
+        // Joining works on the code the administrator shared (kept from
+        // signup), and the person picks their role and adds a note there.
+        navigate({ to: user ? "/join" : "/auth" });
         return;
       }
       navigate({ to: user ? "/portal" : "/auth" });
@@ -173,11 +106,14 @@ function VerifyPage() {
   return (
     <AuthLayout
       title="Verify your identity"
-      subtitle="Enter the codes sent to your email and phone to activate your account."
+      subtitle="Confirm your email, then protect your account with an authenticator app."
       footer={
         <span>
           Wrong details?{" "}
-          <Link to="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link
+            to="/signup"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
             Go back to signup
           </Link>
         </span>
@@ -193,7 +129,11 @@ function VerifyPage() {
                 <div className="text-xs text-muted-foreground">{targetEmail}</div>
               </div>
             </div>
-            {emailVerified ? <StatusChip tone="success">Verified</StatusChip> : <StatusChip tone="warning">Pending</StatusChip>}
+            {emailVerified ? (
+              <StatusChip tone="success">Verified</StatusChip>
+            ) : (
+              <StatusChip tone="warning">Pending</StatusChip>
+            )}
           </div>
           {!emailVerified ? (
             <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -226,100 +166,81 @@ function VerifyPage() {
           ) : null}
         </div>
 
-        {emailVerified ? (
-          <div
-            className={
-              PHONE_VERIFICATION_ENABLED
-                ? "rounded-md border border-border bg-card p-5"
-                : "rounded-md border border-border bg-muted/40 p-5 opacity-60"
-            }
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <Smartphone className="h-4 w-4 text-accent" />
-                <div>
-                  <div className="text-sm font-medium text-card-foreground">Mobile number</div>
-                  <div className="text-xs text-muted-foreground">{user?.phone_number}</div>
+        <div
+          className={
+            emailVerified
+              ? "rounded-md border border-border bg-card p-5"
+              : "rounded-md border border-border bg-muted/40 p-5 opacity-60"
+          }
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <KeyRound className="h-4 w-4 text-accent" />
+              <div>
+                <div className="text-sm font-medium text-card-foreground">Authenticator app</div>
+                <div className="text-xs text-muted-foreground">
+                  Two-step sign-in with Google Authenticator, Microsoft Authenticator or Authy
                 </div>
               </div>
-              {!PHONE_VERIFICATION_ENABLED ? (
-                <StatusChip tone="neutral">Unavailable</StatusChip>
-              ) : phoneVerified ? (
-                <StatusChip tone="success">Verified</StatusChip>
-              ) : (
-                <StatusChip tone="warning">Pending</StatusChip>
-              )}
             </div>
-            {!PHONE_VERIFICATION_ENABLED ? (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Phone verification is temporarily unavailable. You can continue without it — we'll ask you to
-                verify later.
-              </p>
-            ) : !phoneVerified ? (
-              <div className="mt-4 flex flex-wrap items-end gap-3">
-                {!user?.phone_number ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="newPhone">Mobile number</Label>
-                      <Input
-                        id="newPhone"
-                        value={newPhone}
-                        inputMode="tel"
-                        className="w-56"
-                        onChange={(e) => setNewPhone(e.target.value.replace(/[^\d+]/g, ""))}
-                        placeholder="+2348012345678"
-                      />
-                    </div>
-                    <Button disabled={busy} onClick={saveNewPhone}>
-                      Save &amp; send SMS code
-                    </Button>
-                  </>
-                ) : !phoneRequested ? (
-                  <Button disabled={busy} onClick={() => requestPhoneCode()}>
-                    Send SMS code
-                  </Button>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="phoneCode">SMS code</Label>
-                      <Input
-                        id="phoneCode"
-                        value={phoneCode}
-                        inputMode="numeric"
-                        maxLength={6}
-                        className="w-36 tracking-[0.35em]"
-                        onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, ""))}
-                        placeholder="000000"
-                      />
-                    </div>
-                    <Button disabled={busy} onClick={submitPhoneCode}>
-                      Confirm number
-                    </Button>
-                    <Button variant="ghost" disabled={busy} onClick={() => requestPhoneCode()}>
-                      Resend code
-                    </Button>
-                  </>
-                )}
-              </div>
-            ) : null}
+            {mfaEnabled ? (
+              <StatusChip tone="success">On</StatusChip>
+            ) : setUpLater ? (
+              <StatusChip tone="neutral">Later</StatusChip>
+            ) : (
+              <StatusChip tone="warning">Pending</StatusChip>
+            )}
           </div>
-        ) : null}
+          {!emailVerified ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Confirm your email first. Setting up the app needs a signed-in account.
+            </p>
+          ) : !mfaEnabled && !setUpLater ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                After your password, sign-in will ask for a 6-digit code from the app on your phone,
+                so a stolen password alone cannot get into your account.
+              </p>
+              <AuthenticatorSetup
+                email={targetEmail}
+                onDone={() => {
+                  void refetchUser();
+                  setNote("Two-step sign-in is on.");
+                }}
+              />
+              <button
+                type="button"
+                className="block text-xs text-muted-foreground underline-offset-4 hover:underline"
+                onClick={() => setSetUpLater(true)}
+              >
+                Set it up later from Settings
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         {note ? <p className="text-sm text-muted-foreground">{note}</p> : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-        {bothVerified ? (
+        {readyToContinue ? (
           <div className="rounded-md border border-success/30 bg-success/10 p-5">
             <div className="flex items-center gap-2 text-sm font-medium text-success">
-              <CheckCircle2 className="h-4 w-4" /> Both channels verified
+              <CheckCircle2 className="h-4 w-4" />{" "}
+              {mfaEnabled ? "Email verified and two-step sign-in on" : "Email verified"}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {role === "org_admin"
                 ? "Your organisation application is now unlocked."
-                : "You can continue to your workspace."}
+                : role === "org_staff"
+                  ? "Next, send your request to join your organisation."
+                  : "You can continue to your workspace."}
             </p>
             <Button className="mt-4 w-full" disabled={busy} onClick={continueAfterVerification}>
-              {role === "org_admin" ? "Create organisation & start application" : "Continue"}
+              {role === "org_admin"
+                ? "Create organisation & start application"
+                : role === "org_staff"
+                  ? "Continue to join request"
+                  : "Continue"}
             </Button>
           </div>
         ) : null}

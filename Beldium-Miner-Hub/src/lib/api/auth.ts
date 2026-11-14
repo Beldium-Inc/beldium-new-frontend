@@ -66,15 +66,72 @@ export function resendVerification(email: string): Promise<{ message: string }> 
   });
 }
 
-/** Exchange credentials for a token pair. Throws `email_not_verified` (403) on an unverified account. */
-export async function login(input: { email: string; password: string }): Promise<TokenPair> {
-  const tokens = await apiFetch<TokenPair>("/auth/token/", {
+/** A correct password on an account with two-step sign-in: the tokens wait for a code. */
+export interface MfaChallenge {
+  mfa_required: true;
+  mfa_token: string;
+}
+
+export type LoginResult = TokenPair | MfaChallenge;
+
+export function isMfaChallenge(result: LoginResult): result is MfaChallenge {
+  return "mfa_required" in result && result.mfa_required === true;
+}
+
+/**
+ * Exchange credentials for a token pair, or for a two-step challenge when the
+ * account has an authenticator app. Throws `email_not_verified` (403) on an
+ * unverified account.
+ */
+export async function login(input: { email: string; password: string }): Promise<LoginResult> {
+  const result = await apiFetch<LoginResult>("/auth/token/", {
+    method: "POST",
+    body: input,
+    auth: false,
+  });
+  if (!isMfaChallenge(result)) writeTokens(result);
+  return result;
+}
+
+/** Second sign-in step: the challenge plus an authenticator or backup code. */
+export async function verifyMfa(input: { mfa_token: string; code: string }): Promise<TokenPair> {
+  const tokens = await apiFetch<TokenPair>("/auth/mfa/verify/", {
     method: "POST",
     body: input,
     auth: false,
   });
   writeTokens(tokens);
   return tokens;
+}
+
+// --- managing the authenticator app (signed in) ---
+
+export interface MfaStatus {
+  enabled: boolean;
+  confirmed_at: string | null;
+  backup_codes_remaining: number;
+}
+
+export function fetchMfaStatus(): Promise<MfaStatus> {
+  return apiFetch<MfaStatus>("/auth/mfa/");
+}
+
+/** Starts (or restarts) pairing. Returns the secret and the otpauth:// link for the QR code. */
+export function startMfaSetup(): Promise<{ secret: string; otpauth_url: string }> {
+  return apiFetch("/auth/mfa/setup/", { method: "POST" });
+}
+
+/** Finishes pairing. The backup codes come back once and are never shown again. */
+export function confirmMfaSetup(code: string): Promise<{ enabled: true; backup_codes: string[] }> {
+  return apiFetch("/auth/mfa/confirm/", { method: "POST", body: { code } });
+}
+
+export function disableMfa(input: { password: string; code: string }): Promise<{ enabled: false }> {
+  return apiFetch("/auth/mfa/disable/", { method: "POST", body: input });
+}
+
+export function regenerateBackupCodes(code: string): Promise<{ backup_codes: string[] }> {
+  return apiFetch("/auth/mfa/backup-codes/", { method: "POST", body: { code } });
 }
 
 export function fetchCurrentUser(signal?: AbortSignal): Promise<User> {

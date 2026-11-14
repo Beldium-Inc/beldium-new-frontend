@@ -14,6 +14,7 @@ import {
   SlidersHorizontal,
   UserCog,
   Users,
+  KeyRound,
 } from "lucide-react";
 import type { QualityAction, QualityRecordType } from "@/lib/api/quality";
 import { useBeldium } from "@/verticals/quality/store";
@@ -34,7 +35,8 @@ type AppPath =
   | "/quality/vault"
   | "/quality/team"
   | "/quality/users"
-  | "/quality/settings";
+  | "/quality/settings"
+  | "/quality/security";
 
 interface NavItem {
   to: AppPath;
@@ -57,6 +59,7 @@ const allNav = {
   team: { to: "/quality/team", label: "Team", icon: Users },
   users: { to: "/quality/users", label: "Users and roles", icon: UserCog },
   settings: { to: "/quality/settings", label: "Rule settings", icon: SlidersHorizontal },
+  security: { to: "/quality/security", label: "Security", icon: KeyRound },
 } satisfies Record<string, NavItem>;
 
 /**
@@ -90,6 +93,7 @@ export const navByRole: Record<Role, NavItem[]> = {
     allNav.vault,
     allNav.audit,
     allNav.team,
+    allNav.security,
   ],
   partner: [
     allNav.dashboard,
@@ -98,9 +102,17 @@ export const navByRole: Record<Role, NavItem[]> = {
     allNav.ncr,
     allNav.vault,
     allNav.team,
+    allNav.security,
   ],
-  miner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.team],
-  buyer: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.ncr, allNav.team],
+  miner: [allNav.dashboard, allNav.samples, allNav.certificates, allNav.team, allNav.security],
+  buyer: [
+    allNav.dashboard,
+    allNav.samples,
+    allNav.certificates,
+    allNav.ncr,
+    allNav.team,
+    allNav.security,
+  ],
   regulator: [
     allNav.dashboard,
     allNav.applications,
@@ -109,6 +121,7 @@ export const navByRole: Record<Role, NavItem[]> = {
     allNav.ncr,
     allNav.audit,
     allNav.team,
+    allNav.security,
   ],
 };
 
