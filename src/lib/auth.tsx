@@ -2,8 +2,10 @@ import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import {
+  completeSecondFactor,
   fetchCurrentUser,
   login,
+  type SecondFactorChallenge,
   logout,
   register,
   resendVerification,
@@ -21,6 +23,10 @@ import type { User } from "./api/types";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
+export type SignInResult =
+  | { status: "signed_in"; user: User }
+  | { status: "second_factor"; challenge: SecondFactorChallenge };
+
 type AuthContextValue = {
   user: User | null;
   status: AuthStatus;
@@ -28,7 +34,9 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   /** Set when /auth/me/ failed, e.g. the API is unreachable. */
   error: Error | null;
-  signIn: (input: { email: string; password: string }) => Promise<User>;
+  /** May stop at a second factor challenge; finish it with `finishSecondFactor`. */
+  signIn: (input: { email: string; password: string }) => Promise<SignInResult>;
+  finishSecondFactor: (input: { challenge_token: string; code: string }) => Promise<User>;
   signUp: (input: RegisterInput) => Promise<RegisterResponse>;
   confirmEmail: (input: { email: string; code: string }) => Promise<User>;
   resendCode: (email: string) => Promise<{ message: string }>;
@@ -69,14 +77,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       error: query.error ?? null,
 
       signIn: async (input) => {
-        await login(input);
+        const result = await login(input);
+        if (result.status === "second_factor") return result;
+        return { status: "signed_in", user: await loadUser() };
+      },
+
+      finishSecondFactor: async (input) => {
+        await completeSecondFactor(input);
         return loadUser();
       },
 
       signUp: (input) => register(input),
 
       confirmEmail: async (input) => {
-        await verifyEmail(input);
+        const answer = await verifyEmail(input);
+        if (answer.second_factor_required) {
+          // The account owes a second factor, so no session was opened here.
+          throw Object.assign(
+            new Error("Email verified. Sign in to finish with your authenticator app."),
+            { name: "SecondFactorDue" },
+          );
+        }
         return loadUser();
       },
 

@@ -116,6 +116,11 @@ function EmailChannel({
       toast.success("Email address confirmed.");
     } catch (cause) {
       setCode("");
+      if (cause instanceof Error && cause.name === "SecondFactorDue") {
+        setError(cause.message);
+        setOfferSignIn(true);
+        return;
+      }
       setError(
         cause instanceof ApiError
           ? cause.message

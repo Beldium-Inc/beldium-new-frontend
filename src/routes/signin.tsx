@@ -39,6 +39,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { SecondFactorStep } from "@/components/auth/second-factor-step";
+import type { SecondFactorChallenge } from "@/lib/api/auth";
+import { fetchQualityCapabilities } from "@/lib/api/quality";
+import type { User } from "@/lib/api/types";
 
 export const Route = createFileRoute("/signin")({
   ssr: false,
@@ -106,6 +110,9 @@ function SignInPage() {
   const [password, setPassword] = React.useState("");
   const [remember, setRemember] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
+  const [challenge, setChallenge] = React.useState<SecondFactorChallenge | null>(null);
+  // Q&C roles come from the server (task E9), so the page does not offer a pick.
+  const serverRoles = picked?.slug === "quality";
 
   // Already signed in: go straight back to that workspace.
   React.useEffect(() => {
@@ -133,8 +140,30 @@ function SignInPage() {
 
     setSubmitting(true);
     try {
-      const user = await authenticate({ email: address, password });
+      const result = await authenticate({ email: address, password });
+      if (result.status === "second_factor") {
+        setChallenge(result.challenge);
+        return;
+      }
+      await continueAs(result.user);
+    } catch (error) {
+      // An unverified account is not a failed password: send them to finish
+      // the signup code rather than making them guess at their credentials.
+      if (error instanceof ApiError && error.code === "email_not_verified") {
+        toast.error("Verify your email address to finish setting up this account.");
+        navigate({ to: "/onboarding/verify", search: { email: address } });
+        return;
+      }
+      toast.error(error instanceof ApiError ? error.message : "Sign-in failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
+  /** Everything after the API has accepted who this is. */
+  const continueAs = async (user: User) => {
+    if (!picked || !roleId) return;
+    {
       // Arrived from an invitation email: finish accepting it first.
       const invitation = pendingInvitation();
       if (invitation) {
@@ -219,19 +248,21 @@ function SignInPage() {
         }
       }
 
+      if (picked.slug === "quality") {
+        // The server's Q&C role, never the one picked on this page.
+        const capabilities = await fetchQualityCapabilities().catch(() => null);
+        if (!capabilities?.role) {
+          await endAuth();
+          toast.error(
+            "This account has no Quality & Control role yet. Ask the Q&C desk to assign one.",
+          );
+          return;
+        }
+        role = capabilities.role;
+      }
+
       startSession(picked.slug, role);
       navigate({ to: homeFor(picked.slug, role) });
-    } catch (error) {
-      // An unverified account is not a failed password: send them to finish
-      // the signup code rather than making them guess at their credentials.
-      if (error instanceof ApiError && error.code === "email_not_verified") {
-        toast.error("Verify your email address to finish setting up this account.");
-        navigate({ to: "/onboarding/verify", search: { email: address } });
-        return;
-      }
-      toast.error(error instanceof ApiError ? error.message : "Sign-in failed. Please try again.");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -279,7 +310,25 @@ function SignInPage() {
         </div>
 
         <div className="rounded-2xl bg-card p-6 text-card-foreground shadow-raised sm:p-8">
-          {picked === null ? (
+          {challenge !== null ? (
+            <SecondFactorStep
+              challenge={challenge}
+              onCancel={() => {
+                setChallenge(null);
+                setPassword("");
+              }}
+              onDone={async (user) => {
+                setChallenge(null);
+                try {
+                  await continueAs(user);
+                } catch (error) {
+                  toast.error(
+                    error instanceof ApiError ? error.message : "Sign-in failed. Please try again.",
+                  );
+                }
+              }}
+            />
+          ) : picked === null ? (
             <>
               <h2 className="font-display text-xl font-semibold">Sign in to your sector</h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -334,10 +383,12 @@ function SignInPage() {
               </button>
               <h2 className="mt-4 font-display text-xl font-semibold">{picked.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Choose the role you hold, then sign in. You can sign out and switch at any time.
+                {serverRoles
+                  ? "Sign in. Your role is the one the Q&C desk assigned to your account."
+                  : "Choose the role you hold, then sign in. You can sign out and switch at any time."}
               </p>
 
-              <div className="mt-6 space-y-3">
+              <div className={cn("mt-6 space-y-3", serverRoles && "hidden")}>
                 {signInRoles(picked).map((role) => {
                   const Icon = ROLE_ICON[role.id] ?? ShieldCheck;
                   const active = roleId === role.id;

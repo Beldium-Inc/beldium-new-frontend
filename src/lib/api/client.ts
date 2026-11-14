@@ -1,6 +1,13 @@
 import { apiUrl } from "./config";
 import { apiErrorFromBody, networkError } from "./errors";
-import { accessExpiresAt, expireSession, readTokens, writeTokens, type TokenPair } from "./tokens";
+import {
+  accessExpiresAt,
+  expireSession,
+  hasSession,
+  readTokens,
+  writeTokens,
+  type TokenPair,
+} from "./tokens";
 
 export type QueryValue = string | number | boolean | null | undefined;
 
@@ -22,53 +29,63 @@ export type RequestOptions = {
 
 type RefreshOutcome =
   | { status: "refreshed"; tokens: TokenPair }
-  /** The refresh token itself was rejected: the session is over. */
+  /** The cookie was refused: the session is over. */
   | { status: "expired" }
-  /** The refresh call could not be made; the stored pair is left alone. */
+  /** The refresh call could not be made; the session is left alone. */
   | { status: "unavailable" };
 
 let refreshInFlight: Promise<RefreshOutcome> | null = null;
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function callRefresh(bearer: string | null): Promise<Response> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
+  // The refresh token rides in the HttpOnly cookie, so the body is empty and
+  // the browser must be told to send cookies to the API.
+  return fetch(apiUrl("/auth/token/refresh/"), {
+    method: "POST",
+    headers,
+    body: "{}",
+    credentials: "include",
+  });
+}
+
 /**
- * Exchange the refresh token for a new access token. Concurrent callers share
- * one call so a page that fires several requests at once doesn't burn several
- * refreshes.
+ * Swap the refresh cookie for a new access token. Concurrent callers share one
+ * call. The API rotates the cookie on every refresh.
  *
- * The backend only refreshes for a caller still holding a live access token
- * (the refresh view is `IsAuthenticated`), so the access token rides along as
- * the bearer. Once it has lapsed the session is over: that is the server-side
- * half of the inactivity timeout, and `SessionTimeout` keeps active users on
- * the right side of it by refreshing before expiry.
+ * With a live access token in memory it rides along as the bearer. Without
+ * one (a reloaded tab) the API still accepts a cookie issued within the access
+ * token lifetime, so an idle session still ends after the same time as before.
  */
 export function refreshAccessToken(): Promise<RefreshOutcome> {
-  const current = readTokens();
-  if (!current) return Promise.resolve({ status: "expired" });
+  if (!hasSession()) return Promise.resolve({ status: "expired" });
 
   const inFlight = (refreshInFlight ??= (async (): Promise<RefreshOutcome> => {
-    const expiresAt = accessExpiresAt(current.access);
-    if (expiresAt !== null && expiresAt <= Date.now()) {
-      // The server would refuse it; don't spend a throttled request finding out.
-      expireSession();
-      return { status: "expired" };
-    }
+    const current = readTokens();
+    const live =
+      current && (accessExpiresAt(current.access) ?? Number.POSITIVE_INFINITY) > Date.now()
+        ? current.access
+        : null;
 
     let response: Response;
     try {
-      response = await fetch(apiUrl("/auth/token/refresh/"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${current.access}`,
-        },
-        body: JSON.stringify({ refresh: current.refresh }),
-      });
+      response = await callRefresh(live);
+      if (response.status === 401) {
+        // Another tab may have rotated the cookie a moment ago. The browser
+        // now holds the new one, so one more try settles it.
+        await wait(400);
+        response = await callRefresh(live);
+      }
     } catch {
       return { status: "unavailable" };
     }
 
-    // Throttled or a server fault says nothing about the session; keep the
-    // pair and let the next attempt decide.
+    // Throttled or a server fault says nothing about the session.
     if (response.status === 429 || response.status >= 500) return { status: "unavailable" };
 
     if (!response.ok) {
@@ -76,18 +93,12 @@ export function refreshAccessToken(): Promise<RefreshOutcome> {
       return { status: "expired" };
     }
 
-    const payload = (await readBody(response)) as { access?: unknown; refresh?: unknown } | null;
+    const payload = (await readBody(response)) as { access?: unknown } | null;
     if (!payload || typeof payload.access !== "string") {
       expireSession();
       return { status: "expired" };
     }
-
-    // The refresh view returns only an access token today; keep the existing
-    // refresh token unless a deployment starts rotating it again.
-    const tokens: TokenPair = {
-      access: payload.access,
-      refresh: typeof payload.refresh === "string" ? payload.refresh : current.refresh,
-    };
+    const tokens: TokenPair = { access: payload.access, refresh: "" };
     writeTokens(tokens);
     return { status: "refreshed", tokens };
   })().finally(() => {
@@ -141,6 +152,8 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
     const init: RequestInit = { method, headers };
+    // Calls under /auth/ set or read the HttpOnly refresh cookie.
+    if (path.replace(/^\/+/, "").startsWith("auth/")) init.credentials = "include";
     if (isMultipart) init.body = body as FormData;
     else if (serialised !== undefined) init.body = serialised;
     if (signal) init.signal = signal;
@@ -155,7 +168,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   let response = await send(auth ? (readTokens()?.access ?? null) : null);
 
-  if (response.status === 401 && auth && readTokens()) {
+  if (response.status === 401 && auth && hasSession()) {
     const outcome = await refreshAccessToken();
     if (outcome.status === "refreshed") response = await send(outcome.tokens.access);
   }
@@ -188,7 +201,7 @@ export async function apiFetchBlob(url: string, signal?: AbortSignal): Promise<B
   };
 
   let response = await send(readTokens()?.access ?? null);
-  if (response.status === 401 && readTokens()) {
+  if (response.status === 401 && hasSession()) {
     const outcome = await refreshAccessToken();
     if (outcome.status === "refreshed") response = await send(outcome.tokens.access);
   }

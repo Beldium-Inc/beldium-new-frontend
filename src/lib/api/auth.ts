@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { clearTokens, readTokens, writeTokens, type TokenPair } from "./tokens";
+import { clearTokens, hasSession, writeTokens, type TokenPair } from "./tokens";
 import type { User } from "./types";
 
 export interface RegisterInput {
@@ -21,8 +21,33 @@ export interface RegisterResponse {
   user: User;
 }
 
-export interface VerifyEmailResponse extends TokenPair {
+export interface VerifyEmailResponse extends Partial<TokenPair> {
   message: string;
+  second_factor_required?: boolean;
+  challenge_token?: string;
+  enrolment_required?: boolean;
+}
+
+/** After a correct password, when the account owes a second factor (backend G8). */
+export interface SecondFactorChallenge {
+  second_factor_required: true;
+  challenge_token: string;
+  methods: string[];
+  enrolment_required: boolean;
+  expires_in: number;
+}
+
+export type LoginResult =
+  | { status: "signed_in"; tokens: TokenPair }
+  | { status: "second_factor"; challenge: SecondFactorChallenge };
+
+function isChallenge(value: unknown): value is SecondFactorChallenge {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { second_factor_required?: unknown }).second_factor_required === true &&
+    typeof (value as { challenge_token?: unknown }).challenge_token === "string"
+  );
 }
 
 /**
@@ -50,7 +75,8 @@ export async function verifyEmail(input: {
     body: input,
     auth: false,
   });
-  writeTokens({ access: response.access, refresh: response.refresh });
+  // An account that owes a second factor gets a challenge here, not tokens.
+  if (typeof response.access === "string") writeTokens({ access: response.access });
   return response;
 }
 
@@ -66,15 +92,68 @@ export function resendVerification(email: string): Promise<{ message: string }> 
   });
 }
 
-/** Exchange credentials for a token pair. Throws `email_not_verified` (403) on an unverified account. */
-export async function login(input: { email: string; password: string }): Promise<TokenPair> {
-  const tokens = await apiFetch<TokenPair>("/auth/token/", {
+/**
+ * Exchange credentials for a session. Internal and partner accounts may get a
+ * second factor challenge instead of tokens; finish it with
+ * `completeSecondFactor`. Throws `email_not_verified` (403) on an unverified
+ * account.
+ */
+export async function login(input: { email: string; password: string }): Promise<LoginResult> {
+  const answer = await apiFetch<TokenPair | SecondFactorChallenge>("/auth/token/", {
+    method: "POST",
+    body: input,
+    auth: false,
+  });
+  if (isChallenge(answer)) return { status: "second_factor", challenge: answer };
+  writeTokens(answer);
+  return { status: "signed_in", tokens: answer };
+}
+
+/** Swap a challenge and a code from the authenticator app (or a recovery code) for a session. */
+export async function completeSecondFactor(input: {
+  challenge_token: string;
+  code: string;
+}): Promise<void> {
+  const tokens = await apiFetch<TokenPair>("/auth/token/second-factor/", {
     method: "POST",
     body: input,
     auth: false,
   });
   writeTokens(tokens);
-  return tokens;
+}
+
+export interface SecondFactorEnrolment {
+  method: "totp";
+  secret: string;
+  otpauth_uri: string;
+}
+
+/** Start linking an authenticator app, from a sign in challenge or when signed in. */
+export function startSecondFactorEnrolment(
+  challengeToken?: string,
+): Promise<SecondFactorEnrolment> {
+  return apiFetch<SecondFactorEnrolment>("/auth/second-factor/enrol/", {
+    method: "POST",
+    body: { method: "totp", ...(challengeToken ? { challenge_token: challengeToken } : {}) },
+    auth: !challengeToken,
+  });
+}
+
+/** Confirm the app with its first code. Returns the recovery codes, shown once. */
+export async function confirmSecondFactorEnrolment(input: {
+  code: string;
+  challenge_token?: string | undefined;
+}): Promise<string[]> {
+  const answer = await apiFetch<{ recovery_codes: string[]; access?: string }>(
+    "/auth/second-factor/enrol/confirm/",
+    {
+      method: "POST",
+      body: input.challenge_token ? input : { code: input.code },
+      auth: !input.challenge_token,
+    },
+  );
+  if (typeof answer.access === "string") writeTokens({ access: answer.access });
+  return answer.recovery_codes;
 }
 
 export function fetchCurrentUser(signal?: AbortSignal): Promise<User> {
@@ -111,15 +190,15 @@ export function confirmPhoneVerification(input: {
 
 /**
  * End the session. The refresh token is blacklisted server-side so it cannot be
- * replayed: dropping it locally alone would leave it usable for its full seven
- * days by anyone who had copied it. The local pair is cleared either way: a
+ * replayed. The local pair is cleared either way: a
  * failed call must not strand someone signed in.
  */
 export async function logout(): Promise<void> {
-  const tokens = readTokens();
   try {
-    if (tokens) {
-      await apiFetch<void>("/auth/logout/", { method: "POST", body: { refresh: tokens.refresh } });
+    if (hasSession()) {
+      // The API reads the refresh token from the HttpOnly cookie, revokes it
+      // and clears the cookie.
+      await apiFetch<void>("/auth/logout/", { method: "POST", body: {} });
     }
   } catch {
     // Already expired, already blacklisted, or the API is unreachable. None of
