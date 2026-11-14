@@ -7,9 +7,16 @@ export const Route = createFileRoute("/marketplace/offers")({
   head: () => ({
     meta: [
       { title: "Offers | Beldium Marketplace" },
-      { name: "description", content: "Indicative miner offers against your open RFQs, with price, volume and compliance state." },
+      {
+        name: "description",
+        content:
+          "Indicative miner offers against your open RFQs, with price, volume and compliance state.",
+      },
       { property: "og:title", content: "Offers | Beldium Marketplace" },
-      { property: "og:description", content: "Compare indicative allocations from verified producers." },
+      {
+        property: "og:description",
+        content: "Compare indicative allocations from verified producers.",
+      },
     ],
   }),
   component: Offers,
@@ -18,7 +25,11 @@ export const Route = createFileRoute("/marketplace/offers")({
 function Offers() {
   const { state } = useDemo();
   const rows = state.rfqs.flatMap((r) =>
-    r.allocations.map((a) => ({ rfq: r, alloc: a, miner: state.miners.find((m) => m.id === a.minerId)! })),
+    r.allocations.map((a) => ({
+      rfq: r,
+      alloc: a,
+      miner: state.miners.find((m) => m.id === a.minerId)!,
+    })),
   );
 
   return (
@@ -38,11 +49,16 @@ function Offers() {
             </thead>
             <tbody>
               {rows.map(({ rfq, alloc, miner }) => (
-                <tr key={`${rfq.id}-${alloc.minerId}`} className="border-b border-border/70 last:border-0">
+                <tr
+                  key={`${rfq.id}-${alloc.minerId}`}
+                  className="border-b border-border/70 last:border-0"
+                >
                   <td className="py-3 pr-4 font-medium">{rfq.reference}</td>
                   <td className="py-3 pr-4">
                     {miner.name}
-                    <span className="block text-xs text-muted-foreground">{miner.country} · {miner.grade}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {miner.country} · {miner.grade}
+                    </span>
                   </td>
                   <td className="py-3 pr-4">{fmtTonnes(alloc.tonnes)}</td>
                   <td className="py-3 pr-4">${alloc.priceUsdPerTonne}/t</td>

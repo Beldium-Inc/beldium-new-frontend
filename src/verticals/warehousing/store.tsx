@@ -123,7 +123,12 @@ interface DemoState {
     input: {
       status: "approved" | "conditionally_approved" | "rejected";
       rationale: string;
-      conditions?: { title: string; description: string; due_date: string; domain?: WarehousingDomainKey | "" }[];
+      conditions?: {
+        title: string;
+        description: string;
+        due_date: string;
+        domain?: WarehousingDomainKey | "";
+      }[];
     },
   ) => void;
   uploadDocument: (
@@ -150,7 +155,12 @@ interface DemoState {
   reviewRequestResponse: (requestId: string, accepted: boolean, notes: string) => void;
   createCondition: (
     appId: string,
-    input: { title: string; description: string; due_date: string; domain?: WarehousingDomainKey | "" },
+    input: {
+      title: string;
+      description: string;
+      due_date: string;
+      domain?: WarehousingDomainKey | "";
+    },
   ) => void;
   reviewCondition: (conditionId: string, notes: string) => void;
   markNotificationRead: (id: string) => void;
@@ -158,10 +168,15 @@ interface DemoState {
   createFacility: (input: Omit<WarehousingFacility, "id" | "created_at" | "updated_at">) => void;
   createZone: (input: Omit<StorageZone, "id" | "created_at" | "updated_at">) => void;
   createLot: (
-    input: Omit<InventoryLot, "id" | "reference" | "variance_percent" | "created_at" | "updated_at">,
+    input: Omit<
+      InventoryLot,
+      "id" | "reference" | "variance_percent" | "created_at" | "updated_at"
+    >,
   ) => Promise<string>;
   updateLotStatus: (id: string, status: InventoryLot["status"]) => void;
-  createInspection: (input: Omit<WarehousingInspection, "id" | "created_at" | "updated_at">) => void;
+  createInspection: (
+    input: Omit<WarehousingInspection, "id" | "created_at" | "updated_at">,
+  ) => void;
   updateInspection: (id: string, patch: Partial<WarehousingInspection>) => void;
   reportIncident: (
     input: Omit<WarehousingIncident, "id" | "status" | "reported_by" | "created_at" | "updated_at">,

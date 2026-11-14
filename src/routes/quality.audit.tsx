@@ -1,9 +1,15 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { ApiError } from "@/lib/api/errors";
+import type { AuditEntry, AuditLogQuery } from "@/lib/api/quality-admin";
+import { useAuditLog } from "@/lib/api/quality-admin-queries";
+import { ServerPager } from "@/components/shared/server-pager";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AppShell } from "@/verticals/quality/shell";
-import { EmptyState, PageHeader, Pill, SectionTitle, Stat, Surface } from "@/verticals/quality/ui";
 import { useBeldium } from "@/verticals/quality/store";
-import { roleMeta } from "@/verticals/quality/data";
+import { EmptyState, PageHeader, Pill, SectionTitle, Surface } from "@/verticals/quality/ui";
 
 export const Route = createFileRoute("/quality/audit")({
   head: () => ({
@@ -11,13 +17,7 @@ export const Route = createFileRoute("/quality/audit")({
       { title: "Audit trail | Beldium Quality & Control" },
       {
         name: "description",
-        content:
-          "Append-only record of every verification decision, document status change, custody event and certificate action across the platform.",
-      },
-      { property: "og:title", content: "Audit trail | Beldium Quality & Control" },
-      {
-        property: "og:description",
-        content: "Append-only record of decisions, custody events and certificate actions.",
+        content: "Append only record of every Q&C action, refused attempts included.",
       },
     ],
   }),
@@ -28,74 +28,177 @@ export const Route = createFileRoute("/quality/audit")({
   ),
 });
 
-function AuditPage() {
-  const { state } = useBeldium();
-  const [q, setQ] = React.useState("");
+const RECORD_TYPES = [
+  "",
+  "sample",
+  "verification_certificate",
+  "quality_application",
+  "ncr_capa",
+  "users_and_roles",
+  "setting",
+  "audit_log",
+];
 
-  const entries = [
-    ...state.applications.flatMap((a) => a.audit.map((e) => ({ ...e, ctx: a.ref, kind: "Application" }))),
-    ...state.samples.flatMap((s) => s.audit.map((e) => ({ ...e, ctx: s.ref, kind: "Sample" }))),
-  ]
-    .filter((e) =>
-      q.trim() === ""
-        ? true
-        : `${e.actor} ${e.action} ${e.detail} ${e.ctx}`.toLowerCase().includes(q.toLowerCase()),
-    )
-    .sort((a, b) => (a.at < b.at ? 1 : -1));
+function AuditPage() {
+  const { canDo } = useBeldium();
+  const allowed = canDo("audit_log", "read");
+  const [draft, setDraft] = React.useState<AuditLogQuery>({ outcome: "", record_type: "" });
+  const [query, setQuery] = React.useState<AuditLogQuery>({ page: 1 });
+  const log = useAuditLog(query, allowed);
+
+  if (!allowed) {
+    return (
+      <Surface>
+        <EmptyState
+          title="Your role does not have access to the audit log"
+          hint="Q&C, the CEO, the Technical Lead and Legal read it. Beldium Admin does not (decision 8)."
+        />
+      </Surface>
+    );
+  }
+
+  const apply = () => setQuery({ ...draft, page: 1 });
 
   return (
     <>
       <PageHeader
         eyebrow="Evidence"
         title="Audit trail"
-        description="Nothing in Beldium is edited in place. Every action appends a new, attributable entry, the record a regulator can rely on years later."
+        description="Every Q&C action is written once and never changed, including refused attempts. Reading this log is itself recorded."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Total entries" value={entries.length} />
-        <Stat label="Application events" value={entries.filter((e) => e.kind === "Application").length} tone="pale" />
-        <Stat label="Sample events" value={entries.filter((e) => e.kind === "Sample").length} />
-        <Stat label="Distinct actors" value={new Set(entries.map((e) => e.actor)).size} />
-      </div>
+      <Surface>
+        <SectionTitle title="Filter" hint="At most 366 days per search." />
+        <form
+          className="grid gap-3 p-6 md:grid-cols-3 xl:grid-cols-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            apply();
+          }}
+        >
+          <select
+            aria-label="Record type"
+            value={draft.record_type ?? ""}
+            onChange={(e) => setDraft({ ...draft, record_type: e.target.value })}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            {RECORD_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type ? type.replace(/_/g, " ") : "All records"}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Outcome"
+            value={draft.outcome ?? ""}
+            onChange={(e) =>
+              setDraft({ ...draft, outcome: e.target.value as "" | "success" | "refused" })
+            }
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">All outcomes</option>
+            <option value="success">Done</option>
+            <option value="refused">Refused</option>
+          </select>
+          <Input
+            aria-label="Record id"
+            placeholder="Record id"
+            value={draft.record_id ?? ""}
+            onChange={(e) => setDraft({ ...draft, record_id: e.target.value })}
+          />
+          <Input
+            aria-label="From"
+            type="date"
+            value={draft.from ?? ""}
+            onChange={(e) => setDraft({ ...draft, from: e.target.value })}
+          />
+          <Input
+            aria-label="To"
+            type="date"
+            value={draft.to ?? ""}
+            onChange={(e) => setDraft({ ...draft, to: e.target.value })}
+          />
+          <Button type="submit">Search</Button>
+        </form>
+      </Surface>
 
       <Surface className="mt-6">
-        <SectionTitle
-          title="Event log"
-          hint="Newest first"
-          action={
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Filter by actor, action or reference"
-              className="w-72 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-link"
-            />
-          }
-        />
-        <div className="divide-y divide-border">
-          {entries.length === 0 ? (
-            <EmptyState title="No matching events" />
-          ) : (
-            entries.map((e, i) => (
-              <div key={`${e.id}-${i}`} className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-navy">{e.action}</p>
-                    <Pill tone="info">{e.kind}</Pill>
-                    <Pill tone="neutral">{roleMeta[e.role].label}</Pill>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {e.ctx} · {e.detail}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-navy">{e.actor}</p>
-                  <p className="text-xs text-muted-foreground">{e.at}</p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <SectionTitle title="Entries" hint="Newest first" />
+        {log.isPending ? (
+          <EmptyState title="Loading…" />
+        ) : log.isError ? (
+          <EmptyState
+            title={
+              log.error instanceof ApiError ? log.error.message : "The log could not be loaded."
+            }
+          />
+        ) : log.data.results.length === 0 ? (
+          <EmptyState title="No matching entries" />
+        ) : (
+          <div className="divide-y divide-border">
+            {log.data.results.map((entry) => (
+              <EntryRow key={entry.id} entry={entry} />
+            ))}
+          </div>
+        )}
+        {log.data ? (
+          <ServerPager
+            page={query.page ?? 1}
+            count={log.data.count}
+            hasNext={Boolean(log.data.next)}
+            busy={log.isFetching}
+            onPage={(page) => setQuery({ ...query, page })}
+          />
+        ) : null}
       </Surface>
     </>
+  );
+}
+
+function EntryRow({ entry }: { entry: AuditEntry }) {
+  const [open, setOpen] = React.useState(false);
+  const hasChange = entry.before !== null || entry.after !== null;
+  return (
+    <div className="px-6 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-navy">{entry.action}</p>
+            <Pill tone={entry.outcome === "refused" ? "danger" : "success"}>
+              {entry.outcome === "refused" ? "Refused" : "Done"}
+            </Pill>
+            {entry.actor_role_code ? <Pill tone="neutral">{entry.actor_role_code}</Pill> : null}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {entry.record_label || entry.record_id || entry.record_type || "No record"}
+            {entry.reason ? ` · ${entry.reason}` : ""}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-medium text-navy">{entry.actor_name || "System"}</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(entry.occurred_at).toLocaleString()} · {entry.ip_address || "no address"}
+          </p>
+        </div>
+      </div>
+      {hasChange ? (
+        <button
+          className="mt-2 text-xs font-medium text-link underline"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? "Hide change" : "Show change"}
+        </button>
+      ) : null}
+      {open ? (
+        <div className="mt-2 grid gap-2 md:grid-cols-2">
+          <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
+            Before: {JSON.stringify(entry.before, null, 2)}
+          </pre>
+          <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
+            After: {JSON.stringify(entry.after, null, 2)}
+          </pre>
+        </div>
+      ) : null}
+    </div>
   );
 }

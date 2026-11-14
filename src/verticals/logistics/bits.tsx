@@ -17,7 +17,12 @@ export function BeldiumMark({ className, dark = false }: { className?: string; d
         >
           Beldium
         </span>
-        <span className={cn("block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase", dark ? "text-white/60" : "text-muted-foreground")}>
+        <span
+          className={cn(
+            "block text-[11px] font-normal tracking-wide text-primary-foreground/60 uppercase",
+            dark ? "text-white/60" : "text-muted-foreground",
+          )}
+        >
           Logistics Compliance
         </span>
       </span>
@@ -150,8 +155,23 @@ export function StatCard({
   );
 }
 
-export function ScoreBar({ label, value, suffix = "%" }: { label: string; value: number; suffix?: string }) {
-  const color = value >= 90 ? "var(--success-foreground)" : value >= 75 ? "var(--link)" : value >= 50 ? "var(--warning)" : "var(--danger)";
+export function ScoreBar({
+  label,
+  value,
+  suffix = "%",
+}: {
+  label: string;
+  value: number;
+  suffix?: string;
+}) {
+  const color =
+    value >= 90
+      ? "var(--success-foreground)"
+      : value >= 75
+        ? "var(--link)"
+        : value >= 50
+          ? "var(--warning)"
+          : "var(--danger)";
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between text-xs">
@@ -162,7 +182,10 @@ export function ScoreBar({ label, value, suffix = "%" }: { label: string; value:
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, backgroundColor: color }} />
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${value}%`, backgroundColor: color }}
+        />
       </div>
     </div>
   );
@@ -180,8 +203,12 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--brand)]">{title}</h1>
-        {description ? <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p> : null}
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--brand)]">
+          {title}
+        </h1>
+        {description ? (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
@@ -204,7 +231,12 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cn("rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(16,30,61,0.04)]", className)}>
+    <section
+      className={cn(
+        "rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(16,30,61,0.04)]",
+        className,
+      )}
+    >
       {title ? (
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3.5">
           <div>

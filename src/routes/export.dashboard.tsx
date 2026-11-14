@@ -2,7 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, FileStack, Ship } from "lucide-react";
 import { AppShell } from "@/verticals/export/AppShell";
 import { useStore } from "@/verticals/export/store";
-import { ApplicationStatusPill, DisclaimerNote, Panel, Pill, ScoreBar, Stat } from "@/verticals/export/ui-kit";
+import {
+  ApplicationStatusPill,
+  DisclaimerNote,
+  Panel,
+  Pill,
+  ScoreBar,
+  Stat,
+} from "@/verticals/export/ui-kit";
 import { Button } from "@/components/ui/button";
 import { EXPORT_DOMAIN_LABELS } from "@/lib/api/export";
 
@@ -83,17 +90,22 @@ function ExporterDashboard() {
               </Link>
             ))}
             {shipments.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-muted-foreground">No shipments yet.</p>
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                No shipments yet.
+              </p>
             )}
           </div>
         </Panel>
 
         <div className="space-y-4">
           <Panel title="Compliance score">
-            <p className="font-display text-3xl font-semibold">{myApplication?.risk.compliance_score ?? "-"}</p>
+            <p className="font-display text-3xl font-semibold">
+              {myApplication?.risk.compliance_score ?? "-"}
+            </p>
             {myApplication && <ScoreBar value={myApplication.risk.compliance_score} />}
             <p className="mt-3 text-xs text-muted-foreground">
-              Improve by closing findings quickly and supplying accredited evidence with each domain.
+              Improve by closing findings quickly and supplying accredited evidence with each
+              domain.
             </p>
           </Panel>
           <Panel title="Domains outstanding">
@@ -104,7 +116,9 @@ function ExporterDashboard() {
                   <Pill tone="warning">{s.status}</Pill>
                 </li>
               ))}
-              {outstanding.length === 0 && <li className="text-muted-foreground">Nothing outstanding.</li>}
+              {outstanding.length === 0 && (
+                <li className="text-muted-foreground">Nothing outstanding.</li>
+              )}
             </ul>
           </Panel>
           <DisclaimerNote />

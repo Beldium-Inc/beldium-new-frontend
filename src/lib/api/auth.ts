@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { clearTokens, readTokens, writeTokens, type TokenPair } from "./tokens";
+import { clearTokens, hasSession, writeTokens, type TokenPair } from "./tokens";
 import type { User } from "./types";
 
 export interface RegisterInput {
@@ -21,7 +21,7 @@ export interface RegisterResponse {
   user: User;
 }
 
-export interface VerifyEmailResponse extends TokenPair {
+export interface VerifyEmailResponse extends Partial<TokenPair> {
   message: string;
 }
 
@@ -50,7 +50,7 @@ export async function verifyEmail(input: {
     body: input,
     auth: false,
   });
-  writeTokens({ access: response.access, refresh: response.refresh });
+  if (typeof response.access === "string") writeTokens({ access: response.access });
   return response;
 }
 
@@ -168,15 +168,15 @@ export function confirmPhoneVerification(input: {
 
 /**
  * End the session. The refresh token is blacklisted server-side so it cannot be
- * replayed: dropping it locally alone would leave it usable for its full seven
- * days by anyone who had copied it. The local pair is cleared either way: a
+ * replayed. The local pair is cleared either way: a
  * failed call must not strand someone signed in.
  */
 export async function logout(): Promise<void> {
-  const tokens = readTokens();
   try {
-    if (tokens) {
-      await apiFetch<void>("/auth/logout/", { method: "POST", body: { refresh: tokens.refresh } });
+    if (hasSession()) {
+      // The API reads the refresh token from the HttpOnly cookie, revokes it
+      // and clears the cookie.
+      await apiFetch<void>("/auth/logout/", { method: "POST", body: {} });
     }
   } catch {
     // Already expired, already blacklisted, or the API is unreachable. None of

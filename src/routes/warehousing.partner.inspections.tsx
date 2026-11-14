@@ -4,7 +4,14 @@ import { toast } from "sonner";
 import { AppShell } from "@/verticals/warehousing/app-shell";
 import { Panel, StatCard, StatusPill, toneForStatus } from "@/verticals/warehousing/compliance-ui";
 import { useDemo } from "@/verticals/warehousing/store";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { CalendarClock, ClipboardCheck, TriangleAlert, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,13 +24,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useCreateWarehousingInspector, useWarehousingInspectors } from "@/lib/api/warehousing-queries";
+import {
+  useCreateWarehousingInspector,
+  useWarehousingInspectors,
+} from "@/lib/api/warehousing-queries";
 
 export const Route = createFileRoute("/warehousing/partner/inspections")({
   head: () => ({
     meta: [
       { title: "Inspections | Beldium Compliance Partner" },
-      { name: "description", content: "Scheduled and completed warehouse inspections, and the inspector roster available to order them." },
+      {
+        name: "description",
+        content:
+          "Scheduled and completed warehouse inspections, and the inspector roster available to order them.",
+      },
     ],
   }),
   component: InspectionsPage,
@@ -38,15 +52,38 @@ function InspectionsPage() {
   const inspectorRows = inspectors.data?.results ?? [];
 
   return (
-    <AppShell role="partner" title="Inspections" subtitle="Site visit programme across supervised facilities">
+    <AppShell
+      role="partner"
+      title="Inspections"
+      subtitle="Site visit programme across supervised facilities"
+    >
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard label="Passed" value={passed} tone="success" icon={<ClipboardCheck className="size-5" />} />
-          <StatCard label="Attention" value={attention} tone="warning" icon={<CalendarClock className="size-5" />} />
-          <StatCard label="Failed" value={failed} tone="danger" icon={<TriangleAlert className="size-5" />} />
+          <StatCard
+            label="Passed"
+            value={passed}
+            tone="success"
+            icon={<ClipboardCheck className="size-5" />}
+          />
+          <StatCard
+            label="Attention"
+            value={attention}
+            tone="warning"
+            icon={<CalendarClock className="size-5" />}
+          />
+          <StatCard
+            label="Failed"
+            value={failed}
+            tone="danger"
+            icon={<TriangleAlert className="size-5" />}
+          />
         </div>
 
-        <Panel title="Inspector roster" description="Inspectors available to order for a site visit." actions={<NewInspectorDialog />}>
+        <Panel
+          title="Inspector roster"
+          description="Inspectors available to order for a site visit."
+          actions={<NewInspectorDialog />}
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -61,11 +98,19 @@ function InspectionsPage() {
               {inspectorRows.map((insp) => (
                 <TableRow key={insp.id}>
                   <TableCell className="text-sm font-medium text-primary">{insp.name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{insp.title || "-"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{insp.region || "-"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{insp.email || "-"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {insp.title || "-"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {insp.region || "-"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {insp.email || "-"}
+                  </TableCell>
                   <TableCell>
-                    <StatusPill tone={insp.is_active ? "success" : "neutral"}>{insp.is_active ? "Active" : "Inactive"}</StatusPill>
+                    <StatusPill tone={insp.is_active ? "success" : "neutral"}>
+                      {insp.is_active ? "Active" : "Inactive"}
+                    </StatusPill>
                   </TableCell>
                 </TableRow>
               ))}
@@ -98,10 +143,16 @@ function InspectionsPage() {
                 return (
                   <TableRow key={i.id}>
                     <TableCell className="text-sm">{f?.name ?? "-"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{i.inspection_type}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {i.inspection_type}
+                    </TableCell>
                     <TableCell className="text-sm">{i.inspector_name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{i.inspected_on}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{i.next_due_on ?? "-"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {i.inspected_on}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {i.next_due_on ?? "-"}
+                    </TableCell>
                     <TableCell>
                       <StatusPill tone={toneForStatus(i.outcome)}>{i.outcome}</StatusPill>
                     </TableCell>
@@ -157,24 +208,42 @@ function NewInspectorDialog() {
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>Name</Label>
-            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <Input
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
           </div>
           <div className="space-y-2">
             <Label>Title</Label>
-            <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+            <Input
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            />
           </div>
           <div className="space-y-2">
             <Label>Region</Label>
-            <Input value={form.region} onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))} />
+            <Input
+              value={form.region}
+              onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
+            />
           </div>
           <div className="space-y-2">
             <Label>Email</Label>
-            <Input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+            <Input
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={createInspector.isPending} className="bg-link text-link-foreground hover:bg-link/90">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={submit}
+            disabled={createInspector.isPending}
+            className="bg-link text-link-foreground hover:bg-link/90"
+          >
             Add inspector
           </Button>
         </DialogFooter>

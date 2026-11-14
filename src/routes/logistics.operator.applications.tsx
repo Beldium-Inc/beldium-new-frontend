@@ -10,20 +10,27 @@ export const Route = createFileRoute("/logistics/operator/applications")({
   head: () => ({
     meta: [
       { title: "Applications | Beldium Compliance Operations" },
-      { name: "description", content: "Review, assign and action logistics operator compliance applications." },
+      {
+        name: "description",
+        content: "Review, assign and action logistics operator compliance applications.",
+      },
       { property: "og:title", content: "Applications | Beldium Compliance Operations" },
-      { property: "og:description", content: "Filterable register of operator applications with risk and reviewer state." },
+      {
+        property: "og:description",
+        content: "Filterable register of operator applications with risk and reviewer state.",
+      },
     ],
   }),
   component: ApplicationsRoute,
 });
 
-const describeError = (err: unknown) =>
-  err instanceof Error ? err.message : "Please try again.";
+const describeError = (err: unknown) => (err instanceof Error ? err.message : "Please try again.");
 
 function ApplicationsRoute() {
   const isChild = useRouterState({
-    select: (s) => s.location.pathname !== "/logistics/operator/applications" && s.location.pathname !== "/logistics/operator/applications/",
+    select: (s) =>
+      s.location.pathname !== "/logistics/operator/applications" &&
+      s.location.pathname !== "/logistics/operator/applications/",
   });
   if (isChild) return <Outlet />;
   return <ApplicationsList />;
@@ -49,13 +56,20 @@ function ApplicationsList() {
   return (
     <AppShell
       role="operator"
-      breadcrumbs={[{ label: "Compliance Operations", to: "/logistics/operator" }, { label: "Applications" }]}
+      breadcrumbs={[
+        { label: "Compliance Operations", to: "/logistics/operator" },
+        { label: "Applications" },
+      ]}
       search={{ value: query, onChange: setQuery, placeholder: "Search company, ID or location…" }}
     >
       <PageHeader
         title="Applications"
         description="Every onboarding and re-verification case in the Beldium register."
-        actions={<Pill tone="info">{rows.length} of {companies.length} shown</Pill>}
+        actions={
+          <Pill tone="info">
+            {rows.length} of {companies.length} shown
+          </Pill>
+        }
       />
 
       <Panel bodyClassName="p-4">
@@ -129,12 +143,18 @@ function ApplicationsList() {
                     <p className="text-xs text-muted-foreground">{c.services[0]}</p>
                   </td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{c.id}</td>
-                  <td className="px-3 py-3 text-xs">{c.location}, {c.state}</td>
+                  <td className="px-3 py-3 text-xs">
+                    {c.location}, {c.state}
+                  </td>
                   <td className="px-3 py-3 text-xs">
                     {c.fleetSize} veh · {c.driverCount} drv
                   </td>
-                  <td className="px-3 py-3"><StatusBadge status={c.status} /></td>
-                  <td className="px-3 py-3"><RiskBadge risk={c.risk} score={c.riskScore} /></td>
+                  <td className="px-3 py-3">
+                    <StatusBadge status={c.status} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <RiskBadge risk={c.risk} score={c.riskScore} />
+                  </td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{c.submitted}</td>
                   <td className="px-3 py-3 text-xs">{c.claim === "mine" ? "You" : c.reviewer}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{c.lastActivity}</td>
@@ -183,7 +203,11 @@ function ApplicationsList() {
                       </Link>
                       <button
                         type="button"
-                        title={c.claim === "other" ? `Claimed by ${c.reviewer}` : "Claim and start the review"}
+                        title={
+                          c.claim === "other"
+                            ? `Claimed by ${c.reviewer}`
+                            : "Claim and start the review"
+                        }
                         disabled={c.claim === "other"}
                         onClick={() => {
                           startReview(c.id)

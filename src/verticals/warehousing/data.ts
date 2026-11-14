@@ -35,7 +35,8 @@ export const ROLES: DemoRole[] = [
     id: "regulator",
     title: "Regulatory Oversight Officer",
     org: "Solid Minerals Oversight Desk (read-only)",
-    blurb: "Read-only visibility of registered facilities, certificates, inspections and incidents.",
+    blurb:
+      "Read-only visibility of registered facilities, certificates, inspections and incidents.",
     home: "/warehousing/regulator",
   },
 ];

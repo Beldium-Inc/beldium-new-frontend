@@ -148,7 +148,9 @@ function SamplesPage() {
                 onChange={(e) => setForm({ ...form, buyerSpecId: e.target.value })}
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-link"
               >
-                {buyerSpecs.length === 0 ? <option value="">No buyer specifications available</option> : null}
+                {buyerSpecs.length === 0 ? (
+                  <option value="">No buyer specifications available</option>
+                ) : null}
                 {buyerSpecs.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}

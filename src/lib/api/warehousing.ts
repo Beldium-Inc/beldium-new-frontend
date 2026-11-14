@@ -293,7 +293,8 @@ export interface WarehousingReport {
 
 // --- incidents / releases / monitoring / inspectors / certificates -----------
 
-export type WarehousingIncidentCategory = "safety" | "environmental" | "security" | "stock_integrity";
+export type WarehousingIncidentCategory =
+  "safety" | "environmental" | "security" | "stock_integrity";
 export type WarehousingIncidentSeverity = "low" | "medium" | "high";
 export type WarehousingIncidentStatus = "open" | "under_investigation" | "closed";
 
@@ -407,12 +408,19 @@ export function createWarehousingReleaseRequest(
     "warehouse" | "lot" | "requested_by_name" | "destination" | "declared_quantity" | "unit"
   >,
 ): Promise<WarehousingReleaseRequest> {
-  return apiFetch<WarehousingReleaseRequest>(`${BASE}/release-requests/`, { method: "POST", body: input });
+  return apiFetch<WarehousingReleaseRequest>(`${BASE}/release-requests/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function decideWarehousingRelease(
   id: UUID,
-  input: { status: "authorised" | "declined"; actual_weighbridge_quantity?: number | undefined; reason?: string | undefined },
+  input: {
+    status: "authorised" | "declined";
+    actual_weighbridge_quantity?: number | undefined;
+    reason?: string | undefined;
+  },
 ): Promise<WarehousingReleaseRequest> {
   return apiFetch<WarehousingReleaseRequest>(`${BASE}/release-requests/${id}/decide/`, {
     method: "POST",
@@ -427,13 +435,21 @@ export function listWarehousingMonitoringAlerts(
 }
 
 export function createWarehousingMonitoringAlert(
-  input: Pick<WarehousingMonitoringAlert, "warehouse" | "facility" | "message" | "severity" | "source">,
+  input: Pick<
+    WarehousingMonitoringAlert,
+    "warehouse" | "facility" | "message" | "severity" | "source"
+  >,
 ): Promise<WarehousingMonitoringAlert> {
-  return apiFetch<WarehousingMonitoringAlert>(`${BASE}/monitoring-alerts/`, { method: "POST", body: input });
+  return apiFetch<WarehousingMonitoringAlert>(`${BASE}/monitoring-alerts/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function resolveWarehousingMonitoringAlert(id: UUID): Promise<WarehousingMonitoringAlert> {
-  return apiFetch<WarehousingMonitoringAlert>(`${BASE}/monitoring-alerts/${id}/resolve/`, { method: "POST" });
+  return apiFetch<WarehousingMonitoringAlert>(`${BASE}/monitoring-alerts/${id}/resolve/`, {
+    method: "POST",
+  });
 }
 
 export function listWarehousingInspectors(
@@ -455,7 +471,10 @@ export function listWarehousingCertificates(
 }
 
 export function issueWarehousingCertificate(
-  input: Pick<WarehousingCertificate, "warehouse" | "facility" | "application" | "scope" | "issued_on" | "expires_on">,
+  input: Pick<
+    WarehousingCertificate,
+    "warehouse" | "facility" | "application" | "scope" | "issued_on" | "expires_on"
+  >,
 ): Promise<WarehousingCertificate> {
   return apiFetch<WarehousingCertificate>(`${BASE}/certificates/`, { method: "POST", body: input });
 }
@@ -464,12 +483,21 @@ export function updateWarehousingCertificate(
   id: UUID,
   patch: Partial<Pick<WarehousingCertificate, "status" | "expires_on" | "scope">>,
 ): Promise<WarehousingCertificate> {
-  return apiFetch<WarehousingCertificate>(`${BASE}/certificates/${id}/`, { method: "PATCH", body: patch });
+  return apiFetch<WarehousingCertificate>(`${BASE}/certificates/${id}/`, {
+    method: "PATCH",
+    body: patch,
+  });
 }
 
 export interface WarehousingCapabilities {
   is_staff: boolean;
-  warehouses: { id: UUID; name: string; can_edit: boolean; can_review: boolean; can_read: boolean }[];
+  warehouses: {
+    id: UUID;
+    name: string;
+    can_edit: boolean;
+    can_review: boolean;
+    can_read: boolean;
+  }[];
 }
 
 export interface WarehousingDashboardRow {
@@ -516,7 +544,9 @@ export interface WarehousingAuditEvent {
 
 // --- capabilities / dashboard / risk / audit --------------------------------
 
-export function fetchWarehousingCapabilities(signal?: AbortSignal): Promise<WarehousingCapabilities> {
+export function fetchWarehousingCapabilities(
+  signal?: AbortSignal,
+): Promise<WarehousingCapabilities> {
   return apiFetch<WarehousingCapabilities>(`${BASE}/me/`, { signal });
 }
 
@@ -588,7 +618,10 @@ export function updateWarehousingFacility(
   id: UUID,
   patch: Partial<WarehousingFacility>,
 ): Promise<WarehousingFacility> {
-  return apiFetch<WarehousingFacility>(`${BASE}/facilities/${id}/`, { method: "PATCH", body: patch });
+  return apiFetch<WarehousingFacility>(`${BASE}/facilities/${id}/`, {
+    method: "PATCH",
+    body: patch,
+  });
 }
 
 export function listStorageZones(
@@ -639,7 +672,10 @@ export function updateWarehousingInspection(
   id: UUID,
   patch: Partial<WarehousingInspection>,
 ): Promise<WarehousingInspection> {
-  return apiFetch<WarehousingInspection>(`${BASE}/inspections/${id}/`, { method: "PATCH", body: patch });
+  return apiFetch<WarehousingInspection>(`${BASE}/inspections/${id}/`, {
+    method: "PATCH",
+    body: patch,
+  });
 }
 
 // --- access grants -------------------------------------------------------------
@@ -653,7 +689,10 @@ export function listWarehousingAccessGrants(
 export function createWarehousingAccessGrant(
   input: Pick<WarehousingAccessGrant, "warehouse" | "user" | "role">,
 ): Promise<WarehousingAccessGrant> {
-  return apiFetch<WarehousingAccessGrant>(`${BASE}/access-grants/`, { method: "POST", body: input });
+  return apiFetch<WarehousingAccessGrant>(`${BASE}/access-grants/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function updateWarehousingAccessGrant(
@@ -786,7 +825,9 @@ export function uploadWarehousingDocument(
   });
 }
 
-export function listWarehousingApplicationRequests(id: UUID): Promise<WarehousingInformationRequest[]> {
+export function listWarehousingApplicationRequests(
+  id: UUID,
+): Promise<WarehousingInformationRequest[]> {
   return apiFetch<WarehousingInformationRequest[]>(`${BASE}/applications/${id}/requests/`);
 }
 

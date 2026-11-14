@@ -9,7 +9,8 @@ export const Route = createFileRoute("/quality/vault")({
       { title: "Document vault | Beldium Quality & Control" },
       {
         name: "description",
-        content: "Back up quality records with version history, integrity checks and second approval.",
+        content:
+          "Back up quality records with version history, integrity checks and second approval.",
       },
     ],
   }),

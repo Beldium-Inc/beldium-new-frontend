@@ -59,7 +59,13 @@ function resolve(
 
   if (!organisation) {
     return hasPendingJoin
-      ? { stage: "join_pending", organisation, application, percent, resumeTo: "/onboarding/pending" }
+      ? {
+          stage: "join_pending",
+          organisation,
+          application,
+          percent,
+          resumeTo: "/onboarding/pending",
+        }
       : {
           stage: "no_organisation",
           organisation,

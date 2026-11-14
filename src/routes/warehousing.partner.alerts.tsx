@@ -5,9 +5,19 @@ import { AppShell } from "@/verticals/warehousing/app-shell";
 import { Panel, StatCard, StatusPill, toneForStatus } from "@/verticals/warehousing/compliance-ui";
 import { useDemo } from "@/verticals/warehousing/store";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { BellRing, CheckCircle2, TriangleAlert } from "lucide-react";
-import { useCreateWarehousingMonitoringAlert, useResolveWarehousingMonitoringAlert } from "@/lib/api/warehousing-queries";
+import {
+  useCreateWarehousingMonitoringAlert,
+  useResolveWarehousingMonitoringAlert,
+} from "@/lib/api/warehousing-queries";
 import type { MonitoringAlertSeverity } from "@/lib/api/warehousing";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +34,11 @@ export const Route = createFileRoute("/warehousing/partner/alerts")({
   head: () => ({
     meta: [
       { title: "Monitoring alerts | Beldium Compliance Partner" },
-      { name: "description", content: "Live monitoring alerts raised against supervised warehouses, plus notification acknowledgements." },
+      {
+        name: "description",
+        content:
+          "Live monitoring alerts raised against supervised warehouses, plus notification acknowledgements.",
+      },
     ],
   }),
   component: AlertsPage,
@@ -38,15 +52,38 @@ function AlertsPage() {
   const critical = openAlerts.filter((a) => a.severity === "critical");
 
   return (
-    <AppShell role="partner" title="Continuous monitoring" subtitle="Alerts and notifications across supervised warehouses" actions={<NewAlertDialog />}>
+    <AppShell
+      role="partner"
+      title="Continuous monitoring"
+      subtitle="Alerts and notifications across supervised warehouses"
+      actions={<NewAlertDialog />}
+    >
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard label="Open alerts" value={openAlerts.length} tone="warning" icon={<BellRing className="size-5" />} />
-          <StatCard label="Critical" value={critical.length} tone="danger" icon={<TriangleAlert className="size-5" />} />
-          <StatCard label="Unread notifications" value={unreadNotifications.length} tone="info" icon={<CheckCircle2 className="size-5" />} />
+          <StatCard
+            label="Open alerts"
+            value={openAlerts.length}
+            tone="warning"
+            icon={<BellRing className="size-5" />}
+          />
+          <StatCard
+            label="Critical"
+            value={critical.length}
+            tone="danger"
+            icon={<TriangleAlert className="size-5" />}
+          />
+          <StatCard
+            label="Unread notifications"
+            value={unreadNotifications.length}
+            tone="info"
+            icon={<CheckCircle2 className="size-5" />}
+          />
         </div>
 
-        <Panel title="Monitoring alerts" description="Raised manually or by automated register checks.">
+        <Panel
+          title="Monitoring alerts"
+          description="Raised manually or by automated register checks."
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -65,13 +102,23 @@ function AlertsPage() {
                 const f = state.facilities.find((x) => x.id === a.facility);
                 return (
                   <TableRow key={a.id}>
-                    <TableCell className="text-sm font-medium text-primary">{w?.name ?? "-"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{f?.name ?? "-"}</TableCell>
+                    <TableCell className="text-sm font-medium text-primary">
+                      {w?.name ?? "-"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {f?.name ?? "-"}
+                    </TableCell>
                     <TableCell className="max-w-96 text-sm">{a.message}</TableCell>
-                    <TableCell><StatusPill tone={toneForStatus(a.severity)}>{a.severity}</StatusPill></TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{a.source || "-"}</TableCell>
                     <TableCell>
-                      <StatusPill tone={a.resolved_at ? "success" : "warning"}>{a.resolved_at ? "Resolved" : "Open"}</StatusPill>
+                      <StatusPill tone={toneForStatus(a.severity)}>{a.severity}</StatusPill>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {a.source || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <StatusPill tone={a.resolved_at ? "success" : "warning"}>
+                        {a.resolved_at ? "Resolved" : "Open"}
+                      </StatusPill>
                     </TableCell>
                     <TableCell className="text-right">
                       {!a.resolved_at && (
@@ -107,10 +154,15 @@ function AlertsPage() {
         <Panel title="Notification feed" description="Acknowledging marks the notification read.">
           <ul className="space-y-3">
             {state.notifications.map((n) => (
-              <li key={n.id} className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-border/70 p-4">
+              <li
+                key={n.id}
+                className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-border/70 p-4"
+              >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusPill tone={n.read_at ? "success" : "warning"}>{n.read_at ? "Read" : "New"}</StatusPill>
+                    <StatusPill tone={n.read_at ? "success" : "warning"}>
+                      {n.read_at ? "Read" : "New"}
+                    </StatusPill>
                     <span className="text-xs text-muted-foreground">{n.created_at}</span>
                   </div>
                   <p className="mt-2 text-sm font-medium text-foreground">{n.title}</p>
@@ -178,7 +230,9 @@ function NewAlertDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="rounded-xl bg-link text-link-foreground hover:bg-link/90">Raise alert</Button>
+        <Button className="rounded-xl bg-link text-link-foreground hover:bg-link/90">
+          Raise alert
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
@@ -193,7 +247,9 @@ function NewAlertDialog() {
               onChange={(e) => setForm((f) => ({ ...f, warehouse: e.target.value, facility: "" }))}
             >
               {state.warehouses.map((w) => (
-                <option key={w.id} value={w.id}>{w.name}</option>
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
               ))}
             </select>
           </div>
@@ -206,7 +262,9 @@ function NewAlertDialog() {
             >
               <option value="">Whole warehouse</option>
               {facilitiesForWarehouse.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
               ))}
             </select>
           </div>
@@ -215,7 +273,9 @@ function NewAlertDialog() {
             <select
               className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
               value={form.severity}
-              onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value as MonitoringAlertSeverity }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, severity: e.target.value as MonitoringAlertSeverity }))
+              }
             >
               <option value="info">Info</option>
               <option value="warning">Warning</option>
@@ -224,16 +284,29 @@ function NewAlertDialog() {
           </div>
           <div className="space-y-2">
             <Label>Source</Label>
-            <Input value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} placeholder="e.g. Sensor feed, manual review" />
+            <Input
+              value={form.source}
+              onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))}
+              placeholder="e.g. Sensor feed, manual review"
+            />
           </div>
           <div className="space-y-2">
             <Label>Message</Label>
-            <Input value={form.message} onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))} />
+            <Input
+              value={form.message}
+              onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={createAlert.isPending} className="bg-link text-link-foreground hover:bg-link/90">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={submit}
+            disabled={createAlert.isPending}
+            className="bg-link text-link-foreground hover:bg-link/90"
+          >
             Raise alert
           </Button>
         </DialogFooter>

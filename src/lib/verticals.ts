@@ -7,13 +7,7 @@
 // `home` is relative to the vertical prefix; the full URL is `/${slug}${home}`.
 
 export type VerticalSlug =
-  | "export"
-  | "logistics"
-  | "marketplace"
-  | "mining"
-  | "processing"
-  | "quality"
-  | "warehousing";
+  "export" | "logistics" | "marketplace" | "mining" | "processing" | "quality" | "warehousing";
 
 export type VerticalRole = {
   id: string;

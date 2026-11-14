@@ -23,6 +23,7 @@ import {
   Surface,
 } from "@/verticals/quality/ui";
 import { useBeldium } from "@/verticals/quality/store";
+import { usePendingActions } from "@/verticals/quality/pending-actions";
 import type { ApplicationStatus, PartnerDocument } from "@/verticals/quality/types";
 
 export const Route = createFileRoute("/quality/applications/$id")({
@@ -60,10 +61,20 @@ type TabKey = (typeof tabs)[number]["key"];
 
 function ApplicationDetail() {
   const { id } = useParams({ from: "/quality/applications/$id" });
-  const { state, role, can, uploadDocument, setDocStatus, resolveFlag, decideApplication, assignApplication, raiseNonConformity } =
-    useBeldium();
+  const {
+    state,
+    role,
+    can,
+    uploadDocument,
+    setDocStatus,
+    resolveFlag,
+    decideApplication,
+    assignApplication,
+    raiseNonConformity,
+  } = useBeldium();
   const [tab, setTab] = React.useState<TabKey>("organisation");
   const [note, setNote] = React.useState("");
+  const actions = usePendingActions();
 
   const app = state.applications.find((a) => a.id === id);
   const canDecide = can.decide;
@@ -79,16 +90,17 @@ function ApplicationDetail() {
   const docsByCategory = (cat: PartnerDocument["category"]) =>
     app.documents.filter((d) => d.category === cat);
 
-  const decide = (status: ApplicationStatus) => {
-    decideApplication(app.id, status, note);
-    setNote("");
-    toast.success(
+  const decide = async (status: ApplicationStatus) => {
+    const ok = await actions.run(
+      `decide:${app.id}`,
+      () => decideApplication(app.id, status, note),
       status === "approved"
         ? `${app.organisation.legalName} listed as a Quality & Control Partner`
         : status === "rejected"
           ? "Application rejected and applicant notified"
           : "Information request sent to applicant",
     );
+    if (ok) setNote("");
   };
 
   return (
@@ -113,10 +125,14 @@ function ApplicationDetail() {
             {canDecide && app.status === "submitted" ? (
               <button
                 type="button"
-                onClick={() => {
-                  assignApplication(app.id);
-                  toast.success("Application assigned to you");
-                }}
+                disabled={actions.isBusy(`assign:${app.id}`)}
+                onClick={() =>
+                  void actions.run(
+                    `assign:${app.id}`,
+                    () => assignApplication(app.id),
+                    "Application assigned to you",
+                  )
+                }
                 className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-navy-foreground hover:bg-navy/90"
               >
                 Take review
@@ -152,13 +168,19 @@ function ApplicationDetail() {
           {tab === "organisation" ? (
             <div className="space-y-6">
               <Surface>
-                <SectionTitle title="Organisation profile" hint="Legal identity checked against registry data" />
+                <SectionTitle
+                  title="Organisation profile"
+                  hint="Legal identity checked against registry data"
+                />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
                   <Field label="Legal name" value={app.organisation.legalName} />
                   <Field label="Trading name" value={app.organisation.tradingName} />
                   <Field label="Registration no." value={app.organisation.registrationNo} />
                   <Field label="Incorporated" value={app.organisation.incorporated} />
-                  <Field label="Jurisdiction" value={`${app.organisation.city}, ${app.organisation.country}`} />
+                  <Field
+                    label="Jurisdiction"
+                    value={`${app.organisation.city}, ${app.organisation.country}`}
+                  />
                   <Field
                     label="Website"
                     value={<span className="text-link">{app.organisation.website}</span>}
@@ -177,7 +199,10 @@ function ApplicationDetail() {
               </Surface>
 
               <Surface>
-                <SectionTitle title="Beneficial ownership" hint="Screened against PEP and sanctions lists" />
+                <SectionTitle
+                  title="Beneficial ownership"
+                  hint="Screened against PEP and sanctions lists"
+                />
                 <div className="divide-y divide-border">
                   {app.organisation.beneficialOwners.map((o) => (
                     <div key={o.name} className="flex items-center justify-between px-6 py-4">
@@ -185,7 +210,11 @@ function ApplicationDetail() {
                         <p className="text-sm font-medium text-navy">{o.name}</p>
                         <p className="text-xs text-muted-foreground">{o.share}% holding</p>
                       </div>
-                      {o.pep ? <Pill tone="warning">PEP match</Pill> : <Pill tone="success">clear</Pill>}
+                      {o.pep ? (
+                        <Pill tone="warning">PEP match</Pill>
+                      ) : (
+                        <Pill tone="success">clear</Pill>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -209,8 +238,14 @@ function ApplicationDetail() {
                     />
                     {app.onboarding.offersSampling ? (
                       <>
-                        <Field label="Geographic coverage" value={app.onboarding.coverage.join(", ")} />
-                        <Field label="Field sampling teams" value={app.onboarding.samplingTeams ?? "-"} />
+                        <Field
+                          label="Geographic coverage"
+                          value={app.onboarding.coverage.join(", ")}
+                        />
+                        <Field
+                          label="Field sampling teams"
+                          value={app.onboarding.samplingTeams ?? "-"}
+                        />
                         <Field label="Tamper-evident sealing" value={app.onboarding.sealing} />
                         <Field
                           label="Sampling procedure summary"
@@ -218,25 +253,40 @@ function ApplicationDetail() {
                         />
                       </>
                     ) : (
-                      <Field label="Field sampling" value="Not offered: tests delivered samples only" />
+                      <Field
+                        label="Field sampling"
+                        value="Not offered: tests delivered samples only"
+                      />
                     )}
                   </dl>
                 </Surface>
               ) : null}
               <Surface>
-                <SectionTitle title="Lead assessor" hint="Professional competence for material assessment" />
+                <SectionTitle
+                  title="Lead assessor"
+                  hint="Professional competence for material assessment"
+                />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2">
                   <Field label="Name" value={app.capability.leadAssessor} />
                   <Field label="Credential" value={app.capability.credential} />
                   <Field label="Experience" value={`${app.capability.yearsExperience} years`} />
-                  <Field label="Registry" value={`${app.capability.registry} (${app.capability.registryId})`} />
+                  <Field
+                    label="Registry"
+                    value={`${app.capability.registry} (${app.capability.registryId})`}
+                  />
                 </dl>
               </Surface>
               <Surface>
-                <SectionTitle title="Technical staff competency" hint="Signed-off competency per declared method" />
+                <SectionTitle
+                  title="Technical staff competency"
+                  hint="Signed-off competency per declared method"
+                />
                 <div className="divide-y divide-border">
                   {app.capability.staff.map((s) => (
-                    <div key={s.name} className="flex flex-wrap items-center justify-between gap-2 px-6 py-4">
+                    <div
+                      key={s.name}
+                      className="flex flex-wrap items-center justify-between gap-2 px-6 py-4"
+                    >
                       <div>
                         <p className="text-sm font-medium text-navy">{s.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -308,7 +358,10 @@ function ApplicationDetail() {
                 </Surface>
               ) : null}
               <Surface>
-                <SectionTitle title="Facility accreditation" hint="Checked against the accreditation body register" />
+                <SectionTitle
+                  title="Facility accreditation"
+                  hint="Checked against the accreditation body register"
+                />
                 <dl className="grid gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3">
                   <Field label="Facility" value={app.laboratory.facility} />
                   <Field label="Standard" value={app.laboratory.accreditation} />
@@ -382,7 +435,10 @@ function ApplicationDetail() {
                       <EmptyState title="No documents in this category" />
                     ) : (
                       docsByCategory(cat).map((d) => (
-                        <div key={d.id} className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
+                        <div
+                          key={d.id}
+                          className="flex flex-wrap items-start justify-between gap-3 px-6 py-4"
+                        >
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-navy">{d.name}</p>
                             <p className="text-xs text-muted-foreground">
@@ -390,7 +446,9 @@ function ApplicationDetail() {
                               {d.expires ? ` · expires ${d.expires}` : " · no expiry"}
                             </p>
                             {d.conditionalOn ? (
-                              <p className="mt-1 text-xs text-link">Triggered by: {d.conditionalOn}</p>
+                              <p className="mt-1 text-xs text-link">
+                                Triggered by: {d.conditionalOn}
+                              </p>
                             ) : null}
                             {d.note ? (
                               <p className="mt-1 text-xs text-warning-foreground">{d.note}</p>
@@ -404,7 +462,9 @@ function ApplicationDetail() {
                                 onClick={() =>
                                   openApplicationDocument(app.id, d.id).catch((error: unknown) =>
                                     toast.error(
-                                      error instanceof Error ? error.message : "Could not open the file",
+                                      error instanceof Error
+                                        ? error.message
+                                        : "Could not open the file",
                                     ),
                                   )
                                 }
@@ -439,20 +499,28 @@ function ApplicationDetail() {
                               <>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setDocStatus(app.id, d.id, "verified");
-                                    toast.success(`${d.name} verified`);
-                                  }}
+                                  disabled={actions.isBusy(`doc:${d.id}`)}
+                                  onClick={() =>
+                                    void actions.run(
+                                      `doc:${d.id}`,
+                                      () => setDocStatus(app.id, d.id, "verified"),
+                                      `${d.name} verified`,
+                                    )
+                                  }
                                   className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                                 >
                                   Verify
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setDocStatus(app.id, d.id, "flagged");
-                                    toast("Document flagged for follow-up");
-                                  }}
+                                  disabled={actions.isBusy(`doc:${d.id}`)}
+                                  onClick={() =>
+                                    void actions.run(
+                                      `doc:${d.id}`,
+                                      () => setDocStatus(app.id, d.id, "flagged"),
+                                      "Document flagged for follow-up",
+                                    )
+                                  }
                                   className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-danger-foreground hover:border-danger"
                                 >
                                   Flag
@@ -472,13 +540,22 @@ function ApplicationDetail() {
           {tab === "risk" ? (
             <div className="space-y-6">
               <Surface>
-                <SectionTitle title="Risk flags" hint="Automated screening adjudicated by the operator" />
+                <SectionTitle
+                  title="Risk flags"
+                  hint="Automated screening adjudicated by the operator"
+                />
                 <div className="divide-y divide-border">
                   {app.riskFlags.length === 0 ? (
-                    <EmptyState title="No risk flags raised" hint="Screening returned a clean profile." />
+                    <EmptyState
+                      title="No risk flags raised"
+                      hint="Screening returned a clean profile."
+                    />
                   ) : (
                     app.riskFlags.map((f) => (
-                      <div key={f.id} className="flex flex-wrap items-start justify-between gap-3 px-6 py-4">
+                      <div
+                        key={f.id}
+                        className="flex flex-wrap items-start justify-between gap-3 px-6 py-4"
+                      >
                         <div className="flex gap-3">
                           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning-foreground" />
                           <div>
@@ -494,25 +571,34 @@ function ApplicationDetail() {
                             <>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  resolveFlag(app.id, f.id);
-                                  toast.success("Flag cleared, risk score reduced");
-                                }}
+                                disabled={actions.isBusy(`flag:${f.id}`)}
+                                onClick={() =>
+                                  void actions.run(
+                                    `flag:${f.id}`,
+                                    () => resolveFlag(app.id, f.id),
+                                    "Flag cleared, risk score reduced",
+                                  )
+                                }
                                 className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                               >
                                 Clear
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  raiseNonConformity({
-                                    title: f.title,
-                                    against: app.organisation.legalName,
-                                    severity: f.severity === "high" ? "major" : "minor",
-                                    detail: f.detail,
-                                  });
-                                  toast.success("Non-conformity raised");
-                                }}
+                                disabled={actions.isBusy(`ncr:${f.id}`)}
+                                onClick={() =>
+                                  void actions.run(
+                                    `ncr:${f.id}`,
+                                    () =>
+                                      raiseNonConformity({
+                                        title: f.title,
+                                        against: app.organisation.legalName,
+                                        severity: f.severity === "high" ? "major" : "minor",
+                                        detail: f.detail,
+                                      }),
+                                    "Non-conformity raised",
+                                  )
+                                }
                                 className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-navy hover:border-link hover:text-link"
                               >
                                 Raise NCR
@@ -543,21 +629,24 @@ function ApplicationDetail() {
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => decide("approved")}
+                        disabled={actions.isBusy(`decide:${app.id}`)}
+                        onClick={() => void decide("approved")}
                         className="rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-navy-foreground hover:bg-navy/90"
                       >
                         Approve &amp; list partner
                       </button>
                       <button
                         type="button"
-                        onClick={() => decide("info_requested")}
+                        disabled={actions.isBusy(`decide:${app.id}`)}
+                        onClick={() => void decide("info_requested")}
                         className="rounded-xl border border-warning bg-warning/20 px-4 py-2.5 text-sm font-semibold text-warning-foreground"
                       >
                         Request information
                       </button>
                       <button
                         type="button"
-                        onClick={() => decide("rejected")}
+                        disabled={actions.isBusy(`decide:${app.id}`)}
+                        onClick={() => void decide("rejected")}
                         className="rounded-xl border border-danger bg-danger/15 px-4 py-2.5 text-sm font-semibold text-danger-foreground"
                       >
                         Reject
@@ -572,7 +661,9 @@ function ApplicationDetail() {
                 )}
                 {app.decisionNote ? (
                   <div className="mx-6 mb-6 rounded-2xl bg-pale/60 p-4 text-sm text-navy">
-                    <p className="text-xs font-semibold tracking-wide uppercase">Last recorded rationale</p>
+                    <p className="text-xs font-semibold tracking-wide uppercase">
+                      Last recorded rationale
+                    </p>
                     <p className="mt-1">{app.decisionNote}</p>
                   </div>
                 ) : null}

@@ -22,14 +22,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { EmptyState, Field, PageHeader, Pill, Stat, Surface } from "@/verticals/quality/ui";
 import { ApiError } from "@/lib/api/errors";
+import { useOrganisationDirectory } from "@/lib/api/queries";
 import {
   downloadVaultDocument,
   type VaultDocument,
   type VaultSector,
   type VaultStatus,
+  RECEIVED_FROM_LABELS,
+  type ReceivedFrom,
+  type ReceivedNote,
 } from "@/lib/api/vault";
 import {
   useAddVaultVersion,
@@ -74,7 +84,10 @@ function formatDate(value: string): string {
 }
 
 function titleFromFile(name: string): string {
-  return name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+  return name
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
 }
 
 function StatusBadge({ status }: { status: VaultStatus }) {
@@ -224,7 +237,9 @@ function VaultBody({ vault, maxUploadBytes }: { vault: VaultSector; maxUploadByt
           ) : null}
 
           {documents.isLoading ? (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground">Loading documents…</p>
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+              Loading documents…
+            </p>
           ) : rows.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <FolderOpen className="mx-auto size-8 text-muted-foreground" />
@@ -309,11 +324,72 @@ function FolderButton({
         active ? "bg-pale font-semibold text-navy" : "text-muted-foreground hover:bg-muted",
       )}
     >
-      {active ? <FolderOpen className="size-4 shrink-0" /> : <FolderClosed className="size-4 shrink-0" />}
+      {active ? (
+        <FolderOpen className="size-4 shrink-0" />
+      ) : (
+        <FolderClosed className="size-4 shrink-0" />
+      )}
       <span className="flex-1 truncate">{label}</span>
       <span className="text-xs">{count}</span>
     </button>
   );
+}
+
+// --- on behalf of a company -----------------------------------------------------
+
+/**
+ * When the Beldium desk files a document for an organisation, it is an upload
+ * on behalf of that company (decision 3). The API then needs how and when the
+ * desk received it, and a second person must confirm it before it counts.
+ */
+function ReceivedFields({
+  value,
+  onChange,
+}: {
+  value: { from: ReceivedFrom | ""; date: string };
+  onChange: (value: { from: ReceivedFrom | ""; date: string }) => void;
+}) {
+  return (
+    <div className="grid gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2">
+      <p className="text-xs text-navy sm:col-span-2">
+        You are filing this on behalf of the company. Say how and when you received it.
+      </p>
+      <label className="block">
+        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Received by
+        </span>
+        <select
+          value={value.from}
+          onChange={(e) => onChange({ ...value, from: e.target.value as ReceivedFrom | "" })}
+          className={inputClass}
+        >
+          <option value="">Choose…</option>
+          {(Object.keys(RECEIVED_FROM_LABELS) as ReceivedFrom[]).map((key) => (
+            <option key={key} value={key}>
+              {RECEIVED_FROM_LABELS[key]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block">
+        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Received on
+        </span>
+        <input
+          type="date"
+          value={value.date}
+          onChange={(e) => onChange({ ...value, date: e.target.value })}
+          className={inputClass}
+        />
+      </label>
+    </div>
+  );
+}
+
+function receivedNote(value: { from: ReceivedFrom | ""; date: string }): ReceivedNote | undefined {
+  return value.from && value.date
+    ? { received_from: value.from, received_date: value.date }
+    : undefined;
 }
 
 // --- upload ---------------------------------------------------------------------
@@ -332,6 +408,14 @@ function UploadDialog({
   maxUploadBytes: number;
 }) {
   const upload = useUploadVaultDocument();
+  const isDesk = vault.audience === "desk";
+  const directory = useOrganisationDirectory({}, { enabled: open && isDesk });
+  const [organisation, setOrganisation] = React.useState("");
+  const [received, setReceived] = React.useState<{ from: ReceivedFrom | ""; date: string }>({
+    from: "",
+    date: "",
+  });
+  const onBehalf = isDesk && organisation !== "";
   const [files, setFiles] = React.useState<File[]>([]);
   const [category, setCategory] = React.useState(defaultCategory);
   const [title, setTitle] = React.useState("");
@@ -343,6 +427,8 @@ function UploadDialog({
   React.useEffect(() => {
     if (open) {
       setFiles([]);
+      setOrganisation("");
+      setReceived({ from: "", date: "" });
       setTitle("");
       setDescription("");
       setCategory(defaultCategory);
@@ -375,6 +461,11 @@ function UploadDialog({
       toast.error("Give the document a title.");
       return;
     }
+    const note = receivedNote(received);
+    if (onBehalf && !note) {
+      toast.error("Say how and when you received the document.");
+      return;
+    }
     setBusy(true);
     let saved = 0;
     for (const file of files) {
@@ -385,6 +476,7 @@ function UploadDialog({
           title: single ? title.trim() : titleFromFile(file.name),
           description,
           file,
+          ...(onBehalf ? { organisation, ...(note ? { received: note } : {}) } : {}),
         });
         saved += 1;
       } catch (error) {
@@ -405,9 +497,31 @@ function UploadDialog({
         <DialogHeader>
           <DialogTitle>Upload documents</DialogTitle>
           <DialogDescription>
-            Filed under {vault.organisation}. A second person confirms each upload.
+            Filed under {onBehalf ? "the organisation you choose" : vault.organisation}. A second
+            person confirms each upload.
           </DialogDescription>
         </DialogHeader>
+
+        {isDesk ? (
+          <label className="block">
+            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Filed for
+            </span>
+            <select
+              value={organisation}
+              onChange={(e) => setOrganisation(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Beldium's own records</option>
+              {(directory.data?.results ?? []).map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {onBehalf ? <ReceivedFields value={received} onChange={setReceived} /> : null}
 
         <div
           onDragOver={(e) => {
@@ -467,8 +581,14 @@ function UploadDialog({
         ) : null}
 
         <label className="block">
-          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Folder</span>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
+          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Folder
+          </span>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={inputClass}
+          >
             {vault.categories.map((c) => (
               <option key={c.code} value={c.code}>
                 {c.name}
@@ -479,7 +599,9 @@ function UploadDialog({
 
         {files.length <= 1 ? (
           <label className="block">
-            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Title</span>
+            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Title
+            </span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -506,9 +628,18 @@ function UploadDialog({
           />
         </label>
 
-        <button type="button" className={primaryButton} disabled={busy || !files.length} onClick={submit}>
+        <button
+          type="button"
+          className={primaryButton}
+          disabled={busy || !files.length || (onBehalf && !receivedNote(received))}
+          onClick={submit}
+        >
           <Upload className="size-4" />
-          {busy ? "Uploading…" : files.length > 1 ? `Back up ${files.length} files` : "Back up document"}
+          {busy
+            ? "Uploading…"
+            : files.length > 1
+              ? `Back up ${files.length} files`
+              : "Back up document"}
         </button>
       </DialogContent>
     </Dialog>
@@ -536,9 +667,15 @@ function DocumentSheet({
   const verify = useVerifyVaultDocument();
   const [note, setNote] = React.useState("");
   const [versionNote, setVersionNote] = React.useState("");
+  const [versionReceived, setVersionReceived] = React.useState<{
+    from: ReceivedFrom | "";
+    date: string;
+  }>({ from: "", date: "" });
   const versionInput = React.useRef<HTMLInputElement>(null);
 
   const doc = detail.data?.document;
+  // The desk adding a version to an organisation's document files it on behalf of that company.
+  const versionOnBehalf = isDesk && Boolean(doc?.organisation.id);
 
   const download = async (target: VaultDocument) => {
     try {
@@ -580,7 +717,10 @@ function DocumentSheet({
                   try {
                     const result = await verify.mutateAsync(doc.id);
                     if (result.intact) toast.success("The stored copy matches its fingerprint.");
-                    else toast.error("The stored copy does not match its fingerprint. Tell the Beldium desk.");
+                    else
+                      toast.error(
+                        "The stored copy does not match its fingerprint. Tell the Beldium desk.",
+                      );
                   } catch (error) {
                     toast.error(errorMessage(error));
                   }
@@ -592,7 +732,9 @@ function DocumentSheet({
                 <button
                   type="button"
                   className={secondaryButton}
-                  disabled={addVersion.isPending}
+                  disabled={
+                    addVersion.isPending || (versionOnBehalf && !receivedNote(versionReceived))
+                  }
                   onClick={() => versionInput.current?.click()}
                 >
                   <History className="size-4" />
@@ -609,8 +751,14 @@ function DocumentSheet({
                   e.target.value = "";
                   if (!file) return;
                   try {
-                    const created = await addVersion.mutateAsync({ id: doc.id, file, note: versionNote });
+                    const created = await addVersion.mutateAsync({
+                      id: doc.id,
+                      file,
+                      note: versionNote,
+                      received: versionOnBehalf ? receivedNote(versionReceived) : undefined,
+                    });
                     setVersionNote("");
+                    setVersionReceived({ from: "", date: "" });
                     toast.success(`Version ${created.version} backed up`);
                     onOpenVersion(created.id);
                   } catch (error) {
@@ -620,6 +768,11 @@ function DocumentSheet({
               />
             </div>
 
+            {doc.is_latest && versionOnBehalf ? (
+              <div className="mt-3">
+                <ReceivedFields value={versionReceived} onChange={setVersionReceived} />
+              </div>
+            ) : null}
             {doc.is_latest ? (
               <input
                 value={versionNote}
@@ -666,9 +819,34 @@ function DocumentSheet({
               <Field label="Uploaded by" value={doc.uploaded_by} />
               <Field label="Uploaded" value={formatDate(doc.created_at)} />
               <Field label="Size" value={formatSize(doc.size_bytes)} />
+              <Field label="Type from the file" value={doc.sniffed_type || "Not recorded"} />
+              <Field
+                label="Safety scan"
+                value={
+                  doc.scan_status === "clean"
+                    ? "Clean"
+                    : doc.scan_status === "infected"
+                      ? "Failed"
+                      : doc.scan_status === "pending"
+                        ? "Not scanned yet"
+                        : "Not recorded"
+                }
+              />
+              {doc.on_behalf_of_company ? (
+                <Field
+                  label="Filed on behalf"
+                  value={`${doc.received_from ? RECEIVED_FROM_LABELS[doc.received_from] : "Unknown"}${
+                    doc.received_date ? `, ${formatDate(doc.received_date)}` : ""
+                  }`}
+                />
+              ) : null}
               <Field
                 label="Approved by"
-                value={doc.approved_by ? `${doc.approved_by}, ${formatDate(doc.approved_at!)}` : "Not yet"}
+                value={
+                  doc.approved_by
+                    ? `${doc.approved_by}, ${formatDate(doc.approved_at!)}`
+                    : "Not yet"
+                }
               />
             </dl>
             {doc.description ? (
@@ -691,7 +869,9 @@ function DocumentSheet({
                     type="button"
                     className={cn(
                       "flex-1 text-left",
-                      version.id === doc.id ? "font-semibold text-navy" : "text-link hover:underline",
+                      version.id === doc.id
+                        ? "font-semibold text-navy"
+                        : "text-link hover:underline",
                     )}
                     onClick={() => onOpenVersion(version.id)}
                   >
@@ -716,7 +896,9 @@ function DocumentSheet({
 
             {isDesk && detail.data!.activity.length ? (
               <>
-                <h4 className="mt-8 text-xs font-semibold tracking-wide text-navy uppercase">Activity</h4>
+                <h4 className="mt-8 text-xs font-semibold tracking-wide text-navy uppercase">
+                  Activity
+                </h4>
                 <ul className="mt-2 space-y-2">
                   {detail.data!.activity.map((entry) => (
                     <li key={entry.id} className="text-xs text-muted-foreground">

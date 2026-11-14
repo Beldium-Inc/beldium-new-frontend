@@ -20,7 +20,8 @@ export const Route = createFileRoute("/marketplace/compliance/")({
       { property: "og:title", content: "Compliance queue | Beldium" },
       {
         property: "og:description",
-        content: "Triage Buyer, Offtaker and OEM onboarding applications with risk and document status.",
+        content:
+          "Triage Buyer, Offtaker and OEM onboarding applications with risk and document status.",
       },
     ],
   }),
@@ -63,7 +64,11 @@ function ComplianceQueue() {
         const matchesQ =
           !q ||
           [a.entityName, a.id, a.country, a.type].join(" ").toLowerCase().includes(q.toLowerCase());
-        return matchesQ && (status === "all" || a.status === status) && (type === "all" || a.type === type);
+        return (
+          matchesQ &&
+          (status === "all" || a.status === status) &&
+          (type === "all" || a.type === type)
+        );
       }),
     [scoped, q, status, type],
   );
@@ -80,7 +85,11 @@ function ComplianceQueue() {
       <div className="space-y-6">
         {isOperator && (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric label="In queue" value={String(state.applications.length)} hint="All applicant types" />
+            <Metric
+              label="In queue"
+              value={String(state.applications.length)}
+              hint="All applicant types"
+            />
             <Metric
               label="Median risk score"
               value={String(
@@ -98,7 +107,9 @@ function ComplianceQueue() {
             />
             <Metric
               label="Approved monthly limits"
-              value={fmtUsd(state.applications.reduce((s, a) => s + a.limits.approvedMonthlyUsd, 0))}
+              value={fmtUsd(
+                state.applications.reduce((s, a) => s + a.limits.approvedMonthlyUsd, 0),
+              )}
               tone="success"
               hint="Across verified partners"
             />
@@ -194,7 +205,8 @@ function ComplianceQueue() {
           </div>
           {!isOperator && own.length > 0 && (
             <p className="mt-4 text-xs text-muted-foreground">
-              Partners only see their own onboarding record. The compliance desk sees the full queue.
+              Partners only see their own onboarding record. The compliance desk sees the full
+              queue.
             </p>
           )}
         </SectionCard>

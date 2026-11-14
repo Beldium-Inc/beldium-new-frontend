@@ -225,7 +225,12 @@ export function PrototypeStoreProvider({
     const account = currentUser.data;
     if (!account) return null;
     const name = [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
-    return { name, initials: initialsOf(name), title: ROLE_TITLE[effectiveRole], isStaff: Boolean(account.is_staff) };
+    return {
+      name,
+      initials: initialsOf(name),
+      title: ROLE_TITLE[effectiveRole],
+      isStaff: Boolean(account.is_staff),
+    };
   }, [currentUser.data, effectiveRole]);
 
   const sites = useMemo(

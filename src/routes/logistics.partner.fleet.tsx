@@ -10,15 +10,23 @@ export const Route = createFileRoute("/logistics/partner/fleet")({
   head: () => ({
     meta: [
       { title: "Fleet compliance | Beldium Logistics Partner Portal" },
-      { name: "description", content: "Per-vehicle compliance records: registration, VIN, insurance, roadworthiness and GPS status." },
+      {
+        name: "description",
+        content:
+          "Per-vehicle compliance records: registration, VIN, insurance, roadworthiness and GPS status.",
+      },
       { property: "og:title", content: "Fleet compliance | Beldium Logistics Partner Portal" },
-      { property: "og:description", content: "Manage vehicle-level compliance across your haulage fleet." },
+      {
+        property: "og:description",
+        content: "Manage vehicle-level compliance across your haulage fleet.",
+      },
     ],
   }),
   component: FleetPage,
 });
 
-const tone = (s: Vehicle["status"]): "success" | "warning" | "danger" => (s === "Compliant" ? "success" : s === "Attention" ? "warning" : "danger");
+const tone = (s: Vehicle["status"]): "success" | "warning" | "danger" =>
+  s === "Compliant" ? "success" : s === "Attention" ? "warning" : "danger";
 
 function FleetPage() {
   const { myCompany } = useApp();
@@ -29,7 +37,10 @@ function FleetPage() {
   const vehicles = company.vehicles.filter(
     (v) =>
       (filter === "All" || v.status === filter) &&
-      [v.registration, v.make, v.model, v.type, v.vin].join(" ").toLowerCase().includes(query.toLowerCase()),
+      [v.registration, v.make, v.model, v.type, v.vin]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase()),
   );
 
   const attention = company.vehicles.filter((v) => v.status !== "Compliant").length;
@@ -40,7 +51,10 @@ function FleetPage() {
       breadcrumbs={[{ label: company.name, to: "/logistics/partner" }, { label: "Fleet" }]}
       search={{ value: query, onChange: setQuery, placeholder: "Search registration, VIN, model…" }}
     >
-      <PageHeader title="Fleet compliance" description="Each vehicle is a separate compliance object. Beldium continuously monitors insurance, roadworthiness and telematics." />
+      <PageHeader
+        title="Fleet compliance"
+        description="Each vehicle is a separate compliance object. Beldium continuously monitors insurance, roadworthiness and telematics."
+      />
 
       {attention > 0 ? (
         <ComplianceBanner
@@ -51,10 +65,25 @@ function FleetPage() {
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Vehicles registered" value={company.vehicles.length} icon={Truck} tone="info" />
-        <StatCard label="Fully compliant" value={company.vehicles.filter((v) => v.status === "Compliant").length} icon={ShieldCheck} tone="success" />
+        <StatCard
+          label="Vehicles registered"
+          value={company.vehicles.length}
+          icon={Truck}
+          tone="info"
+        />
+        <StatCard
+          label="Fully compliant"
+          value={company.vehicles.filter((v) => v.status === "Compliant").length}
+          icon={ShieldCheck}
+          tone="success"
+        />
         <StatCard label="Needs attention" value={attention} icon={Gauge} tone="warning" />
-        <StatCard label="GPS active" value={company.vehicles.filter((v) => v.gps === "Active").length} icon={Radio} tone="info" />
+        <StatCard
+          label="GPS active"
+          value={company.vehicles.filter((v) => v.gps === "Active").length}
+          icon={Radio}
+          tone="info"
+        />
       </div>
 
       <div className="my-4 flex flex-wrap gap-1.5">
@@ -65,7 +94,9 @@ function FleetPage() {
             onClick={() => setFilter(f)}
             className={
               "rounded-full border px-3 py-1 text-xs font-medium transition " +
-              (filter === f ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-border bg-card text-muted-foreground hover:border-[var(--link)]/50")
+              (filter === f
+                ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                : "border-border bg-card text-muted-foreground hover:border-[var(--link)]/50")
             }
           >
             {f}
@@ -82,9 +113,13 @@ function FleetPage() {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-display text-sm font-semibold text-[var(--brand)]">{v.registration}</p>
+                  <p className="font-display text-sm font-semibold text-[var(--brand)]">
+                    {v.registration}
+                  </p>
                   <Pill tone={tone(v.status)}>{v.status}</Pill>
-                  <span className="ml-auto text-[11px] text-muted-foreground">{v.reference || v.id}</span>
+                  <span className="ml-auto text-[11px] text-muted-foreground">
+                    {v.reference || v.id}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {v.year} {v.make} {v.model} · {v.type}
@@ -113,7 +148,11 @@ function FleetPage() {
               ))}
             </dl>
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-              <Pill tone={v.gps === "Active" ? "success" : v.gps === "Intermittent" ? "warning" : "danger"}>
+              <Pill
+                tone={
+                  v.gps === "Active" ? "success" : v.gps === "Intermittent" ? "warning" : "danger"
+                }
+              >
                 <Radio className="h-3 w-3" /> GPS {v.gps}
               </Pill>
               <Pill tone="neutral">

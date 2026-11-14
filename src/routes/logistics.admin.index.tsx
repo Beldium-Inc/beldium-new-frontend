@@ -8,17 +8,31 @@ export const Route = createFileRoute("/logistics/admin/")({
   head: () => ({
     meta: [
       { title: "Admin overview | Beldium Platform Administration" },
-      { name: "description", content: "Platform-level view of Beldium roles, tenants and compliance configuration." },
+      {
+        name: "description",
+        content: "Platform-level view of Beldium roles, tenants and compliance configuration.",
+      },
       { property: "og:title", content: "Admin overview | Beldium Platform Administration" },
-      { property: "og:description", content: "Role separation and platform configuration for Beldium." },
+      {
+        property: "og:description",
+        content: "Role separation and platform configuration for Beldium.",
+      },
     ],
   }),
   component: AdminOverview,
 });
 
 const ROLES = [
-  { role: "Compliance Operator", users: 6, perms: ["Review applications", "Verify documents", "Issue decisions"] },
-  { role: "Logistics Partner", users: 42, perms: ["Manage own company", "Upload documents", "Respond to requests"] },
+  {
+    role: "Compliance Operator",
+    users: 6,
+    perms: ["Review applications", "Verify documents", "Issue decisions"],
+  },
+  {
+    role: "Logistics Partner",
+    users: 42,
+    perms: ["Manage own company", "Upload documents", "Respond to requests"],
+  },
   { role: "Regulator", users: 4, perms: ["Read-only register", "Export reports"] },
   { role: "Beldium Admin", users: 2, perms: ["Manage users & roles", "Configure check domains"] },
 ];
@@ -28,7 +42,10 @@ function AdminOverview() {
 
   return (
     <AppShell role="admin" breadcrumbs={[{ label: "Beldium Admin" }, { label: "Overview" }]}>
-      <PageHeader title="Platform administration" description="Placeholder admin view demonstrating role separation across the Beldium prototype." />
+      <PageHeader
+        title="Platform administration"
+        description="Placeholder admin view demonstrating role separation across the Beldium prototype."
+      />
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Tenants" value={companies.length} icon={Building2} tone="info" />
         <StatCard label="Platform users" value={54} icon={Users} tone="info" />

@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { fetchQualityCapabilities } from "@/lib/api/quality";
 
 export const Route = createFileRoute("/signin")({
   ssr: false,
@@ -107,6 +108,8 @@ function SignInPage() {
   const [password, setPassword] = React.useState("");
   const [remember, setRemember] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
+  // Q&C roles come from the server (task E9), so the page does not offer a pick.
+  const serverRoles = picked?.slug === "quality";
   // Set when the password was right and the account asks for an authenticator code.
   const [mfaToken, setMfaToken] = React.useState<string | null>(null);
   const [mfaCode, setMfaCode] = React.useState("");
@@ -275,6 +278,19 @@ function SignInPage() {
         navigate({ to: setup.resumeTo });
         return;
       }
+    }
+
+    if (picked.slug === "quality") {
+      // The server's Q&C role, never the one picked on this page (task E9).
+      const capabilities = await fetchQualityCapabilities().catch(() => null);
+      if (!capabilities?.role) {
+        await endAuth();
+        toast.error(
+          "This account has no Quality & Control role yet. Ask the Q&C desk to assign one.",
+        );
+        return;
+      }
+      role = capabilities.role;
     }
 
     startSession(picked.slug, role);
@@ -447,10 +463,12 @@ function SignInPage() {
               </button>
               <h2 className="mt-4 font-display text-xl font-semibold">{picked.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Choose the role you hold, then sign in. You can sign out and switch at any time.
+                {serverRoles
+                  ? "Sign in. Your role is the one the Q&C desk assigned to your account."
+                  : "Choose the role you hold, then sign in. You can sign out and switch at any time."}
               </p>
 
-              <div className="mt-6 space-y-3">
+              <div className={cn("mt-6 space-y-3", serverRoles && "hidden")}>
                 {signInRoles(picked).map((role) => {
                   const Icon = ROLE_ICON[role.id] ?? ShieldCheck;
                   const active = roleId === role.id;

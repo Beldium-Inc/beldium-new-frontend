@@ -122,7 +122,8 @@ export function useCommitments(query: EcosystemListQuery = FULL_PAGE) {
 export function useUpdateRfq() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; patch: Partial<EcosystemRfq> }) => updateEcosystemRfq(input.id, input.patch),
+    mutationFn: (input: { id: UUID; patch: Partial<EcosystemRfq> }) =>
+      updateEcosystemRfq(input.id, input.patch),
     onSuccess: () => invalidateEcosystem(queryClient),
   });
 }
@@ -139,7 +140,8 @@ export function useAdvanceTransactionStage() {
 export function useUpdateBatch() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; patch: Partial<MaterialBatch> }) => updateBatch(input.id, input.patch),
+    mutationFn: (input: { id: UUID; patch: Partial<MaterialBatch> }) =>
+      updateBatch(input.id, input.patch),
     onSuccess: () => invalidateEcosystem(queryClient),
   });
 }
