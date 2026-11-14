@@ -31,11 +31,15 @@ import {
 } from "@/components/ui/sheet";
 import { EmptyState, Field, PageHeader, Pill, Stat, Surface } from "@/verticals/quality/ui";
 import { ApiError } from "@/lib/api/errors";
+import { useOrganisationDirectory } from "@/lib/api/queries";
 import {
   downloadVaultDocument,
   type VaultDocument,
   type VaultSector,
   type VaultStatus,
+  RECEIVED_FROM_LABELS,
+  type ReceivedFrom,
+  type ReceivedNote,
 } from "@/lib/api/vault";
 import {
   useAddVaultVersion,
@@ -331,6 +335,63 @@ function FolderButton({
   );
 }
 
+// --- on behalf of a company -----------------------------------------------------
+
+/**
+ * When the Beldium desk files a document for an organisation, it is an upload
+ * on behalf of that company (decision 3). The API then needs how and when the
+ * desk received it, and a second person must confirm it before it counts.
+ */
+function ReceivedFields({
+  value,
+  onChange,
+}: {
+  value: { from: ReceivedFrom | ""; date: string };
+  onChange: (value: { from: ReceivedFrom | ""; date: string }) => void;
+}) {
+  return (
+    <div className="grid gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2">
+      <p className="text-xs text-navy sm:col-span-2">
+        You are filing this on behalf of the company. Say how and when you received it.
+      </p>
+      <label className="block">
+        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Received by
+        </span>
+        <select
+          value={value.from}
+          onChange={(e) => onChange({ ...value, from: e.target.value as ReceivedFrom | "" })}
+          className={inputClass}
+        >
+          <option value="">Choose…</option>
+          {(Object.keys(RECEIVED_FROM_LABELS) as ReceivedFrom[]).map((key) => (
+            <option key={key} value={key}>
+              {RECEIVED_FROM_LABELS[key]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block">
+        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Received on
+        </span>
+        <input
+          type="date"
+          value={value.date}
+          onChange={(e) => onChange({ ...value, date: e.target.value })}
+          className={inputClass}
+        />
+      </label>
+    </div>
+  );
+}
+
+function receivedNote(value: { from: ReceivedFrom | ""; date: string }): ReceivedNote | undefined {
+  return value.from && value.date
+    ? { received_from: value.from, received_date: value.date }
+    : undefined;
+}
+
 // --- upload ---------------------------------------------------------------------
 
 function UploadDialog({
@@ -347,6 +408,14 @@ function UploadDialog({
   maxUploadBytes: number;
 }) {
   const upload = useUploadVaultDocument();
+  const isDesk = vault.audience === "desk";
+  const directory = useOrganisationDirectory({}, { enabled: open && isDesk });
+  const [organisation, setOrganisation] = React.useState("");
+  const [received, setReceived] = React.useState<{ from: ReceivedFrom | ""; date: string }>({
+    from: "",
+    date: "",
+  });
+  const onBehalf = isDesk && organisation !== "";
   const [files, setFiles] = React.useState<File[]>([]);
   const [category, setCategory] = React.useState(defaultCategory);
   const [title, setTitle] = React.useState("");
@@ -358,6 +427,8 @@ function UploadDialog({
   React.useEffect(() => {
     if (open) {
       setFiles([]);
+      setOrganisation("");
+      setReceived({ from: "", date: "" });
       setTitle("");
       setDescription("");
       setCategory(defaultCategory);
@@ -390,6 +461,11 @@ function UploadDialog({
       toast.error("Give the document a title.");
       return;
     }
+    const note = receivedNote(received);
+    if (onBehalf && !note) {
+      toast.error("Say how and when you received the document.");
+      return;
+    }
     setBusy(true);
     let saved = 0;
     for (const file of files) {
@@ -400,6 +476,7 @@ function UploadDialog({
           title: single ? title.trim() : titleFromFile(file.name),
           description,
           file,
+          ...(onBehalf ? { organisation, ...(note ? { received: note } : {}) } : {}),
         });
         saved += 1;
       } catch (error) {
@@ -420,9 +497,31 @@ function UploadDialog({
         <DialogHeader>
           <DialogTitle>Upload documents</DialogTitle>
           <DialogDescription>
-            Filed under {vault.organisation}. A second person confirms each upload.
+            Filed under {onBehalf ? "the organisation you choose" : vault.organisation}. A second
+            person confirms each upload.
           </DialogDescription>
         </DialogHeader>
+
+        {isDesk ? (
+          <label className="block">
+            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Filed for
+            </span>
+            <select
+              value={organisation}
+              onChange={(e) => setOrganisation(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Beldium's own records</option>
+              {(directory.data?.results ?? []).map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {onBehalf ? <ReceivedFields value={received} onChange={setReceived} /> : null}
 
         <div
           onDragOver={(e) => {
@@ -532,7 +631,7 @@ function UploadDialog({
         <button
           type="button"
           className={primaryButton}
-          disabled={busy || !files.length}
+          disabled={busy || !files.length || (onBehalf && !receivedNote(received))}
           onClick={submit}
         >
           <Upload className="size-4" />
@@ -568,9 +667,15 @@ function DocumentSheet({
   const verify = useVerifyVaultDocument();
   const [note, setNote] = React.useState("");
   const [versionNote, setVersionNote] = React.useState("");
+  const [versionReceived, setVersionReceived] = React.useState<{
+    from: ReceivedFrom | "";
+    date: string;
+  }>({ from: "", date: "" });
   const versionInput = React.useRef<HTMLInputElement>(null);
 
   const doc = detail.data?.document;
+  // The desk adding a version to an organisation's document files it on behalf of that company.
+  const versionOnBehalf = isDesk && Boolean(doc?.organisation.id);
 
   const download = async (target: VaultDocument) => {
     try {
@@ -627,7 +732,9 @@ function DocumentSheet({
                 <button
                   type="button"
                   className={secondaryButton}
-                  disabled={addVersion.isPending}
+                  disabled={
+                    addVersion.isPending || (versionOnBehalf && !receivedNote(versionReceived))
+                  }
                   onClick={() => versionInput.current?.click()}
                 >
                   <History className="size-4" />
@@ -648,8 +755,10 @@ function DocumentSheet({
                       id: doc.id,
                       file,
                       note: versionNote,
+                      received: versionOnBehalf ? receivedNote(versionReceived) : undefined,
                     });
                     setVersionNote("");
+                    setVersionReceived({ from: "", date: "" });
                     toast.success(`Version ${created.version} backed up`);
                     onOpenVersion(created.id);
                   } catch (error) {
@@ -659,6 +768,11 @@ function DocumentSheet({
               />
             </div>
 
+            {doc.is_latest && versionOnBehalf ? (
+              <div className="mt-3">
+                <ReceivedFields value={versionReceived} onChange={setVersionReceived} />
+              </div>
+            ) : null}
             {doc.is_latest ? (
               <input
                 value={versionNote}
@@ -705,6 +819,27 @@ function DocumentSheet({
               <Field label="Uploaded by" value={doc.uploaded_by} />
               <Field label="Uploaded" value={formatDate(doc.created_at)} />
               <Field label="Size" value={formatSize(doc.size_bytes)} />
+              <Field label="Type from the file" value={doc.sniffed_type || "Not recorded"} />
+              <Field
+                label="Safety scan"
+                value={
+                  doc.scan_status === "clean"
+                    ? "Clean"
+                    : doc.scan_status === "infected"
+                      ? "Failed"
+                      : doc.scan_status === "pending"
+                        ? "Not scanned yet"
+                        : "Not recorded"
+                }
+              />
+              {doc.on_behalf_of_company ? (
+                <Field
+                  label="Filed on behalf"
+                  value={`${doc.received_from ? RECEIVED_FROM_LABELS[doc.received_from] : "Unknown"}${
+                    doc.received_date ? `, ${formatDate(doc.received_date)}` : ""
+                  }`}
+                />
+              ) : null}
               <Field
                 label="Approved by"
                 value={
