@@ -262,7 +262,15 @@ export interface Certificate {
   status: "active" | "revoked" | "draft";
   verification_hash: string;
   scans: number;
+  is_legacy?: boolean;
+  /** Worked out on the server, so screens never use the device clock (E10). */
+  display_status?: CertificateDisplayStatus;
+  /** "Legacy, not verified" for carried over rows; print it as given. */
+  legacy_label?: string | null;
 }
+
+export type CertificateDisplayStatus =
+  "valid" | "expired" | "revoked" | "not_verified" | "legacy_not_verified";
 
 export interface CorrectiveAction {
   id: UUID;
@@ -607,6 +615,12 @@ export interface CertificateVerification {
   valid_until: string | null;
   status: Certificate["status"];
   scans: number;
+  is_legacy?: boolean;
+  /** The answer the page must show, worked out on the server. */
+  verification?: CertificateDisplayStatus;
+  valid?: boolean;
+  legacy_label?: string | null;
+  checked_at?: string;
 }
 
 /** Unauthenticated: anyone holding the hash from a certificate's QR code can check it. */

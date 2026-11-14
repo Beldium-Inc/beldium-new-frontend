@@ -71,7 +71,8 @@ function CertificateDetail() {
         description={`Issued by ${cert.issuedBy} on ${cert.issuedAt}, valid until ${cert.validUntil}.`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <StatusPill value={cert.status} />
+            {cert.legacyLabel ? <Pill tone="warning">{cert.legacyLabel}</Pill> : null}
+            <StatusPill value={cert.legacyLabel ? cert.status : cert.displayStatus} />
             {canRevoke && cert.status === "active" ? (
               <>
                 <button

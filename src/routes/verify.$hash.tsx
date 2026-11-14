@@ -34,8 +34,9 @@ function VerifyPage() {
 
   const cert = query.data;
   const notFound = query.error instanceof ApiError && query.error.status === 404;
-  const valid =
-    cert?.status === "active" && (!cert.valid_until || new Date(cert.valid_until) > new Date());
+  // The server decides (E10). The device clock is never used.
+  const verdict = cert?.verification;
+  const valid = verdict === "valid";
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background px-4 py-12">
@@ -74,10 +75,20 @@ function VerifyPage() {
               <h1 className="mt-3 font-display text-lg font-semibold text-navy">
                 {valid
                   ? "Genuine and valid"
-                  : cert.status === "revoked"
-                    ? "Certificate revoked"
-                    : "Certificate not valid"}
+                  : verdict === "legacy_not_verified"
+                    ? "Legacy record, not verified"
+                    : verdict === "revoked"
+                      ? "Certificate revoked"
+                      : verdict === "expired"
+                        ? "Certificate expired"
+                        : "Certificate not valid"}
               </h1>
+              {verdict === "legacy_not_verified" ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {cert.legacy_label ?? "Legacy, not verified"}. This record was carried over from
+                  before Beldium verification and is not a Beldium verification certificate.
+                </p>
+              ) : null}
             </div>
             <dl className="mt-5 divide-y divide-border text-sm">
               {[
@@ -87,6 +98,7 @@ function VerifyPage() {
                 ["Issued", formatDate(cert.issued_at)],
                 ["Valid until", formatDate(cert.valid_until)],
                 ["Times verified", String(cert.scans)],
+                ["Checked", cert.checked_at ? new Date(cert.checked_at).toLocaleString() : "Now"],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4 py-2.5">
                   <dt className="text-muted-foreground">{label}</dt>

@@ -170,6 +170,8 @@ function toCertificate(row: Api.Certificate): Certificate {
     status: row.status,
     verificationHash: row.verification_hash,
     scans: row.scans,
+    displayStatus: row.display_status ?? row.status,
+    legacyLabel: row.legacy_label ?? (row.is_legacy ? "Legacy, not verified" : null),
   };
 }
 

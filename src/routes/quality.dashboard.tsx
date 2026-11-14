@@ -177,7 +177,7 @@ function DashboardPage() {
             />
             <Stat
               label="Certificates issued"
-              value={certificates.filter((c) => c.status === "active").length}
+              value={certificates.filter((c) => c.displayStatus === "valid").length}
               sub="active and verifiable"
             />
             <Stat label="Open CAPAs" value={openNcrs.length} sub="corrective actions due" />
@@ -315,7 +315,7 @@ function DashboardPage() {
             />
             <Stat
               label="Active certificates"
-              value={certificates.filter((c) => c.status === "active").length}
+              value={certificates.filter((c) => c.displayStatus === "valid").length}
               sub="verifiable"
             />
           </div>
