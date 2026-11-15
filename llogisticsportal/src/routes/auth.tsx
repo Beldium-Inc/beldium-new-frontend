@@ -28,12 +28,16 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { signIn } = useAuth();
+  const { signIn, completeMfa } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // Set when the password was right and the account asks for an authenticator code.
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,7 +48,12 @@ function AuthPage() {
     }
     setSubmitting(true);
     try {
-      await signIn({ email: email.trim(), password });
+      const result = await signIn({ email: email.trim(), password });
+      if (result.kind === "mfa_required") {
+        setMfaToken(result.mfaToken);
+        setPassword("");
+        return;
+      }
       navigate({ to: "/portal" });
     } catch (cause) {
       if (cause instanceof ApiError && cause.code === "email_not_verified") {
@@ -55,6 +64,102 @@ function AuthPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function submitCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfaToken) return;
+    setError("");
+    const value = code.trim();
+    if (!useBackupCode && value.replace(/\D/g, "").length !== 6) {
+      setError("Enter the 6-digit code from your authenticator app.");
+      return;
+    }
+    if (useBackupCode && value.replace(/[^a-z0-9]/gi, "").length !== 8) {
+      setError("Enter one of your backup codes, like abcd-2345.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await completeMfa({ mfaToken, code: value });
+      navigate({ to: "/portal" });
+    } catch (cause) {
+      if (
+        cause instanceof ApiError &&
+        (cause.code === "mfa_challenge_expired" || cause.code === "mfa_challenge_invalid")
+      ) {
+        // The five-minute window ran out: back to the password.
+        setMfaToken(null);
+        setCode("");
+      }
+      setError(cause instanceof ApiError ? cause.message : "That code could not be checked.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (mfaToken) {
+    return (
+      <AuthLayout
+        title="Two-step sign-in"
+        subtitle={
+          useBackupCode
+            ? "Enter one of the backup codes you saved when you set up your authenticator app. Each works once."
+            : "Open your authenticator app and enter the 6-digit code it shows for Beldium."
+        }
+        footer={
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => {
+              setMfaToken(null);
+              setCode("");
+              setError("");
+            }}
+          >
+            Use a different account
+          </button>
+        }
+      >
+        <form onSubmit={submitCode} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="mfa-code">
+              {useBackupCode ? "Backup code" : "Authentication code"}
+            </Label>
+            <Input
+              id="mfa-code"
+              autoFocus
+              value={code}
+              autoComplete="one-time-code"
+              inputMode={useBackupCode ? "text" : "numeric"}
+              maxLength={useBackupCode ? 9 : 6}
+              className="font-mono tracking-[0.35em]"
+              placeholder={useBackupCode ? "abcd-2345" : "000000"}
+              onChange={(e) =>
+                setCode(useBackupCode ? e.target.value : e.target.value.replace(/\D/g, ""))
+              }
+            />
+          </div>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? "Checking…" : "Verify and sign in"}
+          </Button>
+          <button
+            type="button"
+            className="w-full text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
+            onClick={() => {
+              setUseBackupCode((v) => !v);
+              setCode("");
+              setError("");
+            }}
+          >
+            {useBackupCode
+              ? "Use my authenticator app instead"
+              : "Lost your phone? Use a backup code"}
+          </button>
+        </form>
+      </AuthLayout>
+    );
   }
 
   return (

@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CheckCircle2, Mail, Smartphone } from "lucide-react";
+import { CheckCircle2, KeyRound, Mail } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 
 import { AuthLayout } from "@/components/auth-layout";
 import { StatusChip } from "@/components/status-chip";
+import { AuthenticatorSetup } from "@/components/two-step-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,11 +16,7 @@ import { useAuth } from "@/lib/auth";
 
 const title = "Verify your account - Beldium Logistics Hub";
 const description =
-  "Confirm your email address before starting your logistics organisation application.";
-
-// SMS sending is disabled on the backend (no approved Termii sender ID yet),
-// same as Miner Hub: the phone step is shown but not required.
-const PHONE_VERIFICATION_ENABLED = false;
+  "Confirm your email address and set up two-step sign-in before starting your logistics organisation application.";
 
 const searchSchema = z.object({
   email: z.string().optional(),
@@ -45,7 +42,7 @@ export const Route = createFileRoute("/verify")({
 
 function VerifyPage() {
   const { email, role, operatorType, organisationName } = Route.useSearch();
-  const { user, confirmEmail, resendCode } = useAuth();
+  const { user, confirmEmail, resendCode, refetchUser } = useAuth();
   const createJoinRequest = useCreateJoinRequest();
   const navigate = useNavigate();
 
@@ -56,6 +53,10 @@ function VerifyPage() {
 
   const targetEmail = user?.email ?? email;
   const emailVerified = Boolean(user?.email_verified_at);
+  const mfaEnabled = Boolean(user?.mfa_enabled);
+  // Two-step sign-in can be set up later from Settings; this records that choice.
+  const [setUpLater, setSetUpLater] = useState(false);
+  const readyToContinue = emailVerified && (mfaEnabled || setUpLater);
 
   if (!targetEmail) {
     return (
@@ -119,7 +120,7 @@ function VerifyPage() {
   return (
     <AuthLayout
       title="Verify your identity"
-      subtitle="Enter the code sent to your email to activate your account."
+      subtitle="Confirm your email, then protect your account with an authenticator app."
       footer={
         <span>
           Wrong details?{" "}
@@ -185,31 +186,63 @@ function VerifyPage() {
           ) : null}
         </div>
 
-        {emailVerified ? (
-          <div className="rounded-md border border-border bg-muted/40 p-5 opacity-60">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <Smartphone className="h-4 w-4 text-accent" />
-                <div>
-                  <div className="text-sm font-medium text-card-foreground">Mobile number</div>
-                  <div className="text-xs text-muted-foreground">{user?.phone_number}</div>
+        <div
+          className={
+            emailVerified
+              ? "rounded-md border border-border bg-card p-5"
+              : "rounded-md border border-border bg-muted/40 p-5 opacity-60"
+          }
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <KeyRound className="h-4 w-4 text-accent" />
+              <div>
+                <div className="text-sm font-medium text-card-foreground">Authenticator app</div>
+                <div className="text-xs text-muted-foreground">
+                  Two-step sign-in with Google Authenticator, Microsoft Authenticator or Authy
                 </div>
               </div>
-              <StatusChip tone="neutral">
-                {PHONE_VERIFICATION_ENABLED ? "Pending" : "Unavailable"}
-              </StatusChip>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Phone verification is temporarily unavailable. You can continue without it; we'll ask
-              you to verify later.
-            </p>
+            {mfaEnabled ? (
+              <StatusChip tone="success">On</StatusChip>
+            ) : setUpLater ? (
+              <StatusChip tone="neutral">Later</StatusChip>
+            ) : (
+              <StatusChip tone="warning">Pending</StatusChip>
+            )}
           </div>
-        ) : null}
+          {!emailVerified ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Confirm your email first. Setting up the app needs a signed-in account.
+            </p>
+          ) : !mfaEnabled && !setUpLater ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                After your password, sign-in will ask for a 6-digit code from the app on your phone,
+                so a stolen password alone cannot get into your account.
+              </p>
+              <AuthenticatorSetup
+                email={targetEmail}
+                onDone={() => {
+                  void refetchUser();
+                  setNote("Two-step sign-in is on.");
+                }}
+              />
+              <button
+                type="button"
+                className="block text-xs text-muted-foreground underline-offset-4 hover:underline"
+                onClick={() => setSetUpLater(true)}
+              >
+                Set it up later from Settings
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         {note ? <p className="text-sm text-muted-foreground">{note}</p> : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-        {emailVerified ? (
+        {readyToContinue ? (
           <div className="rounded-md border border-success/30 bg-success/10 p-5">
             <div className="flex items-center gap-2 text-sm font-medium text-success">
               <CheckCircle2 className="h-4 w-4" /> Account verified
