@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { useUpdateCurrentUser } from "@/lib/api/queries";
 import { useAuth } from "@/lib/auth";
+import { TwoStepSettings } from "@/components/two-step-settings";
 import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -91,6 +92,7 @@ function SettingsPage() {
             ]}
           />
         </Panel>
+        {user ? <TwoStepSettings email={user.email} /> : null}
       </div>
     </>
   );
