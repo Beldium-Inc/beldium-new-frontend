@@ -1,4 +1,5 @@
-// Registry of the seven Beldium compliance dashboards.
+// Registry of the seven Beldium compliance dashboards, plus the Governance
+// and Risk workspace that oversees all of them.
 //
 // Each vertical used to be its own Vite app on its own port. They now share one
 // server and one router, mounted under /<slug>. This file is the single source
@@ -13,7 +14,8 @@ export type VerticalSlug =
   | "mining"
   | "processing"
   | "quality"
-  | "warehousing";
+  | "warehousing"
+  | "governance";
 
 export type VerticalRole = {
   id: string;
@@ -245,6 +247,27 @@ export const VERTICALS: Vertical[] = [
       },
     ],
   },
+  {
+    slug: "governance",
+    name: "Governance & Risk",
+    tagline: "Policy, enterprise risk, regulatory analysis and cross sector oversight.",
+    roles: [
+      {
+        id: "internal",
+        label: "Beldium Governance Team",
+        blurb:
+          "Executives, analysts and risk and policy officers: draft and approve policy, run the risk register and report.",
+        home: "/dashboard",
+      },
+      {
+        id: "external",
+        label: "Institutional Reviewer",
+        blurb:
+          "Regulators, financiers and advisors invited to review records or follow oversight read only.",
+        home: "/dashboard",
+      },
+    ],
+  },
 ];
 
 export const VERTICAL_BY_SLUG: Record<VerticalSlug, Vertical> = Object.fromEntries(
@@ -257,7 +280,14 @@ export const VERTICAL_BY_SLUG: Record<VerticalSlug, Vertical> = Object.fromEntri
  * hands off into this same `mining` vertical scoped to the `miner` role,
  * there is no separate vertical to exclude here any more.
  */
-export const COMPLIANCE_VERTICALS: Vertical[] = VERTICALS;
+export const COMPLIANCE_VERTICALS: Vertical[] = VERTICALS.filter((v) => v.slug !== "governance");
+
+/**
+ * Governance is not a compliance sector: nobody onboards an organisation into
+ * it. Access is by invitation or an approved request, and what a person may do
+ * there comes from their governance role on the server.
+ */
+export const GOVERNANCE_VERTICAL: Vertical = VERTICAL_BY_SLUG.governance;
 
 /** The roles offered on the shared sign-in page for a vertical. */
 export function signInRoles(vertical: Vertical): VerticalRole[] {

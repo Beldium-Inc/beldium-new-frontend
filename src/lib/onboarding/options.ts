@@ -120,6 +120,9 @@ export const FALLBACK: Record<VerticalSlug, OnboardingDashboard[]> = {
   export: [partnerSide("Export")],
   marketplace: [partnerSide("Marketplace")],
   logistics: [partnerSide("Logistics")],
+  // Governance is joined by invitation or an access request on its own
+  // pages, never through sector onboarding.
+  governance: [],
   quality: [
     {
       key: "partner",

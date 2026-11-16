@@ -190,3 +190,24 @@ the list read used by `useStore().sites` omits them. The review screen instead r
 A site's licence isn't addressed by a `licenceId` foreign key on the mining side - licences
 point at their site (`LicenceDoc.siteId`), not the other way round - so screens look one up
 with `licences.find(l => l.siteId === site.id)` rather than through the site row.
+
+### How the governance workspace is wired
+
+```
+lib/api/governance.ts            fetchers + the DRF shapes, field for field (Governance prefix)
+lib/api/governance-queries.ts    TanStack hooks; every write invalidates ["governance"]
+verticals/governance/shell.tsx   sidebar shell; gates the workspace on /governance/me/
+verticals/governance/ui.tsx      PageHeader, Panel, DataTable, StatusBadge and friends
+```
+
+Governance is Beldium's own oversight workspace, not a compliance sector, so it is kept out
+of `COMPLIANCE_VERTICALS` and the sector onboarding. A seat comes from an invitation
+(`/governance/invitation?token=…`) or an approved access request
+(`/governance/request-access`), and the server's `capabilities` decide every control on
+screen: the sign-in seat (`internal` / `external`) is a view preference only.
+
+Seed the backend before opening it (local or throwaway databases only):
+
+```bash
+python manage.py seed_governance --flush   # in ../../../beldium-backend
+```
