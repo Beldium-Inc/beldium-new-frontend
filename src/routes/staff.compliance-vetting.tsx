@@ -37,7 +37,7 @@ import type { ApplicationStatus, ComplianceApplication, ComplianceDocument } fro
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
-import { VERTICALS, type VerticalSlug } from "@/lib/verticals";
+import { COMPLIANCE_VERTICALS as VERTICALS, type VerticalSlug } from "@/lib/verticals";
 
 // Client-only, like the /mining layout: the JWT pair lives in localStorage, so
 // a server-rendered pass hydrates with useHasTokens() === false, the auth guard

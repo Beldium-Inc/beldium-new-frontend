@@ -9,6 +9,7 @@ import {
   KeyRound,
   Landmark,
   Mountain,
+  Scale,
   ShieldCheck,
   Ship,
   Store,
@@ -18,15 +19,17 @@ import {
 import { toast } from "sonner";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, getPlatformStats, type User } from "@/lib/api";
+import { ApiError, fetchGovernanceMe, getPlatformStats, type User } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { fetchAccountSetup, needsComplianceSetup } from "@/lib/onboarding/setup";
 import { rememberOnboardingSector } from "@/lib/onboarding/store";
 import { fetchOnboardingMe } from "@/lib/api/onboarding";
 import { pendingInvitation } from "@/lib/onboarding/invite";
+import { governanceSeat, pendingGovernanceInvitation } from "@/verticals/governance/access";
 import {
   COMPLIANCE_VERTICALS,
+  GOVERNANCE_VERTICAL,
   VERTICAL_BY_SLUG,
   homeFor,
   signInRoles,
@@ -75,6 +78,7 @@ const VERTICAL_ICON: Record<VerticalSlug, React.ElementType> = {
   warehousing: Warehouse,
   logistics: Truck,
   marketplace: Store,
+  governance: Scale,
 };
 
 const ROLE_ICON: Record<string, React.ElementType> = {
@@ -202,6 +206,46 @@ function SignInPage() {
     const invitation = pendingInvitation();
     if (invitation) {
       navigate({ to: "/onboarding/invite", search: { token: invitation } });
+      return;
+    }
+    const governanceInvitation = pendingGovernanceInvitation();
+    if (governanceInvitation) {
+      navigate({ to: "/governance/invitation", search: { token: governanceInvitation } });
+      return;
+    }
+
+    // Governance is not a compliance sector: a seat there comes from an
+    // invitation or an approved request, and the server says which role it is.
+    if (picked.slug === "governance") {
+      const governance = await fetchGovernanceMe().catch(() => null);
+      if (!governance) {
+        await endAuth();
+        toast.error("The governance workspace could not be reached. Please try again.");
+        return;
+      }
+      if (governance.role) {
+        startSession("governance", governanceSeat(governance.role));
+        navigate({ to: homeFor("governance", governanceSeat(governance.role)) });
+        return;
+      }
+      if (governance.status === "pending") {
+        await endAuth();
+        toast.info(
+          "Your governance access request is waiting for a Super Administrator to approve it.",
+        );
+        return;
+      }
+      if (governance.status === "suspended") {
+        await endAuth();
+        toast.error(
+          "Your governance access is suspended. Ask a Super Administrator to restore it.",
+        );
+        return;
+      }
+      toast.info(
+        "This account has no governance seat yet. Request access, or use the link in your invitation email.",
+      );
+      navigate({ to: "/governance/request-access" });
       return;
     }
 
@@ -443,6 +487,24 @@ function SignInPage() {
                 })}
               </div>
 
+              <button
+                onClick={() => openSector(GOVERNANCE_VERTICAL)}
+                className="group mt-3 w-full rounded-xl border border-dashed border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-card"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                    <Scale className="size-4.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-sm font-semibold">{GOVERNANCE_VERTICAL.name}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {GOVERNANCE_VERTICAL.tagline} By invitation.
+                    </p>
+                  </div>
+                  <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                </div>
+              </button>
+
               <p className="mt-7 text-center text-xs text-muted-foreground">
                 New to Beldium?{" "}
                 <Link to="/onboarding/sector" className="font-medium text-brand underline">
@@ -551,12 +613,24 @@ function SignInPage() {
                 {submitting ? "Signing in…" : `Sign in to ${picked.name}`}
               </Button>
 
-              <p className="mt-5 text-center text-xs text-muted-foreground">
-                New to Beldium?{" "}
-                <Link to="/onboarding/sector" className="font-medium text-brand underline">
-                  Create an account
-                </Link>
-              </p>
+              {picked.slug === "governance" ? (
+                <p className="mt-5 text-center text-xs text-muted-foreground">
+                  No governance seat yet?{" "}
+                  <Link
+                    to="/governance/request-access"
+                    className="font-medium text-brand underline"
+                  >
+                    Request access
+                  </Link>
+                </p>
+              ) : (
+                <p className="mt-5 text-center text-xs text-muted-foreground">
+                  New to Beldium?{" "}
+                  <Link to="/onboarding/sector" className="font-medium text-brand underline">
+                    Create an account
+                  </Link>
+                </p>
+              )}
             </>
           )}
         </div>

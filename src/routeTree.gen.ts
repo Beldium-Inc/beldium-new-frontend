@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExportRouteImport } from './routes/export'
+import { Route as GovernanceRouteImport } from './routes/governance'
 import { Route as LogisticsRouteImport } from './routes/logistics'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MiningRouteImport } from './routes/mining'
@@ -27,6 +28,21 @@ import { Route as ExportOversightRouteImport } from './routes/export.oversight'
 import { Route as ExportQueueRouteImport } from './routes/export.queue'
 import { Route as ExportSecurityRouteImport } from './routes/export.security'
 import { Route as ExportTeamRouteImport } from './routes/export.team'
+import { Route as GovernanceIndexRouteImport } from './routes/governance.index'
+import { Route as GovernanceAdminRouteImport } from './routes/governance.admin'
+import { Route as GovernanceComplianceRouteImport } from './routes/governance.compliance'
+import { Route as GovernanceCopilotRouteImport } from './routes/governance.copilot'
+import { Route as GovernanceDashboardRouteImport } from './routes/governance.dashboard'
+import { Route as GovernanceDocumentsRouteImport } from './routes/governance.documents'
+import { Route as GovernanceImpactRouteImport } from './routes/governance.impact'
+import { Route as GovernanceInvitationRouteImport } from './routes/governance.invitation'
+import { Route as GovernancePoliciesRouteImport } from './routes/governance.policies'
+import { Route as GovernanceRegulatoryRouteImport } from './routes/governance.regulatory'
+import { Route as GovernanceRequestAccessRouteImport } from './routes/governance.request-access'
+import { Route as GovernanceRisksRouteImport } from './routes/governance.risks'
+import { Route as GovernanceRoadmapRouteImport } from './routes/governance.roadmap'
+import { Route as GovernanceSecurityRouteImport } from './routes/governance.security'
+import { Route as GovernanceStakeholdersRouteImport } from './routes/governance.stakeholders'
 import { Route as LogisticsIndexRouteImport } from './routes/logistics.index'
 import { Route as LogisticsSecurityRouteImport } from './routes/logistics.security'
 import { Route as LogisticsTeamRouteImport } from './routes/logistics.team'
@@ -189,6 +205,11 @@ const ExportRoute = ExportRouteImport.update({
   path: '/export',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GovernanceRoute = GovernanceRouteImport.update({
+  id: '/governance',
+  path: '/governance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LogisticsRoute = LogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
@@ -268,6 +289,81 @@ const ExportTeamRoute = ExportTeamRouteImport.update({
   id: '/team',
   path: '/team',
   getParentRoute: () => ExportRoute,
+} as any)
+const GovernanceIndexRoute = GovernanceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceAdminRoute = GovernanceAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceComplianceRoute = GovernanceComplianceRouteImport.update({
+  id: '/compliance',
+  path: '/compliance',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceCopilotRoute = GovernanceCopilotRouteImport.update({
+  id: '/copilot',
+  path: '/copilot',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceDashboardRoute = GovernanceDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceDocumentsRoute = GovernanceDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceImpactRoute = GovernanceImpactRouteImport.update({
+  id: '/impact',
+  path: '/impact',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceInvitationRoute = GovernanceInvitationRouteImport.update({
+  id: '/invitation',
+  path: '/invitation',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernancePoliciesRoute = GovernancePoliciesRouteImport.update({
+  id: '/policies',
+  path: '/policies',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceRegulatoryRoute = GovernanceRegulatoryRouteImport.update({
+  id: '/regulatory',
+  path: '/regulatory',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceRequestAccessRoute = GovernanceRequestAccessRouteImport.update({
+  id: '/request-access',
+  path: '/request-access',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceRisksRoute = GovernanceRisksRouteImport.update({
+  id: '/risks',
+  path: '/risks',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceRoadmapRoute = GovernanceRoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceSecurityRoute = GovernanceSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => GovernanceRoute,
+} as any)
+const GovernanceStakeholdersRoute = GovernanceStakeholdersRouteImport.update({
+  id: '/stakeholders',
+  path: '/stakeholders',
+  getParentRoute: () => GovernanceRoute,
 } as any)
 const LogisticsIndexRoute = LogisticsIndexRouteImport.update({
   id: '/',
@@ -1078,6 +1174,7 @@ const WarehousingPartnerApplicationsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/export': typeof ExportRouteWithChildren
+  '/governance': typeof GovernanceRouteWithChildren
   '/logistics': typeof LogisticsRouteWithChildren
   '/marketplace': typeof MarketplaceRouteWithChildren
   '/mining': typeof MiningRouteWithChildren
@@ -1093,6 +1190,20 @@ export interface FileRoutesByFullPath {
   '/export/queue': typeof ExportQueueRoute
   '/export/security': typeof ExportSecurityRoute
   '/export/team': typeof ExportTeamRoute
+  '/governance/admin': typeof GovernanceAdminRoute
+  '/governance/compliance': typeof GovernanceComplianceRoute
+  '/governance/copilot': typeof GovernanceCopilotRoute
+  '/governance/dashboard': typeof GovernanceDashboardRoute
+  '/governance/documents': typeof GovernanceDocumentsRoute
+  '/governance/impact': typeof GovernanceImpactRoute
+  '/governance/invitation': typeof GovernanceInvitationRoute
+  '/governance/policies': typeof GovernancePoliciesRoute
+  '/governance/regulatory': typeof GovernanceRegulatoryRoute
+  '/governance/request-access': typeof GovernanceRequestAccessRoute
+  '/governance/risks': typeof GovernanceRisksRoute
+  '/governance/roadmap': typeof GovernanceRoadmapRoute
+  '/governance/security': typeof GovernanceSecurityRoute
+  '/governance/stakeholders': typeof GovernanceStakeholdersRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
@@ -1163,6 +1274,7 @@ export interface FileRoutesByFullPath {
   '/warehousing/security': typeof WarehousingSecurityRoute
   '/warehousing/team': typeof WarehousingTeamRoute
   '/export/': typeof ExportIndexRoute
+  '/governance/': typeof GovernanceIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
   '/mining/': typeof MiningIndexRoute
@@ -1256,6 +1368,20 @@ export interface FileRoutesByTo {
   '/export/queue': typeof ExportQueueRoute
   '/export/security': typeof ExportSecurityRoute
   '/export/team': typeof ExportTeamRoute
+  '/governance/admin': typeof GovernanceAdminRoute
+  '/governance/compliance': typeof GovernanceComplianceRoute
+  '/governance/copilot': typeof GovernanceCopilotRoute
+  '/governance/dashboard': typeof GovernanceDashboardRoute
+  '/governance/documents': typeof GovernanceDocumentsRoute
+  '/governance/impact': typeof GovernanceImpactRoute
+  '/governance/invitation': typeof GovernanceInvitationRoute
+  '/governance/policies': typeof GovernancePoliciesRoute
+  '/governance/regulatory': typeof GovernanceRegulatoryRoute
+  '/governance/request-access': typeof GovernanceRequestAccessRoute
+  '/governance/risks': typeof GovernanceRisksRoute
+  '/governance/roadmap': typeof GovernanceRoadmapRoute
+  '/governance/security': typeof GovernanceSecurityRoute
+  '/governance/stakeholders': typeof GovernanceStakeholdersRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
@@ -1326,6 +1452,7 @@ export interface FileRoutesByTo {
   '/warehousing/security': typeof WarehousingSecurityRoute
   '/warehousing/team': typeof WarehousingTeamRoute
   '/export': typeof ExportIndexRoute
+  '/governance': typeof GovernanceIndexRoute
   '/logistics': typeof LogisticsIndexRoute
   '/marketplace': typeof MarketplaceIndexRoute
   '/mining': typeof MiningIndexRoute
@@ -1413,6 +1540,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/export': typeof ExportRouteWithChildren
+  '/governance': typeof GovernanceRouteWithChildren
   '/logistics': typeof LogisticsRouteWithChildren
   '/marketplace': typeof MarketplaceRouteWithChildren
   '/mining': typeof MiningRouteWithChildren
@@ -1428,6 +1556,20 @@ export interface FileRoutesById {
   '/export/queue': typeof ExportQueueRoute
   '/export/security': typeof ExportSecurityRoute
   '/export/team': typeof ExportTeamRoute
+  '/governance/admin': typeof GovernanceAdminRoute
+  '/governance/compliance': typeof GovernanceComplianceRoute
+  '/governance/copilot': typeof GovernanceCopilotRoute
+  '/governance/dashboard': typeof GovernanceDashboardRoute
+  '/governance/documents': typeof GovernanceDocumentsRoute
+  '/governance/impact': typeof GovernanceImpactRoute
+  '/governance/invitation': typeof GovernanceInvitationRoute
+  '/governance/policies': typeof GovernancePoliciesRoute
+  '/governance/regulatory': typeof GovernanceRegulatoryRoute
+  '/governance/request-access': typeof GovernanceRequestAccessRoute
+  '/governance/risks': typeof GovernanceRisksRoute
+  '/governance/roadmap': typeof GovernanceRoadmapRoute
+  '/governance/security': typeof GovernanceSecurityRoute
+  '/governance/stakeholders': typeof GovernanceStakeholdersRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/team': typeof LogisticsTeamRoute
   '/marketplace/dashboard': typeof MarketplaceDashboardRoute
@@ -1498,6 +1640,7 @@ export interface FileRoutesById {
   '/warehousing/security': typeof WarehousingSecurityRoute
   '/warehousing/team': typeof WarehousingTeamRoute
   '/export/': typeof ExportIndexRoute
+  '/governance/': typeof GovernanceIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/marketplace/': typeof MarketplaceIndexRoute
   '/mining/': typeof MiningIndexRoute
@@ -1586,6 +1729,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/export'
+    | '/governance'
     | '/logistics'
     | '/marketplace'
     | '/mining'
@@ -1601,6 +1745,20 @@ export interface FileRouteTypes {
     | '/export/queue'
     | '/export/security'
     | '/export/team'
+    | '/governance/admin'
+    | '/governance/compliance'
+    | '/governance/copilot'
+    | '/governance/dashboard'
+    | '/governance/documents'
+    | '/governance/impact'
+    | '/governance/invitation'
+    | '/governance/policies'
+    | '/governance/regulatory'
+    | '/governance/request-access'
+    | '/governance/risks'
+    | '/governance/roadmap'
+    | '/governance/security'
+    | '/governance/stakeholders'
     | '/logistics/security'
     | '/logistics/team'
     | '/marketplace/dashboard'
@@ -1671,6 +1829,7 @@ export interface FileRouteTypes {
     | '/warehousing/security'
     | '/warehousing/team'
     | '/export/'
+    | '/governance/'
     | '/logistics/'
     | '/marketplace/'
     | '/mining/'
@@ -1764,6 +1923,20 @@ export interface FileRouteTypes {
     | '/export/queue'
     | '/export/security'
     | '/export/team'
+    | '/governance/admin'
+    | '/governance/compliance'
+    | '/governance/copilot'
+    | '/governance/dashboard'
+    | '/governance/documents'
+    | '/governance/impact'
+    | '/governance/invitation'
+    | '/governance/policies'
+    | '/governance/regulatory'
+    | '/governance/request-access'
+    | '/governance/risks'
+    | '/governance/roadmap'
+    | '/governance/security'
+    | '/governance/stakeholders'
     | '/logistics/security'
     | '/logistics/team'
     | '/marketplace/dashboard'
@@ -1834,6 +2007,7 @@ export interface FileRouteTypes {
     | '/warehousing/security'
     | '/warehousing/team'
     | '/export'
+    | '/governance'
     | '/logistics'
     | '/marketplace'
     | '/mining'
@@ -1920,6 +2094,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/export'
+    | '/governance'
     | '/logistics'
     | '/marketplace'
     | '/mining'
@@ -1935,6 +2110,20 @@ export interface FileRouteTypes {
     | '/export/queue'
     | '/export/security'
     | '/export/team'
+    | '/governance/admin'
+    | '/governance/compliance'
+    | '/governance/copilot'
+    | '/governance/dashboard'
+    | '/governance/documents'
+    | '/governance/impact'
+    | '/governance/invitation'
+    | '/governance/policies'
+    | '/governance/regulatory'
+    | '/governance/request-access'
+    | '/governance/risks'
+    | '/governance/roadmap'
+    | '/governance/security'
+    | '/governance/stakeholders'
     | '/logistics/security'
     | '/logistics/team'
     | '/marketplace/dashboard'
@@ -2005,6 +2194,7 @@ export interface FileRouteTypes {
     | '/warehousing/security'
     | '/warehousing/team'
     | '/export/'
+    | '/governance/'
     | '/logistics/'
     | '/marketplace/'
     | '/mining/'
@@ -2092,6 +2282,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExportRoute: typeof ExportRouteWithChildren
+  GovernanceRoute: typeof GovernanceRouteWithChildren
   LogisticsRoute: typeof LogisticsRouteWithChildren
   MarketplaceRoute: typeof MarketplaceRouteWithChildren
   MiningRoute: typeof MiningRouteWithChildren
@@ -2118,6 +2309,13 @@ declare module '@tanstack/react-router' {
       path: '/export'
       fullPath: '/export'
       preLoaderRoute: typeof ExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/governance': {
+      id: '/governance'
+      path: '/governance'
+      fullPath: '/governance'
+      preLoaderRoute: typeof GovernanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logistics': {
@@ -2231,6 +2429,111 @@ declare module '@tanstack/react-router' {
       fullPath: '/export/team'
       preLoaderRoute: typeof ExportTeamRouteImport
       parentRoute: typeof ExportRoute
+    }
+    '/governance/': {
+      id: '/governance/'
+      path: '/'
+      fullPath: '/governance/'
+      preLoaderRoute: typeof GovernanceIndexRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/admin': {
+      id: '/governance/admin'
+      path: '/admin'
+      fullPath: '/governance/admin'
+      preLoaderRoute: typeof GovernanceAdminRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/compliance': {
+      id: '/governance/compliance'
+      path: '/compliance'
+      fullPath: '/governance/compliance'
+      preLoaderRoute: typeof GovernanceComplianceRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/copilot': {
+      id: '/governance/copilot'
+      path: '/copilot'
+      fullPath: '/governance/copilot'
+      preLoaderRoute: typeof GovernanceCopilotRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/dashboard': {
+      id: '/governance/dashboard'
+      path: '/dashboard'
+      fullPath: '/governance/dashboard'
+      preLoaderRoute: typeof GovernanceDashboardRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/documents': {
+      id: '/governance/documents'
+      path: '/documents'
+      fullPath: '/governance/documents'
+      preLoaderRoute: typeof GovernanceDocumentsRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/impact': {
+      id: '/governance/impact'
+      path: '/impact'
+      fullPath: '/governance/impact'
+      preLoaderRoute: typeof GovernanceImpactRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/invitation': {
+      id: '/governance/invitation'
+      path: '/invitation'
+      fullPath: '/governance/invitation'
+      preLoaderRoute: typeof GovernanceInvitationRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/policies': {
+      id: '/governance/policies'
+      path: '/policies'
+      fullPath: '/governance/policies'
+      preLoaderRoute: typeof GovernancePoliciesRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/regulatory': {
+      id: '/governance/regulatory'
+      path: '/regulatory'
+      fullPath: '/governance/regulatory'
+      preLoaderRoute: typeof GovernanceRegulatoryRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/request-access': {
+      id: '/governance/request-access'
+      path: '/request-access'
+      fullPath: '/governance/request-access'
+      preLoaderRoute: typeof GovernanceRequestAccessRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/risks': {
+      id: '/governance/risks'
+      path: '/risks'
+      fullPath: '/governance/risks'
+      preLoaderRoute: typeof GovernanceRisksRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/roadmap': {
+      id: '/governance/roadmap'
+      path: '/roadmap'
+      fullPath: '/governance/roadmap'
+      preLoaderRoute: typeof GovernanceRoadmapRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/security': {
+      id: '/governance/security'
+      path: '/security'
+      fullPath: '/governance/security'
+      preLoaderRoute: typeof GovernanceSecurityRouteImport
+      parentRoute: typeof GovernanceRoute
+    }
+    '/governance/stakeholders': {
+      id: '/governance/stakeholders'
+      path: '/stakeholders'
+      fullPath: '/governance/stakeholders'
+      preLoaderRoute: typeof GovernanceStakeholdersRouteImport
+      parentRoute: typeof GovernanceRoute
     }
     '/logistics/': {
       id: '/logistics/'
@@ -3327,6 +3630,46 @@ const ExportRouteChildren: ExportRouteChildren = {
 const ExportRouteWithChildren =
   ExportRoute._addFileChildren(ExportRouteChildren)
 
+interface GovernanceRouteChildren {
+  GovernanceAdminRoute: typeof GovernanceAdminRoute
+  GovernanceComplianceRoute: typeof GovernanceComplianceRoute
+  GovernanceCopilotRoute: typeof GovernanceCopilotRoute
+  GovernanceDashboardRoute: typeof GovernanceDashboardRoute
+  GovernanceDocumentsRoute: typeof GovernanceDocumentsRoute
+  GovernanceImpactRoute: typeof GovernanceImpactRoute
+  GovernanceInvitationRoute: typeof GovernanceInvitationRoute
+  GovernancePoliciesRoute: typeof GovernancePoliciesRoute
+  GovernanceRegulatoryRoute: typeof GovernanceRegulatoryRoute
+  GovernanceRequestAccessRoute: typeof GovernanceRequestAccessRoute
+  GovernanceRisksRoute: typeof GovernanceRisksRoute
+  GovernanceRoadmapRoute: typeof GovernanceRoadmapRoute
+  GovernanceSecurityRoute: typeof GovernanceSecurityRoute
+  GovernanceStakeholdersRoute: typeof GovernanceStakeholdersRoute
+  GovernanceIndexRoute: typeof GovernanceIndexRoute
+}
+
+const GovernanceRouteChildren: GovernanceRouteChildren = {
+  GovernanceAdminRoute: GovernanceAdminRoute,
+  GovernanceComplianceRoute: GovernanceComplianceRoute,
+  GovernanceCopilotRoute: GovernanceCopilotRoute,
+  GovernanceDashboardRoute: GovernanceDashboardRoute,
+  GovernanceDocumentsRoute: GovernanceDocumentsRoute,
+  GovernanceImpactRoute: GovernanceImpactRoute,
+  GovernanceInvitationRoute: GovernanceInvitationRoute,
+  GovernancePoliciesRoute: GovernancePoliciesRoute,
+  GovernanceRegulatoryRoute: GovernanceRegulatoryRoute,
+  GovernanceRequestAccessRoute: GovernanceRequestAccessRoute,
+  GovernanceRisksRoute: GovernanceRisksRoute,
+  GovernanceRoadmapRoute: GovernanceRoadmapRoute,
+  GovernanceSecurityRoute: GovernanceSecurityRoute,
+  GovernanceStakeholdersRoute: GovernanceStakeholdersRoute,
+  GovernanceIndexRoute: GovernanceIndexRoute,
+}
+
+const GovernanceRouteWithChildren = GovernanceRoute._addFileChildren(
+  GovernanceRouteChildren,
+)
+
 interface LogisticsOperatorApplicationsRouteChildren {
   LogisticsOperatorApplicationsCompanyIdRoute: typeof LogisticsOperatorApplicationsCompanyIdRoute
 }
@@ -3725,6 +4068,7 @@ const WarehousingRouteWithChildren = WarehousingRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExportRoute: ExportRouteWithChildren,
+  GovernanceRoute: GovernanceRouteWithChildren,
   LogisticsRoute: LogisticsRouteWithChildren,
   MarketplaceRoute: MarketplaceRouteWithChildren,
   MiningRoute: MiningRouteWithChildren,

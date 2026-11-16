@@ -9,6 +9,8 @@ export * from "./export";
 export * from "./export-queries";
 export * from "./finance";
 export * from "./finance-queries";
+export * from "./governance";
+export * from "./governance-queries";
 export * from "./logistics";
 export * from "./logistics-queries";
 export * from "./marketplace";

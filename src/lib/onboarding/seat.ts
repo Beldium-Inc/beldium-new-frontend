@@ -26,7 +26,7 @@ export function seatFor(sector: VerticalSlug, role: OnboardingRole | null): stri
 
   // The sector's own companies land on their applicant seat, not the desk.
   if (role === "participant" || role === "participant-member") {
-    const applicantSeat: Record<VerticalSlug, string> = {
+    const applicantSeat: Partial<Record<VerticalSlug, string>> = {
       mining: "miner",
       processing: "processor",
       warehousing: "operator",
