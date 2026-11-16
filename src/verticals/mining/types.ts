@@ -247,7 +247,14 @@ export interface MineSite {
   sections: ReviewSection[];
   production: { month: string; tonnes: number; grade: number }[];
   inventory: { item: string; qty: string; location: string; updated: string }[];
-  transactions: { id: string; date: string; buyer: string; tonnes: number; value: string; status: string }[];
+  transactions: {
+    id: string;
+    date: string;
+    buyer: string;
+    tonnes: number;
+    value: string;
+    status: string;
+  }[];
 }
 
 export interface Application {

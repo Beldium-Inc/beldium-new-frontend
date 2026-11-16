@@ -11,9 +11,12 @@ import {
   LogOut,
   ScrollText,
   ShieldAlert,
+  SlidersHorizontal,
+  UserCog,
   Users,
   KeyRound,
 } from "lucide-react";
+import type { QualityAction, QualityRecordType } from "@/lib/api/quality";
 import { useBeldium } from "@/verticals/quality/store";
 import { roleMeta } from "@/verticals/quality/data";
 import type { Role } from "@/verticals/quality/types";
@@ -31,6 +34,8 @@ type AppPath =
   | "/quality/audit"
   | "/quality/vault"
   | "/quality/team"
+  | "/quality/users"
+  | "/quality/settings"
   | "/quality/security";
 
 interface NavItem {
@@ -52,8 +57,31 @@ const allNav = {
   audit: { to: "/quality/audit", label: "Audit trail", icon: ScrollText },
   vault: { to: "/quality/vault", label: "Document vault", icon: Archive },
   team: { to: "/quality/team", label: "Team", icon: Users },
+  users: { to: "/quality/users", label: "Users and roles", icon: UserCog },
+  settings: { to: "/quality/settings", label: "Rule settings", icon: SlidersHorizontal },
   security: { to: "/quality/security", label: "Security", icon: KeyRound },
 } satisfies Record<string, NavItem>;
+
+/**
+ * The menu for this person. The base list follows the server role; the
+ * audit log, users and settings entries follow the access grid from
+ * /quality/me/ (task E9), so the menu never offers what the server refuses.
+ */
+function navFor(
+  role: Role,
+  canDo: (record: QualityRecordType, action: QualityAction) => boolean,
+  roleCodes: string[],
+): NavItem[] {
+  const items = navByRole[role].filter((item) => item.to !== "/quality/audit");
+  const extra: NavItem[] = [];
+  if (canDo("audit_log", "read")) extra.push(allNav.audit);
+  if (canDo("users_and_roles", "read")) extra.push(allNav.users);
+  if (roleCodes.some((code) => ["QC", "CEO", "TL"].includes(code))) extra.push(allNav.settings);
+  const teamIndex = items.findIndex((item) => item.to === "/quality/team");
+  return teamIndex === -1
+    ? [...items, ...extra]
+    : [...items.slice(0, teamIndex), ...extra, ...items.slice(teamIndex)];
+}
 
 export const navByRole: Record<Role, NavItem[]> = {
   operator: [
@@ -98,7 +126,8 @@ export const navByRole: Record<Role, NavItem[]> = {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, ready, logout, error, retry } = useBeldium();
+  const { user, ready, logout, error, retry, canDo, roleCodes, secondStepOutstanding } =
+    useBeldium();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = React.useState(false);
@@ -127,6 +156,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [collapsed]);
 
+  // A role that needs an authenticator app sees only the Security page until
+  // it is set up; every other Q&C call would be refused by the server.
+  const blocked = secondStepOutstanding && pathname !== "/quality/security";
+
   if (error && !user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-6 text-center">
@@ -150,7 +183,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const items = navByRole[user.role];
+  const items = navFor(user.role, canDo, roleCodes);
 
   const sidebar = (
     <div
@@ -272,7 +305,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           }
         />
-        <main className="px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main className="px-4 py-6 sm:px-8 sm:py-8">
+          {blocked ? (
+            <div className="mx-auto max-w-xl rounded-[24px] border border-border bg-card p-8 text-center shadow-[var(--shadow-card)]">
+              <h1 className="font-display text-xl font-semibold text-navy">
+                Set up two-step sign-in first
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Your role needs an authenticator app at sign in. Set it up on the Security page,
+                then come back here.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <Link
+                  to="/quality/security"
+                  className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-navy-foreground"
+                >
+                  Open Security
+                </Link>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="rounded-xl border border-border px-4 py-2 text-sm font-medium"
+                >
+                  I have set it up
+                </button>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );

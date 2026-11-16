@@ -10,6 +10,7 @@ import {
   verifyVaultDocument,
   type VaultListQuery,
   type VaultUploadInput,
+  type ReceivedNote,
 } from "./vault";
 import { useHasTokens } from "./queries";
 import type { UUID } from "./types";
@@ -64,8 +65,9 @@ export function useUploadVaultDocument() {
 }
 
 export function useAddVaultVersion() {
-  return useVaultMutation((input: { id: UUID; file: File; note: string }) =>
-    addVaultVersion(input.id, input.file, input.note),
+  return useVaultMutation(
+    (input: { id: UUID; file: File; note: string; received?: ReceivedNote | undefined }) =>
+      addVaultVersion(input.id, input.file, input.note, input.received),
   );
 }
 

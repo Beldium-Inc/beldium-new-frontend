@@ -3,7 +3,13 @@ import * as React from "react";
 import { AlertTriangle, Clock, Filter, Ship } from "lucide-react";
 import { AppShell } from "@/verticals/export/AppShell";
 import { useStore } from "@/verticals/export/store";
-import { ApplicationStatusPill, DisclaimerNote, Panel, Pill, Stat } from "@/verticals/export/ui-kit";
+import {
+  ApplicationStatusPill,
+  DisclaimerNote,
+  Panel,
+  Pill,
+  Stat,
+} from "@/verticals/export/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/export/queue")({
@@ -12,7 +18,8 @@ export const Route = createFileRoute("/export/queue")({
       { title: "Review Queue | Beldium Export Compliance" },
       {
         name: "description",
-        content: "Compliance operator work queue: triage exporter admission applications by risk and status.",
+        content:
+          "Compliance operator work queue: triage exporter admission applications by risk and status.",
       },
     ],
   }),
@@ -29,7 +36,13 @@ const FILTERS = [
 
 const DECIDED = new Set(["approved", "conditionally_approved", "rejected"]);
 
-function ExporterRow({ id, exporters }: { id: string; exporters: ReturnType<typeof useStore>["state"]["exporters"] }) {
+function ExporterRow({
+  id,
+  exporters,
+}: {
+  id: string;
+  exporters: ReturnType<typeof useStore>["state"]["exporters"];
+}) {
   return <>{exporters.find((e) => e.id === id)?.name ?? "-"}</>;
 }
 
@@ -56,8 +69,18 @@ function QueuePage() {
     >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Open reviews" value={open.length} icon={<Ship className="size-4" />} />
-        <Stat label="High risk" value={highRisk.length} tone="danger" icon={<AlertTriangle className="size-4" />} />
-        <Stat label="Documents pending" value={pendingDocs.length} hint="Awaiting operator action" icon={<Clock className="size-4" />} />
+        <Stat
+          label="High risk"
+          value={highRisk.length}
+          tone="danger"
+          icon={<AlertTriangle className="size-4" />}
+        />
+        <Stat
+          label="Documents pending"
+          value={pendingDocs.length}
+          hint="Awaiting operator action"
+          icon={<Clock className="size-4" />}
+        />
         <Stat label="Exporters" value={state.exporters.length} />
       </div>
 
@@ -87,7 +110,9 @@ function QueuePage() {
       >
         <div className="divide-y divide-border">
           {rows.map((a) => {
-            const verified = state.documents.filter((d) => d.application === a.id && d.status === "verified").length;
+            const verified = state.documents.filter(
+              (d) => d.application === a.id && d.status === "verified",
+            ).length;
             const total = state.documents.filter((d) => d.application === a.id).length;
             return (
               <Link
@@ -102,18 +127,29 @@ function QueuePage() {
                       <ExporterRow id={a.exporter} exporters={state.exporters} />
                     </span>
                     <ApplicationStatusPill status={a.status} />
-                    <Pill tone={a.risk.risk_band === "high" ? "danger" : a.risk.risk_band === "medium" ? "warning" : "success"}>
+                    <Pill
+                      tone={
+                        a.risk.risk_band === "high"
+                          ? "danger"
+                          : a.risk.risk_band === "medium"
+                            ? "warning"
+                            : "success"
+                      }
+                    >
                       Risk {a.risk.compliance_score} · {a.risk.risk_band}
                     </Pill>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {a.progress.complete}/{a.progress.total} domains complete · submitted {a.submitted_at ?? "-"}
+                    {a.progress.complete}/{a.progress.total} domains complete · submitted{" "}
+                    {a.submitted_at ?? "-"}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-6">
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Documents</p>
-                    <p className="text-sm font-semibold">{verified}/{total} verified</p>
+                    <p className="text-sm font-semibold">
+                      {verified}/{total} verified
+                    </p>
                   </div>
                 </div>
               </Link>

@@ -10,18 +10,37 @@ export const Route = createFileRoute("/marketplace/orders")({
   head: () => ({
     meta: [
       { title: "Orders, contracts & transaction services | Beldium" },
-      { name: "description", content: "Track contracted volume and configure logistics, insurance, quality and finance services." },
+      {
+        name: "description",
+        content:
+          "Track contracted volume and configure logistics, insurance, quality and finance services.",
+      },
       { property: "og:title", content: "Orders, contracts & transaction services | Beldium" },
-      { property: "og:description", content: "Set up transaction services for accepted aggregated supply." },
+      {
+        property: "og:description",
+        content: "Set up transaction services for accepted aggregated supply.",
+      },
     ],
   }),
   component: Orders,
 });
 
 const OPTIONS = {
-  logistics: ["Beldium Bulk Chartering (handysize programme)", "Kuehne bulk forwarding", "Producer-arranged FOB"],
-  insurance: ["Marine cargo all-risk, Lloyd's syndicate", "Trade credit + political risk (MIGA)", "Buyer's own policy"],
-  quality: ["SGS independent inspection at load & discharge", "Bureau Veritas draft survey", "Producer certificate of analysis only"],
+  logistics: [
+    "Beldium Bulk Chartering (handysize programme)",
+    "Kuehne bulk forwarding",
+    "Producer-arranged FOB",
+  ],
+  insurance: [
+    "Marine cargo all-risk, Lloyd's syndicate",
+    "Trade credit + political risk (MIGA)",
+    "Buyer's own policy",
+  ],
+  quality: [
+    "SGS independent inspection at load & discharge",
+    "Bureau Veritas draft survey",
+    "Producer certificate of analysis only",
+  ],
   finance: ["Beldium supply-chain finance panel", "Bank-issued documentary LC", "Buyer prepayment"],
 } as const;
 
@@ -36,9 +55,15 @@ function Orders() {
   });
 
   return (
-    <AppShell title="Orders & contracts" subtitle="Contracted volume and transaction services setup">
+    <AppShell
+      title="Orders & contracts"
+      subtitle="Contracted volume and transaction services setup"
+    >
       <div className="space-y-6">
-        <SectionCard title="Contract book" description={`${state.orders.length} active and settled contracts`}>
+        <SectionCard
+          title="Contract book"
+          description={`${state.orders.length} active and settled contracts`}
+        >
           <div className="-mx-5 overflow-x-auto px-5">
             <table className="w-full min-w-[720px] text-sm">
               <thead>
@@ -100,7 +125,8 @@ function Orders() {
               onClick={() => {
                 saveServices(rfq.id, { ...sel, confirmed: true });
                 toast.success("Transaction services confirmed", {
-                  description: "Logistics, insurance, quality and finance providers locked to the contract.",
+                  description:
+                    "Logistics, insurance, quality and finance providers locked to the contract.",
                 });
               }}
             >

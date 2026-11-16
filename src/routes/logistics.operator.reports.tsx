@@ -1,5 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/verticals/logistics/AppShell";
@@ -13,7 +22,10 @@ export const Route = createFileRoute("/logistics/operator/reports")({
   head: () => ({
     meta: [
       { title: "Reports | Beldium Compliance Operations" },
-      { name: "description", content: "Compliance throughput, decision mix and risk reporting for logistics operators." },
+      {
+        name: "description",
+        content: "Compliance throughput, decision mix and risk reporting for logistics operators.",
+      },
     ],
   }),
   component: ReportsPage,
@@ -25,18 +37,43 @@ function ReportsPage() {
   const generate = useGenerateLogisticsReport();
 
   const snapshot = [
-    { label: "Approved", value: companies.filter((c) => c.status === "Approved" || c.status === "Conditionally Approved").length, color: "#101E3D" },
-    { label: "Pending", value: companies.filter((c) => c.status === "Pending Review" || c.status === "Under Review").length, color: "#FBBF24" },
-    { label: "Rejected", value: companies.filter((c) => c.status === "Rejected").length, color: "#F87171" },
+    {
+      label: "Approved",
+      value: companies.filter(
+        (c) => c.status === "Approved" || c.status === "Conditionally Approved",
+      ).length,
+      color: "#101E3D",
+    },
+    {
+      label: "Pending",
+      value: companies.filter((c) => c.status === "Pending Review" || c.status === "Under Review")
+        .length,
+      color: "#FBBF24",
+    },
+    {
+      label: "Rejected",
+      value: companies.filter((c) => c.status === "Rejected").length,
+      color: "#F87171",
+    },
   ];
   const riskBands = [
     { label: "Low", value: companies.filter((c) => c.risk === "Low").length, color: "#B0E2CD" },
-    { label: "Medium", value: companies.filter((c) => c.risk === "Medium").length, color: "#FBBF24" },
+    {
+      label: "Medium",
+      value: companies.filter((c) => c.risk === "Medium").length,
+      color: "#FBBF24",
+    },
     { label: "High", value: companies.filter((c) => c.risk === "High").length, color: "#F87171" },
   ];
 
   return (
-    <AppShell role="operator" breadcrumbs={[{ label: "Compliance Operations", to: "/logistics/operator" }, { label: "Reports" }]}>
+    <AppShell
+      role="operator"
+      breadcrumbs={[
+        { label: "Compliance Operations", to: "/logistics/operator" },
+        { label: "Reports" },
+      ]}
+    >
       <PageHeader
         title="Reports"
         description="Generated from the live compliance register."
@@ -44,7 +81,9 @@ function ReportsPage() {
           <button
             type="button"
             onClick={() => {
-              generate.mutate(undefined, { onSuccess: () => toast.success("Register export generated") });
+              generate.mutate(undefined, {
+                onSuccess: () => toast.success("Register export generated"),
+              });
             }}
             className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-medium text-white transition hover:bg-[var(--brand)]/90"
           >
@@ -61,7 +100,9 @@ function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F2" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#5B6B85" }} />
                 <YAxis tick={{ fontSize: 11, fill: "#5B6B85" }} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F2", fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F2", fontSize: 12 }}
+                />
                 <Bar dataKey="value" name="Companies" radius={[6, 6, 0, 0]} barSize={28}>
                   {snapshot.map((s) => (
                     <Cell key={s.label} fill={s.color} />
@@ -78,7 +119,9 @@ function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F2" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#5B6B85" }} />
                 <YAxis tick={{ fontSize: 11, fill: "#5B6B85" }} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F2", fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F2", fontSize: 12 }}
+                />
                 <Bar dataKey="value" name="Companies" radius={[6, 6, 0, 0]} barSize={28}>
                   {riskBands.map((s) => (
                     <Cell key={s.label} fill={s.color} />
@@ -111,7 +154,9 @@ function ReportsPage() {
             </li>
           ))}
           {(reports.data?.results ?? []).length === 0 && (
-            <li className="px-5 py-8 text-center text-sm text-muted-foreground">No reports generated yet.</li>
+            <li className="px-5 py-8 text-center text-sm text-muted-foreground">
+              No reports generated yet.
+            </li>
           )}
         </ul>
       </Panel>

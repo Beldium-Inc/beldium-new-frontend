@@ -9,21 +9,47 @@ export const Route = createFileRoute("/logistics/partner/application")({
   head: () => ({
     meta: [
       { title: "Application progress | Beldium Logistics Partner Portal" },
-      { name: "description", content: "Track each stage of your Beldium onboarding and verification application." },
+      {
+        name: "description",
+        content: "Track each stage of your Beldium onboarding and verification application.",
+      },
       { property: "og:title", content: "Application progress | Beldium Logistics Partner Portal" },
-      { property: "og:description", content: "Onboarding stages, current step and what happens next." },
+      {
+        property: "og:description",
+        content: "Onboarding stages, current step and what happens next.",
+      },
     ],
   }),
   component: ApplicationPage,
 });
 
 const STAGES = [
-  { name: "Company registration", detail: "CAC records, TIN and directors submitted", state: "done" },
-  { name: "Fleet & driver declaration", detail: "12 vehicles and 14 drivers registered", state: "done" },
-  { name: "Compliance review", detail: "Reviewer Ngozi Adeyemi is working through 9 check domains", state: "active" },
-  { name: "Additional information", detail: "Mineral transport authorisation outstanding", state: "active" },
+  {
+    name: "Company registration",
+    detail: "CAC records, TIN and directors submitted",
+    state: "done",
+  },
+  {
+    name: "Fleet & driver declaration",
+    detail: "12 vehicles and 14 drivers registered",
+    state: "done",
+  },
+  {
+    name: "Compliance review",
+    detail: "Reviewer Ngozi Adeyemi is working through 9 check domains",
+    state: "active",
+  },
+  {
+    name: "Additional information",
+    detail: "Mineral transport authorisation outstanding",
+    state: "active",
+  },
   { name: "Decision", detail: "Approval, conditional approval or rejection issued", state: "todo" },
-  { name: "Continuous monitoring", detail: "Automatic expiry and risk monitoring begins", state: "todo" },
+  {
+    name: "Continuous monitoring",
+    detail: "Automatic expiry and risk monitoring begins",
+    state: "todo",
+  },
 ];
 
 function ApplicationPage() {
@@ -46,8 +72,14 @@ function ApplicationPage() {
   ];
 
   return (
-    <AppShell role="partner" breadcrumbs={[{ label: c.name, to: "/logistics/partner" }, { label: "Application progress" }]}>
-      <PageHeader title="Application progress" description={`Submitted ${c.submitted} · reviewer ${c.reviewer} · status ${c.status}`} />
+    <AppShell
+      role="partner"
+      breadcrumbs={[{ label: c.name, to: "/logistics/partner" }, { label: "Application progress" }]}
+    >
+      <PageHeader
+        title="Application progress"
+        description={`Submitted ${c.submitted} · reviewer ${c.reviewer} · status ${c.status}`}
+      />
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel className="lg:col-span-2" title="Onboarding stages" bodyClassName="p-5">
           <ol className="space-y-4">
@@ -57,10 +89,20 @@ function ApplicationPage() {
                   <span
                     className={
                       "grid h-7 w-7 place-items-center rounded-full text-white " +
-                      (s.state === "done" ? "bg-[var(--brand)]" : s.state === "active" ? "bg-[var(--link)]" : "bg-muted text-muted-foreground")
+                      (s.state === "done"
+                        ? "bg-[var(--brand)]"
+                        : s.state === "active"
+                          ? "bg-[var(--link)]"
+                          : "bg-muted text-muted-foreground")
                     }
                   >
-                    {s.state === "done" ? <Check className="h-3.5 w-3.5" /> : s.state === "active" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Circle className="h-3 w-3" />}
+                    {s.state === "done" ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : s.state === "active" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Circle className="h-3 w-3" />
+                    )}
                   </span>
                   {i < stages.length - 1 ? <span className="mt-1 w-px flex-1 bg-border" /> : null}
                 </div>

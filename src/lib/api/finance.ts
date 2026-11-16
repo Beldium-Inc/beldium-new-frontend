@@ -6,10 +6,10 @@ import type { Paginated, UUID } from "./types";
 const BASE = "/finance";
 
 export type InvoiceStatus =
-  | "draft" | "issued" | "partially_paid" | "paid" | "overdue" | "disputed" | "cancelled";
+  "draft" | "issued" | "partially_paid" | "paid" | "overdue" | "disputed" | "cancelled";
 
 export type PaymentMethod =
-  | "bank_transfer" | "letter_of_credit" | "escrow" | "card" | "cash" | "other";
+  "bank_transfer" | "letter_of_credit" | "escrow" | "card" | "cash" | "other";
 
 export type PaymentStatus = "pending" | "cleared" | "failed" | "reversed";
 

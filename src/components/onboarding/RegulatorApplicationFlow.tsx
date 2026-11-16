@@ -2,7 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Check, Trash2 } from "lucide-react";
 import { AuthShell, InfoRow, ProgressHeader, StepBar } from "@/components/onboarding/ui";
-import { AreaField, ChipToggleGroup, PhoneField, SectionCard, SelectField, TextField, YesNoField } from "@/components/onboarding/fields";
+import {
+  AreaField,
+  ChipToggleGroup,
+  PhoneField,
+  SectionCard,
+  SelectField,
+  TextField,
+  YesNoField,
+} from "@/components/onboarding/fields";
 import { DocumentChecklist } from "@/components/onboarding/quality-parts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +24,10 @@ import {
   regulatorInstitutionTypes,
   regulatoryRoleOptions,
 } from "@/lib/onboarding/data";
-import { qualityRegulatorOfficerDocuments, qualityRegulatorOrgDocuments } from "@/lib/onboarding/quality";
+import {
+  qualityRegulatorOfficerDocuments,
+  qualityRegulatorOrgDocuments,
+} from "@/lib/onboarding/quality";
 import { useOnboarding } from "@/lib/onboarding/store";
 
 const steps = [
@@ -53,11 +64,19 @@ export function RegulatorApplicationFlow() {
         : qualityRegulatorOrgDocuments
       : null;
   const documentOptions = checklist ? checklist.map((d) => d.title) : regulatorDocumentCatalogue;
-  const missingDocuments = (checklist ?? []).filter((d) => d.required && !documents.some((x) => x.category === d.title));
+  const missingDocuments = (checklist ?? []).filter(
+    (d) => d.required && !documents.some((x) => x.category === d.title),
+  );
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
-  const [docDraft, setDocDraft] = useState({ category: documentOptions[0]!, name: "", reference: "", issued: "", expiry: "" });
+  const [docDraft, setDocDraft] = useState({
+    category: documentOptions[0]!,
+    name: "",
+    reference: "",
+    issued: "",
+    expiry: "",
+  });
   const emptyOfficer = {
     name: "",
     position: regulatoryRoleOptions[0]!,
@@ -71,7 +90,8 @@ export function RegulatorApplicationFlow() {
   };
   const [officer, setOfficer] = useState(emptyOfficer);
 
-  const toggle = (list: string[], value: string) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  const toggle = (list: string[], value: string) =>
+    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
   const allDeclared = regulatorDeclarationItems.every((d) => declarations[d.key]);
 
   const submit = () => {
@@ -96,34 +116,94 @@ export function RegulatorApplicationFlow() {
       <div className="mt-7 space-y-5">
         {step === 0 && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label="Organisation Legal Name" value={regulator.legalName} onChange={(v) => updateRegulator({ legalName: v })} className="sm:col-span-2" />
-            <SelectField label="Government / Regulatory Institution Type" value={regulator.institutionType} onChange={(v) => updateRegulator({ institutionType: v })} options={regulatorInstitutionTypes} />
-            <TextField label="Date Established" type="date" value={regulator.established} onChange={(v) => updateRegulator({ established: v })} />
-            <TextField label="Head Office Address" value={regulator.headOffice} onChange={(v) => updateRegulator({ headOffice: v })} className="sm:col-span-2" />
-            <TextField label="Country" value={regulator.country} onChange={(v) => updateRegulator({ country: v })} />
-            <SelectField label="State" value={regulator.state} onChange={(v) => updateRegulator({ state: v })} options={nigerianStates} />
-            <TextField label="Official Email" type="email" value={regulator.officialEmail} onChange={(v) => updateRegulator({ officialEmail: v })} />
-            <PhoneField label="Official Phone" value={regulator.officialPhone} onChange={(v) => updateRegulator({ officialPhone: v })} />
-            <TextField label="Website" value={regulator.website} onChange={(v) => updateRegulator({ website: v })} />
-            <TextField label="Primary Authorised Representative" value={regulator.primaryRepresentative} onChange={(v) => updateRegulator({ primaryRepresentative: v })} />
+            <TextField
+              label="Organisation Legal Name"
+              value={regulator.legalName}
+              onChange={(v) => updateRegulator({ legalName: v })}
+              className="sm:col-span-2"
+            />
+            <SelectField
+              label="Government / Regulatory Institution Type"
+              value={regulator.institutionType}
+              onChange={(v) => updateRegulator({ institutionType: v })}
+              options={regulatorInstitutionTypes}
+            />
+            <TextField
+              label="Date Established"
+              type="date"
+              value={regulator.established}
+              onChange={(v) => updateRegulator({ established: v })}
+            />
+            <TextField
+              label="Head Office Address"
+              value={regulator.headOffice}
+              onChange={(v) => updateRegulator({ headOffice: v })}
+              className="sm:col-span-2"
+            />
+            <TextField
+              label="Country"
+              value={regulator.country}
+              onChange={(v) => updateRegulator({ country: v })}
+            />
+            <SelectField
+              label="State"
+              value={regulator.state}
+              onChange={(v) => updateRegulator({ state: v })}
+              options={nigerianStates}
+            />
+            <TextField
+              label="Official Email"
+              type="email"
+              value={regulator.officialEmail}
+              onChange={(v) => updateRegulator({ officialEmail: v })}
+            />
+            <PhoneField
+              label="Official Phone"
+              value={regulator.officialPhone}
+              onChange={(v) => updateRegulator({ officialPhone: v })}
+            />
+            <TextField
+              label="Website"
+              value={regulator.website}
+              onChange={(v) => updateRegulator({ website: v })}
+            />
+            <TextField
+              label="Primary Authorised Representative"
+              value={regulator.primaryRepresentative}
+              onChange={(v) => updateRegulator({ primaryRepresentative: v })}
+            />
           </div>
         )}
 
         {step === 1 && (
           <div className="space-y-6">
-            <AreaField label="Regulatory Mandate" rows={3} placeholder="Summarise the statutory mandate of the institution." value={regulator.mandate} onChange={(v) => updateRegulator({ mandate: v })} />
-            <TextField label="Government Ministry / Agency Affiliation" value={regulator.ministry} onChange={(v) => updateRegulator({ ministry: v })} />
+            <AreaField
+              label="Regulatory Mandate"
+              rows={3}
+              placeholder="Summarise the statutory mandate of the institution."
+              value={regulator.mandate}
+              onChange={(v) => updateRegulator({ mandate: v })}
+            />
+            <TextField
+              label="Government Ministry / Agency Affiliation"
+              value={regulator.ministry}
+              onChange={(v) => updateRegulator({ ministry: v })}
+            />
             <ChipToggleGroup
               label="Areas of Regulatory Responsibility"
               options={copy.responsibilities}
               selected={regulator.responsibilities}
-              onToggle={(v) => updateRegulator({ responsibilities: toggle(regulator.responsibilities, v) })}
+              onToggle={(v) =>
+                updateRegulator({ responsibilities: toggle(regulator.responsibilities, v) })
+              }
             />
             <ChipToggleGroup
               label={copy.functionsLabel}
               options={copy.functions}
               selected={regulator.oversightFunctions}
-              onToggle={(v) => updateRegulator({ oversightFunctions: toggle(regulator.oversightFunctions, v) })}
+              onToggle={(v) =>
+                updateRegulator({ oversightFunctions: toggle(regulator.oversightFunctions, v) })
+              }
             />
             <ChipToggleGroup
               label="States / Geographic Jurisdiction"
@@ -136,34 +216,80 @@ export function RegulatorApplicationFlow() {
                 label="Minerals Covered"
                 options={mineralOptions}
                 selected={regulator.mineralsCovered}
-                onToggle={(v) => updateRegulator({ mineralsCovered: toggle(regulator.mineralsCovered, v) })}
+                onToggle={(v) =>
+                  updateRegulator({ mineralsCovered: toggle(regulator.mineralsCovered, v) })
+                }
               />
             )}
             <div className="space-y-2">
-              <YesNoField label={copy.inspectLabel} value={regulator.canInspect} onChange={(v) => updateRegulator({ canInspect: v })} />
-              <YesNoField label="Authority to review licences / permits" value={regulator.canReviewLicences} onChange={(v) => updateRegulator({ canReviewLicences: v })} />
-              <YesNoField label="Authority to issue regulatory decisions" value={regulator.canIssueDecisions} onChange={(v) => updateRegulator({ canIssueDecisions: v })} />
+              <YesNoField
+                label={copy.inspectLabel}
+                value={regulator.canInspect}
+                onChange={(v) => updateRegulator({ canInspect: v })}
+              />
+              <YesNoField
+                label="Authority to review licences / permits"
+                value={regulator.canReviewLicences}
+                onChange={(v) => updateRegulator({ canReviewLicences: v })}
+              />
+              <YesNoField
+                label="Authority to issue regulatory decisions"
+                value={regulator.canIssueDecisions}
+                onChange={(v) => updateRegulator({ canIssueDecisions: v })}
+              />
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-5">
-            {checklist && <DocumentChecklist items={checklist} attached={documents.map((d) => d.category)} />}
+            {checklist && (
+              <DocumentChecklist items={checklist} attached={documents.map((d) => d.category)} />
+            )}
             <SectionCard title="Attach a document">
               <div className="grid gap-4 sm:grid-cols-2">
-                <SelectField label="Document type" value={docDraft.category} onChange={(v) => setDocDraft({ ...docDraft, category: v })} options={documentOptions} />
-                <TextField label="File name" placeholder="enabling-act.pdf" value={docDraft.name} onChange={(v) => setDocDraft({ ...docDraft, name: v })} />
-                <TextField label="Reference" value={docDraft.reference} onChange={(v) => setDocDraft({ ...docDraft, reference: v })} />
-                <TextField label="Issued" type="date" value={docDraft.issued} onChange={(v) => setDocDraft({ ...docDraft, issued: v })} />
-                <TextField label="Expiry" type="date" value={docDraft.expiry} onChange={(v) => setDocDraft({ ...docDraft, expiry: v })} />
+                <SelectField
+                  label="Document type"
+                  value={docDraft.category}
+                  onChange={(v) => setDocDraft({ ...docDraft, category: v })}
+                  options={documentOptions}
+                />
+                <TextField
+                  label="File name"
+                  placeholder="enabling-act.pdf"
+                  value={docDraft.name}
+                  onChange={(v) => setDocDraft({ ...docDraft, name: v })}
+                />
+                <TextField
+                  label="Reference"
+                  value={docDraft.reference}
+                  onChange={(v) => setDocDraft({ ...docDraft, reference: v })}
+                />
+                <TextField
+                  label="Issued"
+                  type="date"
+                  value={docDraft.issued}
+                  onChange={(v) => setDocDraft({ ...docDraft, issued: v })}
+                />
+                <TextField
+                  label="Expiry"
+                  type="date"
+                  value={docDraft.expiry}
+                  onChange={(v) => setDocDraft({ ...docDraft, expiry: v })}
+                />
               </div>
               <Button
                 className="mt-4"
                 disabled={!docDraft.name.trim()}
                 onClick={() => {
                   addDocument(docDraft);
-                  setDocDraft({ category: documentOptions[0]!, name: "", reference: "", issued: "", expiry: "" });
+                  setDocDraft({
+                    category: documentOptions[0]!,
+                    name: "",
+                    reference: "",
+                    issued: "",
+                    expiry: "",
+                  });
                 }}
               >
                 Attach document
@@ -171,14 +297,27 @@ export function RegulatorApplicationFlow() {
             </SectionCard>
 
             <div className="space-y-2">
-              {documents.length === 0 && <p className="text-sm text-muted-foreground">No documents attached yet.</p>}
+              {documents.length === 0 && (
+                <p className="text-sm text-muted-foreground">No documents attached yet.</p>
+              )}
               {documents.map((d) => (
-                <div key={d.id} className="flex items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3">
+                <div
+                  key={d.id}
+                  className="flex items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3"
+                >
                   <div>
                     <p className="text-sm font-medium">{d.category}</p>
-                    <p className="text-xs text-muted-foreground">{d.name}{d.reference ? ` · ${d.reference}` : ""}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {d.name}
+                      {d.reference ? ` · ${d.reference}` : ""}
+                    </p>
                   </div>
-                  <Button variant="ghost" size="icon" aria-label="Remove document" onClick={() => removeDocument(d.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove document"
+                    onClick={() => removeDocument(d.id)}
+                  >
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
@@ -191,19 +330,56 @@ export function RegulatorApplicationFlow() {
           <div className="space-y-5">
             <SectionCard title="Add an authorised officer">
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextField label="Full Name" value={officer.name} onChange={(v) => setOfficer({ ...officer, name: v })} />
-                <TextField label="Job Title" value={officer.jobTitle} onChange={(v) => setOfficer({ ...officer, jobTitle: v })} />
-                <TextField label="Department" value={officer.department} onChange={(v) => setOfficer({ ...officer, department: v })} />
-                <TextField label="Official Email" type="email" value={officer.email} onChange={(v) => setOfficer({ ...officer, email: v })} />
-                <PhoneField label="Phone" value={officer.phone} onChange={(v) => setOfficer({ ...officer, phone: v })} />
-                <SelectField label="Role" value={officer.position} onChange={(v) => setOfficer({ ...officer, position: v })} options={regulatoryRoleOptions} />
-                <TextField label="Employee / Staff ID" value={officer.staffId} onChange={(v) => setOfficer({ ...officer, staffId: v })} />
-                <SelectField label="Authorisation Level" value={officer.authorisationLevel} onChange={(v) => setOfficer({ ...officer, authorisationLevel: v })} options={authorisationLevels} />
+                <TextField
+                  label="Full Name"
+                  value={officer.name}
+                  onChange={(v) => setOfficer({ ...officer, name: v })}
+                />
+                <TextField
+                  label="Job Title"
+                  value={officer.jobTitle}
+                  onChange={(v) => setOfficer({ ...officer, jobTitle: v })}
+                />
+                <TextField
+                  label="Department"
+                  value={officer.department}
+                  onChange={(v) => setOfficer({ ...officer, department: v })}
+                />
+                <TextField
+                  label="Official Email"
+                  type="email"
+                  value={officer.email}
+                  onChange={(v) => setOfficer({ ...officer, email: v })}
+                />
+                <PhoneField
+                  label="Phone"
+                  value={officer.phone}
+                  onChange={(v) => setOfficer({ ...officer, phone: v })}
+                />
+                <SelectField
+                  label="Role"
+                  value={officer.position}
+                  onChange={(v) => setOfficer({ ...officer, position: v })}
+                  options={regulatoryRoleOptions}
+                />
+                <TextField
+                  label="Employee / Staff ID"
+                  value={officer.staffId}
+                  onChange={(v) => setOfficer({ ...officer, staffId: v })}
+                />
+                <SelectField
+                  label="Authorisation Level"
+                  value={officer.authorisationLevel}
+                  onChange={(v) => setOfficer({ ...officer, authorisationLevel: v })}
+                  options={authorisationLevels}
+                />
               </div>
               <label className="mt-4 flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={officer.appointmentDocAttached}
-                  onCheckedChange={(c) => setOfficer({ ...officer, appointmentDocAttached: Boolean(c) })}
+                  onCheckedChange={(c) =>
+                    setOfficer({ ...officer, appointmentDocAttached: Boolean(c) })
+                  }
                 />
                 Identification / appointment document attached
               </label>
@@ -236,9 +412,14 @@ export function RegulatorApplicationFlow() {
             </SectionCard>
 
             <div className="space-y-2">
-              {personnel.length === 0 && <p className="text-sm text-muted-foreground">No authorised officers added yet.</p>}
+              {personnel.length === 0 && (
+                <p className="text-sm text-muted-foreground">No authorised officers added yet.</p>
+              )}
               {personnel.map((p) => (
-                <div key={p.id} className="flex items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3">
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between gap-3 rounded-[14px] border border-border px-4 py-3"
+                >
                   <div>
                     <p className="text-sm font-medium">{p.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -247,7 +428,12 @@ export function RegulatorApplicationFlow() {
                       {p.authorisationLevel ? ` · ${p.authorisationLevel}` : ""}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" aria-label="Remove officer" onClick={() => removePersonnel(p.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove officer"
+                    onClick={() => removePersonnel(p.id)}
+                  >
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
@@ -262,15 +448,24 @@ export function RegulatorApplicationFlow() {
             hint="Select the oversight functions this organisation performs. Beldium activates only the capabilities it approves."
             options={copy.capabilities}
             selected={regulator.oversightCapabilities}
-            onToggle={(v) => updateRegulator({ oversightCapabilities: toggle(regulator.oversightCapabilities, v) })}
+            onToggle={(v) =>
+              updateRegulator({ oversightCapabilities: toggle(regulator.oversightCapabilities, v) })
+            }
           />
         )}
 
         {step === 5 && (
           <div className="space-y-3">
             {regulatorDeclarationItems.map((d) => (
-              <label key={d.key} className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3">
-                <Checkbox className="mt-0.5" checked={Boolean(declarations[d.key])} onCheckedChange={(c) => setDeclaration(d.key, Boolean(c))} />
+              <label
+                key={d.key}
+                className="flex items-start gap-3 rounded-[14px] border border-border px-4 py-3"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={Boolean(declarations[d.key])}
+                  onCheckedChange={(c) => setDeclaration(d.key, Boolean(c))}
+                />
                 <span>
                   <span className="block text-sm font-medium">{d.label}</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">{d.detail}</span>
@@ -282,61 +477,136 @@ export function RegulatorApplicationFlow() {
 
         {step === 6 && (
           <div className="space-y-4">
-            <SectionCard title="Organisation" action={<Button variant="ghost" size="sm" onClick={() => setStep(0)}>Edit section</Button>}>
+            <SectionCard
+              title="Organisation"
+              action={
+                <Button variant="ghost" size="sm" onClick={() => setStep(0)}>
+                  Edit section
+                </Button>
+              }
+            >
               <div className="space-y-1">
                 <InfoRow label="Legal name" value={regulator.legalName || "-"} />
                 <InfoRow label="Institution type" value={regulator.institutionType} />
                 <InfoRow label="Established" value={regulator.established || "-"} />
                 <InfoRow label="Head office" value={regulator.headOffice || "-"} />
-                <InfoRow label="Country / State" value={`${regulator.country || "-"} · ${regulator.state}`} />
+                <InfoRow
+                  label="Country / State"
+                  value={`${regulator.country || "-"} · ${regulator.state}`}
+                />
                 <InfoRow label="Official email" value={regulator.officialEmail || "-"} />
                 <InfoRow label="Official phone" value={regulator.officialPhone || "-"} />
                 <InfoRow label="Representative" value={regulator.primaryRepresentative || "-"} />
               </div>
             </SectionCard>
 
-            <SectionCard title="Regulatory authority" action={<Button variant="ghost" size="sm" onClick={() => setStep(1)}>Edit section</Button>}>
+            <SectionCard
+              title="Regulatory authority"
+              action={
+                <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
+                  Edit section
+                </Button>
+              }
+            >
               <div className="space-y-1">
                 <InfoRow label="Mandate" value={regulator.mandate || "-"} />
                 <InfoRow label="Ministry / agency" value={regulator.ministry || "-"} />
-                <InfoRow label="Responsibilities" value={regulator.responsibilities.join(", ") || "-"} />
-                <InfoRow label="Oversight functions" value={regulator.oversightFunctions.join(", ") || "-"} />
+                <InfoRow
+                  label="Responsibilities"
+                  value={regulator.responsibilities.join(", ") || "-"}
+                />
+                <InfoRow
+                  label="Oversight functions"
+                  value={regulator.oversightFunctions.join(", ") || "-"}
+                />
                 <InfoRow label="Jurisdiction" value={regulator.jurisdiction.join(", ") || "-"} />
                 {copy.showMinerals && (
-                  <InfoRow label="Minerals covered" value={regulator.mineralsCovered.join(", ") || "-"} />
+                  <InfoRow
+                    label="Minerals covered"
+                    value={regulator.mineralsCovered.join(", ") || "-"}
+                  />
                 )}
                 <InfoRow label="Inspection authority" value={regulator.canInspect ? "Yes" : "No"} />
-                <InfoRow label="Licence review authority" value={regulator.canReviewLicences ? "Yes" : "No"} />
-                <InfoRow label="Regulatory decisions" value={regulator.canIssueDecisions ? "Yes" : "No"} />
+                <InfoRow
+                  label="Licence review authority"
+                  value={regulator.canReviewLicences ? "Yes" : "No"}
+                />
+                <InfoRow
+                  label="Regulatory decisions"
+                  value={regulator.canIssueDecisions ? "Yes" : "No"}
+                />
               </div>
             </SectionCard>
 
-            <SectionCard title={`Documents (${documents.length})`} action={<Button variant="ghost" size="sm" onClick={() => setStep(2)}>Edit section</Button>}>
+            <SectionCard
+              title={`Documents (${documents.length})`}
+              action={
+                <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
+                  Edit section
+                </Button>
+              }
+            >
               <div className="space-y-1">
-                {documents.length === 0 && <p className="text-sm text-muted-foreground">No documents attached.</p>}
+                {documents.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No documents attached.</p>
+                )}
                 {documents.map((d) => (
                   <InfoRow key={d.id} label={d.category} value={d.name} />
                 ))}
               </div>
             </SectionCard>
 
-            <SectionCard title={`Authorised personnel (${personnel.length})`} action={<Button variant="ghost" size="sm" onClick={() => setStep(3)}>Edit section</Button>}>
+            <SectionCard
+              title={`Authorised personnel (${personnel.length})`}
+              action={
+                <Button variant="ghost" size="sm" onClick={() => setStep(3)}>
+                  Edit section
+                </Button>
+              }
+            >
               <div className="space-y-1">
-                {personnel.length === 0 && <p className="text-sm text-muted-foreground">No officers added.</p>}
+                {personnel.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No officers added.</p>
+                )}
                 {personnel.map((p) => (
-                  <InfoRow key={p.id} label={p.name} value={`${p.position}${p.authorisationLevel ? ` · ${p.authorisationLevel}` : ""}`} />
+                  <InfoRow
+                    key={p.id}
+                    label={p.name}
+                    value={`${p.position}${p.authorisationLevel ? ` · ${p.authorisationLevel}` : ""}`}
+                  />
                 ))}
               </div>
             </SectionCard>
 
-            <SectionCard title="Oversight capability" action={<Button variant="ghost" size="sm" onClick={() => setStep(4)}>Edit section</Button>}>
-              <InfoRow label="Capabilities" value={regulator.oversightCapabilities.join(", ") || "-"} />
+            <SectionCard
+              title="Oversight capability"
+              action={
+                <Button variant="ghost" size="sm" onClick={() => setStep(4)}>
+                  Edit section
+                </Button>
+              }
+            >
+              <InfoRow
+                label="Capabilities"
+                value={regulator.oversightCapabilities.join(", ") || "-"}
+              />
             </SectionCard>
 
-            <SectionCard title="Declarations" action={<Button variant="ghost" size="sm" onClick={() => setStep(5)}>Edit section</Button>}>
+            <SectionCard
+              title="Declarations"
+              action={
+                <Button variant="ghost" size="sm" onClick={() => setStep(5)}>
+                  Edit section
+                </Button>
+              }
+            >
               <div className="space-y-1">
                 {regulatorDeclarationItems.map((d) => (
-                  <InfoRow key={d.key} label={d.label} value={declarations[d.key] ? "Accepted" : "Outstanding"} />
+                  <InfoRow
+                    key={d.key}
+                    label={d.label}
+                    value={declarations[d.key] ? "Accepted" : "Outstanding"}
+                  />
                 ))}
               </div>
             </SectionCard>
@@ -346,7 +616,11 @@ export function RegulatorApplicationFlow() {
 
       <div className="mt-7 flex flex-wrap gap-3">
         {step < steps.length - 1 ? (
-          <Button size="lg" disabled={step === 2 && missingDocuments.length > 0} onClick={() => setStep(step + 1)}>
+          <Button
+            size="lg"
+            disabled={step === 2 && missingDocuments.length > 0}
+            onClick={() => setStep(step + 1)}
+          >
             Continue
           </Button>
         ) : (
@@ -361,7 +635,9 @@ export function RegulatorApplicationFlow() {
         )}
       </div>
       {step === steps.length - 1 && !allDeclared && (
-        <p className="mt-3 text-xs text-muted-foreground">Accept all declarations in step 6 to submit.</p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Accept all declarations in step 6 to submit.
+        </p>
       )}
     </AuthShell>
   );

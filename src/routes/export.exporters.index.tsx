@@ -7,7 +7,10 @@ export const Route = createFileRoute("/export/exporters/")({
   head: () => ({
     meta: [
       { title: "Exporters | Beldium Export Compliance" },
-      { name: "description", content: "Exporter register with application state and compliance scoring." },
+      {
+        name: "description",
+        content: "Exporter register with application state and compliance scoring.",
+      },
     ],
   }),
   component: ExportersPage,

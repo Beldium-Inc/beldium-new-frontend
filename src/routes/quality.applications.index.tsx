@@ -2,7 +2,15 @@ import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { AppShell } from "@/verticals/quality/shell";
-import { EmptyState, PageHeader, Pill, SectionTitle, Stat, StatusPill, Surface } from "@/verticals/quality/ui";
+import {
+  EmptyState,
+  PageHeader,
+  Pill,
+  SectionTitle,
+  Stat,
+  StatusPill,
+  Surface,
+} from "@/verticals/quality/ui";
 import { ProfessionalApplications } from "@/verticals/quality/professional-applications";
 import { useBeldium } from "@/verticals/quality/store";
 import type { ApplicationStatus } from "@/verticals/quality/types";
@@ -62,10 +70,28 @@ function ApplicationsPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="In queue" value={state.applications.filter((a) => a.status !== "approved" && a.status !== "rejected").length} />
-        <Stat label="Awaiting applicant" value={state.applications.filter((a) => a.status === "info_requested").length} sub="information requested" />
-        <Stat label="Approved partners" value={state.applications.filter((a) => a.status === "approved").length} tone="pale" />
-        <Stat label="High risk" value={state.applications.filter((a) => a.riskScore > 50).length} sub="score above 50" />
+        <Stat
+          label="In queue"
+          value={
+            state.applications.filter((a) => a.status !== "approved" && a.status !== "rejected")
+              .length
+          }
+        />
+        <Stat
+          label="Awaiting applicant"
+          value={state.applications.filter((a) => a.status === "info_requested").length}
+          sub="information requested"
+        />
+        <Stat
+          label="Approved partners"
+          value={state.applications.filter((a) => a.status === "approved").length}
+          tone="pale"
+        />
+        <Stat
+          label="High risk"
+          value={state.applications.filter((a) => a.riskScore > 50).length}
+          sub="score above 50"
+        />
       </div>
 
       <Surface className="mt-6">
@@ -139,7 +165,9 @@ function ApplicationsPage() {
                     {verified}/{a.documents.length}
                   </p>
                   <div className="lg:col-span-1">
-                    <Pill tone={a.riskScore > 50 ? "danger" : a.riskScore > 25 ? "warning" : "success"}>
+                    <Pill
+                      tone={a.riskScore > 50 ? "danger" : a.riskScore > 25 ? "warning" : "success"}
+                    >
                       {a.riskScore}
                     </Pill>
                   </div>

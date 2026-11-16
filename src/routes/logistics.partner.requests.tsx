@@ -10,9 +10,16 @@ export const Route = createFileRoute("/logistics/partner/requests")({
   head: () => ({
     meta: [
       { title: "Information requests | Beldium Logistics Partner Portal" },
-      { name: "description", content: "Respond to Beldium compliance information requests and upload the exact missing documents." },
+      {
+        name: "description",
+        content:
+          "Respond to Beldium compliance information requests and upload the exact missing documents.",
+      },
       { property: "og:title", content: "Information requests | Beldium Logistics Partner Portal" },
-      { property: "og:description", content: "Upload missing compliance documents and reply to reviewers." },
+      {
+        property: "og:description",
+        content: "Upload missing compliance documents and reply to reviewers.",
+      },
     ],
   }),
   component: PartnerRequests,
@@ -23,8 +30,17 @@ function PartnerRequests() {
   const mine = requests.filter((r) => r.companyId === myCompany?.id);
 
   return (
-    <AppShell role="partner" breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Information requests" }]}>
-      <PageHeader title="Information requests" description="Beldium compliance has asked for the items below. Upload each document and reply to close the request." />
+    <AppShell
+      role="partner"
+      breadcrumbs={[
+        { label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" },
+        { label: "Information requests" },
+      ]}
+    >
+      <PageHeader
+        title="Information requests"
+        description="Beldium compliance has asked for the items below. Upload each document and reply to close the request."
+      />
       <div className="space-y-4">
         {mine.map((r) => (
           <RequestCard key={r.id} id={r.id} />
@@ -41,7 +57,10 @@ function RequestCard({ id }: { id: string }) {
   const [message, setMessage] = React.useState("");
 
   const attach = (item: string) => {
-    const filename = `${item.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 40)}.pdf`;
+    const filename = `${item
+      .replace(/[^a-z0-9]+/gi, "-")
+      .toLowerCase()
+      .slice(0, 40)}.pdf`;
     setFiles((f) => (f.includes(filename) ? f : [...f, filename]));
     toast.success(`${filename} attached`);
   };
@@ -60,7 +79,11 @@ function RequestCard({ id }: { id: string }) {
     <Panel bodyClassName="p-5">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="font-display text-sm font-semibold text-[var(--brand)]">{req.reason}</h3>
-        <Pill tone={req.status === "Open" ? "warning" : req.status === "Responded" ? "info" : "success"}>{req.status}</Pill>
+        <Pill
+          tone={req.status === "Open" ? "warning" : req.status === "Responded" ? "info" : "success"}
+        >
+          {req.status}
+        </Pill>
         <span className="ml-auto text-xs text-muted-foreground">
           {req.id} · raised by {req.raisedBy} on {req.raisedAt} · due {req.due}
         </span>
@@ -69,12 +92,24 @@ function RequestCard({ id }: { id: string }) {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div>
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Exactly what is missing</p>
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Exactly what is missing
+          </p>
           <ul className="mt-2 space-y-2">
             {req.items.map((item) => {
-              const attached = files.some((f) => f.startsWith(item.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 12)));
+              const attached = files.some((f) =>
+                f.startsWith(
+                  item
+                    .replace(/[^a-z0-9]+/gi, "-")
+                    .toLowerCase()
+                    .slice(0, 12),
+                ),
+              );
               return (
-                <li key={item} className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                <li
+                  key={item}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2"
+                >
                   <FileText className="h-3.5 w-3.5 shrink-0 text-[var(--warning)]" />
                   <span className="flex-1 text-xs text-[var(--brand)]">{item}</span>
                   {attached ? (
@@ -98,7 +133,9 @@ function RequestCard({ id }: { id: string }) {
         </div>
 
         <div>
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Reply to reviewer</p>
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Reply to reviewer
+          </p>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}

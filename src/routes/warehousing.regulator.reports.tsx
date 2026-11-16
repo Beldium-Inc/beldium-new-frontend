@@ -21,7 +21,11 @@ function RegulatorReports() {
   const reports = useWarehousingReports();
 
   return (
-    <AppShell role="regulator" title="Reports" subtitle="Periodic extracts compiled from the live register">
+    <AppShell
+      role="regulator"
+      title="Reports"
+      subtitle="Periodic extracts compiled from the live register"
+    >
       <Panel
         title="Generated reports"
         description="Generate a CSV register export spanning every warehouse you can see."
@@ -38,13 +42,18 @@ function RegulatorReports() {
       >
         <ul className="space-y-2">
           {(reports.data?.results ?? []).map((r) => (
-            <li key={r.id} className="flex items-center justify-between rounded-xl border border-border/70 p-3 text-sm">
+            <li
+              key={r.id}
+              className="flex items-center justify-between rounded-xl border border-border/70 p-3 text-sm"
+            >
               <span className="text-foreground">{r.report_type}</span>
               <span className="text-xs text-muted-foreground">{r.created_at}</span>
             </li>
           ))}
           {(reports.data?.results ?? []).length === 0 && (
-            <li className="py-8 text-center text-sm text-muted-foreground">No reports generated yet.</li>
+            <li className="py-8 text-center text-sm text-muted-foreground">
+              No reports generated yet.
+            </li>
           )}
         </ul>
       </Panel>

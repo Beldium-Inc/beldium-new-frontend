@@ -56,6 +56,28 @@ export interface VaultDocument {
   status: VaultStatus;
   approved_by: string;
   approved_at: string | null;
+  /** The type read from the file's own bytes at upload (backend G7). */
+  sniffed_type?: string;
+  /** "pending" means no scanner has checked it yet; it is never called clean unscanned. */
+  scan_status?: "pending" | "clean" | "infected" | "";
+  /** Filed by the Beldium desk for the organisation (decision 3). */
+  on_behalf_of_company?: boolean;
+  received_from?: ReceivedFrom | "";
+  received_date?: string | null;
+}
+
+export type ReceivedFrom = "email" | "whatsapp" | "in_person";
+
+export const RECEIVED_FROM_LABELS: Record<ReceivedFrom, string> = {
+  email: "Email",
+  whatsapp: "WhatsApp",
+  in_person: "In person",
+};
+
+/** How and when the desk received a file it files for an organisation. */
+export interface ReceivedNote {
+  received_from: ReceivedFrom;
+  received_date: string;
 }
 
 export interface VaultActivity {
@@ -96,6 +118,9 @@ export interface VaultUploadInput {
   title: string;
   description?: string;
   file: File;
+  /** Desk only: file for this organisation, on its behalf. Needs `received`. */
+  organisation?: UUID;
+  received?: ReceivedNote;
 }
 
 export function fetchVaultSectors(signal?: AbortSignal): Promise<VaultSectors> {
@@ -117,14 +142,31 @@ export function uploadVaultDocument(input: VaultUploadInput): Promise<VaultDocum
   form.append("title", input.title);
   form.append("description", input.description ?? "");
   form.append("file", input.file);
+  if (input.organisation) form.append("organisation", input.organisation);
+  if (input.received) {
+    form.append("received_from", input.received.received_from);
+    form.append("received_date", input.received.received_date);
+  }
   return apiFetch<VaultDocument>(`${BASE}/documents/`, { method: "POST", body: form });
 }
 
-export function addVaultVersion(id: UUID, file: File, note: string): Promise<VaultDocument> {
+export function addVaultVersion(
+  id: UUID,
+  file: File,
+  note: string,
+  received?: ReceivedNote,
+): Promise<VaultDocument> {
   const form = new FormData();
   form.append("file", file);
   form.append("note", note);
-  return apiFetch<VaultDocument>(`${BASE}/documents/${id}/versions/`, { method: "POST", body: form });
+  if (received) {
+    form.append("received_from", received.received_from);
+    form.append("received_date", received.received_date);
+  }
+  return apiFetch<VaultDocument>(`${BASE}/documents/${id}/versions/`, {
+    method: "POST",
+    body: form,
+  });
 }
 
 export function approveVaultDocument(id: UUID, note: string): Promise<VaultDocument> {

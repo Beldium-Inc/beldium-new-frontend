@@ -71,10 +71,16 @@ function NewShipmentPage() {
     "h-9 w-full rounded-md border border-input bg-card px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40";
 
   return (
-    <AppShell title="New shipment" subtitle="Record a shipment against your admitted product and buyer">
+    <AppShell
+      title="New shipment"
+      subtitle="Record a shipment against your admitted product and buyer"
+    >
       <form onSubmit={submit} className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
         <div className="space-y-4">
-          <Panel title="Product & buyer" description="Must already be registered on your exporter profile.">
+          <Panel
+            title="Product & buyer"
+            description="Must already be registered on your exporter profile."
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Product</Label>
@@ -117,7 +123,11 @@ function NewShipmentPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Port of loading</Label>
-                <select className={selectCls} value={form.port_of_loading} onChange={set("port_of_loading")}>
+                <select
+                  className={selectCls}
+                  value={form.port_of_loading}
+                  onChange={set("port_of_loading")}
+                >
                   {PORT_OPTIONS.map((p: string) => (
                     <option key={p}>{p}</option>
                   ))}
@@ -137,11 +147,19 @@ function NewShipmentPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Estimated value</Label>
-                <Input value={form.estimated_value} onChange={set("estimated_value")} placeholder="612400" />
+                <Input
+                  value={form.estimated_value}
+                  onChange={set("estimated_value")}
+                  placeholder="612400"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Expected ship date</Label>
-                <Input type="date" value={form.expected_ship_date} onChange={set("expected_ship_date")} />
+                <Input
+                  type="date"
+                  value={form.expected_ship_date}
+                  onChange={set("expected_ship_date")}
+                />
               </div>
             </div>
           </Panel>
@@ -152,7 +170,9 @@ function NewShipmentPage() {
             <ol className="space-y-3 text-xs leading-relaxed text-muted-foreground">
               <li>1. The shipment is added to your register.</li>
               <li>2. Your exporter admission application still governs compliance status.</li>
-              <li>3. Attach supporting evidence against the relevant domain in your application.</li>
+              <li>
+                3. Attach supporting evidence against the relevant domain in your application.
+              </li>
             </ol>
             <DisclaimerNote className="mt-4" />
             <Button type="submit" className="mt-4 w-full" size="lg">

@@ -7,7 +7,11 @@ export const Route = createFileRoute("/marketplace/notifications")({
   head: () => ({
     meta: [
       { title: "Notifications | Beldium Marketplace" },
-      { name: "description", content: "In-app, email and SMS notifications across compliance decisions, RFQ aggregation and shipments." },
+      {
+        name: "description",
+        content:
+          "In-app, email and SMS notifications across compliance decisions, RFQ aggregation and shipments.",
+      },
       { property: "og:title", content: "Notifications | Beldium Marketplace" },
       { property: "og:description", content: "Multi-channel notification log for your role." },
     ],
@@ -17,7 +21,9 @@ export const Route = createFileRoute("/marketplace/notifications")({
 
 function Notifications() {
   const { state, markAllRead } = useDemo();
-  const items = state.notifications.filter((n) => n.audience === state.role || n.audience === "all");
+  const items = state.notifications.filter(
+    (n) => n.audience === state.role || n.audience === "all",
+  );
 
   return (
     <AppShell
@@ -49,12 +55,15 @@ function Notifications() {
                 <p className="text-sm font-medium">{n.title}</p>
                 <p className="text-sm text-muted-foreground">{n.body}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {n.channel === "in_app" ? "In-app" : n.channel.toUpperCase()} · {fmtDateTime(n.at)}
+                  {n.channel === "in_app" ? "In-app" : n.channel.toUpperCase()} ·{" "}
+                  {fmtDateTime(n.at)}
                 </p>
               </div>
             </li>
           ))}
-          {items.length === 0 && <li className="text-sm text-muted-foreground">Nothing here yet.</li>}
+          {items.length === 0 && (
+            <li className="text-sm text-muted-foreground">Nothing here yet.</li>
+          )}
         </ul>
       </SectionCard>
     </AppShell>

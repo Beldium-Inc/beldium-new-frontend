@@ -22,10 +22,14 @@ export const Route = createFileRoute("/onboarding/application")({
       { title: "Compliance Application | Beldium Compliance" },
       {
         name: "description",
-        content: "Complete your Beldium compliance application: organisation details, services, credentials, personnel and declarations.",
+        content:
+          "Complete your Beldium compliance application: organisation details, services, credentials, personnel and declarations.",
       },
       { property: "og:title", content: "Compliance Application | Beldium Compliance" },
-      { property: "og:description", content: "Register as an approved Beldium compliance partner or professional." },
+      {
+        property: "og:description",
+        content: "Register as an approved Beldium compliance partner or professional.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

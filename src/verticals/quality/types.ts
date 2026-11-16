@@ -192,6 +192,10 @@ export interface Certificate {
   status: "active" | "revoked" | "draft";
   verificationHash: string;
   scans: number;
+  /** Server status: valid, expired, revoked, not verified or legacy not verified. */
+  displayStatus: string;
+  /** Printed as given when set. A legacy certificate is never shown as a Beldium verification. */
+  legacyLabel: string | null;
 }
 
 export interface CorrectiveAction {

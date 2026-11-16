@@ -92,8 +92,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Beldium Compliance" },
       {
         property: "og:description",
-        content:
-          "Independent compliance verification across the Nigerian minerals value chain.",
+        content: "Independent compliance verification across the Nigerian minerals value chain.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

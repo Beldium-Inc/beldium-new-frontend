@@ -1,7 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { QrCode } from "lucide-react";
 import { AppShell } from "@/verticals/quality/shell";
-import { EmptyState, PageHeader, Stat, StatusPill, Surface, SectionTitle } from "@/verticals/quality/ui";
+import {
+  EmptyState,
+  PageHeader,
+  Stat,
+  Pill,
+  StatusPill,
+  Surface,
+  SectionTitle,
+} from "@/verticals/quality/ui";
 import { useBeldium } from "@/verticals/quality/store";
 
 export const Route = createFileRoute("/quality/certificates/")({
@@ -16,7 +24,8 @@ export const Route = createFileRoute("/quality/certificates/")({
       { property: "og:title", content: "Material certificates | Beldium" },
       {
         property: "og:description",
-        content: "Verifiable, revocable certificates bound to sealed samples and accredited results.",
+        content:
+          "Verifiable, revocable certificates bound to sealed samples and accredited results.",
       },
     ],
   }),
@@ -38,8 +47,15 @@ function CertificatesPage() {
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Issued" value={state.certificates.length} />
-        <Stat label="Active" value={state.certificates.filter((c) => c.status === "active").length} tone="pale" />
-        <Stat label="Revoked" value={state.certificates.filter((c) => c.status === "revoked").length} />
+        <Stat
+          label="Valid today"
+          value={state.certificates.filter((c) => c.displayStatus === "valid").length}
+          tone="pale"
+        />
+        <Stat
+          label="Revoked"
+          value={state.certificates.filter((c) => c.status === "revoked").length}
+        />
         <Stat
           label="Verification scans"
           value={state.certificates.reduce((n, c) => n + c.scans, 0)}
@@ -48,7 +64,10 @@ function CertificatesPage() {
       </div>
 
       <Surface className="mt-6">
-        <SectionTitle title="Certificate register" hint="Open a certificate for the full verification detail" />
+        <SectionTitle
+          title="Certificate register"
+          hint="Open a certificate for the full verification detail"
+        />
         <div className="divide-y divide-border">
           {state.certificates.length === 0 ? (
             <EmptyState title="No certificates issued yet" />
@@ -73,8 +92,9 @@ function CertificatesPage() {
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground lg:col-span-1">
                   <QrCode className="size-3.5" /> {c.scans}
                 </p>
-                <div className="lg:col-span-2 lg:text-right">
-                  <StatusPill value={c.status} />
+                <div className="flex flex-wrap gap-1.5 lg:col-span-2 lg:justify-end">
+                  {c.legacyLabel ? <Pill tone="warning">{c.legacyLabel}</Pill> : null}
+                  {c.legacyLabel ? null : <StatusPill value={c.displayStatus} />}
                 </div>
               </Link>
             ))

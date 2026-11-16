@@ -4,7 +4,14 @@ import { Panel, StatCard, StatusPill, toneForStatus } from "@/verticals/warehous
 import { labelStatus } from "@/verticals/warehousing/data";
 import { useDemo } from "@/verticals/warehousing/store";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Boxes, PackagePlus, Truck, Warehouse } from "lucide-react";
 
 export const Route = createFileRoute("/warehousing/operator/")({
@@ -13,7 +20,8 @@ export const Route = createFileRoute("/warehousing/operator/")({
       { title: "Operations dashboard | Beldium Warehouse Operator" },
       {
         name: "description",
-        content: "Warehouse operator dashboard: capacity, inventory, admission status and expiring documents.",
+        content:
+          "Warehouse operator dashboard: capacity, inventory, admission status and expiring documents.",
       },
     ],
   }),
@@ -41,10 +49,28 @@ function OperatorDashboard() {
     >
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Stored quantity" value={storedTonnes.toLocaleString()} icon={<Warehouse className="size-5" />} />
-          <StatCard label="Facilities" value={myFacilities.length} icon={<PackagePlus className="size-5" />} />
-          <StatCard label="Lots" value={myLots.length} hint={`${quarantined.length} quarantined`} icon={<Boxes className="size-5" />} />
-          <StatCard label="Documents expiring" value={myDocs.length} tone={myDocs.length ? "warning" : "success"} icon={<Truck className="size-5" />} />
+          <StatCard
+            label="Stored quantity"
+            value={storedTonnes.toLocaleString()}
+            icon={<Warehouse className="size-5" />}
+          />
+          <StatCard
+            label="Facilities"
+            value={myFacilities.length}
+            icon={<PackagePlus className="size-5" />}
+          />
+          <StatCard
+            label="Lots"
+            value={myLots.length}
+            hint={`${quarantined.length} quarantined`}
+            icon={<Boxes className="size-5" />}
+          />
+          <StatCard
+            label="Documents expiring"
+            value={myDocs.length}
+            tone={myDocs.length ? "warning" : "success"}
+            icon={<Truck className="size-5" />}
+          />
         </div>
 
         <Panel title="Admission status" description="Beldium supervision state for this warehouse.">
@@ -79,7 +105,9 @@ function OperatorDashboard() {
                   <TableCell className="font-medium text-primary">{l.reference}</TableCell>
                   <TableCell className="text-sm">{l.product_name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{l.owner_name}</TableCell>
-                  <TableCell className="text-sm">{Number(l.quantity).toLocaleString()} {l.unit}</TableCell>
+                  <TableCell className="text-sm">
+                    {Number(l.quantity).toLocaleString()} {l.unit}
+                  </TableCell>
                   <TableCell>
                     <StatusPill tone={toneForStatus(l.status)}>{l.status}</StatusPill>
                   </TableCell>

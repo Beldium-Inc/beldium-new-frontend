@@ -68,7 +68,8 @@ export function useCreateInvoice() {
 export function useUpdateInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; patch: Partial<Invoice> }) => updateInvoice(input.id, input.patch),
+    mutationFn: (input: { id: UUID; patch: Partial<Invoice> }) =>
+      updateInvoice(input.id, input.patch),
     onSuccess: () => invalidateFinance(queryClient),
   });
 }

@@ -81,8 +81,6 @@ export interface RegulatorApplication {
   requesterTitle?: string;
 }
 
-
-
 export interface InspectionCapability {
   offersInspection: boolean;
   accreditation: string;
@@ -150,7 +148,6 @@ export interface ProfessionalApplication {
   declarations: Record<string, boolean>;
 }
 
-
 export interface ConflictDeclaration {
   hasConflict: boolean | null;
   relationship: string;
@@ -198,7 +195,6 @@ export interface OrgApplication {
   workforce: string;
   annualCapacity: string;
 }
-
 
 export interface JoinRequest {
   id: string;
@@ -283,4 +279,3 @@ export interface ReviewMessage {
   body: string;
   at: string;
 }
-

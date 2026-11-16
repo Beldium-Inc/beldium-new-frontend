@@ -22,7 +22,6 @@ import {
 import { useStore } from "@/verticals/mining/store";
 import type { SectionKey } from "@/verticals/mining/types";
 
-
 /** YYYY-MM-DD, `n` days from today. Default due date for new requests. */
 function inDays(n: number): string {
   const d = new Date();

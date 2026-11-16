@@ -11,7 +11,8 @@ export const Route = createFileRoute("/export/monitoring")({
       { title: "Monitoring | Beldium Export Compliance" },
       {
         name: "description",
-        content: "Notifications on submissions, decisions, information requests and expiring evidence.",
+        content:
+          "Notifications on submissions, decisions, information requests and expiring evidence.",
       },
     ],
   }),
@@ -26,7 +27,12 @@ function MonitoringPage() {
   return (
     <AppShell title="Monitoring" subtitle="Compliance notifications">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Stat label="Unread" value={unread.length} tone={unread.length ? "warning" : "success"} icon={<BellRing className="size-4" />} />
+        <Stat
+          label="Unread"
+          value={unread.length}
+          tone={unread.length ? "warning" : "success"}
+          icon={<BellRing className="size-4" />}
+        />
         <Stat label="Total" value={notifications.length} icon={<Bell className="size-4" />} />
       </div>
 

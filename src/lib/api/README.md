@@ -133,8 +133,9 @@ checklist `items`) - the store fills these with sensible defaults rather than in
 the API doesn't return.
 
 Two identifiers travel together on every row. `id` is the human reference (`BPC-APP-2026-4D62`)
+
 - what people quote and what the URLs carry - and `uuid` is the API's primary key, which every
-write is addressed by. The store owns the map between them.
+  write is addressed by. The store owns the map between them.
 
 Only the application **detail** response carries the ten evidence sections, so the review
 screen reads through `useApplicationDetail(reference)` rather than picking its row out of the

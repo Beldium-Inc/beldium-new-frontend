@@ -85,7 +85,8 @@ export const warehousingKeys = {
   lots: (query: WarehousingListQuery = {}) => ["warehousing", "lots", query] as const,
   inspections: (query: WarehousingListQuery = {}) => ["warehousing", "inspections", query] as const,
   grants: (query: WarehousingListQuery = {}) => ["warehousing", "grants", query] as const,
-  applications: (query: WarehousingListQuery = {}) => ["warehousing", "applications", query] as const,
+  applications: (query: WarehousingListQuery = {}) =>
+    ["warehousing", "applications", query] as const,
   application: (id: UUID) => ["warehousing", "application", id] as const,
   applicationDocuments: (id: UUID) => ["warehousing", "application", id, "documents"] as const,
   applicationRequests: (id: UUID) => ["warehousing", "application", id, "requests"] as const,
@@ -95,13 +96,17 @@ export const warehousingKeys = {
   expiringDocuments: ["warehousing", "documents", "expiring"] as const,
   requests: (query: WarehousingListQuery = {}) => ["warehousing", "requests", query] as const,
   conditions: (query: WarehousingListQuery = {}) => ["warehousing", "conditions", query] as const,
-  notifications: (query: WarehousingListQuery = {}) => ["warehousing", "notifications", query] as const,
+  notifications: (query: WarehousingListQuery = {}) =>
+    ["warehousing", "notifications", query] as const,
   reports: (query: WarehousingListQuery = {}) => ["warehousing", "reports", query] as const,
   incidents: (query: WarehousingListQuery = {}) => ["warehousing", "incidents", query] as const,
-  releaseRequests: (query: WarehousingListQuery = {}) => ["warehousing", "release-requests", query] as const,
-  monitoringAlerts: (query: WarehousingListQuery = {}) => ["warehousing", "monitoring-alerts", query] as const,
+  releaseRequests: (query: WarehousingListQuery = {}) =>
+    ["warehousing", "release-requests", query] as const,
+  monitoringAlerts: (query: WarehousingListQuery = {}) =>
+    ["warehousing", "monitoring-alerts", query] as const,
   inspectors: (query: WarehousingListQuery = {}) => ["warehousing", "inspectors", query] as const,
-  certificates: (query: WarehousingListQuery = {}) => ["warehousing", "certificates", query] as const,
+  certificates: (query: WarehousingListQuery = {}) =>
+    ["warehousing", "certificates", query] as const,
 };
 
 const LIST_STALE_TIME = 30_000;
@@ -379,7 +384,8 @@ export function useWarehousingCertificates(query: WarehousingListQuery = FULL_PA
 export function useCreateWarehousingIncident() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Parameters<typeof createWarehousingIncident>[0]) => createWarehousingIncident(input),
+    mutationFn: (input: Parameters<typeof createWarehousingIncident>[0]) =>
+      createWarehousingIncident(input),
     onSuccess: () => invalidateWarehousing(queryClient),
   });
 }
@@ -387,7 +393,8 @@ export function useCreateWarehousingIncident() {
 export function useCloseWarehousingIncident() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: UUID; notes: string }) => closeWarehousingIncident(input.id, input.notes),
+    mutationFn: (input: { id: UUID; notes: string }) =>
+      closeWarehousingIncident(input.id, input.notes),
     onSuccess: () => invalidateWarehousing(queryClient),
   });
 }
@@ -432,7 +439,8 @@ export function useResolveWarehousingMonitoringAlert() {
 export function useCreateWarehousingInspector() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Parameters<typeof createWarehousingInspector>[0]) => createWarehousingInspector(input),
+    mutationFn: (input: Parameters<typeof createWarehousingInspector>[0]) =>
+      createWarehousingInspector(input),
     onSuccess: () => invalidateWarehousing(queryClient),
   });
 }
@@ -440,7 +448,8 @@ export function useCreateWarehousingInspector() {
 export function useIssueWarehousingCertificate() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Parameters<typeof issueWarehousingCertificate>[0]) => issueWarehousingCertificate(input),
+    mutationFn: (input: Parameters<typeof issueWarehousingCertificate>[0]) =>
+      issueWarehousingCertificate(input),
     onSuccess: () => invalidateWarehousing(queryClient),
   });
 }
@@ -666,7 +675,10 @@ export function useReviewWarehousingRequestResponse() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: { requestId: UUID; accepted: boolean; notes: string }) =>
-      reviewWarehousingRequestResponse(input.requestId, { accepted: input.accepted, notes: input.notes }),
+      reviewWarehousingRequestResponse(input.requestId, {
+        accepted: input.accepted,
+        notes: input.notes,
+      }),
     onSuccess: () => invalidateWarehousing(queryClient),
   });
 }

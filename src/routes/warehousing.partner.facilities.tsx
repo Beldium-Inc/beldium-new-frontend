@@ -2,7 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/verticals/warehousing/app-shell";
 import { Panel, StatCard, StatusPill } from "@/verticals/warehousing/compliance-ui";
 import { useDemo } from "@/verticals/warehousing/store";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ShieldCheck, ShieldX, Warehouse } from "lucide-react";
 
 export const Route = createFileRoute("/warehousing/partner/facilities")({
@@ -21,12 +28,30 @@ function FacilitiesPage() {
   const inactive = state.facilities.length - active;
 
   return (
-    <AppShell role="partner" title="Warehouse register" subtitle="All facilities supervised by Beldium Compliance Partners">
+    <AppShell
+      role="partner"
+      title="Warehouse register"
+      subtitle="All facilities supervised by Beldium Compliance Partners"
+    >
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard label="Total facilities" value={state.facilities.length} icon={<Warehouse className="size-5" />} />
-          <StatCard label="Active" value={active} tone="success" icon={<ShieldCheck className="size-5" />} />
-          <StatCard label="Inactive" value={inactive} tone="danger" icon={<ShieldX className="size-5" />} />
+          <StatCard
+            label="Total facilities"
+            value={state.facilities.length}
+            icon={<Warehouse className="size-5" />}
+          />
+          <StatCard
+            label="Active"
+            value={active}
+            tone="success"
+            icon={<ShieldCheck className="size-5" />}
+          />
+          <StatCard
+            label="Inactive"
+            value={inactive}
+            tone="danger"
+            icon={<ShieldX className="size-5" />}
+          />
         </div>
 
         <Panel title="Facility register" description="Type, location and certificate expiry.">
@@ -49,15 +74,27 @@ function FacilitiesPage() {
                   <TableRow key={f.id}>
                     <TableCell>
                       <p className="font-medium text-foreground">{f.name}</p>
-                      <p className="text-xs text-muted-foreground">{f.state}, {f.country}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {f.state}, {f.country}
+                      </p>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{w?.name ?? "-"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {w?.name ?? "-"}
+                    </TableCell>
                     <TableCell className="text-sm">{f.state}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{f.facility_type}</TableCell>
-                    <TableCell className="text-sm">{Number(f.capacity).toLocaleString()} {f.capacity_unit}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{f.fire_certificate_expires_on ?? "-"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {f.facility_type}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {Number(f.capacity).toLocaleString()} {f.capacity_unit}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {f.fire_certificate_expires_on ?? "-"}
+                    </TableCell>
                     <TableCell>
-                      <StatusPill tone={f.is_active ? "success" : "danger"}>{f.is_active ? "Active" : "Inactive"}</StatusPill>
+                      <StatusPill tone={f.is_active ? "success" : "danger"}>
+                        {f.is_active ? "Active" : "Inactive"}
+                      </StatusPill>
                     </TableCell>
                   </TableRow>
                 );

@@ -10,16 +10,31 @@ import {
   Users,
 } from "lucide-react";
 import { AppShell, ComplianceBanner } from "@/verticals/logistics/AppShell";
-import { KeyValue, PageHeader, Panel, Pill, ScoreBar, StatCard, StatusBadge } from "@/verticals/logistics/bits";
+import {
+  KeyValue,
+  PageHeader,
+  Panel,
+  Pill,
+  ScoreBar,
+  StatCard,
+  StatusBadge,
+} from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
 
 export const Route = createFileRoute("/logistics/partner/")({
   head: () => ({
     meta: [
       { title: "Partner dashboard | Beldium Logistics Partner Portal" },
-      { name: "description", content: "Verification status, outstanding information requests and compliance health for your logistics company." },
+      {
+        name: "description",
+        content:
+          "Verification status, outstanding information requests and compliance health for your logistics company.",
+      },
       { property: "og:title", content: "Partner dashboard | Beldium Logistics Partner Portal" },
-      { property: "og:description", content: "Track your Beldium verification and respond to compliance requests." },
+      {
+        property: "og:description",
+        content: "Track your Beldium verification and respond to compliance requests.",
+      },
     ],
   }),
   component: PartnerDashboard,
@@ -39,14 +54,41 @@ function PartnerDashboard() {
       />
 
       {(company.restrictions ?? []).map((r) => (
-        <ComplianceBanner key={r.id} tone="warning" title={`${r.scope} restricted`} body={r.reason} />
+        <ComplianceBanner
+          key={r.id}
+          tone="warning"
+          title={`${r.scope} restricted`}
+          body={r.reason}
+        />
       ))}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Verification status" value={company.status} icon={ShieldCheck} tone="info" />
-        <StatCard label="Compliance score" value={`${company.riskScore}/100`} hint={`${company.risk} risk`} icon={CheckCircle2} tone="warning" />
-        <StatCard label="Open information requests" value={open.length} hint="Action required" icon={MessageSquareWarning} tone="danger" />
-        <StatCard label="Unread notices" value={notifications.filter((n) => n.audience.includes("partner") && !n.read).length} icon={AlertTriangle} tone="warning" />
+        <StatCard
+          label="Verification status"
+          value={company.status}
+          icon={ShieldCheck}
+          tone="info"
+        />
+        <StatCard
+          label="Compliance score"
+          value={`${company.riskScore}/100`}
+          hint={`${company.risk} risk`}
+          icon={CheckCircle2}
+          tone="warning"
+        />
+        <StatCard
+          label="Open information requests"
+          value={open.length}
+          hint="Action required"
+          icon={MessageSquareWarning}
+          tone="danger"
+        />
+        <StatCard
+          label="Unread notices"
+          value={notifications.filter((n) => n.audience.includes("partner") && !n.read).length}
+          icon={AlertTriangle}
+          tone="warning"
+        />
       </div>
 
       <div className="mt-6 grid gap-4 xl:grid-cols-3">
@@ -56,7 +98,10 @@ function PartnerDashboard() {
           description="Exactly what Beldium compliance still needs from you"
           bodyClassName="p-0"
           actions={
-            <Link to="/logistics/partner/requests" className="text-xs font-medium text-[var(--link)] hover:underline">
+            <Link
+              to="/logistics/partner/requests"
+              className="text-xs font-medium text-[var(--link)] hover:underline"
+            >
               Open request centre
             </Link>
           }
@@ -65,7 +110,9 @@ function PartnerDashboard() {
             {open.map((r) => (
               <li key={r.id} className="px-5 py-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-sm font-semibold text-[var(--brand)]">{r.reason}</span>
+                  <span className="font-display text-sm font-semibold text-[var(--brand)]">
+                    {r.reason}
+                  </span>
                   <Pill tone="warning">Due {r.due}</Pill>
                   <span className="ml-auto text-xs text-muted-foreground">{r.id}</span>
                 </div>
@@ -86,7 +133,9 @@ function PartnerDashboard() {
               </li>
             ))}
             {open.length === 0 ? (
-              <li className="px-5 py-10 text-center text-sm text-muted-foreground">Nothing outstanding: you're all caught up.</li>
+              <li className="px-5 py-10 text-center text-sm text-muted-foreground">
+                Nothing outstanding: you're all caught up.
+              </li>
             ) : null}
           </ul>
         </Panel>
@@ -111,10 +160,16 @@ function PartnerDashboard() {
               ]}
             />
             <div className="mt-4 flex gap-2">
-              <Link to="/logistics/partner/fleet" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50">
+              <Link
+                to="/logistics/partner/fleet"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50"
+              >
                 <Truck className="h-3.5 w-3.5" /> Fleet
               </Link>
-              <Link to="/logistics/partner/drivers" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50">
+              <Link
+                to="/logistics/partner/drivers"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-[var(--brand)] hover:border-[var(--link)]/50"
+              >
                 <Users className="h-3.5 w-3.5" /> Drivers
               </Link>
             </div>

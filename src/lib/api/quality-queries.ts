@@ -43,6 +43,7 @@ import {
   type ResultVerdict,
   type SampleStatus,
 } from "./quality";
+import { organisationDirectory } from "./organisations";
 import { useHasTokens } from "./queries";
 import type { UUID } from "./types";
 
@@ -146,6 +147,25 @@ export function useQualityCertificate(id: UUID | null) {
     queryKey: qualityKeys.certificate(id ?? "none"),
     queryFn: () => getCertificate(id as UUID),
     enabled: Boolean(id),
+  });
+}
+
+/**
+ * Verified laboratories the quality desk can assign a test request to. Only
+ * the desk needs this list, so the query is off for every other role.
+ */
+export function useVerifiedLaboratories(enabled: boolean) {
+  const hasTokens = useHasTokens();
+  return useQuery({
+    queryKey: ["quality", "verified-laboratories"] as const,
+    queryFn: () =>
+      organisationDirectory({
+        organisation_type: "laboratory",
+        verification_status: "verified",
+        page_size: 100,
+      }),
+    enabled: enabled && hasTokens,
+    staleTime: LIST_STALE_TIME,
   });
 }
 
@@ -270,11 +290,13 @@ export function useCreateTestRequest() {
       methods: string[];
       priority: "standard" | "expedited";
       turnaround: string;
+      laboratory?: UUID | undefined;
     }) =>
       createTestRequest(input.id, {
         methods: input.methods,
         priority: input.priority,
         turnaround: input.turnaround,
+        ...(input.laboratory ? { laboratory: input.laboratory } : {}),
       }),
     onSuccess: () => invalidateQuality(queryClient),
   });
@@ -330,7 +352,7 @@ export function useIssueCertificate() {
 export function useRevokeCertificate() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: UUID) => revokeCertificate(id),
+    mutationFn: (input: { id: UUID; reason: string }) => revokeCertificate(input.id, input.reason),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }
@@ -369,7 +391,8 @@ export function useAdvanceCorrectiveAction() {
 export function useCloseQualityNonConformity() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: UUID) => closeQualityNonConformity(id),
+    mutationFn: (input: { id: UUID; reason: string }) =>
+      closeQualityNonConformity(input.id, input.reason),
     onSuccess: () => invalidateQuality(queryClient),
   });
 }

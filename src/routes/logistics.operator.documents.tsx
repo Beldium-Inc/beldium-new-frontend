@@ -10,9 +10,16 @@ export const Route = createFileRoute("/logistics/operator/documents")({
   head: () => ({
     meta: [
       { title: "Expiring documents | Beldium Compliance Operations" },
-      { name: "description", content: "Continuous monitoring of expiring licences, insurance and roadworthiness certificates." },
+      {
+        name: "description",
+        content:
+          "Continuous monitoring of expiring licences, insurance and roadworthiness certificates.",
+      },
       { property: "og:title", content: "Expiring documents | Beldium Compliance Operations" },
-      { property: "og:description", content: "Track credentials approaching expiry across the operator register." },
+      {
+        property: "og:description",
+        content: "Track credentials approaching expiry across the operator register.",
+      },
     ],
   }),
   component: ExpiringDocs,
@@ -26,16 +33,23 @@ function ExpiringDocs() {
   const rows = expiringDocuments.filter(
     (d) =>
       (severity === "All" || d.severity === severity.toLowerCase()) &&
-      (d.company.toLowerCase().includes(query.toLowerCase()) || d.document.toLowerCase().includes(query.toLowerCase())),
+      (d.company.toLowerCase().includes(query.toLowerCase()) ||
+        d.document.toLowerCase().includes(query.toLowerCase())),
   );
 
   return (
     <AppShell
       role="operator"
-      breadcrumbs={[{ label: "Compliance Operations", to: "/logistics/operator" }, { label: "Expiring documents" }]}
+      breadcrumbs={[
+        { label: "Compliance Operations", to: "/logistics/operator" },
+        { label: "Expiring documents" },
+      ]}
       search={{ value: query, onChange: setQuery, placeholder: "Search documents or operators…" }}
     >
-      <PageHeader title="Expiring documents" description="Automated monitoring flags credentials before they lapse and restricts scope where required." />
+      <PageHeader
+        title="Expiring documents"
+        description="Automated monitoring flags credentials before they lapse and restricts scope where required."
+      />
 
       <ComplianceBanner
         tone="danger"
@@ -44,9 +58,30 @@ function ExpiringDocs() {
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard label="Critical (≤10 days)" value={expiringDocuments.filter((d) => d.severity === "critical").length} icon={FileClock} tone="danger" onClick={() => setSeverity("Critical")} active={severity === "Critical"} />
-        <StatCard label="Warning (≤30 days)" value={expiringDocuments.filter((d) => d.severity === "warning").length} icon={CalendarClock} tone="warning" onClick={() => setSeverity("Warning")} active={severity === "Warning"} />
-        <StatCard label="Watchlist (≤90 days)" value={expiringDocuments.filter((d) => d.severity === "watch").length} icon={CalendarClock} tone="info" onClick={() => setSeverity("Watch")} active={severity === "Watch"} />
+        <StatCard
+          label="Critical (≤10 days)"
+          value={expiringDocuments.filter((d) => d.severity === "critical").length}
+          icon={FileClock}
+          tone="danger"
+          onClick={() => setSeverity("Critical")}
+          active={severity === "Critical"}
+        />
+        <StatCard
+          label="Warning (≤30 days)"
+          value={expiringDocuments.filter((d) => d.severity === "warning").length}
+          icon={CalendarClock}
+          tone="warning"
+          onClick={() => setSeverity("Warning")}
+          active={severity === "Warning"}
+        />
+        <StatCard
+          label="Watchlist (≤90 days)"
+          value={expiringDocuments.filter((d) => d.severity === "watch").length}
+          icon={CalendarClock}
+          tone="info"
+          onClick={() => setSeverity("Watch")}
+          active={severity === "Watch"}
+        />
       </div>
 
       <Panel
@@ -56,7 +91,11 @@ function ExpiringDocs() {
         bodyClassName="p-0"
         actions={
           severity !== "All" ? (
-            <button type="button" onClick={() => setSeverity("All")} className="text-xs font-medium text-[var(--link)] hover:underline">
+            <button
+              type="button"
+              onClick={() => setSeverity("All")}
+              className="text-xs font-medium text-[var(--link)] hover:underline"
+            >
               Clear filter
             </button>
           ) : null
@@ -79,14 +118,29 @@ function ExpiringDocs() {
                 <tr key={d.id} className="hover:bg-muted/40">
                   <td className="px-5 py-3 font-medium text-[var(--brand)]">{d.document}</td>
                   <td className="px-3 py-3 text-xs">
-                    <Link to="/logistics/operator/applications/$companyId" params={{ companyId: d.companyId }} search={{ tab: "overview" as const }} className="text-[var(--link)] hover:underline">
+                    <Link
+                      to="/logistics/operator/applications/$companyId"
+                      params={{ companyId: d.companyId }}
+                      search={{ tab: "overview" as const }}
+                      className="text-[var(--link)] hover:underline"
+                    >
                       {d.company}
                     </Link>
                   </td>
                   <td className="px-3 py-3 text-xs">{d.category}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{d.expires}</td>
                   <td className="px-3 py-3">
-                    <Pill tone={d.severity === "critical" ? "danger" : d.severity === "warning" ? "warning" : "neutral"}>{d.daysLeft} days</Pill>
+                    <Pill
+                      tone={
+                        d.severity === "critical"
+                          ? "danger"
+                          : d.severity === "warning"
+                            ? "warning"
+                            : "neutral"
+                      }
+                    >
+                      {d.daysLeft} days
+                    </Pill>
                   </td>
                   <td className="px-5 py-3 text-right">
                     <button

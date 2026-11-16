@@ -8,7 +8,10 @@ export const Route = createFileRoute("/logistics/operator/audit")({
   head: () => ({
     meta: [
       { title: "Audit history | Beldium Compliance Operations" },
-      { name: "description", content: "Immutable audit trail of every compliance action across the Beldium platform." },
+      {
+        name: "description",
+        content: "Immutable audit trail of every compliance action across the Beldium platform.",
+      },
       { property: "og:title", content: "Audit history | Beldium Compliance Operations" },
       { property: "og:description", content: "Who did what, when, and with what outcome." },
     ],
@@ -20,16 +23,25 @@ function AuditPage() {
   const { audit } = useApp();
   const [query, setQuery] = React.useState("");
   const rows = audit.filter((a) =>
-    [a.actor, a.action, a.target, a.outcome, a.role].join(" ").toLowerCase().includes(query.toLowerCase()),
+    [a.actor, a.action, a.target, a.outcome, a.role]
+      .join(" ")
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
 
   return (
     <AppShell
       role="operator"
-      breadcrumbs={[{ label: "Compliance Operations", to: "/logistics/operator" }, { label: "Audit history" }]}
+      breadcrumbs={[
+        { label: "Compliance Operations", to: "/logistics/operator" },
+        { label: "Audit history" },
+      ]}
       search={{ value: query, onChange: setQuery, placeholder: "Search the audit trail…" }}
     >
-      <PageHeader title="Audit history" description="Every action taken by operators, partners, regulators and the platform itself." />
+      <PageHeader
+        title="Audit history"
+        description="Every action taken by operators, partners, regulators and the platform itself."
+      />
       <Panel bodyClassName="p-0" title="Audit trail" description={`${rows.length} entries`}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-sm">
@@ -46,10 +58,22 @@ function AuditPage() {
             <tbody className="divide-y divide-border">
               {rows.map((a) => (
                 <tr key={a.id} className="hover:bg-muted/40">
-                  <td className="px-5 py-3 text-xs whitespace-nowrap text-muted-foreground">{a.at}</td>
+                  <td className="px-5 py-3 text-xs whitespace-nowrap text-muted-foreground">
+                    {a.at}
+                  </td>
                   <td className="px-3 py-3 text-xs font-medium text-[var(--brand)]">{a.actor}</td>
                   <td className="px-3 py-3 text-xs">
-                    <Pill tone={a.role === "System" ? "info" : a.role === "Regulator" ? "neutral" : "success"}>{a.role}</Pill>
+                    <Pill
+                      tone={
+                        a.role === "System"
+                          ? "info"
+                          : a.role === "Regulator"
+                            ? "neutral"
+                            : "success"
+                      }
+                    >
+                      {a.role}
+                    </Pill>
                   </td>
                   <td className="px-3 py-3 text-xs">{a.action}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{a.target}</td>

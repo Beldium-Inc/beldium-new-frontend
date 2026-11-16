@@ -117,7 +117,12 @@ type Ctx = {
     input: {
       status: "approved" | "conditionally_approved" | "rejected";
       rationale: string;
-      conditions?: { title: string; description: string; due_date: string; domain?: ExportDomainKey | "" }[];
+      conditions?: {
+        title: string;
+        description: string;
+        due_date: string;
+        domain?: ExportDomainKey | "";
+      }[];
     },
   ) => void;
   uploadDocument: (
@@ -346,4 +351,13 @@ export function useStore() {
   return ctx;
 }
 
-export type { ExportApplication, ExportBuyer, ExportCondition, ExportDocument, ExportInformationRequest, ExportProduct, ExportShipment, Exporter };
+export type {
+  ExportApplication,
+  ExportBuyer,
+  ExportCondition,
+  ExportDocument,
+  ExportInformationRequest,
+  ExportProduct,
+  ExportShipment,
+  Exporter,
+};

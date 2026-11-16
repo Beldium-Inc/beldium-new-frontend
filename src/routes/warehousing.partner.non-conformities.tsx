@@ -5,7 +5,14 @@ import { AppShell } from "@/verticals/warehousing/app-shell";
 import { Panel, StatCard, StatusPill } from "@/verticals/warehousing/compliance-ui";
 import { useDemo } from "@/verticals/warehousing/store";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { CheckCircle2, FileWarning, ShieldAlert } from "lucide-react";
 import { WAREHOUSING_DOMAIN_LABELS } from "@/lib/api/warehousing";
 
@@ -13,7 +20,10 @@ export const Route = createFileRoute("/warehousing/partner/non-conformities")({
   head: () => ({
     meta: [
       { title: "Conditions | Beldium Compliance Partner" },
-      { name: "description", content: "Outstanding admission conditions raised against warehouse applications." },
+      {
+        name: "description",
+        content: "Outstanding admission conditions raised against warehouse applications.",
+      },
     ],
   }),
   component: ConditionsPage,
@@ -31,12 +41,31 @@ function ConditionsPage() {
   const overdue = outstanding.filter((r) => r.condition.is_overdue);
 
   return (
-    <AppShell role="partner" title="Conditions" subtitle="Corrective conditions attached to admission decisions">
+    <AppShell
+      role="partner"
+      title="Conditions"
+      subtitle="Corrective conditions attached to admission decisions"
+    >
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard label="Outstanding" value={outstanding.length} tone="warning" icon={<FileWarning className="size-5" />} />
-          <StatCard label="Overdue" value={overdue.length} tone="danger" icon={<ShieldAlert className="size-5" />} />
-          <StatCard label="Cleared" value={rows.length - outstanding.length} tone="success" icon={<CheckCircle2 className="size-5" />} />
+          <StatCard
+            label="Outstanding"
+            value={outstanding.length}
+            tone="warning"
+            icon={<FileWarning className="size-5" />}
+          />
+          <StatCard
+            label="Overdue"
+            value={overdue.length}
+            tone="danger"
+            icon={<ShieldAlert className="size-5" />}
+          />
+          <StatCard
+            label="Cleared"
+            value={rows.length - outstanding.length}
+            tone="success"
+            icon={<CheckCircle2 className="size-5" />}
+          />
         </div>
 
         <Panel title="Condition register">
@@ -56,12 +85,18 @@ function ConditionsPage() {
                 const w = state.warehouses.find((x) => x.id === applicationsById[a.id]?.warehouse);
                 return (
                   <TableRow key={c.id}>
-                    <TableCell className="text-sm font-medium text-primary">{w?.name ?? "-"}</TableCell>
+                    <TableCell className="text-sm font-medium text-primary">
+                      {w?.name ?? "-"}
+                    </TableCell>
                     <TableCell className="max-w-72 text-sm">{c.title}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.domain ? WAREHOUSING_DOMAIN_LABELS[c.domain] : "-"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.domain ? WAREHOUSING_DOMAIN_LABELS[c.domain] : "-"}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.due_date}</TableCell>
                     <TableCell>
-                      <StatusPill tone={c.cleared_at ? "success" : c.is_overdue ? "danger" : "warning"}>
+                      <StatusPill
+                        tone={c.cleared_at ? "success" : c.is_overdue ? "danger" : "warning"}
+                      >
                         {c.cleared_at ? "Cleared" : c.is_overdue ? "Overdue" : "Outstanding"}
                       </StatusPill>
                     </TableCell>
@@ -72,13 +107,18 @@ function ConditionsPage() {
                             className="h-8 w-40 rounded-lg border border-input bg-background px-2 text-xs"
                             placeholder="Clearance note"
                             value={note[c.id] ?? ""}
-                            onChange={(e) => setNote((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                            onChange={(e) =>
+                              setNote((prev) => ({ ...prev, [c.id]: e.target.value }))
+                            }
                           />
                           <Button
                             variant="outline"
                             className="h-8 rounded-lg text-xs"
                             onClick={() => {
-                              reviewCondition(c.id, note[c.id] || "Cleared with verified evidence.");
+                              reviewCondition(
+                                c.id,
+                                note[c.id] || "Cleared with verified evidence.",
+                              );
                               toast.success("Condition cleared");
                             }}
                           >

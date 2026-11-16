@@ -10,9 +10,15 @@ export const Route = createFileRoute("/marketplace/marketplace")({
   head: () => ({
     meta: [
       { title: "Find supply | Beldium Marketplace" },
-      { name: "description", content: "Search verified mine supply by commodity, grade, origin and available capacity." },
+      {
+        name: "description",
+        content: "Search verified mine supply by commodity, grade, origin and available capacity.",
+      },
       { property: "og:title", content: "Find supply | Beldium Marketplace" },
-      { property: "og:description", content: "Verified producer capacity indexed for aggregation into offtake RFQs." },
+      {
+        property: "og:description",
+        content: "Verified producer capacity indexed for aggregation into offtake RFQs.",
+      },
     ],
   }),
   component: Marketplace,
@@ -38,13 +44,25 @@ function Marketplace() {
         </Button>
       }
     >
-      <SectionCard title="Producers" description={`${miners.length} of ${state.miners.length} shown`}>
+      <SectionCard
+        title="Producers"
+        description={`${miners.length} of ${state.miners.length} shown`}
+      >
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative max-w-sm flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search miner, origin or grade" className="pl-9" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search miner, origin or grade"
+              className="pl-9"
+            />
           </div>
-          <Button variant={verifiedOnly ? "default" : "outline"} size="sm" onClick={() => setVerifiedOnly((v) => !v)}>
+          <Button
+            variant={verifiedOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setVerifiedOnly((v) => !v)}
+          >
             {verifiedOnly ? "Verified only" : "All producers"}
           </Button>
         </div>

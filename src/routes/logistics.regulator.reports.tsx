@@ -8,7 +8,11 @@ export const Route = createFileRoute("/logistics/regulator/reports")({
   head: () => ({
     meta: [
       { title: "Reports | Beldium Regulatory Portal" },
-      { name: "description", content: "Downloadable oversight reports on operator compliance, restrictions and expiries." },
+      {
+        name: "description",
+        content:
+          "Downloadable oversight reports on operator compliance, restrictions and expiries.",
+      },
       { property: "og:title", content: "Reports | Beldium Regulatory Portal" },
       { property: "og:description", content: "Oversight reports for regulatory review." },
     ],
@@ -25,8 +29,17 @@ const REPORTS = [
 
 function RegulatorReports() {
   return (
-    <AppShell role="regulator" breadcrumbs={[{ label: "Regulatory Oversight", to: "/logistics/regulator" }, { label: "Reports" }]}>
-      <PageHeader title="Reports" description="Export read-only oversight reports for internal regulatory use." />
+    <AppShell
+      role="regulator"
+      breadcrumbs={[
+        { label: "Regulatory Oversight", to: "/logistics/regulator" },
+        { label: "Reports" },
+      ]}
+    >
+      <PageHeader
+        title="Reports"
+        description="Export read-only oversight reports for internal regulatory use."
+      />
       <ReadOnlyNotice text="Exports are watermarked and logged in the Beldium audit trail." />
       <Panel className="mt-4" bodyClassName="p-0" title="Available reports">
         <ul className="divide-y divide-border">

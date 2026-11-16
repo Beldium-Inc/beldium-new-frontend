@@ -26,12 +26,19 @@ export function StatCard({
     <Card className="rounded-2xl border-border/70 shadow-card">
       <CardContent className="flex items-start justify-between gap-3 p-5">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
           <p className="mt-2 font-heading text-3xl font-semibold text-primary">{value}</p>
           {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
         </div>
         {icon ? (
-          <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", tones[tone])}>
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-xl",
+              tones[tone],
+            )}
+          >
             {icon}
           </span>
         ) : null}
@@ -57,7 +64,9 @@ export function Panel({
     <Card className={cn("rounded-2xl border-border/70 shadow-card", className)}>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 pb-3">
         <div>
-          <CardTitle className="font-heading text-base font-semibold text-primary">{title}</CardTitle>
+          <CardTitle className="font-heading text-base font-semibold text-primary">
+            {title}
+          </CardTitle>
           {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
         </div>
         {actions}
@@ -93,11 +102,52 @@ export function StatusPill({ children, tone = "neutral" }: { children: ReactNode
 
 export function toneForStatus(status: string): Tone {
   const s = status.toLowerCase();
-  if (["approved", "authorised", "active", "valid", "closed", "completed", "available", "verified"].includes(s))
+  if (
+    [
+      "approved",
+      "authorised",
+      "active",
+      "valid",
+      "closed",
+      "completed",
+      "available",
+      "verified",
+    ].includes(s)
+  )
     return "success";
-  if (["pending", "under review", "pending authorisation", "scheduled", "in progress", "under investigation", "info-requested", "conditional", "expiring", "quarantine", "allocated", "action required", "attention", "minor", "medium"].includes(s))
+  if (
+    [
+      "pending",
+      "under review",
+      "pending authorisation",
+      "scheduled",
+      "in progress",
+      "under investigation",
+      "info-requested",
+      "conditional",
+      "expiring",
+      "quarantine",
+      "allocated",
+      "action required",
+      "attention",
+      "minor",
+      "medium",
+    ].includes(s)
+  )
     return "warning";
-  if (["rejected", "suspended", "declined", "overdue", "open", "critical", "major", "high", "missing"].includes(s))
+  if (
+    [
+      "rejected",
+      "suspended",
+      "declined",
+      "overdue",
+      "open",
+      "critical",
+      "major",
+      "high",
+      "missing",
+    ].includes(s)
+  )
     return "danger";
   return "info";
 }

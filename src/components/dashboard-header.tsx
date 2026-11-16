@@ -23,7 +23,9 @@ export function DashboardHeader({
   className?: string | undefined;
 }) {
   return (
-    <header className={cn("sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur", className)}>
+    <header
+      className={cn("sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur", className)}
+    >
       <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
         <div className="flex min-w-0 items-start gap-3">
           {onOpenNav && (
@@ -41,7 +43,9 @@ export function DashboardHeader({
           </div>
         </div>
         {actions && (
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">{actions}</div>
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+            {actions}
+          </div>
         )}
       </div>
     </header>

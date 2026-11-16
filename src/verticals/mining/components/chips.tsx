@@ -12,7 +12,15 @@ const toneClass: Record<Tone, string> = {
   brand: "bg-brand text-brand-foreground border-brand",
 };
 
-export function Chip({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string | undefined }) {
+export function Chip({
+  tone = "neutral",
+  children,
+  className,
+}: {
+  tone?: Tone;
+  children: ReactNode;
+  className?: string | undefined;
+}) {
   return (
     <span
       className={cn(
@@ -81,7 +89,13 @@ const map: Record<string, Tone> = {
   "Out of Service": "danger",
 };
 
-export function StatusChip({ value, className }: { value: string; className?: string | undefined }) {
+export function StatusChip({
+  value,
+  className,
+}: {
+  value: string;
+  className?: string | undefined;
+}) {
   return (
     <Chip tone={map[value] ?? "neutral"} className={className}>
       {value}
@@ -90,7 +104,11 @@ export function StatusChip({ value, className }: { value: string; className?: st
 }
 
 export function RiskChip({ value }: { value: "Low" | "Medium" | "High" }) {
-  return <Chip tone={value === "Low" ? "success" : value === "Medium" ? "warning" : "danger"}>{value} risk</Chip>;
+  return (
+    <Chip tone={value === "Low" ? "success" : value === "Medium" ? "warning" : "danger"}>
+      {value} risk
+    </Chip>
+  );
 }
 
 export function ScorePill({ score }: { score: number }) {

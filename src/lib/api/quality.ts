@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchBlob } from "./client";
 import { apiUrl } from "./config";
 import { readTokens } from "./tokens";
 import type { Paginated, UUID } from "./types";
@@ -11,11 +11,52 @@ const BASE = "/quality";
 
 export type QualityRole = "operator" | "partner" | "miner" | "buyer" | "regulator";
 
+/** The 12 Q&C role codes from the access grid (backend G3). */
+export type QualityRoleCode =
+  "QC" | "CEO" | "TL" | "SUP" | "SMP" | "INS" | "LAB" | "LOG" | "EXP" | "BYR" | "ADM" | "LGL";
+
+export type QualityAction = "create" | "read" | "update" | "approve";
+
+/** Record types are the rows of the access grid, in snake case. */
+export type QualityRecordType =
+  | "supplier_profile"
+  | "batch_declaration"
+  | "site_inspection_report"
+  | "sampling_record"
+  | "chain_of_custody"
+  | "test_request"
+  | "assay_report"
+  | "quality_decision"
+  | "ncr_capa"
+  | "evidence_package"
+  | "verification_certificate"
+  | "partner_register"
+  | "audit_log"
+  | "reports"
+  | "users_and_roles";
+
+export interface QualityRoleHolding {
+  role_code: QualityRoleCode;
+  organisation_id: UUID | null;
+  organisation_name: string;
+  valid_from: string;
+  valid_to: string | null;
+}
+
 export interface QualityCapabilities {
   role: QualityRole | null;
   can_review: boolean;
   can_decide: boolean;
   is_staff: boolean;
+  /** Present once the backend serves G3. Older answers leave these out. */
+  user_id?: UUID;
+  roles?: QualityRoleHolding[];
+  role_codes?: QualityRoleCode[];
+  permissions?: Partial<Record<QualityRecordType, QualityAction[]>>;
+  restricted_views?: QualityRecordType[];
+  second_factor_enrolled?: boolean;
+  /** True when this role must use an authenticator app (backend G8 enforcement). */
+  second_factor_required?: boolean;
 }
 
 export type QualityApplicationStatus =
@@ -223,7 +264,15 @@ export interface Certificate {
   status: "active" | "revoked" | "draft";
   verification_hash: string;
   scans: number;
+  is_legacy?: boolean;
+  /** Worked out on the server, so screens never use the device clock (E10). */
+  display_status?: CertificateDisplayStatus;
+  /** "Legacy, not verified" for carried over rows; print it as given. */
+  legacy_label?: string | null;
 }
+
+export type CertificateDisplayStatus =
+  "valid" | "expired" | "revoked" | "not_verified" | "legacy_not_verified";
 
 export interface CorrectiveAction {
   id: UUID;
@@ -352,11 +401,28 @@ export function addCustodyEvent(
   return apiFetch<Sample>(`${BASE}/samples/${id}/custody/`, { method: "POST", body: input });
 }
 
+/**
+ * `laboratory` is an organisation id. Only the quality desk may send it, and the
+ * API refuses a laboratory that is not verified. Leave it out for everyone else.
+ */
 export function createTestRequest(
   id: UUID,
-  input: { methods: string[]; priority: "standard" | "expedited"; turnaround: string },
+  input: {
+    methods: string[];
+    priority: "standard" | "expedited";
+    turnaround: string;
+    laboratory?: UUID | undefined;
+  },
 ): Promise<Sample> {
-  return apiFetch<Sample>(`${BASE}/samples/${id}/test-request/`, { method: "POST", body: input });
+  return apiFetch<Sample>(`${BASE}/samples/${id}/test-request/`, {
+    method: "POST",
+    body: {
+      methods: input.methods,
+      priority: input.priority,
+      turnaround: input.turnaround,
+      ...(input.laboratory ? { laboratory: input.laboratory } : {}),
+    },
+  });
 }
 
 /**
@@ -404,8 +470,12 @@ export function issueCertificate(sampleId: UUID): Promise<Certificate> {
   return apiFetch<Certificate>(`${BASE}/samples/${sampleId}/certificate/`, { method: "POST" });
 }
 
-export function revokeCertificate(id: UUID): Promise<Certificate> {
-  return apiFetch<Certificate>(`${BASE}/certificates/${id}/revoke/`, { method: "POST" });
+/** The reason is stored on the server with the revocation. */
+export function revokeCertificate(id: UUID, reason: string): Promise<Certificate> {
+  return apiFetch<Certificate>(`${BASE}/certificates/${id}/revoke/`, {
+    method: "POST",
+    body: { reason },
+  });
 }
 
 // --- buyer specs --------------------------------------------------------------
@@ -465,9 +535,11 @@ export function advanceCorrectiveAction(ncId: UUID, actionId: UUID): Promise<Cor
   });
 }
 
-export function closeQualityNonConformity(id: UUID): Promise<QualityNonConformity> {
+/** The reason is stored on the server with the closure. */
+export function closeQualityNonConformity(id: UUID, reason: string): Promise<QualityNonConformity> {
   return apiFetch<QualityNonConformity>(`${BASE}/non-conformities/${id}/close/`, {
     method: "POST",
+    body: { reason },
   });
 }
 
@@ -502,13 +574,10 @@ export function uploadQualityApplicationDocument(
  * The download route is authenticated, so a plain link would arrive without it.
  */
 export async function openApplicationDocument(appId: UUID, docId: string): Promise<void> {
-  const tokens = readTokens();
-  const response = await fetch(
+  const blob = await apiFetchBlob(
     apiUrl(`${BASE}/applications/${appId}/documents/${docId}/download/`),
-    { headers: tokens ? { Authorization: `Bearer ${tokens.access}` } : {} },
   );
-  if (!response.ok) throw new Error("The document could not be opened.");
-  const url = URL.createObjectURL(await response.blob());
+  const url = URL.createObjectURL(blob);
   window.open(url, "_blank", "noopener");
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
@@ -548,6 +617,12 @@ export interface CertificateVerification {
   valid_until: string | null;
   status: Certificate["status"];
   scans: number;
+  is_legacy?: boolean;
+  /** The answer the page must show, worked out on the server. */
+  verification?: CertificateDisplayStatus;
+  valid?: boolean;
+  legacy_label?: string | null;
+  checked_at?: string;
 }
 
 /** Unauthenticated: anyone holding the hash from a certificate's QR code can check it. */

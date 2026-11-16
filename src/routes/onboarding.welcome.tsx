@@ -37,8 +37,9 @@ function WelcomePage() {
         <div>
           <p className="font-display text-sm font-semibold">{entry?.title ?? "Verified user"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {application.ref ? `Application ${application.ref} approved.` : "Account approved."} Verified checks: identity, email,
-            phone, statutory documents{capability.offersInspection ? ", inspection accreditation" : ""}.
+            {application.ref ? `Application ${application.ref} approved.` : "Account approved."}{" "}
+            Verified checks: identity, email, phone, statutory documents
+            {capability.offersInspection ? ", inspection accreditation" : ""}.
           </p>
         </div>
       </div>
@@ -47,7 +48,9 @@ function WelcomePage() {
         {(entry?.permissions ?? []).map((p) => (
           <div key={p} className="rounded-[14px] border border-border px-4 py-3 text-sm">
             {p}
-            <span className="mt-0.5 block text-[11px] text-success-foreground/70 text-muted-foreground">Active</span>
+            <span className="mt-0.5 block text-[11px] text-success-foreground/70 text-muted-foreground">
+              Active
+            </span>
           </div>
         ))}
       </div>

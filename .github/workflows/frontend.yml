@@ -1,0 +1,46 @@
+name: Frontend checks
+
+# Runs on every pull request and on every push to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Install, lint, type check and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # This job only checks that the code builds; nothing it builds is deployed,
+      # so a placeholder API address is fine when the repository variable
+      # VITE_API_URL is not set. Real deploys set their own value, and the
+      # build still refuses to run without one outside CI.
+      VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:8000' }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.1"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Type check
+        run: bunx tsc --noEmit
+
+      - name: Build
+        run: bun run build

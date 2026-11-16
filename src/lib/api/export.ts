@@ -21,14 +21,7 @@ export interface ExportListQuery {
 const FULL_PAGE: ExportListQuery = { page_size: 100 };
 
 export type ExportDomainKey =
-  | "exporter"
-  | "product"
-  | "buyer"
-  | "shipment"
-  | "customs"
-  | "quality"
-  | "logistics"
-  | "finance";
+  "exporter" | "product" | "buyer" | "shipment" | "customs" | "quality" | "logistics" | "finance";
 
 export const EXPORT_DOMAIN_KEYS: ExportDomainKey[] = [
   "exporter",
@@ -113,7 +106,8 @@ export interface ExportBuyer {
   updated_at: string;
 }
 
-export type ExportShipmentStatus = "planned" | "ready" | "cleared" | "shipped" | "held" | "cancelled";
+export type ExportShipmentStatus =
+  "planned" | "ready" | "cleared" | "shipped" | "held" | "cancelled";
 
 export interface ExportShipment {
   id: UUID;
@@ -287,7 +281,13 @@ export interface ExportReport {
 
 export interface ExportCapabilities {
   is_staff: boolean;
-  exporters: { id: UUID; name: string; can_edit: boolean; can_review: boolean; can_read: boolean }[];
+  exporters: {
+    id: UUID;
+    name: string;
+    can_edit: boolean;
+    can_review: boolean;
+    can_read: boolean;
+  }[];
 }
 
 export interface ExportDashboardRow {
@@ -381,7 +381,9 @@ export function updateExporter(id: UUID, patch: Partial<NewExporterInput>): Prom
 
 // --- products / buyers / shipments -------------------------------------------
 
-export function listExportProducts(query: ExportListQuery = FULL_PAGE): Promise<Paginated<ExportProduct>> {
+export function listExportProducts(
+  query: ExportListQuery = FULL_PAGE,
+): Promise<Paginated<ExportProduct>> {
   return apiFetch<Paginated<ExportProduct>>(`${BASE}/products/`, { query });
 }
 
@@ -391,11 +393,16 @@ export function createExportProduct(
   return apiFetch<ExportProduct>(`${BASE}/products/`, { method: "POST", body: input });
 }
 
-export function updateExportProduct(id: UUID, patch: Partial<ExportProduct>): Promise<ExportProduct> {
+export function updateExportProduct(
+  id: UUID,
+  patch: Partial<ExportProduct>,
+): Promise<ExportProduct> {
   return apiFetch<ExportProduct>(`${BASE}/products/${id}/`, { method: "PATCH", body: patch });
 }
 
-export function listExportBuyers(query: ExportListQuery = FULL_PAGE): Promise<Paginated<ExportBuyer>> {
+export function listExportBuyers(
+  query: ExportListQuery = FULL_PAGE,
+): Promise<Paginated<ExportBuyer>> {
   return apiFetch<Paginated<ExportBuyer>>(`${BASE}/buyers/`, { query });
 }
 
@@ -409,7 +416,9 @@ export function updateExportBuyer(id: UUID, patch: Partial<ExportBuyer>): Promis
   return apiFetch<ExportBuyer>(`${BASE}/buyers/${id}/`, { method: "PATCH", body: patch });
 }
 
-export function listExportShipments(query: ExportListQuery = FULL_PAGE): Promise<Paginated<ExportShipment>> {
+export function listExportShipments(
+  query: ExportListQuery = FULL_PAGE,
+): Promise<Paginated<ExportShipment>> {
   return apiFetch<Paginated<ExportShipment>>(`${BASE}/shipments/`, { query });
 }
 
@@ -433,7 +442,10 @@ export function createExportShipment(
   return apiFetch<ExportShipment>(`${BASE}/shipments/`, { method: "POST", body: input });
 }
 
-export function updateExportShipment(id: UUID, patch: Partial<ExportShipment>): Promise<ExportShipment> {
+export function updateExportShipment(
+  id: UUID,
+  patch: Partial<ExportShipment>,
+): Promise<ExportShipment> {
   return apiFetch<ExportShipment>(`${BASE}/shipments/${id}/`, { method: "PATCH", body: patch });
 }
 
@@ -443,7 +455,12 @@ export function listShipmentChecklist(shipmentId: UUID): Promise<ExportShipmentC
 
 export function createShipmentChecklistItem(
   shipmentId: UUID,
-  input: { domain: ExportDomainKey; label: string; detail?: string | undefined; state?: ExportChecklistState | undefined },
+  input: {
+    domain: ExportDomainKey;
+    label: string;
+    detail?: string | undefined;
+    state?: ExportChecklistState | undefined;
+  },
 ): Promise<ExportShipmentChecklistItem> {
   return apiFetch<ExportShipmentChecklistItem>(`${BASE}/shipments/${shipmentId}/checklist/`, {
     method: "POST",
@@ -456,24 +473,39 @@ export function setShipmentChecklistState(
   itemId: UUID,
   state: ExportChecklistState,
 ): Promise<ExportShipmentChecklistItem> {
-  return apiFetch<ExportShipmentChecklistItem>(`${BASE}/shipments/${shipmentId}/checklist/${itemId}/`, {
-    method: "PATCH",
-    body: { state },
-  });
+  return apiFetch<ExportShipmentChecklistItem>(
+    `${BASE}/shipments/${shipmentId}/checklist/${itemId}/`,
+    {
+      method: "PATCH",
+      body: { state },
+    },
+  );
 }
 
-export function listShipmentNonConformities(shipmentId: UUID): Promise<ExportShipmentNonConformity[]> {
-  return apiFetch<ExportShipmentNonConformity[]>(`${BASE}/shipments/${shipmentId}/non-conformities/`);
+export function listShipmentNonConformities(
+  shipmentId: UUID,
+): Promise<ExportShipmentNonConformity[]> {
+  return apiFetch<ExportShipmentNonConformity[]>(
+    `${BASE}/shipments/${shipmentId}/non-conformities/`,
+  );
 }
 
 export function raiseShipmentNonConformity(
   shipmentId: UUID,
-  input: { domain: ExportDomainKey; title: string; detail?: string | undefined; severity: ExportNonConformitySeverity },
+  input: {
+    domain: ExportDomainKey;
+    title: string;
+    detail?: string | undefined;
+    severity: ExportNonConformitySeverity;
+  },
 ): Promise<ExportShipmentNonConformity> {
-  return apiFetch<ExportShipmentNonConformity>(`${BASE}/shipments/${shipmentId}/non-conformities/`, {
-    method: "POST",
-    body: input,
-  });
+  return apiFetch<ExportShipmentNonConformity>(
+    `${BASE}/shipments/${shipmentId}/non-conformities/`,
+    {
+      method: "POST",
+      body: input,
+    },
+  );
 }
 
 export function respondToShipmentNonConformity(
@@ -499,9 +531,16 @@ export function closeShipmentNonConformity(
 
 export function decideShipment(
   shipmentId: UUID,
-  input: { outcome: "cleared" | "conditionally_cleared" | "declined"; rationale: string; conditions?: string | undefined },
+  input: {
+    outcome: "cleared" | "conditionally_cleared" | "declined";
+    rationale: string;
+    conditions?: string | undefined;
+  },
 ): Promise<ExportShipment> {
-  return apiFetch<ExportShipment>(`${BASE}/shipments/${shipmentId}/decide/`, { method: "POST", body: input });
+  return apiFetch<ExportShipment>(`${BASE}/shipments/${shipmentId}/decide/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 // --- access grants -------------------------------------------------------------
@@ -522,7 +561,10 @@ export function updateExportAccessGrant(
   id: UUID,
   patch: Partial<Pick<ExportAccessGrant, "is_active" | "role">>,
 ): Promise<ExportAccessGrant> {
-  return apiFetch<ExportAccessGrant>(`${BASE}/access-grants/${id}/`, { method: "PATCH", body: patch });
+  return apiFetch<ExportAccessGrant>(`${BASE}/access-grants/${id}/`, {
+    method: "PATCH",
+    body: patch,
+  });
 }
 
 // --- applications --------------------------------------------------------------
@@ -538,7 +580,10 @@ export function getExportApplication(id: UUID): Promise<ExportApplication> {
 }
 
 export function createExportApplication(exporter: UUID): Promise<ExportApplication> {
-  return apiFetch<ExportApplication>(`${BASE}/applications/`, { method: "POST", body: { exporter } });
+  return apiFetch<ExportApplication>(`${BASE}/applications/`, {
+    method: "POST",
+    body: { exporter },
+  });
 }
 
 /** Applicant-side save of one domain's answers. Returns it to `pending` review. */
@@ -557,7 +602,12 @@ export function saveExportSection(
 export function reviewExportSection(
   id: UUID,
   key: ExportDomainKey,
-  input: { status: ExportDomainStatus; score: number; notes: string; applicable?: boolean | undefined },
+  input: {
+    status: ExportDomainStatus;
+    score: number;
+    notes: string;
+    applicable?: boolean | undefined;
+  },
 ): Promise<ExportDomainReview> {
   return apiFetch<ExportDomainReview>(`${BASE}/applications/${id}/sections/${key}/review/`, {
     method: "POST",
@@ -573,7 +623,9 @@ export function assignExportReviewer(id: UUID, reviewer: UUID): Promise<ExportAp
 }
 
 export function startExportReview(id: UUID): Promise<ExportApplication> {
-  return apiFetch<ExportApplication>(`${BASE}/applications/${id}/start-review/`, { method: "POST" });
+  return apiFetch<ExportApplication>(`${BASE}/applications/${id}/start-review/`, {
+    method: "POST",
+  });
 }
 
 /** Submit for review. Rejected while any domain is incomplete. */
@@ -587,11 +639,19 @@ export function decideExportApplication(
     status: "approved" | "conditionally_approved" | "rejected";
     rationale: string;
     conditions?:
-      | { title: string; description: string; due_date: string; domain?: ExportDomainKey | "" | undefined }[]
+      | {
+          title: string;
+          description: string;
+          due_date: string;
+          domain?: ExportDomainKey | "" | undefined;
+        }[]
       | undefined;
   },
 ): Promise<ExportApplication> {
-  return apiFetch<ExportApplication>(`${BASE}/applications/${id}/decide/`, { method: "POST", body: input });
+  return apiFetch<ExportApplication>(`${BASE}/applications/${id}/decide/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function listExportApplicationDocuments(id: UUID): Promise<ExportDocument[]> {
@@ -618,7 +678,10 @@ export function uploadExportDocument(
     if (value === undefined || value === null || value === "") continue;
     form.append(key, value as string | Blob);
   }
-  return apiFetch<ExportDocument>(`${BASE}/applications/${id}/documents/`, { method: "POST", body: form });
+  return apiFetch<ExportDocument>(`${BASE}/applications/${id}/documents/`, {
+    method: "POST",
+    body: form,
+  });
 }
 
 export function listExportApplicationRequests(id: UUID): Promise<ExportInformationRequest[]> {
@@ -661,7 +724,12 @@ export function listExportApplicationConditions(id: UUID): Promise<ExportConditi
 
 export function createExportCondition(
   id: UUID,
-  input: { title: string; description: string; due_date: string; domain?: ExportDomainKey | "" | undefined },
+  input: {
+    title: string;
+    description: string;
+    due_date: string;
+    domain?: ExportDomainKey | "" | undefined;
+  },
 ): Promise<ExportCondition> {
   return apiFetch<ExportCondition>(`${BASE}/applications/${id}/conditions/`, {
     method: "POST",
@@ -682,7 +750,9 @@ export function listExportApplicationActivity(id: UUID): Promise<{ events: Expor
 
 // --- documents (top-level) ----------------------------------------------------
 
-export function listExportDocuments(query: ExportListQuery = FULL_PAGE): Promise<Paginated<ExportDocument>> {
+export function listExportDocuments(
+  query: ExportListQuery = FULL_PAGE,
+): Promise<Paginated<ExportDocument>> {
   return apiFetch<Paginated<ExportDocument>>(`${BASE}/documents/`, { query });
 }
 
@@ -694,7 +764,10 @@ export function reviewExportDocument(
   id: UUID,
   input: { status: "verified" | "rejected"; notes: string },
 ): Promise<ExportDocument> {
-  return apiFetch<ExportDocument>(`${BASE}/documents/${id}/review/`, { method: "POST", body: input });
+  return apiFetch<ExportDocument>(`${BASE}/documents/${id}/review/`, {
+    method: "POST",
+    body: input,
+  });
 }
 
 export function exportDocumentDownloadUrl(id: UUID): string {
@@ -729,7 +802,9 @@ export function markExportNotificationRead(id: UUID): Promise<ExportNotification
 
 // --- reports ---------------------------------------------------------------------
 
-export function listExportReports(query: ExportListQuery = FULL_PAGE): Promise<Paginated<ExportReport>> {
+export function listExportReports(
+  query: ExportListQuery = FULL_PAGE,
+): Promise<Paginated<ExportReport>> {
   return apiFetch<Paginated<ExportReport>>(`${BASE}/reports/`, { query });
 }
 

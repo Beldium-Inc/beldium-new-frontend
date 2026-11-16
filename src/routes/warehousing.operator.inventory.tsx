@@ -6,14 +6,24 @@ import { Panel, StatCard, StatusPill, toneForStatus } from "@/verticals/warehous
 import { useDemo } from "@/verticals/warehousing/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Boxes, PackageSearch, ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/warehousing/operator/inventory")({
   head: () => ({
     meta: [
       { title: "Inventory & lots | Beldium Warehouse Operator" },
-      { name: "description", content: "Lot-level mineral inventory with origin, storage location, ownership and status." },
+      {
+        name: "description",
+        content: "Lot-level mineral inventory with origin, storage location, ownership and status.",
+      },
     ],
   }),
   component: InventoryPage,
@@ -37,7 +47,11 @@ function InventoryPage() {
   );
 
   return (
-    <AppShell role="operator" title="Inventory & lots" subtitle="Every lot traceable to facility, zone and owner">
+    <AppShell
+      role="operator"
+      title="Inventory & lots"
+      subtitle="Every lot traceable to facility, zone and owner"
+    >
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard label="Lots on site" value={lots.length} icon={<Boxes className="size-5" />} />
@@ -47,7 +61,12 @@ function InventoryPage() {
             tone="info"
             icon={<PackageSearch className="size-5" />}
           />
-          <StatCard label="Quarantined" value={lots.filter((l) => l.status === "quarantined").length} tone="danger" icon={<ShieldAlert className="size-5" />} />
+          <StatCard
+            label="Quarantined"
+            value={lots.filter((l) => l.status === "quarantined").length}
+            tone="danger"
+            icon={<ShieldAlert className="size-5" />}
+          />
         </div>
 
         <Panel
@@ -82,13 +101,23 @@ function InventoryPage() {
                   <TableRow key={l.id}>
                     <TableCell className="font-medium text-primary">{l.reference}</TableCell>
                     <TableCell className="text-sm">{l.product_name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{l.batch_number}</TableCell>
-                    <TableCell className="text-sm">{Number(l.quantity).toLocaleString()} {l.unit}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {l.batch_number}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {Number(l.quantity).toLocaleString()} {l.unit}
+                    </TableCell>
                     <TableCell className="text-sm">
                       {l.variance_percent === null ? (
                         <span className="text-muted-foreground">Not weighed</span>
                       ) : (
-                        <span className={Math.abs(l.variance_percent) > 2 ? "font-medium text-destructive" : "text-muted-foreground"}>
+                        <span
+                          className={
+                            Math.abs(l.variance_percent) > 2
+                              ? "font-medium text-destructive"
+                              : "text-muted-foreground"
+                          }
+                        >
                           {l.variance_percent > 0 ? "+" : ""}
                           {l.variance_percent}%
                         </span>
@@ -117,7 +146,10 @@ function InventoryPage() {
               })}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-sm text-muted-foreground"
+                  >
                     No lots recorded.
                   </TableCell>
                 </TableRow>

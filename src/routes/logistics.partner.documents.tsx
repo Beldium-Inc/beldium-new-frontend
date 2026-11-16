@@ -11,9 +11,16 @@ export const Route = createFileRoute("/logistics/partner/documents")({
   head: () => ({
     meta: [
       { title: "Documents | Beldium Logistics Partner Portal" },
-      { name: "description", content: "All compliance documents submitted to Beldium, with verification status and expiry dates." },
+      {
+        name: "description",
+        content:
+          "All compliance documents submitted to Beldium, with verification status and expiry dates.",
+      },
       { property: "og:title", content: "Documents | Beldium Logistics Partner Portal" },
-      { property: "og:description", content: "Submitted compliance documents and their review status." },
+      {
+        property: "og:description",
+        content: "Submitted compliance documents and their review status.",
+      },
     ],
   }),
   component: PartnerDocuments,
@@ -23,12 +30,20 @@ function PartnerDocuments() {
   const { myCompany } = useApp();
   const c = myCompany!;
   const [query, setQuery] = React.useState("");
-  const docs = c.documents.filter((d) => [d.name, d.category, d.issuer, d.reference].join(" ").toLowerCase().includes(query.toLowerCase()));
+  const docs = c.documents.filter((d) =>
+    [d.name, d.category, d.issuer, d.reference]
+      .join(" ")
+      .toLowerCase()
+      .includes(query.toLowerCase()),
+  );
 
   return (
     <AppShell
       role="partner"
-      breadcrumbs={[{ label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" }, { label: "Documents" }]}
+      breadcrumbs={[
+        { label: "Sahel Haulage & Minerals Ltd", to: "/logistics/partner" },
+        { label: "Documents" },
+      ]}
       search={{ value: query, onChange: setQuery, placeholder: "Search documents…" }}
     >
       <PageHeader

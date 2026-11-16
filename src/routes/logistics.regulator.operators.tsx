@@ -8,9 +8,16 @@ export const Route = createFileRoute("/logistics/regulator/operators")({
   head: () => ({
     meta: [
       { title: "Registered operators | Beldium Regulatory Portal" },
-      { name: "description", content: "Register of logistics operators verified through Beldium, with fleet size and risk band." },
+      {
+        name: "description",
+        content:
+          "Register of logistics operators verified through Beldium, with fleet size and risk band.",
+      },
       { property: "og:title", content: "Registered operators | Beldium Regulatory Portal" },
-      { property: "og:description", content: "Read-only register of Nigerian logistics operators." },
+      {
+        property: "og:description",
+        content: "Read-only register of Nigerian logistics operators.",
+      },
     ],
   }),
   component: RegulatorOperators,
@@ -19,17 +26,30 @@ export const Route = createFileRoute("/logistics/regulator/operators")({
 function RegulatorOperators() {
   const { companies } = useApp();
   const [query, setQuery] = React.useState("");
-  const rows = companies.filter((c) => [c.name, c.id, c.location, c.status].join(" ").toLowerCase().includes(query.toLowerCase()));
+  const rows = companies.filter((c) =>
+    [c.name, c.id, c.location, c.status].join(" ").toLowerCase().includes(query.toLowerCase()),
+  );
 
   return (
     <AppShell
       role="regulator"
-      breadcrumbs={[{ label: "Regulatory Oversight", to: "/logistics/regulator" }, { label: "Registered operators" }]}
+      breadcrumbs={[
+        { label: "Regulatory Oversight", to: "/logistics/regulator" },
+        { label: "Registered operators" },
+      ]}
       search={{ value: query, onChange: setQuery, placeholder: "Search operators…" }}
     >
-      <PageHeader title="Registered operators" description="Read-only register maintained by Beldium compliance operations." />
+      <PageHeader
+        title="Registered operators"
+        description="Read-only register maintained by Beldium compliance operations."
+      />
       <ReadOnlyNotice text="You can view and export this register. Editing operator records is not permitted from the regulatory portal." />
-      <Panel className="mt-4" bodyClassName="p-0" title="Operator register" description={`${rows.length} operators`}>
+      <Panel
+        className="mt-4"
+        bodyClassName="p-0"
+        title="Operator register"
+        description={`${rows.length} operators`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-sm">
             <thead>
@@ -52,7 +72,11 @@ function RegulatorOperators() {
                   <td className="px-3 py-3 text-xs">{c.fleetSize}</td>
                   <td className="px-3 py-3 text-xs">{c.driverCount}</td>
                   <td className="px-3 py-3">
-                    <Pill tone={c.risk === "High" ? "danger" : c.risk === "Medium" ? "warning" : "success"}>
+                    <Pill
+                      tone={
+                        c.risk === "High" ? "danger" : c.risk === "Medium" ? "warning" : "success"
+                      }
+                    >
                       {c.risk} · {c.riskScore}
                     </Pill>
                   </td>

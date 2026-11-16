@@ -54,7 +54,7 @@ import {
   type SectionData,
   type SectionSlug,
 } from "./compliance";
-import { readTokens, subscribeTokens, bindCrossTabSync } from "./tokens";
+import { bindCrossTabSync, hasSession, subscribeTokens } from "./tokens";
 import type { MembershipRole, UUID } from "./types";
 import { useSyncExternalStore } from "react";
 
@@ -83,8 +83,9 @@ export const queryKeys = {
 };
 
 /**
- * Whether a token pair is present, tracked across tabs. Returns false during
- * SSR and the hydration pass, then settles once localStorage is readable.
+ * Whether this browser holds a session, tracked across tabs. True as soon as
+ * the signed in flag is read, even before a reloaded tab has swapped the
+ * refresh cookie for an access token. False during SSR and hydration.
  */
 export function useHasTokens(): boolean {
   return useSyncExternalStore(
@@ -92,7 +93,7 @@ export function useHasTokens(): boolean {
       bindCrossTabSync();
       return subscribeTokens(onChange);
     },
-    () => readTokens() !== null,
+    () => hasSession(),
     () => false,
   );
 }

@@ -6,13 +6,24 @@ import { Panel, StatusPill, toneForStatus } from "@/verticals/warehousing/compli
 import { useDemo } from "@/verticals/warehousing/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const Route = createFileRoute("/warehousing/operator/releases")({
   head: () => ({
     meta: [
       { title: "Release authorisation | Beldium Warehouse Operator" },
-      { name: "description", content: "Authorise stored lots for release and dispatch, reconciling declared and weighbridge-actual quantity." },
+      {
+        name: "description",
+        content:
+          "Authorise stored lots for release and dispatch, reconciling declared and weighbridge-actual quantity.",
+      },
     ],
   }),
   component: ReleasesPage,
@@ -26,10 +37,16 @@ function ReleasesPage() {
   const pending = releases.filter((r) => r.status === "pending");
   const decided = releases.filter((r) => r.status !== "pending");
 
-  const [form, setForm] = React.useState<Record<string, { destination: string; requestedBy: string; actual: string }>>({});
+  const [form, setForm] = React.useState<
+    Record<string, { destination: string; requestedBy: string; actual: string }>
+  >({});
 
   return (
-    <AppShell role="operator" title="Release requests" subtitle="Stock cannot leave site without a recorded authorisation and weighbridge reconciliation">
+    <AppShell
+      role="operator"
+      title="Release requests"
+      subtitle="Stock cannot leave site without a recorded authorisation and weighbridge reconciliation"
+    >
       <Panel title="Ready for release" description="Stored lots eligible for a release request.">
         <Table>
           <TableHeader>
@@ -49,12 +66,16 @@ function ReleasesPage() {
                 <TableRow key={l.id}>
                   <TableCell className="font-medium text-primary">{l.reference}</TableCell>
                   <TableCell className="text-sm">{l.product_name}</TableCell>
-                  <TableCell className="text-sm">{Number(l.quantity).toLocaleString()} {l.unit}</TableCell>
+                  <TableCell className="text-sm">
+                    {Number(l.quantity).toLocaleString()} {l.unit}
+                  </TableCell>
                   <TableCell>
                     <Input
                       className="h-8 w-40 text-xs"
                       value={f.requestedBy}
-                      onChange={(e) => setForm((p) => ({ ...p, [l.id]: { ...f, requestedBy: e.target.value } }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, [l.id]: { ...f, requestedBy: e.target.value } }))
+                      }
                     />
                   </TableCell>
                   <TableCell>
@@ -62,7 +83,9 @@ function ReleasesPage() {
                       className="h-8 w-44 text-xs"
                       placeholder="Destination"
                       value={f.destination}
-                      onChange={(e) => setForm((p) => ({ ...p, [l.id]: { ...f, destination: e.target.value } }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, [l.id]: { ...f, destination: e.target.value } }))
+                      }
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -98,7 +121,11 @@ function ReleasesPage() {
         </Table>
       </Panel>
 
-      <Panel title="Pending authorisation" description="Reconcile declared vs. weighbridge-actual quantity before authorising." className="mt-6">
+      <Panel
+        title="Pending authorisation"
+        description="Reconcile declared vs. weighbridge-actual quantity before authorising."
+        className="mt-6"
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -116,24 +143,40 @@ function ReleasesPage() {
               const actualKey = `actual-${r.id}`;
               const actual = form[actualKey]?.actual ?? "";
               const variance = actual
-                ? Math.round(((Number(actual) - Number(r.declared_quantity)) / Number(r.declared_quantity)) * 1000) / 10
+                ? Math.round(
+                    ((Number(actual) - Number(r.declared_quantity)) / Number(r.declared_quantity)) *
+                      1000,
+                  ) / 10
                 : null;
               return (
                 <TableRow key={r.id}>
-                  <TableCell className="font-medium text-primary">{lot?.reference ?? r.lot}</TableCell>
+                  <TableCell className="font-medium text-primary">
+                    {lot?.reference ?? r.lot}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{r.destination}</TableCell>
-                  <TableCell className="text-sm">{Number(r.declared_quantity).toLocaleString()} {r.unit}</TableCell>
+                  <TableCell className="text-sm">
+                    {Number(r.declared_quantity).toLocaleString()} {r.unit}
+                  </TableCell>
                   <TableCell>
                     <Input
                       className="h-8 w-32 text-xs"
                       placeholder="Actual weight"
                       value={actual}
-                      onChange={(e) => setForm((p) => ({ ...p, [actualKey]: { destination: "", requestedBy: "", actual: e.target.value } }))}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          [actualKey]: { destination: "", requestedBy: "", actual: e.target.value },
+                        }))
+                      }
                     />
                   </TableCell>
                   <TableCell className="text-sm">
                     {variance != null ? (
-                      <span className={Math.abs(variance) > 0.5 ? "text-destructive" : "text-muted-foreground"}>
+                      <span
+                        className={
+                          Math.abs(variance) > 0.5 ? "text-destructive" : "text-muted-foreground"
+                        }
+                      >
                         {variance > 0 ? "+" : ""}
                         {variance}%
                       </span>
@@ -194,10 +237,16 @@ function ReleasesPage() {
               const lot = state.lots.find((l) => l.id === r.lot);
               return (
                 <TableRow key={r.id}>
-                  <TableCell className="font-medium text-primary">{lot?.reference ?? r.lot}</TableCell>
+                  <TableCell className="font-medium text-primary">
+                    {lot?.reference ?? r.lot}
+                  </TableCell>
                   <TableCell className="text-sm">{r.destination}</TableCell>
-                  <TableCell className="text-sm">{r.variance_percent != null ? `${r.variance_percent}%` : "-"}</TableCell>
-                  <TableCell><StatusPill tone={toneForStatus(r.status)}>{r.status}</StatusPill></TableCell>
+                  <TableCell className="text-sm">
+                    {r.variance_percent != null ? `${r.variance_percent}%` : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusPill tone={toneForStatus(r.status)}>{r.status}</StatusPill>
+                  </TableCell>
                 </TableRow>
               );
             })}

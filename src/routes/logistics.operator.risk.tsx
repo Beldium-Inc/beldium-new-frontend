@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { AppShell } from "@/verticals/logistics/AppShell";
 import { PageHeader, Panel, Pill, RiskBadge, ScoreBar } from "@/verticals/logistics/bits";
 import { useApp } from "@/verticals/logistics/store";
@@ -8,9 +17,15 @@ export const Route = createFileRoute("/logistics/operator/risk")({
   head: () => ({
     meta: [
       { title: "Risk assessment | Beldium Compliance Operations" },
-      { name: "description", content: "Portfolio risk scoring across registered logistics operators." },
+      {
+        name: "description",
+        content: "Portfolio risk scoring across registered logistics operators.",
+      },
       { property: "og:title", content: "Risk assessment | Beldium Compliance Operations" },
-      { property: "og:description", content: "Compare operator risk bands, domain scores and mitigations." },
+      {
+        property: "og:description",
+        content: "Compare operator risk bands, domain scores and mitigations.",
+      },
     ],
   }),
   component: RiskPage,
@@ -23,20 +38,45 @@ function RiskPage() {
     .map((c) => ({ name: c.name.replace(/ (Ltd|Plc)$/, ""), score: c.riskScore, risk: c.risk }));
 
   return (
-    <AppShell role="operator" breadcrumbs={[{ label: "Compliance Operations", to: "/logistics/operator" }, { label: "Risk assessment" }]}>
-      <PageHeader title="Risk assessment" description="Portfolio-wide scoring, weighted across the nine compliance domains." />
+    <AppShell
+      role="operator"
+      breadcrumbs={[
+        { label: "Compliance Operations", to: "/logistics/operator" },
+        { label: "Risk assessment" },
+      ]}
+    >
+      <PageHeader
+        title="Risk assessment"
+        description="Portfolio-wide scoring, weighted across the nine compliance domains."
+      />
 
-      <Panel title="Operator risk ranking" description="Lower scores require earlier intervention" bodyClassName="p-4">
+      <Panel
+        title="Operator risk ranking"
+        description="Lower scores require earlier intervention"
+        bodyClassName="p-4"
+      >
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ left: 90, right: 24 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F2" horizontal={false} />
               <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: "#5B6B85" }} />
-              <YAxis type="category" dataKey="name" width={190} tick={{ fontSize: 11, fill: "#5B6B85" }} />
-              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F2", fontSize: 12 }} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={190}
+                tick={{ fontSize: 11, fill: "#5B6B85" }}
+              />
+              <Tooltip
+                contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F2", fontSize: 12 }}
+              />
               <Bar dataKey="score" radius={[0, 6, 6, 0]} barSize={16}>
                 {data.map((d) => (
-                  <Cell key={d.name} fill={d.risk === "Low" ? "#B0E2CD" : d.risk === "Medium" ? "#FBBF24" : "#F87171"} />
+                  <Cell
+                    key={d.name}
+                    fill={
+                      d.risk === "Low" ? "#B0E2CD" : d.risk === "Medium" ? "#FBBF24" : "#F87171"
+                    }
+                  />
                 ))}
               </Bar>
             </BarChart>

@@ -18,17 +18,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  useUpdateWarehouse,
-  useUpdateWarehousingFacility,
-} from "@/lib/api/warehousing-queries";
+import { useUpdateWarehouse, useUpdateWarehousingFacility } from "@/lib/api/warehousing-queries";
 import { Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/warehousing/operator/facility")({
   head: () => ({
     meta: [
       { title: "Facility profile | Beldium Warehouse Operator" },
-      { name: "description", content: "Facility and operating company profile submitted for warehouse compliance registration." },
+      {
+        name: "description",
+        content:
+          "Facility and operating company profile submitted for warehouse compliance registration.",
+      },
     ],
   }),
   component: FacilityPage,
@@ -42,7 +43,9 @@ function FacilityPage() {
     return (
       <AppShell role="operator" title="Facility profile">
         <Panel title="No warehouse on file">
-          <p className="text-sm text-muted-foreground">Your account has no registered warehouse yet.</p>
+          <p className="text-sm text-muted-foreground">
+            Your account has no registered warehouse yet.
+          </p>
         </Panel>
       </AppShell>
     );
@@ -55,7 +58,9 @@ function FacilityPage() {
           description="Registered particulars held on file."
           actions={
             <div className="flex items-center gap-2">
-              <StatusPill tone={toneForStatus(myApplication?.status ?? "not_started")}>{labelStatus(myApplication?.status ?? "not_started")}</StatusPill>
+              <StatusPill tone={toneForStatus(myApplication?.status ?? "not_started")}>
+                {labelStatus(myApplication?.status ?? "not_started")}
+              </StatusPill>
               <OperatorEditDialog warehouse={myWarehouse} />
             </div>
           }
@@ -73,7 +78,10 @@ function FacilityPage() {
             <Field label="Licence number" value={myWarehouse.warehouse_license_number || "-"} />
             <Field label="Licence expiry" value={myWarehouse.license_expires_on ?? "-"} />
             <Field label="Services" value={myWarehouse.services.join(", ") || "-"} />
-            <Field label="Storage categories" value={myWarehouse.storage_categories.join(", ") || "-"} />
+            <Field
+              label="Storage categories"
+              value={myWarehouse.storage_categories.join(", ") || "-"}
+            />
             <Field label="Head office address" value={myWarehouse.head_office_address || "-"} />
             <Field label="Bankers" value={myWarehouse.bankers || "-"} />
             <Field label="Annual turnover" value={myWarehouse.annual_turnover || "-"} />
@@ -106,11 +114,19 @@ function FacilityPage() {
         </Panel>
 
         {facilities.map((f) => (
-          <Panel key={f.id} title={f.name} description={`${f.state}, ${f.country}`} actions={<FacilityEditDialog facility={f} />}>
+          <Panel
+            key={f.id}
+            title={f.name}
+            description={`${f.state}, ${f.country}`}
+            actions={<FacilityEditDialog facility={f} />}
+          >
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Type" value={f.facility_type} />
               <Field label="Address" value={f.address} />
-              <Field label="Capacity" value={`${Number(f.capacity).toLocaleString()} ${f.capacity_unit}`} />
+              <Field
+                label="Capacity"
+                value={`${Number(f.capacity).toLocaleString()} ${f.capacity_unit}`}
+              />
               <Field label="Coordinates" value={f.coordinates || "-"} />
               <Field label="Land title" value={f.land_title || "-"} />
               <Field label="Built area" value={f.built_area || "-"} />
@@ -131,7 +147,9 @@ function FacilityPage() {
         ))}
         {facilities.length === 0 && (
           <Panel title="No facilities registered">
-            <p className="text-sm text-muted-foreground">Add a facility to begin recording storage zones and lots.</p>
+            <p className="text-sm text-muted-foreground">
+              Add a facility to begin recording storage zones and lots.
+            </p>
           </Panel>
         )}
       </div>
@@ -158,8 +176,9 @@ function OperatorEditDialog({ warehouse }: { warehouse: WarehouseOperator }) {
     staff_count: warehouse.staff_count?.toString() ?? "",
   });
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = () => {
     void updateWarehouse
@@ -206,22 +225,34 @@ function OperatorEditDialog({ warehouse }: { warehouse: WarehouseOperator }) {
           </div>
           <div className="space-y-2">
             <Label>Licence number</Label>
-            <Input value={form.warehouse_license_number} onChange={set("warehouse_license_number")} />
+            <Input
+              value={form.warehouse_license_number}
+              onChange={set("warehouse_license_number")}
+            />
           </div>
           <div className="space-y-2">
             <Label>Licence expiry</Label>
-            <Input type="date" value={form.license_expires_on} onChange={set("license_expires_on")} />
+            <Input
+              type="date"
+              value={form.license_expires_on}
+              onChange={set("license_expires_on")}
+            />
           </div>
           <p className="col-span-full text-xs text-muted-foreground">
-            Trading name, incorporation, mineral title and financial particulars are set during registration and
-            reviewed by the compliance partner; contact your reviewer to amend them.
+            Trading name, incorporation, mineral title and financial particulars are set during
+            registration and reviewed by the compliance partner; contact your reviewer to amend
+            them.
           </p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={updateWarehouse.isPending} className="bg-link text-link-foreground hover:bg-link/90">
+          <Button
+            onClick={submit}
+            disabled={updateWarehouse.isPending}
+            className="bg-link text-link-foreground hover:bg-link/90"
+          >
             Save changes
           </Button>
         </DialogFooter>
@@ -248,8 +279,9 @@ function FacilityEditDialog({ facility }: { facility: WarehousingFacility }) {
     insurance_expires_on: facility.insurance_expires_on ?? "",
   });
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = () => {
     void updateFacility
@@ -299,7 +331,11 @@ function FacilityEditDialog({ facility }: { facility: WarehousingFacility }) {
           </div>
           <div className="space-y-2">
             <Label>Built area</Label>
-            <Input value={form.built_area} onChange={set("built_area")} placeholder="e.g. 4,500 sqm" />
+            <Input
+              value={form.built_area}
+              onChange={set("built_area")}
+              placeholder="e.g. 4,500 sqm"
+            />
           </div>
           <div className="space-y-2">
             <Label>Facility contact</Label>
@@ -311,23 +347,43 @@ function FacilityEditDialog({ facility }: { facility: WarehousingFacility }) {
           </div>
           <div className="space-y-2">
             <Label>Loading dock count</Label>
-            <Input type="number" value={form.loading_dock_count} onChange={set("loading_dock_count")} />
+            <Input
+              type="number"
+              value={form.loading_dock_count}
+              onChange={set("loading_dock_count")}
+            />
           </div>
           <div className="space-y-2">
             <Label>Fire certificate expiry</Label>
-            <Input type="date" value={form.fire_certificate_expires_on} onChange={set("fire_certificate_expires_on")} />
+            <Input
+              type="date"
+              value={form.fire_certificate_expires_on}
+              onChange={set("fire_certificate_expires_on")}
+            />
           </div>
           <div className="space-y-2">
             <Label>Insurance expiry</Label>
-            <Input type="date" value={form.insurance_expires_on} onChange={set("insurance_expires_on")} />
+            <Input
+              type="date"
+              value={form.insurance_expires_on}
+              onChange={set("insurance_expires_on")}
+            />
           </div>
           <div className="col-span-full space-y-2">
             <Label>Weighbridge details</Label>
-            <Textarea value={form.weighbridge_details} onChange={set("weighbridge_details")} rows={2} />
+            <Textarea
+              value={form.weighbridge_details}
+              onChange={set("weighbridge_details")}
+              rows={2}
+            />
           </div>
           <div className="col-span-full space-y-2">
             <Label>Laboratory details</Label>
-            <Textarea value={form.laboratory_details} onChange={set("laboratory_details")} rows={2} />
+            <Textarea
+              value={form.laboratory_details}
+              onChange={set("laboratory_details")}
+              rows={2}
+            />
           </div>
           <div className="col-span-full space-y-2">
             <Label>Security details</Label>
@@ -335,14 +391,22 @@ function FacilityEditDialog({ facility }: { facility: WarehousingFacility }) {
           </div>
           <div className="col-span-full space-y-2">
             <Label>Fire system details</Label>
-            <Textarea value={form.fire_system_details} onChange={set("fire_system_details")} rows={2} />
+            <Textarea
+              value={form.fire_system_details}
+              onChange={set("fire_system_details")}
+              rows={2}
+            />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={updateFacility.isPending} className="bg-link text-link-foreground hover:bg-link/90">
+          <Button
+            onClick={submit}
+            disabled={updateFacility.isPending}
+            className="bg-link text-link-foreground hover:bg-link/90"
+          >
             Save changes
           </Button>
         </DialogFooter>

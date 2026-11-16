@@ -8,9 +8,15 @@ export const Route = createFileRoute("/logistics/operator/profile")({
   head: () => ({
     meta: [
       { title: "My profile | Beldium Compliance Operations" },
-      { name: "description", content: "Reviewer profile, permissions and personal compliance workload." },
+      {
+        name: "description",
+        content: "Reviewer profile, permissions and personal compliance workload.",
+      },
       { property: "og:title", content: "My profile | Beldium Compliance Operations" },
-      { property: "og:description", content: "Reviewer permissions and workload for Beldium compliance operators." },
+      {
+        property: "og:description",
+        content: "Reviewer permissions and workload for Beldium compliance operators.",
+      },
     ],
   }),
   component: ProfilePage,
@@ -22,8 +28,17 @@ function ProfilePage() {
   const mine = companies.filter((c) => c.claim === "mine");
 
   return (
-    <AppShell role="operator" breadcrumbs={[{ label: "Compliance Operations", to: "/logistics/operator" }, { label: "My profile" }]}>
-      <PageHeader title="My profile" description="Your reviewer identity, permissions and current caseload." />
+    <AppShell
+      role="operator"
+      breadcrumbs={[
+        { label: "Compliance Operations", to: "/logistics/operator" },
+        { label: "My profile" },
+      ]}
+    >
+      <PageHeader
+        title="My profile"
+        description="Your reviewer identity, permissions and current caseload."
+      />
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel title="Reviewer" className="lg:col-span-2">
           <KeyValue
@@ -75,15 +90,31 @@ function ProfilePage() {
         <div className="space-y-4">
           <Panel title="My caseload">
             <div className="space-y-3">
-              <ScoreBar label="Cases assigned" value={Math.min(100, mine.length * 20)} suffix={` (${mine.length})`} />
-              <ScoreBar label="Open requests" value={Math.min(100, requests.filter((r) => r.status === "Open").length * 20)} suffix="" />
+              <ScoreBar
+                label="Cases assigned"
+                value={Math.min(100, mine.length * 20)}
+                suffix={` (${mine.length})`}
+              />
+              <ScoreBar
+                label="Open requests"
+                value={Math.min(100, requests.filter((r) => r.status === "Open").length * 20)}
+                suffix=""
+              />
               <ScoreBar label="SLA adherence" value={91} />
             </div>
           </Panel>
           <Panel title="Notification preferences">
             <ul className="space-y-2 text-xs text-[var(--brand)]">
-              {["Critical expiry alerts", "New application assignments", "Partner responses", "Weekly risk digest"].map((p) => (
-                <li key={p} className="flex items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2">
+              {[
+                "Critical expiry alerts",
+                "New application assignments",
+                "Partner responses",
+                "Weekly risk digest",
+              ].map((p) => (
+                <li
+                  key={p}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2"
+                >
                   <span className="flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5 text-[var(--link)]" /> {p}
                   </span>

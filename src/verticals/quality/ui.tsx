@@ -1,11 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export function Surface({
-  className,
-  children,
-  ...rest
-}: React.HTMLAttributes<HTMLDivElement>) {
+export function Surface({ className, children, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       {...rest}
@@ -133,12 +129,7 @@ export function Stat({
   tone?: "navy" | "pale" | undefined;
 }) {
   return (
-    <Surface
-      className={cn(
-        "p-5",
-        tone === "navy" ? "bg-card" : "border-pale bg-pale/50",
-      )}
-    >
+    <Surface className={cn("p-5", tone === "navy" ? "bg-card" : "border-pale bg-pale/50")}>
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
       <p className="mt-2 font-display text-3xl font-semibold text-navy">{value}</p>
       {sub ? <p className="mt-1 text-xs text-muted-foreground">{sub}</p> : null}

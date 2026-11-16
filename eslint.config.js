@@ -6,7 +6,24 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  {
+    // Folders that are not part of this app: other projects in the same repo,
+    // build output, and local tooling. Lint only covers the frontend in src/.
+    ignores: [
+      "dist",
+      ".output",
+      ".vinxi",
+      ".tanstack",
+      ".nitro",
+      ".wrangler",
+      ".claude",
+      "Beldium-Miner-Hub",
+      "llogisticsportal",
+      "beldiumqc",
+      "beldiumlogisticscompliance",
+      "node_modules",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

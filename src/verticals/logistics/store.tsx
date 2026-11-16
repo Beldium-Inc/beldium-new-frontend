@@ -29,10 +29,7 @@ import {
 } from "@/lib/api/logistics-queries";
 import { useCurrentUser, useMyOrganisations } from "@/lib/api/queries";
 import { apiUrl } from "@/lib/api/config";
-import {
-  documentDownloadUrl,
-  type LogisticsDomainKey,
-} from "@/lib/api/logistics";
+import { documentDownloadUrl, type LogisticsDomainKey } from "@/lib/api/logistics";
 import type {
   AuditEntry,
   CheckSection,
@@ -92,7 +89,15 @@ const DOMAIN_DESCRIPTION: Record<LogisticsDomainKey, string> = {
 };
 
 const DOMAIN_ORDER: LogisticsDomainKey[] = [
-  "corporate", "regulatory", "fleet", "driver", "insurance", "hs", "operational", "mineral", "data",
+  "corporate",
+  "regulatory",
+  "fleet",
+  "driver",
+  "insurance",
+  "hs",
+  "operational",
+  "mineral",
+  "data",
 ];
 
 const CHECK_STATUS: Record<Api.DomainReviewStatus, CheckStatus> = {
@@ -125,7 +130,9 @@ const CREDENTIAL_STATUS: Record<Api.CredentialValidity, Vehicle["status"]> = {
   undeclared: "Attention",
 };
 
-function riskBandLabel(band: Api.LogisticsApplication["risk"]["risk_band"] | null | undefined): RiskBand {
+function riskBandLabel(
+  band: Api.LogisticsApplication["risk"]["risk_band"] | null | undefined,
+): RiskBand {
   if (band === "high") return "High";
   if (band === "medium") return "Medium";
   return "Low";
@@ -142,7 +149,8 @@ function toVehicle(row: Api.Vehicle): Vehicle {
     model: row.model,
     year: row.year,
     capacity: `${row.capacity} ${row.capacity_unit}`,
-    ownership: row.ownership === "owned" ? "Owned" : row.ownership === "leased" ? "Leased" : "Contracted",
+    ownership:
+      row.ownership === "owned" ? "Owned" : row.ownership === "leased" ? "Leased" : "Contracted",
     insurer: row.insurer,
     insuranceExpiry: row.insurance_expiry ?? "Not declared",
     roadworthinessExpiry: row.roadworthiness_expiry ?? "Not declared",
@@ -152,7 +160,12 @@ function toVehicle(row: Api.Vehicle): Vehicle {
     operatingStatus: row.operating_status,
     maintenanceStatus: row.maintenance_status,
     trackingCapability: row.tracking_capability,
-    gps: row.gps_status === "active" ? "Active" : row.gps_status === "intermittent" ? "Intermittent" : "Inactive",
+    gps:
+      row.gps_status === "active"
+        ? "Active"
+        : row.gps_status === "intermittent"
+          ? "Intermittent"
+          : "Inactive",
     status: row.is_active ? CREDENTIAL_STATUS[row.credential_status] : "Non-compliant",
     location: row.location,
   };
@@ -195,7 +208,9 @@ const FILE_DETAILS: [string, string][] = [
 
 function fileSize(bytes: unknown): string {
   if (typeof bytes !== "number") return "";
-  return bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return bytes < 1024 * 1024
+    ? `${Math.ceil(bytes / 1024)} KB`
+    : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function toDocument(row: Api.LogisticsDocument): ComplianceDocument {
@@ -260,7 +275,11 @@ function toAuditEntry(row: Api.LogisticsAuditEvent): AuditEntry {
   };
 }
 
-function toInfoRequest(row: Api.InformationRequest, companyId: string, companyName: string): InfoRequest {
+function toInfoRequest(
+  row: Api.InformationRequest,
+  companyId: string,
+  companyName: string,
+): InfoRequest {
   const latest = row.responses[row.responses.length - 1];
   return {
     id: row.id,
@@ -274,7 +293,13 @@ function toInfoRequest(row: Api.InformationRequest, companyId: string, companyNa
     due: row.due_date,
     status: row.status === "open" ? "Open" : row.status === "responded" ? "Responded" : "Closed",
     ...(latest
-      ? { response: { at: latest.created_at.slice(0, 10), message: latest.message, files: latest.documents } }
+      ? {
+          response: {
+            at: latest.created_at.slice(0, 10),
+            message: latest.message,
+            files: latest.documents,
+          },
+        }
       : {}),
   };
 }
@@ -405,7 +430,13 @@ export function AppStateProvider({
     const account = currentUser.data;
     if (!account) return null;
     const name = [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
-    return { role, person: name, title: ROLE_TITLE[role], org: "Beldium Logistics Compliance", email: account.email };
+    return {
+      role,
+      person: name,
+      title: ROLE_TITLE[role],
+      org: "Beldium Logistics Compliance",
+      email: account.email,
+    };
   }, [currentUser.data, role]);
 
   const companiesRaw = (companiesQuery.data ?? EMPTY_LIST).results;
@@ -448,16 +479,24 @@ export function AppStateProvider({
   const companies = React.useMemo<Company[]>(() => {
     return companiesRaw.map((row) => {
       const application = applicationByCompanyUuid.get(row.id);
-      const vehicles = vehiclesRaw.filter((v) => v.company === row.id && v.is_active).map(toVehicle);
-      const vehicleRegById = new Map(vehiclesRaw.filter((v) => v.company === row.id).map((v) => [v.id, v.registration]));
+      const vehicles = vehiclesRaw
+        .filter((v) => v.company === row.id && v.is_active)
+        .map(toVehicle);
+      const vehicleRegById = new Map(
+        vehiclesRaw.filter((v) => v.company === row.id).map((v) => [v.id, v.registration]),
+      );
       const drivers = driversRaw
         .filter((d) => d.company === row.id && d.is_active)
-        .map((d) => toDriver(d, d.assigned_vehicle ? (vehicleRegById.get(d.assigned_vehicle) ?? "") : ""));
+        .map((d) =>
+          toDriver(d, d.assigned_vehicle ? (vehicleRegById.get(d.assigned_vehicle) ?? "") : ""),
+        );
       const documents = application
         ? documentsRaw.filter((doc) => doc.application === application.id)
         : [];
       const dashboardRow = dashboardByCompanyUuid.get(row.id);
-      const baseStatus = application ? APPLICATION_STATUS_LABEL[application.status] : "Pending Review";
+      const baseStatus = application
+        ? APPLICATION_STATUS_LABEL[application.status]
+        : "Pending Review";
       const status: CompanyStatus =
         (baseStatus === "Approved" || baseStatus === "Conditionally Approved") &&
         (dashboardRow?.expiring_documents ?? 0) > 0
@@ -562,14 +601,18 @@ export function AppStateProvider({
     () =>
       requestsRaw.map((row) => {
         const companyUuid = applicationUuidToCompanyUuid.get(row.application);
-        const companyId = (companyUuid && companyReferenceByUuid.get(companyUuid)) ?? row.application;
+        const companyId =
+          (companyUuid && companyReferenceByUuid.get(companyUuid)) ?? row.application;
         const companyName = (companyUuid && companyNameByUuid.get(companyUuid)) ?? "";
         return toInfoRequest(row, companyId, companyName);
       }),
     [requestsRaw, applicationUuidToCompanyUuid, companyReferenceByUuid, companyNameByUuid],
   );
 
-  const notifications = React.useMemo(() => notificationsRaw.map(toNotification), [notificationsRaw]);
+  const notifications = React.useMemo(
+    () => notificationsRaw.map(toNotification),
+    [notificationsRaw],
+  );
   const audit = React.useMemo(() => auditRaw.map(toAuditEntry), [auditRaw]);
 
   const expiringDocuments = React.useMemo<ExpiringDoc[]>(() => {
@@ -616,8 +659,18 @@ export function AppStateProvider({
   }, [applicationsRaw, companyReferenceByUuid]);
 
   const queries = [
-    currentUser, me, dashboard, companiesQuery, applicationsQuery, vehiclesQuery,
-    driversQuery, documentsQuery, requestsQuery, restrictionsQuery, notificationsQuery, auditQuery,
+    currentUser,
+    me,
+    dashboard,
+    companiesQuery,
+    applicationsQuery,
+    vehiclesQuery,
+    driversQuery,
+    documentsQuery,
+    requestsQuery,
+    restrictionsQuery,
+    notificationsQuery,
+    auditQuery,
   ];
   const isLoading = queries.some((q) => q.isPending);
   const firstError = queries.map((q) => q.error).find(Boolean) ?? null;
@@ -625,7 +678,7 @@ export function AppStateProvider({
   const applicationIdForCompany = React.useCallback(
     (companyId: string) => {
       const uuid = uuidByReference.get(companyId);
-      return uuid ? applicationByCompanyUuid.get(uuid)?.id ?? null : null;
+      return uuid ? (applicationByCompanyUuid.get(uuid)?.id ?? null) : null;
     },
     [uuidByReference, applicationByCompanyUuid],
   );
@@ -721,7 +774,11 @@ export function AppStateProvider({
       const id = applicationIdForCompany(companyId);
       if (!id) throw new Error("This company has no application to decide.");
       const status =
-        decision === "Approved" ? "approved" : decision === "Conditionally Approved" ? "conditionally_approved" : "rejected";
+        decision === "Approved"
+          ? "approved"
+          : decision === "Conditionally Approved"
+            ? "conditionally_approved"
+            : "rejected";
       await decideFor.mutateAsync({
         id,
         status,

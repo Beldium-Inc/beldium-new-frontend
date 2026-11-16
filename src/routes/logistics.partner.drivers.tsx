@@ -10,7 +10,11 @@ export const Route = createFileRoute("/logistics/partner/drivers")({
   head: () => ({
     meta: [
       { title: "Drivers | Beldium Logistics Partner Portal" },
-      { name: "description", content: "Driver licences, medicals, training records and vehicle assignments for your haulage operation." },
+      {
+        name: "description",
+        content:
+          "Driver licences, medicals, training records and vehicle assignments for your haulage operation.",
+      },
       { property: "og:title", content: "Drivers | Beldium Logistics Partner Portal" },
       { property: "og:description", content: "Track driver credentials and training compliance." },
     ],
@@ -18,32 +22,71 @@ export const Route = createFileRoute("/logistics/partner/drivers")({
   component: DriversPage,
 });
 
-const tone = (s: Driver["status"]): "success" | "warning" | "danger" => (s === "Compliant" ? "success" : s === "Attention" ? "warning" : "danger");
+const tone = (s: Driver["status"]): "success" | "warning" | "danger" =>
+  s === "Compliant" ? "success" : s === "Attention" ? "warning" : "danger";
 
 function DriversPage() {
   const { myCompany } = useApp();
   const company = myCompany!;
   const [query, setQuery] = React.useState("");
   const drivers = company.drivers.filter((d) =>
-    [d.name, d.licence, d.assignedVehicle, d.licenceClass].join(" ").toLowerCase().includes(query.toLowerCase()),
+    [d.name, d.licence, d.assignedVehicle, d.licenceClass]
+      .join(" ")
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
 
   return (
     <AppShell
       role="partner"
       breadcrumbs={[{ label: company.name, to: "/logistics/partner" }, { label: "Drivers" }]}
-      search={{ value: query, onChange: setQuery, placeholder: "Search drivers, licence, vehicle…" }}
+      search={{
+        value: query,
+        onChange: setQuery,
+        placeholder: "Search drivers, licence, vehicle…",
+      }}
     >
-      <PageHeader title="Driver compliance" description="Licence validity, medical fitness and mandatory training are monitored continuously." />
+      <PageHeader
+        title="Driver compliance"
+        description="Licence validity, medical fitness and mandatory training are monitored continuously."
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Drivers registered" value={company.drivers.length} icon={Users} tone="info" />
-        <StatCard label="Fully compliant" value={company.drivers.filter((d) => d.status === "Compliant").length} icon={BadgeCheck} tone="success" />
-        <StatCard label="Needs attention" value={company.drivers.filter((d) => d.status !== "Compliant").length} icon={IdCard} tone="warning" />
-        <StatCard label="Hazmat trained" value={company.drivers.filter((d) => d.training.some((t) => /hazard|mineral|hazmat/i.test(t))).length} icon={GraduationCap} tone="info" />
+        <StatCard
+          label="Drivers registered"
+          value={company.drivers.length}
+          icon={Users}
+          tone="info"
+        />
+        <StatCard
+          label="Fully compliant"
+          value={company.drivers.filter((d) => d.status === "Compliant").length}
+          icon={BadgeCheck}
+          tone="success"
+        />
+        <StatCard
+          label="Needs attention"
+          value={company.drivers.filter((d) => d.status !== "Compliant").length}
+          icon={IdCard}
+          tone="warning"
+        />
+        <StatCard
+          label="Hazmat trained"
+          value={
+            company.drivers.filter((d) => d.training.some((t) => /hazard|mineral|hazmat/i.test(t)))
+              .length
+          }
+          icon={GraduationCap}
+          tone="info"
+        />
       </div>
 
-      <Panel className="mt-4" title="Driver register" bodyClassName="p-0" description={`${drivers.length} of ${company.drivers.length} shown`}>
+      <Panel
+        className="mt-4"
+        title="Driver register"
+        bodyClassName="p-0"
+        description={`${drivers.length} of ${company.drivers.length} shown`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1400px] text-sm">
             <thead>
@@ -88,7 +131,9 @@ function DriversPage() {
                   <td className="px-3 py-3 text-xs">{d.base || "-"}</td>
                   <td className="px-3 py-3 text-xs">{d.availability || "-"}</td>
                   <td className="px-3 py-3 text-xs">{d.emergencyContact || "-"}</td>
-                  <td className="px-3 py-3 text-xs">{d.safetyTrainingDeclared ? "Declared" : "-"}</td>
+                  <td className="px-3 py-3 text-xs">
+                    {d.safetyTrainingDeclared ? "Declared" : "-"}
+                  </td>
                   <td className="px-3 py-3 text-xs">{d.assignedVehicle}</td>
                   <td className="px-3 py-3">
                     <div className="flex flex-wrap gap-1">

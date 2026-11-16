@@ -70,12 +70,21 @@ function OperatorDashboard() {
           value={String(count("under_review") + count("info_requested") + count("escalated"))}
           hint="In progress with the desk"
         />
-        <Metric label="Verified partners" value={String(count("verified"))} tone="success" hint="Trading enabled" />
+        <Metric
+          label="Verified partners"
+          value={String(count("verified"))}
+          tone="success"
+          hint="Trading enabled"
+        />
         <Metric
           label="Open non-conformities"
           value={String(openNc.length)}
           tone={openNc.some((n) => n.severity === "Critical") ? "danger" : "warning"}
-          hint={openNc.some((n) => n.severity === "Critical") ? "Includes 1 critical" : "Remediation tracked"}
+          hint={
+            openNc.some((n) => n.severity === "Critical")
+              ? "Includes 1 critical"
+              : "Remediation tracked"
+          }
         />
       </div>
 
@@ -151,7 +160,11 @@ function PartnerDashboard() {
   const activeRfq = rfqs.find((r) => r.status !== "contracted") ?? rfqs[0];
   const contracted = state.orders.reduce((s, o) => s + o.tonnes, 0);
   const ownApp = state.applications.find((a) =>
-    role === "offtaker" ? a.id === "APP-2041" : role === "buyer" ? a.id === "APP-2026" : a.id === "APP-2029",
+    role === "offtaker"
+      ? a.id === "APP-2041"
+      : role === "buyer"
+        ? a.id === "APP-2026"
+        : a.id === "APP-2029",
   );
 
   const demandTarget = role === "oem" ? 900000 : role === "offtaker" ? 1200000 : 340000;
@@ -215,7 +228,8 @@ function PartnerDashboard() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {r.commodity} {r.grade} · {r.incoterm} {r.destination} · target ${r.targetPriceUsd}/t
+                    {r.commodity} {r.grade} · {r.incoterm} {r.destination} · target $
+                    {r.targetPriceUsd}/t
                   </p>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
@@ -233,8 +247,14 @@ function PartnerDashboard() {
           <SectionCard title="Finance readiness" description="Current programme funding gap">
             {activeRfq ? (
               <div className="space-y-3 text-sm">
-                <Row label="Total offtake commitment" value={fmtUsd(activeRfq.finance?.totalCommitmentUsd ?? 600_000_000)} />
-                <Row label="Buyer contribution" value={fmtUsd(activeRfq.finance?.buyerContributionUsd ?? 100_000_000)} />
+                <Row
+                  label="Total offtake commitment"
+                  value={fmtUsd(activeRfq.finance?.totalCommitmentUsd ?? 600_000_000)}
+                />
+                <Row
+                  label="Buyer contribution"
+                  value={fmtUsd(activeRfq.finance?.buyerContributionUsd ?? 100_000_000)}
+                />
                 <Row
                   label="Financing required"
                   value={fmtUsd(activeRfq.finance?.requiredUsd ?? 500_000_000)}
@@ -272,7 +292,9 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border pb-2 last:border-0">
       <span className="text-muted-foreground">{label}</span>
-      <span className={strong ? "font-display text-base font-semibold" : "font-medium"}>{value}</span>
+      <span className={strong ? "font-display text-base font-semibold" : "font-medium"}>
+        {value}
+      </span>
     </div>
   );
 }

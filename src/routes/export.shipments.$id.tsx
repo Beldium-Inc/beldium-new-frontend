@@ -4,7 +4,13 @@ import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, CircleDashed, XCircle } from "lucide-react";
 import { AppShell } from "@/verticals/export/AppShell";
 import { useStore } from "@/verticals/export/store";
-import { ApplicationStatusPill, DisclaimerNote, FieldGrid, Panel, Pill } from "@/verticals/export/ui-kit";
+import {
+  ApplicationStatusPill,
+  DisclaimerNote,
+  FieldGrid,
+  Panel,
+  Pill,
+} from "@/verticals/export/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -31,7 +37,8 @@ export const Route = createFileRoute("/export/shipments/$id")({
       { title: "Shipment Review | Beldium Export Compliance" },
       {
         name: "description",
-        content: "Compliance checklist, non-conformities and decision record for an export shipment.",
+        content:
+          "Compliance checklist, non-conformities and decision record for an export shipment.",
       },
     ],
   }),
@@ -99,7 +106,10 @@ function ShipmentDetail() {
                 { label: "Product", value: product?.name ?? "-" },
                 { label: "HS code", value: product?.hs_code ?? "-" },
                 { label: "Quantity", value: `${shipment.quantity} ${shipment.unit}` },
-                { label: "Estimated value", value: `${shipment.currency} ${Number(shipment.estimated_value).toLocaleString()}` },
+                {
+                  label: "Estimated value",
+                  value: `${shipment.currency} ${Number(shipment.estimated_value).toLocaleString()}`,
+                },
               ]}
             />
           </Panel>
@@ -123,13 +133,16 @@ function ShipmentDetail() {
                 <div>
                   <p className="text-sm font-medium">{exporter?.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Compliance score {application.risk.compliance_score} · {application.risk.risk_band} risk
+                    Compliance score {application.risk.compliance_score} ·{" "}
+                    {application.risk.risk_band} risk
                   </p>
                 </div>
                 <ApplicationStatusPill status={application.status} />
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No admission application on file for this exporter.</p>
+              <p className="text-sm text-muted-foreground">
+                No admission application on file for this exporter.
+              </p>
             )}
             {exporter && (
               <Button variant="outline" size="sm" className="mt-3" asChild>
@@ -160,7 +173,10 @@ function ShipmentDetail() {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium">
-                      {c.label} <span className="text-muted-foreground">· {EXPORT_DOMAIN_LABELS[c.domain]}</span>
+                      {c.label}{" "}
+                      <span className="text-muted-foreground">
+                        · {EXPORT_DOMAIN_LABELS[c.domain]}
+                      </span>
                     </p>
                     {c.detail && <p className="text-[11px] text-muted-foreground">{c.detail}</p>}
                     {isOperator && (
@@ -246,16 +262,31 @@ function ShipmentDetail() {
                 <div key={n.id} className="rounded-lg border border-border p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-medium">{n.title}</p>
-                    <Pill tone={n.severity === "critical" ? "danger" : n.severity === "major" ? "warning" : "neutral"}>
+                    <Pill
+                      tone={
+                        n.severity === "critical"
+                          ? "danger"
+                          : n.severity === "major"
+                            ? "warning"
+                            : "neutral"
+                      }
+                    >
                       {n.severity}
                     </Pill>
                     <Pill tone={n.status === "closed" ? "success" : "info"}>{n.status}</Pill>
-                    <span className="text-[11px] text-muted-foreground">{EXPORT_DOMAIN_LABELS[n.domain]}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {EXPORT_DOMAIN_LABELS[n.domain]}
+                    </span>
                   </div>
-                  {n.detail && <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{n.detail}</p>}
+                  {n.detail && (
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                      {n.detail}
+                    </p>
+                  )}
                   {n.response && (
                     <p className="mt-2 rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">Exporter response:</span> {n.response}
+                      <span className="font-medium text-foreground">Exporter response:</span>{" "}
+                      {n.response}
                     </p>
                   )}
                   {isOperator && n.status !== "closed" && (
@@ -283,7 +314,8 @@ function ShipmentDetail() {
                           {
                             shipmentId: shipment.id,
                             ncId: n.id,
-                            response: "Exporter acknowledged the finding and is preparing evidence.",
+                            response:
+                              "Exporter acknowledged the finding and is preparing evidence.",
                           },
                           { onSuccess: () => toast.success("Response submitted to Beldium") },
                         );
@@ -348,7 +380,13 @@ function ShipmentDetail() {
                     disabled={!ncTitle.trim()}
                     onClick={() => {
                       raiseNc.mutate(
-                        { shipmentId: shipment.id, domain: ncDomain, title: ncTitle, detail: ncDetail, severity: ncSeverity },
+                        {
+                          shipmentId: shipment.id,
+                          domain: ncDomain,
+                          title: ncTitle,
+                          detail: ncDetail,
+                          severity: ncSeverity,
+                        },
                         {
                           onSuccess: () => {
                             setNcTitle("");
@@ -371,7 +409,8 @@ function ShipmentDetail() {
           {user?.role === "operator" && nextStatus && (
             <Panel title="Advance shipment">
               <p className="text-xs text-muted-foreground">
-                Mark this shipment as <span className="font-medium text-foreground">{nextStatus}</span>.
+                Mark this shipment as{" "}
+                <span className="font-medium text-foreground">{nextStatus}</span>.
               </p>
               <Button
                 className="mt-3 w-full"
@@ -411,8 +450,8 @@ function ShipmentDetail() {
                 {(blocking.length > 0 || openNc.length > 0) && (
                   <p className="flex items-start gap-2 rounded-md bg-danger-soft px-3 py-2 text-xs text-destructive">
                     <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                    {blocking.length} blocking check(s) and {openNc.length} open non-conformity(ies) must be
-                    resolved before clearance.
+                    {blocking.length} blocking check(s) and {openNc.length} open non-conformity(ies)
+                    must be resolved before clearance.
                   </p>
                 )}
                 <Textarea
@@ -444,7 +483,12 @@ function ShipmentDetail() {
                     disabled={!rationale.trim() || !conditions.trim()}
                     onClick={() => {
                       decide.mutate(
-                        { shipmentId: shipment.id, outcome: "conditionally_cleared", rationale, conditions },
+                        {
+                          shipmentId: shipment.id,
+                          outcome: "conditionally_cleared",
+                          rationale,
+                          conditions,
+                        },
                         { onSuccess: () => toast.success("Conditional compliance record issued") },
                       );
                     }}
@@ -468,7 +512,8 @@ function ShipmentDetail() {
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                No decision has been issued yet. Beldium will publish the outcome here once the review closes.
+                No decision has been issued yet. Beldium will publish the outcome here once the
+                review closes.
               </p>
             )}
             <DisclaimerNote className="mt-4" />

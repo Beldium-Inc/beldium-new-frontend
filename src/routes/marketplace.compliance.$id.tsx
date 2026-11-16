@@ -15,7 +15,14 @@ import { StatusBadge } from "@/verticals/marketplace/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fmtDate, fmtDateTime, fmtTonnes, fmtUsd, useDemo, type OperatorAction } from "@/verticals/marketplace/store";
+import {
+  fmtDate,
+  fmtDateTime,
+  fmtTonnes,
+  fmtUsd,
+  useDemo,
+  type OperatorAction,
+} from "@/verticals/marketplace/store";
 
 export const Route = createFileRoute("/marketplace/compliance/$id")({
   head: () => ({
@@ -36,7 +43,12 @@ export const Route = createFileRoute("/marketplace/compliance/$id")({
   component: ReviewDetail,
 });
 
-const ACTIONS: { key: OperatorAction; label: string; icon: typeof CheckCircle2; variant: "default" | "outline" | "destructive" }[] = [
+const ACTIONS: {
+  key: OperatorAction;
+  label: string;
+  icon: typeof CheckCircle2;
+  variant: "default" | "outline" | "destructive";
+}[] = [
   { key: "verify", label: "Verify", icon: CheckCircle2, variant: "default" },
   { key: "request_info", label: "Request information", icon: MessageSquare, variant: "outline" },
   { key: "flag", label: "Flag", icon: Flag, variant: "outline" },
@@ -46,7 +58,8 @@ const ACTIONS: { key: OperatorAction; label: string; icon: typeof CheckCircle2; 
 
 function ReviewDetail() {
   const { id } = Route.useParams();
-  const { state, applyOperatorAction, updateLimits, addNonConformity, advanceNonConformity } = useDemo();
+  const { state, applyOperatorAction, updateLimits, addNonConformity, advanceNonConformity } =
+    useDemo();
   const app = state.applications.find((a) => a.id === id);
   const isOperator = state.role === "operator";
 
@@ -82,7 +95,9 @@ function ReviewDetail() {
         <div className="min-w-0 space-y-6">
           <div className="surface flex flex-wrap items-center gap-4 p-5">
             <div>
-              <p className="text-xs tracking-wide text-muted-foreground uppercase">Current status</p>
+              <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                Current status
+              </p>
               <div className="mt-1">
                 <StatusBadge status={app.status} />
               </div>
@@ -92,7 +107,9 @@ function ReviewDetail() {
               <p className="text-xs tracking-wide text-muted-foreground uppercase">Risk</p>
               <p className="font-display mt-1 text-lg font-semibold">
                 {app.riskScore}
-                <span className="text-sm font-normal text-muted-foreground">/100 · {app.riskBand}</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  /100 · {app.riskBand}
+                </span>
               </p>
             </div>
             <Divider />
@@ -132,7 +149,10 @@ function ReviewDetail() {
             </TabsList>
 
             <TabsContent value="corporate" className="mt-4">
-              <SectionCard title="Corporate information" description="As declared and verified against registry extracts">
+              <SectionCard
+                title="Corporate information"
+                description="As declared and verified against registry extracts"
+              >
                 <dl className="grid gap-4 sm:grid-cols-2">
                   <Field label="Registered name" value={app.entityName} />
                   <Field label="Applicant type" value={app.type} />
@@ -149,7 +169,10 @@ function ReviewDetail() {
             </TabsContent>
 
             <TabsContent value="ownership" className="mt-4">
-              <SectionCard title="Ownership & control" description="Beneficial owners above 5%, with PEP flags">
+              <SectionCard
+                title="Ownership & control"
+                description="Beneficial owners above 5%, with PEP flags"
+              >
                 <Table
                   head={["Holder", "Type", "Country", "Holding", "PEP"]}
                   rows={app.ownership.map((o) => [
@@ -167,7 +190,10 @@ function ReviewDetail() {
             </TabsContent>
 
             <TabsContent value="reps" className="mt-4">
-              <SectionCard title="Authorised representatives" description="Signatories permitted to bind the entity">
+              <SectionCard
+                title="Authorised representatives"
+                description="Signatories permitted to bind the entity"
+              >
                 <Table
                   head={["Name", "Role", "Email", "Phone", "ID verified"]}
                   rows={app.reps.map((r) => [
@@ -208,7 +234,10 @@ function ReviewDetail() {
             </TabsContent>
 
             <TabsContent value="documents" className="mt-4">
-              <SectionCard title="Documents" description="KYC pack completeness and expiry tracking">
+              <SectionCard
+                title="Documents"
+                description="KYC pack completeness and expiry tracking"
+              >
                 <Table
                   head={["Document", "Category", "Uploaded", "Expires", "Status"]}
                   rows={app.documents.map((d) => [
@@ -252,29 +281,56 @@ function ReviewDetail() {
             </TabsContent>
 
             <TabsContent value="limits" className="mt-4">
-              <SectionCard title="Transaction limits" description="Proposed by applicant, approved by the compliance desk">
+              <SectionCard
+                title="Transaction limits"
+                description="Proposed by applicant, approved by the compliance desk"
+              >
                 <dl className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Proposed single transaction" value={fmtUsd(app.limits.proposedSingleTxnUsd)} />
-                  <Field label="Proposed monthly volume" value={fmtUsd(app.limits.proposedMonthlyUsd)} />
+                  <Field
+                    label="Proposed single transaction"
+                    value={fmtUsd(app.limits.proposedSingleTxnUsd)}
+                  />
+                  <Field
+                    label="Proposed monthly volume"
+                    value={fmtUsd(app.limits.proposedMonthlyUsd)}
+                  />
                   <Field
                     label="Approved single transaction"
-                    value={app.limits.approvedSingleTxnUsd ? fmtUsd(app.limits.approvedSingleTxnUsd) : "Not approved"}
+                    value={
+                      app.limits.approvedSingleTxnUsd
+                        ? fmtUsd(app.limits.approvedSingleTxnUsd)
+                        : "Not approved"
+                    }
                   />
                   <Field
                     label="Approved monthly volume"
-                    value={app.limits.approvedMonthlyUsd ? fmtUsd(app.limits.approvedMonthlyUsd) : "Not approved"}
+                    value={
+                      app.limits.approvedMonthlyUsd
+                        ? fmtUsd(app.limits.approvedMonthlyUsd)
+                        : "Not approved"
+                    }
                   />
                   <Field label="Settlement tenor" value={`${app.limits.tenorDays} days`} />
                 </dl>
                 {isOperator && (
                   <div className="mt-5 grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                     <label className="text-sm">
-                      <span className="mb-1 block text-muted-foreground">Approve single txn ($m)</span>
-                      <Input value={single} onChange={(e) => setSingle(e.target.value)} placeholder="250" />
+                      <span className="mb-1 block text-muted-foreground">
+                        Approve single txn ($m)
+                      </span>
+                      <Input
+                        value={single}
+                        onChange={(e) => setSingle(e.target.value)}
+                        placeholder="250"
+                      />
                     </label>
                     <label className="text-sm">
                       <span className="mb-1 block text-muted-foreground">Approve monthly ($m)</span>
-                      <Input value={monthly} onChange={(e) => setMonthly(e.target.value)} placeholder="600" />
+                      <Input
+                        value={monthly}
+                        onChange={(e) => setMonthly(e.target.value)}
+                        placeholder="600"
+                      />
                     </label>
                     <Button
                       onClick={() => {
@@ -298,7 +354,10 @@ function ReviewDetail() {
             </TabsContent>
 
             <TabsContent value="nc" className="mt-4">
-              <SectionCard title="Non-conformity workflow" description="Raise → remediation → closed">
+              <SectionCard
+                title="Non-conformity workflow"
+                description="Raise → remediation → closed"
+              >
                 <ul className="space-y-3">
                   {app.nonConformities.length === 0 && (
                     <li className="text-sm text-muted-foreground">No non-conformities recorded.</li>
@@ -361,7 +420,12 @@ function ReviewDetail() {
                             toast.error("Describe the non-conformity first.");
                             return;
                           }
-                          addNonConformity(app.id, ncTitle, ncSeverity, note || "Remediation evidence required from applicant.");
+                          addNonConformity(
+                            app.id,
+                            ncTitle,
+                            ncSeverity,
+                            note || "Remediation evidence required from applicant.",
+                          );
                           setNcTitle("");
                           toast.success(`${ncSeverity} non-conformity raised`);
                         }}
@@ -375,7 +439,10 @@ function ReviewDetail() {
             </TabsContent>
 
             <TabsContent value="audit" className="mt-4">
-              <SectionCard title="Audit trail" description="Immutable record of decisions and screening events">
+              <SectionCard
+                title="Audit trail"
+                description="Immutable record of decisions and screening events"
+              >
                 <ol className="relative space-y-5 border-l border-border pl-5">
                   {app.audit.map((e) => (
                     <li key={e.id}>
@@ -417,19 +484,42 @@ function ReviewDetail() {
           ) : (
             <SectionCard title="What happens next" description="Your onboarding progress">
               <ul className="space-y-3 text-sm text-muted-foreground">
-                <li>Status: <StatusBadge status={app.status} /></li>
-                <li>{app.nonConformities.filter((n) => n.status !== "closed").length} open item(s) requiring your action.</li>
-                <li>Approved trading limit: {app.limits.approvedMonthlyUsd ? fmtUsd(app.limits.approvedMonthlyUsd) : "pending decision"} per month.</li>
+                <li>
+                  Status: <StatusBadge status={app.status} />
+                </li>
+                <li>
+                  {app.nonConformities.filter((n) => n.status !== "closed").length} open item(s)
+                  requiring your action.
+                </li>
+                <li>
+                  Approved trading limit:{" "}
+                  {app.limits.approvedMonthlyUsd
+                    ? fmtUsd(app.limits.approvedMonthlyUsd)
+                    : "pending decision"}{" "}
+                  per month.
+                </li>
               </ul>
             </SectionCard>
           )}
 
           <SectionCard title="Screening summary">
             <dl className="space-y-3 text-sm">
-              <Field label="Sanctions lists" value={app.sanctionsScreen === "clear" ? "No matches" : "Manual review required"} />
-              <Field label="PEP" value={app.pepScreen === "clear" ? "No matches" : "Potential match: see ownership"} />
-              <Field label="Adverse media" value={app.riskBand === "High" ? "Findings present" : "No material findings"} />
-              <Field label="Documents outstanding" value={String(app.documents.filter((d) => d.status !== "verified").length)} />
+              <Field
+                label="Sanctions lists"
+                value={app.sanctionsScreen === "clear" ? "No matches" : "Manual review required"}
+              />
+              <Field
+                label="PEP"
+                value={app.pepScreen === "clear" ? "No matches" : "Potential match: see ownership"}
+              />
+              <Field
+                label="Adverse media"
+                value={app.riskBand === "High" ? "Findings present" : "No material findings"}
+              />
+              <Field
+                label="Documents outstanding"
+                value={String(app.documents.filter((d) => d.status !== "verified").length)}
+              />
             </dl>
           </SectionCard>
         </aside>

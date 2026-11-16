@@ -13,7 +13,8 @@ export const Route = createFileRoute("/export/documents")({
       { title: "Document Register | Beldium Export Compliance" },
       {
         name: "description",
-        content: "Every application document with issuer, reference, expiry and verification status.",
+        content:
+          "Every application document with issuer, reference, expiry and verification status.",
       },
     ],
   }),
@@ -29,7 +30,10 @@ function DocumentsPage() {
 
   const scoped =
     user?.role === "exporter"
-      ? state.documents.filter((d) => d.application === state.applications.find((a) => a.exporter === user.exporterId)?.id)
+      ? state.documents.filter(
+          (d) =>
+            d.application === state.applications.find((a) => a.exporter === user.exporterId)?.id,
+        )
       : state.documents;
 
   const rows = scoped
@@ -59,7 +63,9 @@ function DocumentsPage() {
                 onClick={() => setFilter(f)}
                 className={cn(
                   "rounded-full border px-3 py-1 text-xs font-medium capitalize transition-colors",
-                  filter === f ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground",
+                  filter === f
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground",
                 )}
               >
                 {f}
@@ -82,18 +88,25 @@ function DocumentsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-medium">{d.title}</p>
                     <DocStatusPill status={d.status} />
-                    {d.validity === "expiring" && <Pill tone="warning">Expires {d.expires_on}</Pill>}
+                    {d.validity === "expiring" && (
+                      <Pill tone="warning">Expires {d.expires_on}</Pill>
+                    )}
                     {d.validity === "expired" && <Pill tone="danger">Expired {d.expires_on}</Pill>}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {exporter?.name} · {EXPORT_DOMAIN_LABELS[d.domain]} · {d.issuer || "-"} · ref {d.reference || "-"}
+                    {exporter?.name} · {EXPORT_DOMAIN_LABELS[d.domain]} · {d.issuer || "-"} · ref{" "}
+                    {d.reference || "-"}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">Issued {d.issued_on ?? "-"}</p>
               </Link>
             );
           })}
-          {rows.length === 0 && <p className="px-5 py-10 text-center text-sm text-muted-foreground">No documents match.</p>}
+          {rows.length === 0 && (
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+              No documents match.
+            </p>
+          )}
         </div>
       </Panel>
     </AppShell>
