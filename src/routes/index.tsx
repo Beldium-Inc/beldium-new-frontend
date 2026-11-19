@@ -4,8 +4,9 @@ import { FileCheck2, MapPin, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { isQcHost, qcUrl } from "@/lib/hosts";
 import { useSession } from "@/lib/session";
-import { COMPLIANCE_VERTICALS, homeFor } from "@/lib/verticals";
+import { COMPLIANCE_SITE_VERTICALS, homeFor } from "@/lib/verticals";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -50,6 +51,11 @@ function EntryPage() {
   const { session, hydrated } = useSession();
   const navigate = useNavigate();
 
+  // qualitycontrol.beldium.com is the Quality & Control site, not the sector chooser.
+  React.useEffect(() => {
+    if (isQcHost()) navigate({ to: "/quality/dashboard", replace: true });
+  }, [navigate]);
+
   // An existing session goes straight back to its workspace.
   React.useEffect(() => {
     if (hydrated && session) {
@@ -73,7 +79,7 @@ function EntryPage() {
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
             Register your organisation to review, verify, monitor or provide compliance services
-            across any of the seven Beldium compliance sectors, from pit to port.
+            across the Beldium compliance sectors, from pit to port.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-5">
@@ -99,6 +105,14 @@ function EntryPage() {
             A separate, standalone workspace for your organisation, sites and compliance.
           </p>
 
+          <p className="mt-2 text-sm text-muted-foreground">
+            A laboratory or Quality &amp; Control professional?{" "}
+            <a href={qcUrl("/")} className="font-semibold text-brand underline">
+              Go to the Quality &amp; Control site
+            </a>{" "}
+            Sample custody, testing and certificates have their own site.
+          </p>
+
           <div className="mt-12 grid gap-4 sm:grid-cols-3">
             {highlights.map(({ icon: Icon, title, body }) => (
               <div key={title} className="rounded-[18px] bg-brand-soft/60 p-5">
@@ -111,10 +125,10 @@ function EntryPage() {
 
           <div className="mt-10 border-t border-border pt-8">
             <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              Seven compliance sectors
+              Compliance sectors
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {COMPLIANCE_VERTICALS.map((v) => (
+              {COMPLIANCE_SITE_VERTICALS.map((v) => (
                 <span
                   key={v.slug}
                   className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium"

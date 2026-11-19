@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { BeldiumProvider } from "@/verticals/quality/store";
+import { goToQcHost, isOtherBeldiumHost } from "@/lib/hosts";
 import { useSession } from "@/lib/session";
 import { useSignOut } from "@/lib/sign-out";
 
@@ -27,6 +28,14 @@ function QualityLayout() {
   // The Q&C role is read from the server inside BeldiumProvider (task E9).
   // The session only says this person signed in to the Q&C workspace.
   const valid = session?.vertical === "quality";
+
+  // On any other deployed Beldium host, Quality & Control lives on its own site.
+  useEffect(() => {
+    if (isOtherBeldiumHost()) {
+      const { pathname, search, hash } = window.location;
+      goToQcHost(`${pathname}${search}${hash}`);
+    }
+  }, []);
 
   useEffect(() => {
     if (hydrated && !valid) navigate({ to: "/signin" });

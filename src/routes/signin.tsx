@@ -27,8 +27,10 @@ import { rememberOnboardingSector } from "@/lib/onboarding/store";
 import { fetchOnboardingMe } from "@/lib/api/onboarding";
 import { pendingInvitation } from "@/lib/onboarding/invite";
 import { governanceSeat, pendingGovernanceInvitation } from "@/verticals/governance/access";
+import { isQcHost, qcUrl } from "@/lib/hosts";
 import {
-  COMPLIANCE_VERTICALS,
+  COMPLIANCE_SITE_VERTICALS,
+  COMPLIANCE_VERTICALS as ALL_VERTICALS,
   GOVERNANCE_VERTICAL,
   VERTICAL_BY_SLUG,
   homeFor,
@@ -58,7 +60,7 @@ export const Route = createFileRoute("/signin")({
       { property: "og:title", content: "Sign in | Beldium Compliance" },
       {
         property: "og:description",
-        content: "One sign-in across all seven Beldium compliance sectors.",
+        content: "One sign-in across the Beldium compliance sectors.",
       },
     ],
   }),
@@ -67,6 +69,15 @@ export const Route = createFileRoute("/signin")({
 
 const DISCLAIMER =
   "Beldium issues an independent compliance verification record. It is not a government permit, licence, or customs clearance and does not replace any statutory approval.";
+
+// This route is client-only (ssr: false), so the host check is safe at load.
+// qualitycontrol.beldium.com only signs people in to Quality & Control, and
+// the compliance site no longer offers it: labs sign in on their own site.
+const ON_QC_HOST = typeof window !== "undefined" && isQcHost();
+const COMPLIANCE_VERTICALS: Vertical[] = ON_QC_HOST
+  ? ALL_VERTICALS.filter((v) => v.slug === "quality")
+  : COMPLIANCE_SITE_VERTICALS;
+const QC_VERTICAL = ALL_VERTICALS.find((v) => v.slug === "quality") ?? null;
 
 const partnerRoleCount = COMPLIANCE_VERTICALS.reduce((n, v) => n + signInRoles(v).length, 0);
 
@@ -106,8 +117,11 @@ function SignInPage() {
     staleTime: 5 * 60_000,
   });
 
-  const [picked, setPicked] = React.useState<Vertical | null>(null);
-  const [roleId, setRoleId] = React.useState<string | null>(null);
+  // On the Q&C host there is only one sector, so it opens straight away.
+  const [picked, setPicked] = React.useState<Vertical | null>(ON_QC_HOST ? QC_VERTICAL : null);
+  const [roleId, setRoleId] = React.useState<string | null>(
+    ON_QC_HOST && QC_VERTICAL ? (signInRoles(QC_VERTICAL)[0]?.id ?? null) : null,
+  );
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [remember, setRemember] = React.useState(true);
@@ -349,23 +363,30 @@ function SignInPage() {
             <BeldiumLogo className="size-10" />
             <div className="leading-tight">
               <p className="font-display text-base font-semibold">Beldium</p>
-              <p className="text-xs text-accent/80">Compliance Platform</p>
+              <p className="text-xs text-accent/80">
+                {ON_QC_HOST ? "Quality & Control" : "Compliance Platform"}
+              </p>
             </div>
           </Link>
 
           <div className="space-y-4">
             <h1 className="font-display text-4xl leading-tight font-semibold sm:text-5xl">
-              Compliance assurance across the minerals value chain
+              {ON_QC_HOST
+                ? "Sample custody, laboratory testing and material certificates"
+                : "Compliance assurance across the minerals value chain"}
             </h1>
             <p className="max-w-lg text-sm leading-relaxed text-primary-foreground/75">
-              Beldium verifies operators, interrogates evidence section by section, and issues an
-              independent compliance verification record at every stage, from pit to port.
+              {ON_QC_HOST
+                ? "Accredited laboratories and Q&C professionals take custody of samples, record test results and issue certificates that buyers and regulators can verify."
+                : "Beldium verifies operators, interrogates evidence section by section, and issues an independent compliance verification record at every stage, from pit to port."}
             </p>
           </div>
 
           <dl className="grid max-w-lg grid-cols-3 gap-4 border-t border-primary-foreground/15 pt-6">
             {[
-              [String(COMPLIANCE_VERTICALS.length), "Compliance sectors"],
+              ON_QC_HOST
+                ? ["Q&C", "Sector"]
+                : [String(COMPLIANCE_VERTICALS.length), "Compliance sectors"],
               [String(partnerRoleCount), "Partner roles"],
               [
                 stats.data ? stats.data.verified_organisations.toLocaleString() : "-",
@@ -487,23 +508,36 @@ function SignInPage() {
                 })}
               </div>
 
-              <button
-                onClick={() => openSector(GOVERNANCE_VERTICAL)}
-                className="group mt-3 w-full rounded-xl border border-dashed border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-card"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
-                    <Scale className="size-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-sm font-semibold">{GOVERNANCE_VERTICAL.name}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {GOVERNANCE_VERTICAL.tagline} By invitation.
-                    </p>
+              {!ON_QC_HOST && (
+                <button
+                  onClick={() => openSector(GOVERNANCE_VERTICAL)}
+                  className="group mt-3 w-full rounded-xl border border-dashed border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-card"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                      <Scale className="size-4.5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-semibold">
+                        {GOVERNANCE_VERTICAL.name}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {GOVERNANCE_VERTICAL.tagline} By invitation.
+                      </p>
+                    </div>
+                    <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                   </div>
-                  <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                </div>
-              </button>
+                </button>
+              )}
+
+              {!ON_QC_HOST && (
+                <p className="mt-4 text-center text-xs text-muted-foreground">
+                  Laboratory or Q&amp;C professional?{" "}
+                  <a href={qcUrl("/signin")} className="font-medium text-brand underline">
+                    Sign in on the Quality &amp; Control site
+                  </a>
+                </p>
+              )}
 
               <p className="mt-7 text-center text-xs text-muted-foreground">
                 New to Beldium?{" "}
@@ -514,16 +548,19 @@ function SignInPage() {
             </>
           ) : (
             <>
-              <button
-                onClick={() => {
-                  setPicked(null);
-                  setRoleId(null);
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <ArrowLeft className="size-3.5" /> All sectors
-              </button>
-              <h2 className="mt-4 font-display text-xl font-semibold">{picked.name}</h2>
+              {/* The Q&C site has one sector, so there is nothing to go back to. */}
+              {!ON_QC_HOST && (
+                <button
+                  onClick={() => {
+                    setPicked(null);
+                    setRoleId(null);
+                  }}
+                  className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ArrowLeft className="size-3.5" /> All sectors
+                </button>
+              )}
+              <h2 className=" font-display text-xl font-semibold">{picked.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {serverRoles
                   ? "Sign in. Your role is the one the Q&C desk assigned to your account."
