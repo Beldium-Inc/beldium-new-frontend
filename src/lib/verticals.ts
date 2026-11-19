@@ -283,6 +283,16 @@ export const VERTICAL_BY_SLUG: Record<VerticalSlug, Vertical> = Object.fromEntri
 export const COMPLIANCE_VERTICALS: Vertical[] = VERTICALS.filter((v) => v.slug !== "governance");
 
 /**
+ * The sectors people join on the compliance site. Quality & Control is a
+ * sector of its own with its own site (qualitycontrol.beldium.com), so labs
+ * and Q&C operators sign up and sign in there, not here. It stays in
+ * COMPLIANCE_VERTICALS because regulators and staff vetting still cover it.
+ */
+export const COMPLIANCE_SITE_VERTICALS: Vertical[] = COMPLIANCE_VERTICALS.filter(
+  (v) => v.slug !== "quality",
+);
+
+/**
  * Governance is not a compliance sector: nobody onboards an organisation into
  * it. Access is by invitation or an approved request, and what a person may do
  * there comes from their governance role on the server.
