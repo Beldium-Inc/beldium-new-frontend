@@ -7,6 +7,7 @@ import { BeldiumLogo } from "@/components/beldium-logo";
 import { isQcHost, qcUrl } from "@/lib/hosts";
 import { readStoredSession, useSession } from "@/lib/session";
 import { COMPLIANCE_SITE_VERTICALS, homeFor } from "@/lib/verticals";
+import { siteTitle } from "@/lib/site-title";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -24,13 +25,13 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Beldium Compliance Platform" },
+      { title: siteTitle("Beldium Compliance Platform") },
       {
         name: "description",
         content:
           "Independent compliance verification across the Nigerian minerals value chain: mining, processing, quality, warehousing, logistics, export and marketplace.",
       },
-      { property: "og:title", content: "Beldium Compliance Platform" },
+      { property: "og:title", content: siteTitle("Beldium Compliance Platform") },
       {
         property: "og:description",
         content: "Register or sign in to the Beldium compliance platform.",

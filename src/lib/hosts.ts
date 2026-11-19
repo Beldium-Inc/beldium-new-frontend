@@ -16,10 +16,15 @@ function hostname(): string | null {
   return typeof window === "undefined" ? null : window.location.hostname;
 }
 
+/** True when the given hostname is the Quality & Control site. */
+export function isQcHostname(host: string): boolean {
+  return QC_PREFIXES.some((p) => host.startsWith(p));
+}
+
 /** True on qualitycontrol.beldium.com, qac.beldium.com and their staging hosts. */
 export function isQcHost(): boolean {
   const host = hostname();
-  return host !== null && QC_PREFIXES.some((p) => host.startsWith(p));
+  return host !== null && isQcHostname(host);
 }
 
 /**

@@ -8,6 +8,7 @@ import { ProfessionalApplicationFlow } from "@/components/onboarding/Professiona
 import { QualityOrgApplicationFlow } from "@/components/onboarding/QualityOrgApplicationFlow";
 import { QualityProfessionalApplicationFlow } from "@/components/onboarding/QualityProfessionalApplicationFlow";
 import { useOnboarding } from "@/lib/onboarding/store";
+import { siteTitle } from "@/lib/site-title";
 
 export const Route = createFileRoute("/onboarding/application")({
   component: ApplicationPage,
@@ -19,13 +20,13 @@ export const Route = createFileRoute("/onboarding/application")({
   }),
   head: () => ({
     meta: [
-      { title: "Compliance Application | Beldium Compliance" },
+      { title: siteTitle("Compliance Application | Beldium Compliance") },
       {
         name: "description",
         content:
           "Complete your Beldium compliance application: organisation details, services, credentials, personnel and declarations.",
       },
-      { property: "og:title", content: "Compliance Application | Beldium Compliance" },
+      { property: "og:title", content: siteTitle("Compliance Application | Beldium Compliance") },
       {
         property: "og:description",
         content: "Register as an approved Beldium compliance partner or professional.",

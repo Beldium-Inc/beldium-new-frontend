@@ -5,9 +5,10 @@ import { AuthShell } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
 import { MEMBERSHIP_ROLE_LABELS, useCancelJoinRequest, useMyJoinRequests } from "@/lib/api";
 import { useSignOut } from "@/lib/sign-out";
+import { siteTitle } from "@/lib/site-title";
 
 export const Route = createFileRoute("/onboarding/pending")({
-  head: () => ({ meta: [{ title: "Waiting for approval | Beldium Compliance" }] }),
+  head: () => ({ meta: [{ title: siteTitle("Waiting for approval | Beldium Compliance") }] }),
   component: PendingPage,
 });
 
