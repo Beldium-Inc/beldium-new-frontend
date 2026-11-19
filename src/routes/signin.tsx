@@ -27,7 +27,7 @@ import { rememberOnboardingSector } from "@/lib/onboarding/store";
 import { fetchOnboardingMe } from "@/lib/api/onboarding";
 import { pendingInvitation } from "@/lib/onboarding/invite";
 import { governanceSeat, pendingGovernanceInvitation } from "@/verticals/governance/access";
-import { isQcHost, qcUrl } from "@/lib/hosts";
+import { complianceUrl, isQcHost, qcUrl } from "@/lib/hosts";
 import {
   COMPLIANCE_SITE_VERTICALS,
   COMPLIANCE_VERTICALS as ALL_VERTICALS,
@@ -350,6 +350,26 @@ function SignInPage() {
         return;
       }
       role = capabilities.role;
+
+      // Labs and Q&C staff work on the Q&C site; the regulators above them
+      // work on the compliance site. Turn each away from the other's site.
+      if (!ON_QC_HOST && role !== "regulator") {
+        await endAuth();
+        toast.error("This is a laboratory or Q&C account. Sign in on the Quality & Control site.", {
+          action: { label: "Open", onClick: () => window.location.assign(qcUrl("/signin")) },
+        });
+        return;
+      }
+      if (ON_QC_HOST && role === "regulator") {
+        await endAuth();
+        toast.error("Regulators sign in to Quality & Control oversight on the compliance site.", {
+          action: {
+            label: "Open",
+            onClick: () => window.location.assign(complianceUrl("/signin")),
+          },
+        });
+        return;
+      }
     }
 
     startSession(picked.slug, role);
@@ -531,6 +551,33 @@ function SignInPage() {
                 </button>
               )}
 
+              {!ON_QC_HOST && QC_VERTICAL && (
+                // Labs and Q&C staff use their own site. Only the regulators
+                // above Quality & Control sign in to it here.
+                <button
+                  onClick={() => {
+                    setPicked(QC_VERTICAL);
+                    setRoleId("regulator");
+                  }}
+                  className="group mt-3 w-full rounded-xl border border-dashed border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-card"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                      <FlaskConical className="size-4.5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-semibold">
+                        Quality &amp; Control oversight
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        For regulators and standards bodies above the laboratories. Read only.
+                      </p>
+                    </div>
+                    <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </div>
+                </button>
+              )}
+
               {!ON_QC_HOST && (
                 <p className="mt-4 text-center text-xs text-muted-foreground">
                   Laboratory or Q&amp;C professional?{" "}
@@ -561,7 +608,11 @@ function SignInPage() {
                   <ArrowLeft className="size-3.5" /> All sectors
                 </button>
               )}
-              <h2 className=" font-display text-xl font-semibold">{picked.name}</h2>
+              <h2 className=" font-display text-xl font-semibold">
+                {picked.slug === "quality" && !ON_QC_HOST
+                  ? "Quality & Control oversight"
+                  : picked.name}
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {serverRoles
                   ? "Sign in. Your role is the one the Q&C desk assigned to your account."

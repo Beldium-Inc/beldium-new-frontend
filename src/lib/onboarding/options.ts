@@ -12,6 +12,7 @@ import { apiFetch } from "../api/client";
 import { useHasTokens } from "../api/queries";
 import type { VerticalSlug } from "../verticals";
 import type { OnboardingRole, OrgPath } from "./types";
+import { isQcHost } from "../hosts";
 
 export type OptionKind = "register" | "join" | "regulatory" | "specific";
 export type DashboardKey = "applicant" | "partner";
@@ -194,6 +195,24 @@ export function useOnboardingOptions(sector: VerticalSlug | null): {
     staleTime: 5 * 60_000,
   });
   const server = query.data?.dashboards;
-  if (server && server.length) return { dashboards: server, fromServer: true };
-  return { dashboards: sector ? FALLBACK[sector] : [], fromServer: false };
+  if (server && server.length)
+    return { dashboards: withoutRegulatorsOnQcSite(server), fromServer: true };
+  return {
+    dashboards: withoutRegulatorsOnQcSite(sector ? FALLBACK[sector] : []),
+    fromServer: false,
+  };
+}
+
+const REGULATOR_ROLES: OnboardingRole[] = ["regulator-org", "regulator-officer"];
+
+/**
+ * Regulators sit above Quality & Control, so they ask for access on the
+ * compliance site, never on the Q&C site that labs and Q&C staff use.
+ */
+function withoutRegulatorsOnQcSite(dashboards: OnboardingDashboard[]): OnboardingDashboard[] {
+  if (!isQcHost()) return dashboards;
+  return dashboards.map((d) => ({
+    ...d,
+    options: d.options.filter((o) => !REGULATOR_ROLES.includes(o.role)),
+  }));
 }

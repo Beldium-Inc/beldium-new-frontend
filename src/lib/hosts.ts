@@ -9,6 +9,7 @@
 // routes (`ssr: false`).
 
 export const QC_HOST = "qualitycontrol.beldium.com";
+export const COMPLIANCE_HOST = "compliance.beldium.com";
 
 const QC_PREFIXES = ["qualitycontrol.", "qac."];
 
@@ -38,6 +39,15 @@ export function isOtherBeldiumHost(): boolean {
 }
 
 /**
+ * True on the compliance site: a deployed Beldium host other than Q&C, or
+ * plain localhost in development. False on preview URLs, so they never bounce.
+ */
+export function isComplianceHost(): boolean {
+  const host = hostname();
+  return isOtherBeldiumHost() || host === "localhost" || host === "127.0.0.1";
+}
+
+/**
  * Full URL of a path on the Quality & Control host. Locally the Q&C site is
  * qualitycontrol.localhost on the same port, which browsers resolve to this
  * machine, so links between the two sites also work in development.
@@ -52,6 +62,27 @@ export function qcUrl(path: string): string {
     }
   }
   return `https://${QC_HOST}${path}`;
+}
+
+/**
+ * Full URL of a path on the compliance site, where regulators above Quality &
+ * Control sign in. Locally that is plain localhost on the same port.
+ */
+export function complianceUrl(path: string): string {
+  const configured = import.meta.env["VITE_COMPLIANCE_SITE_URL"] as string | undefined;
+  if (configured) return `${configured.replace(/\/$/, "")}${path}`;
+  if (typeof window !== "undefined") {
+    const { protocol, hostname, port } = window.location;
+    if (hostname.endsWith(".localhost")) {
+      return `${protocol}//localhost${port ? `:${port}` : ""}${path}`;
+    }
+  }
+  return `https://${COMPLIANCE_HOST}${path}`;
+}
+
+/** Sends the browser to the compliance site, keeping the given path. */
+export function goToComplianceHost(path: string): void {
+  window.location.replace(complianceUrl(path));
 }
 
 /** Sends the browser to the Quality & Control host, keeping the given path. */
