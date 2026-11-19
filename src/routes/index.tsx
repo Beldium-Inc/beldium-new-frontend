@@ -1,24 +1,37 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { FileCheck2, MapPin, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BeldiumLogo } from "@/components/beldium-logo";
 import { isQcHost, qcUrl } from "@/lib/hosts";
-import { useSession } from "@/lib/session";
+import { readStoredSession, useSession } from "@/lib/session";
 import { COMPLIANCE_SITE_VERTICALS, homeFor } from "@/lib/verticals";
+import { siteTitle } from "@/lib/site-title";
 
 export const Route = createFileRoute("/")({
   ssr: false,
+  // qualitycontrol.beldium.com is the Quality & Control site, not the sector
+  // chooser. Redirect before anything renders (this route is client-only, so
+  // beforeLoad runs in the browser), straight to where the person belongs, so
+  // the compliance landing page never flashes up first.
+  beforeLoad: () => {
+    if (!isQcHost()) return;
+    const session = readStoredSession();
+    throw redirect({
+      to: session?.vertical === "quality" ? "/quality/dashboard" : "/signin",
+      replace: true,
+    });
+  },
   head: () => ({
     meta: [
-      { title: "Beldium Compliance Platform" },
+      { title: siteTitle("Beldium Compliance Platform") },
       {
         name: "description",
         content:
           "Independent compliance verification across the Nigerian minerals value chain: mining, processing, quality, warehousing, logistics, export and marketplace.",
       },
-      { property: "og:title", content: "Beldium Compliance Platform" },
+      { property: "og:title", content: siteTitle("Beldium Compliance Platform") },
       {
         property: "og:description",
         content: "Register or sign in to the Beldium compliance platform.",
@@ -50,11 +63,6 @@ const highlights = [
 function EntryPage() {
   const { session, hydrated } = useSession();
   const navigate = useNavigate();
-
-  // qualitycontrol.beldium.com is the Quality & Control site, not the sector chooser.
-  React.useEffect(() => {
-    if (isQcHost()) navigate({ to: "/quality/dashboard", replace: true });
-  }, [navigate]);
 
   // An existing session goes straight back to its workspace.
   React.useEffect(() => {

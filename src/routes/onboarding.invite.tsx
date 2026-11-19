@@ -15,11 +15,12 @@ import { clearInvitation, rememberInvitation } from "@/lib/onboarding/invite";
 import { useSession } from "@/lib/session";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { homeFor } from "@/lib/verticals";
+import { siteTitle } from "@/lib/site-title";
 
 export const Route = createFileRoute("/onboarding/invite")({
   validateSearch: (search: Record<string, unknown>): { token?: string } =>
     typeof search["token"] === "string" ? { token: search["token"] } : {},
-  head: () => ({ meta: [{ title: "Accept invitation | Beldium Compliance" }] }),
+  head: () => ({ meta: [{ title: siteTitle("Accept invitation | Beldium Compliance") }] }),
   component: InvitePage,
 });
 

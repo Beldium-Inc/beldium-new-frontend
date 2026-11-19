@@ -16,6 +16,7 @@ import { SessionProvider } from "../lib/session";
 import { SessionTimeout } from "../components/session-timeout";
 import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { siteTitle } from "@/lib/site-title";
 
 function NotFoundComponent() {
   return (
@@ -82,14 +83,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Beldium Compliance" },
+      { title: siteTitle("Beldium Compliance") },
       {
         name: "description",
         content:
           "Independent compliance verification across the Nigerian minerals value chain, mining, processing, quality, warehousing, logistics, export and marketplace.",
       },
       { name: "author", content: "Beldium" },
-      { property: "og:title", content: "Beldium Compliance" },
+      { property: "og:title", content: siteTitle("Beldium Compliance") },
       {
         property: "og:description",
         content: "Independent compliance verification across the Nigerian minerals value chain.",

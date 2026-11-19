@@ -22,6 +22,10 @@ function SectorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // On the Q&C site the effect above moves straight on; draw nothing meanwhile
+  // so the sector chooser never flashes up. Onboarding is client-only.
+  if (isQcHost()) return null;
+
   return (
     <AuthShell
       title="Which sector are you joining?"

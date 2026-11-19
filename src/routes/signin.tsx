@@ -46,18 +46,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
 import { fetchQualityCapabilities } from "@/lib/api/quality";
+import { siteTitle } from "@/lib/site-title";
 
 export const Route = createFileRoute("/signin")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in | Beldium Compliance" },
+      { title: siteTitle("Sign in | Beldium Compliance") },
       {
         name: "description",
         content:
           "Sign in to Beldium Compliance. Choose your sector, mining, processing, quality, warehousing, logistics, export or marketplace, and the role you hold within it.",
       },
-      { property: "og:title", content: "Sign in | Beldium Compliance" },
+      { property: "og:title", content: siteTitle("Sign in | Beldium Compliance") },
       {
         property: "og:description",
         content: "One sign-in across the Beldium compliance sectors.",

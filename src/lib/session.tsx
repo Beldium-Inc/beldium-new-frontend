@@ -26,7 +26,8 @@ type Ctx = {
 
 const SessionContext = React.createContext<Ctx | null>(null);
 
-function readStoredSession(): Session | null {
+/** The stored session, read straight from storage. Browser only. */
+export function readStoredSession(): Session | null {
   try {
     const raw = window.localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
