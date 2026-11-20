@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExportRouteImport } from './routes/export'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as GovernanceRouteImport } from './routes/governance'
 import { Route as LogisticsRouteImport } from './routes/logistics'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
@@ -203,6 +204,11 @@ const IndexRoute = IndexRouteImport.update({
 const ExportRoute = ExportRouteImport.update({
   id: '/export',
   path: '/export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GovernanceRoute = GovernanceRouteImport.update({
@@ -1174,6 +1180,7 @@ const WarehousingPartnerApplicationsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/export': typeof ExportRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/governance': typeof GovernanceRouteWithChildren
   '/logistics': typeof LogisticsRouteWithChildren
   '/marketplace': typeof MarketplaceRouteWithChildren
@@ -1360,6 +1367,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/signin': typeof SigninRoute
   '/export/dashboard': typeof ExportDashboardRoute
   '/export/documents': typeof ExportDocumentsRoute
@@ -1540,6 +1548,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/export': typeof ExportRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/governance': typeof GovernanceRouteWithChildren
   '/logistics': typeof LogisticsRouteWithChildren
   '/marketplace': typeof MarketplaceRouteWithChildren
@@ -1729,6 +1738,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/export'
+    | '/forgot-password'
     | '/governance'
     | '/logistics'
     | '/marketplace'
@@ -1915,6 +1925,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/signin'
     | '/export/dashboard'
     | '/export/documents'
@@ -2094,6 +2105,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/export'
+    | '/forgot-password'
     | '/governance'
     | '/logistics'
     | '/marketplace'
@@ -2282,6 +2294,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExportRoute: typeof ExportRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   GovernanceRoute: typeof GovernanceRouteWithChildren
   LogisticsRoute: typeof LogisticsRouteWithChildren
   MarketplaceRoute: typeof MarketplaceRouteWithChildren
@@ -2309,6 +2322,13 @@ declare module '@tanstack/react-router' {
       path: '/export'
       fullPath: '/export'
       preLoaderRoute: typeof ExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/governance': {
@@ -4068,6 +4088,7 @@ const WarehousingRouteWithChildren = WarehousingRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExportRoute: ExportRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   GovernanceRoute: GovernanceRouteWithChildren,
   LogisticsRoute: LogisticsRouteWithChildren,
   MarketplaceRoute: MarketplaceRouteWithChildren,

@@ -66,6 +66,35 @@ export function resendVerification(email: string): Promise<{ message: string }> 
   });
 }
 
+/**
+ * Ask for a password reset code. The reply is the same whether or not an
+ * account exists for the address, so never tell the person which it was.
+ */
+export function requestPasswordReset(email: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/password-reset/request/", {
+    method: "POST",
+    body: { email },
+    auth: false,
+  });
+}
+
+/**
+ * Set a new password with the six-digit code from the reset email. The server
+ * signs the account out everywhere, so the person signs in again afterwards.
+ */
+export function confirmPasswordReset(input: {
+  email: string;
+  code: string;
+  new_password: string;
+  confirm_password: string;
+}): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/password-reset/confirm/", {
+    method: "POST",
+    body: input,
+    auth: false,
+  });
+}
+
 /** A correct password on an account with two-step sign-in: the tokens wait for a code. */
 export interface MfaChallenge {
   mfa_required: true;
