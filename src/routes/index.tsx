@@ -4,7 +4,9 @@ import { FileCheck2, MapPin, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BeldiumLogo } from "@/components/beldium-logo";
-import { isQcHost, qcUrl } from "@/lib/hosts";
+import { isQcHost, isWarehouseHost, qcUrl, warehouseUrl } from "@/lib/hosts";
+import { MINER_PORTAL_URL } from "@/lib/onboarding/options";
+import { WarehouseLanding } from "@/verticals/warehousing/landing";
 import { readStoredSession, useSession } from "@/lib/session";
 import { COMPLIANCE_SITE_VERTICALS, homeFor } from "@/lib/verticals";
 import { siteTitle } from "@/lib/site-title";
@@ -61,6 +63,12 @@ const highlights = [
 ];
 
 function EntryPage() {
+  // warehouse.beldium.com is the warehouse operators' own front door.
+  if (isWarehouseHost()) return <WarehouseLanding />;
+  return <ComplianceEntryPage />;
+}
+
+function ComplianceEntryPage() {
   const { session, hydrated } = useSession();
   const navigate = useNavigate();
 
@@ -104,10 +112,7 @@ function EntryPage() {
 
           <p className="mt-4 text-sm text-muted-foreground">
             Registering as a miner or mining organisation?{" "}
-            <a
-              href={import.meta.env["VITE_MINER_PORTAL_URL"] ?? "http://localhost:5174"}
-              className="font-semibold text-brand underline"
-            >
+            <a href={MINER_PORTAL_URL} className="font-semibold text-brand underline">
               Go to the Miner Portal
             </a>{" "}
             A separate, standalone workspace for your organisation, sites and compliance.
@@ -119,6 +124,14 @@ function EntryPage() {
               Go to the Quality &amp; Control site
             </a>{" "}
             Sample custody, testing and certificates have their own site.
+          </p>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Run a mineral warehouse, depot or bonded store?{" "}
+            <a href={warehouseUrl("/")} className="font-semibold text-brand underline">
+              Go to the warehouse operator site
+            </a>{" "}
+            Receiving, inventory and releases have their own site.
           </p>
 
           <div className="mt-12 grid gap-4 sm:grid-cols-3">
