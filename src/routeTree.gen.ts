@@ -150,6 +150,7 @@ import { Route as LogisticsRegulatorExpiringRouteImport } from './routes/logisti
 import { Route as LogisticsRegulatorNotificationsRouteImport } from './routes/logistics.regulator.notifications'
 import { Route as LogisticsRegulatorOperatorsRouteImport } from './routes/logistics.regulator.operators'
 import { Route as LogisticsRegulatorReportsRouteImport } from './routes/logistics.regulator.reports'
+import { Route as LogisticsRegulatorVerificationsRouteImport } from './routes/logistics.regulator.verifications'
 import { Route as MarketplaceComplianceIndexRouteImport } from './routes/marketplace.compliance.index'
 import { Route as MarketplaceComplianceIdRouteImport } from './routes/marketplace.compliance.$id'
 import { Route as MarketplaceRfqsIndexRouteImport } from './routes/marketplace.rfqs.index'
@@ -919,6 +920,12 @@ const LogisticsRegulatorReportsRoute =
     path: '/regulator/reports',
     getParentRoute: () => LogisticsRoute,
   } as any)
+const LogisticsRegulatorVerificationsRoute =
+  LogisticsRegulatorVerificationsRouteImport.update({
+    id: '/regulator/verifications',
+    path: '/regulator/verifications',
+    getParentRoute: () => LogisticsRoute,
+  } as any)
 const MarketplaceComplianceIndexRoute =
   MarketplaceComplianceIndexRouteImport.update({
     id: '/compliance/',
@@ -1307,6 +1314,7 @@ export interface FileRoutesByFullPath {
   '/logistics/regulator/notifications': typeof LogisticsRegulatorNotificationsRoute
   '/logistics/regulator/operators': typeof LogisticsRegulatorOperatorsRoute
   '/logistics/regulator/reports': typeof LogisticsRegulatorReportsRoute
+  '/logistics/regulator/verifications': typeof LogisticsRegulatorVerificationsRoute
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
   '/mining/applications/$applicationId': typeof MiningApplicationsApplicationIdRoute
@@ -1485,6 +1493,7 @@ export interface FileRoutesByTo {
   '/logistics/regulator/notifications': typeof LogisticsRegulatorNotificationsRoute
   '/logistics/regulator/operators': typeof LogisticsRegulatorOperatorsRoute
   '/logistics/regulator/reports': typeof LogisticsRegulatorReportsRoute
+  '/logistics/regulator/verifications': typeof LogisticsRegulatorVerificationsRoute
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
   '/mining/applications/$applicationId': typeof MiningApplicationsApplicationIdRoute
@@ -1673,6 +1682,7 @@ export interface FileRoutesById {
   '/logistics/regulator/notifications': typeof LogisticsRegulatorNotificationsRoute
   '/logistics/regulator/operators': typeof LogisticsRegulatorOperatorsRoute
   '/logistics/regulator/reports': typeof LogisticsRegulatorReportsRoute
+  '/logistics/regulator/verifications': typeof LogisticsRegulatorVerificationsRoute
   '/marketplace/compliance/$id': typeof MarketplaceComplianceIdRoute
   '/marketplace/rfqs/$id': typeof MarketplaceRfqsIdRoute
   '/mining/applications/$applicationId': typeof MiningApplicationsApplicationIdRoute
@@ -1862,6 +1872,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/notifications'
     | '/logistics/regulator/operators'
     | '/logistics/regulator/reports'
+    | '/logistics/regulator/verifications'
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
     | '/mining/applications/$applicationId'
@@ -2040,6 +2051,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/notifications'
     | '/logistics/regulator/operators'
     | '/logistics/regulator/reports'
+    | '/logistics/regulator/verifications'
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
     | '/mining/applications/$applicationId'
@@ -2227,6 +2239,7 @@ export interface FileRouteTypes {
     | '/logistics/regulator/notifications'
     | '/logistics/regulator/operators'
     | '/logistics/regulator/reports'
+    | '/logistics/regulator/verifications'
     | '/marketplace/compliance/$id'
     | '/marketplace/rfqs/$id'
     | '/mining/applications/$applicationId'
@@ -3284,6 +3297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsRegulatorReportsRouteImport
       parentRoute: typeof LogisticsRoute
     }
+    '/logistics/regulator/verifications': {
+      id: '/logistics/regulator/verifications'
+      path: '/regulator/verifications'
+      fullPath: '/logistics/regulator/verifications'
+      preLoaderRoute: typeof LogisticsRegulatorVerificationsRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
     '/marketplace/compliance/': {
       id: '/marketplace/compliance/'
       path: '/compliance'
@@ -3711,6 +3731,7 @@ interface LogisticsRouteChildren {
   LogisticsRegulatorNotificationsRoute: typeof LogisticsRegulatorNotificationsRoute
   LogisticsRegulatorOperatorsRoute: typeof LogisticsRegulatorOperatorsRoute
   LogisticsRegulatorReportsRoute: typeof LogisticsRegulatorReportsRoute
+  LogisticsRegulatorVerificationsRoute: typeof LogisticsRegulatorVerificationsRoute
   LogisticsAdminIndexRoute: typeof LogisticsAdminIndexRoute
   LogisticsOperatorIndexRoute: typeof LogisticsOperatorIndexRoute
   LogisticsPartnerIndexRoute: typeof LogisticsPartnerIndexRoute
@@ -3748,6 +3769,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsRegulatorNotificationsRoute: LogisticsRegulatorNotificationsRoute,
   LogisticsRegulatorOperatorsRoute: LogisticsRegulatorOperatorsRoute,
   LogisticsRegulatorReportsRoute: LogisticsRegulatorReportsRoute,
+  LogisticsRegulatorVerificationsRoute: LogisticsRegulatorVerificationsRoute,
   LogisticsAdminIndexRoute: LogisticsAdminIndexRoute,
   LogisticsOperatorIndexRoute: LogisticsOperatorIndexRoute,
   LogisticsPartnerIndexRoute: LogisticsPartnerIndexRoute,

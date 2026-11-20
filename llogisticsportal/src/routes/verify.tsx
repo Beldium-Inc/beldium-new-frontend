@@ -10,8 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api/errors";
-import { organisationDirectory } from "@/lib/api/organisations";
-import { useCreateJoinRequest } from "@/lib/api/queries";
 import { useAuth } from "@/lib/auth";
 
 const title = "Verify your account - Beldium Logistics Hub";
@@ -43,7 +41,6 @@ export const Route = createFileRoute("/verify")({
 function VerifyPage() {
   const { email, role, operatorType, organisationName } = Route.useSearch();
   const { user, confirmEmail, resendCode, refetchUser } = useAuth();
-  const createJoinRequest = useCreateJoinRequest();
   const navigate = useNavigate();
 
   const [emailCode, setEmailCode] = useState("");
@@ -85,36 +82,19 @@ function VerifyPage() {
     }
   }
 
-  async function joinOrganisation(name: string) {
-    const matches = await organisationDirectory({ search: name, page_size: 5 });
-    const match = matches.results.find(
-      (org) => org.name.trim().toLowerCase() === name.trim().toLowerCase(),
-    );
-    if (!match) {
-      setError(
-        `No verified organisation named "${name}" was found. Check the exact name with your admin.`,
-      );
-      return false;
-    }
-    await createJoinRequest.mutateAsync({ organisation: match.id });
-    return true;
-  }
-
-  async function continueAfterVerification() {
-    setBusy(true);
+  function continueAfterVerification() {
     setError("");
-    try {
-      if (role === "org_staff" && organisationName) {
-        if (await joinOrganisation(organisationName)) navigate({ to: user ? "/portal" : "/auth" });
-        return;
-      }
-      // Registering or independent: the wizard creates the organisation record.
-      navigate({ to: "/application", search: { organisationName, operatorType } });
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Something went wrong. Try again.");
-    } finally {
-      setBusy(false);
+    if (role === "org_staff") {
+      // The join request names a role and a message, so it gets its own page.
+      navigate({ to: "/join-organization", search: { organisation: organisationName } });
+      return;
     }
+    if (role === "independent") {
+      navigate({ to: "/independent/onboarding" });
+      return;
+    }
+    // Registering an organisation: the wizard creates the organisation record.
+    navigate({ to: "/application", search: { organisationName, operatorType } });
   }
 
   return (
@@ -249,11 +229,17 @@ function VerifyPage() {
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {role === "org_staff"
-                ? "Send your join request to continue."
-                : "Your operator application is now unlocked."}
+                ? "Request to join your organisation to continue."
+                : role === "independent"
+                  ? "Your independent operator onboarding is now unlocked."
+                  : "Your operator application is now unlocked."}
             </p>
             <Button className="mt-4 w-full" disabled={busy} onClick={continueAfterVerification}>
-              {role === "org_staff" ? "Send join request" : "Start operator application"}
+              {role === "org_staff"
+                ? "Request to join an organisation"
+                : role === "independent"
+                  ? "Start independent onboarding"
+                  : "Start operator application"}
             </Button>
           </div>
         ) : null}

@@ -86,7 +86,10 @@ export function PasswordGuide({
             >
               <Icon
                 aria-hidden
-                className={cn("mt-0.5 size-3 shrink-0", rule.state === "advice" && "size-2 mt-1 mx-0.5")}
+                className={cn(
+                  "mt-0.5 size-3 shrink-0",
+                  rule.state === "advice" && "size-2 mt-1 mx-0.5",
+                )}
               />
               <span>
                 {rule.label}

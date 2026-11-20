@@ -91,11 +91,7 @@ function SignupPage() {
     e.preventDefault();
     setError("");
     const phone = formatPhoneNumber(form.phone);
-    if (
-      !form.fullName ||
-      !form.email.includes("@") ||
-      !isValidPhoneNumber(phone)
-    ) {
+    if (!form.fullName || !form.email.includes("@") || !isValidPhoneNumber(phone)) {
       setError("Complete your name, a valid email and a complete phone number.");
       return;
     }
