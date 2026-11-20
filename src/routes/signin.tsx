@@ -719,12 +719,13 @@ function SignInPage() {
                   <Checkbox checked={remember} onCheckedChange={(v) => setRemember(Boolean(v))} />
                   Keep me signed in
                 </label>
-                <button
+                <Link
+                  to="/forgot-password"
+                  search={email.trim() ? { email: email.trim() } : {}}
                   className="text-xs font-medium text-brand underline"
-                  onClick={() => toast.info("Password reset is not available yet.")}
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
 
               <Button
