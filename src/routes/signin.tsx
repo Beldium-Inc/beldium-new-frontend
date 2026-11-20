@@ -27,7 +27,7 @@ import { rememberOnboardingSector } from "@/lib/onboarding/store";
 import { fetchOnboardingMe } from "@/lib/api/onboarding";
 import { pendingInvitation } from "@/lib/onboarding/invite";
 import { governanceSeat, pendingGovernanceInvitation } from "@/verticals/governance/access";
-import { isQcHost, qcUrl } from "@/lib/hosts";
+import { complianceUrl, isQcHost, isWarehouseHost, qcUrl, warehouseUrl } from "@/lib/hosts";
 import {
   COMPLIANCE_SITE_VERTICALS,
   COMPLIANCE_VERTICALS as ALL_VERTICALS,
@@ -75,12 +75,26 @@ const DISCLAIMER =
 // qualitycontrol.beldium.com only signs people in to Quality & Control, and
 // the compliance site no longer offers it: labs sign in on their own site.
 const ON_QC_HOST = typeof window !== "undefined" && isQcHost();
+// warehouse.beldium.com only signs warehouse operators in. The compliance
+// partners and regulators who review warehouses sign in on the compliance site.
+const ON_WAREHOUSE_HOST = typeof window !== "undefined" && isWarehouseHost();
+// A site with one sector opens straight on it, with no sector chooser.
+const SINGLE_SECTOR_SITE = ON_QC_HOST || ON_WAREHOUSE_HOST;
 const COMPLIANCE_VERTICALS: Vertical[] = ON_QC_HOST
   ? ALL_VERTICALS.filter((v) => v.slug === "quality")
-  : COMPLIANCE_SITE_VERTICALS;
+  : ON_WAREHOUSE_HOST
+    ? ALL_VERTICALS.filter((v) => v.slug === "warehousing")
+    : COMPLIANCE_SITE_VERTICALS;
 const QC_VERTICAL = ALL_VERTICALS.find((v) => v.slug === "quality") ?? null;
+const SITE_VERTICAL = SINGLE_SECTOR_SITE ? (COMPLIANCE_VERTICALS[0] ?? null) : null;
 
-const partnerRoleCount = COMPLIANCE_VERTICALS.reduce((n, v) => n + signInRoles(v).length, 0);
+/** The roles this site signs people in to for a sector. */
+function siteRoles(vertical: Vertical) {
+  if (ON_WAREHOUSE_HOST) return vertical.roles.filter((r) => r.id === "operator");
+  return signInRoles(vertical);
+}
+
+const partnerRoleCount = COMPLIANCE_VERTICALS.reduce((n, v) => n + siteRoles(v).length, 0);
 
 const VERTICAL_ICON: Record<VerticalSlug, React.ElementType> = {
   mining: Mountain,
@@ -119,9 +133,9 @@ function SignInPage() {
   });
 
   // On the Q&C host there is only one sector, so it opens straight away.
-  const [picked, setPicked] = React.useState<Vertical | null>(ON_QC_HOST ? QC_VERTICAL : null);
+  const [picked, setPicked] = React.useState<Vertical | null>(SITE_VERTICAL);
   const [roleId, setRoleId] = React.useState<string | null>(
-    ON_QC_HOST && QC_VERTICAL ? (signInRoles(QC_VERTICAL)[0]?.id ?? null) : null,
+    SITE_VERTICAL ? (siteRoles(SITE_VERTICAL)[0]?.id ?? null) : null,
   );
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -143,7 +157,7 @@ function SignInPage() {
 
   const openSector = (vertical: Vertical) => {
     setPicked(vertical);
-    setRoleId(signInRoles(vertical)[0]!.id);
+    setRoleId(siteRoles(vertical)[0]!.id);
   };
 
   const selectRole = (_vertical: Vertical, id: string) => {
@@ -350,6 +364,26 @@ function SignInPage() {
         return;
       }
       role = capabilities.role;
+
+      // Labs and Q&C staff work on the Q&C site; the regulators above them
+      // work on the compliance site. Turn each away from the other's site.
+      if (!ON_QC_HOST && role !== "regulator") {
+        await endAuth();
+        toast.error("This is a laboratory or Q&C account. Sign in on the Quality & Control site.", {
+          action: { label: "Open", onClick: () => window.location.assign(qcUrl("/signin")) },
+        });
+        return;
+      }
+      if (ON_QC_HOST && role === "regulator") {
+        await endAuth();
+        toast.error("Regulators sign in to Quality & Control oversight on the compliance site.", {
+          action: {
+            label: "Open",
+            onClick: () => window.location.assign(complianceUrl("/signin")),
+          },
+        });
+        return;
+      }
     }
 
     startSession(picked.slug, role);
@@ -365,7 +399,11 @@ function SignInPage() {
             <div className="leading-tight">
               <p className="font-display text-base font-semibold">Beldium</p>
               <p className="text-xs text-accent/80">
-                {ON_QC_HOST ? "Quality & Control" : "Compliance Platform"}
+                {ON_QC_HOST
+                  ? "Quality & Control"
+                  : ON_WAREHOUSE_HOST
+                    ? "Warehouse Operators"
+                    : "Compliance Platform"}
               </p>
             </div>
           </Link>
@@ -374,21 +412,25 @@ function SignInPage() {
             <h1 className="font-display text-4xl leading-tight font-semibold sm:text-5xl">
               {ON_QC_HOST
                 ? "Sample custody, laboratory testing and material certificates"
-                : "Compliance assurance across the minerals value chain"}
+                : ON_WAREHOUSE_HOST
+                  ? "Run your warehouse: receiving, custody, inventory and releases"
+                  : "Compliance assurance across the minerals value chain"}
             </h1>
             <p className="max-w-lg text-sm leading-relaxed text-primary-foreground/75">
               {ON_QC_HOST
                 ? "Accredited laboratories and Q&C professionals take custody of samples, record test results and issue certificates that buyers and regulators can verify."
-                : "Beldium verifies operators, interrogates evidence section by section, and issues an independent compliance verification record at every stage, from pit to port."}
+                : ON_WAREHOUSE_HOST
+                  ? "Mineral warehouses, depots and bonded stores record every lot they receive, where it sits and when it leaves, and keep their accreditation in order with Beldium's compliance partners."
+                  : "Beldium verifies operators, interrogates evidence section by section, and issues an independent compliance verification record at every stage, from pit to port."}
             </p>
           </div>
 
           <dl className="grid max-w-lg grid-cols-3 gap-4 border-t border-primary-foreground/15 pt-6">
             {[
-              ON_QC_HOST
-                ? ["Q&C", "Sector"]
+              SINGLE_SECTOR_SITE
+                ? [ON_QC_HOST ? "Q&C" : "1", "Sector"]
                 : [String(COMPLIANCE_VERTICALS.length), "Compliance sectors"],
-              [String(partnerRoleCount), "Partner roles"],
+              [String(partnerRoleCount), ON_WAREHOUSE_HOST ? "Operator role" : "Partner roles"],
               [
                 stats.data ? stats.data.verified_organisations.toLocaleString() : "-",
                 "Verified organisations",
@@ -499,7 +541,7 @@ function SignInPage() {
                             {vertical.tagline}
                           </p>
                           <p className="mt-2 text-[11px] text-muted-foreground/80">
-                            {signInRoles(vertical).length} roles
+                            {siteRoles(vertical).length} roles
                           </p>
                         </div>
                         <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
@@ -531,11 +573,46 @@ function SignInPage() {
                 </button>
               )}
 
-              {!ON_QC_HOST && (
+              {!SINGLE_SECTOR_SITE && QC_VERTICAL && (
+                // Labs and Q&C staff use their own site. Only the regulators
+                // above Quality & Control sign in to it here.
+                <button
+                  onClick={() => {
+                    setPicked(QC_VERTICAL);
+                    setRoleId("regulator");
+                  }}
+                  className="group mt-3 w-full rounded-xl border border-dashed border-border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-card"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                      <FlaskConical className="size-4.5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-semibold">
+                        Quality &amp; Control oversight
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        For regulators and standards bodies above the laboratories. Read only.
+                      </p>
+                    </div>
+                    <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </div>
+                </button>
+              )}
+
+              {!SINGLE_SECTOR_SITE && (
                 <p className="mt-4 text-center text-xs text-muted-foreground">
                   Laboratory or Q&amp;C professional?{" "}
                   <a href={qcUrl("/signin")} className="font-medium text-brand underline">
                     Sign in on the Quality &amp; Control site
+                  </a>
+                </p>
+              )}
+              {!SINGLE_SECTOR_SITE && (
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  Run a warehouse, depot or bonded store?{" "}
+                  <a href={warehouseUrl("/signin")} className="font-medium text-brand underline">
+                    Sign in on the warehouse operator site
                   </a>
                 </p>
               )}
@@ -549,8 +626,8 @@ function SignInPage() {
             </>
           ) : (
             <>
-              {/* The Q&C site has one sector, so there is nothing to go back to. */}
-              {!ON_QC_HOST && (
+              {/* The Q&C and warehouse sites have one sector, so there is nothing to go back to. */}
+              {!SINGLE_SECTOR_SITE && (
                 <button
                   onClick={() => {
                     setPicked(null);
@@ -561,15 +638,23 @@ function SignInPage() {
                   <ArrowLeft className="size-3.5" /> All sectors
                 </button>
               )}
-              <h2 className=" font-display text-xl font-semibold">{picked.name}</h2>
+              <h2 className=" font-display text-xl font-semibold">
+                {picked.slug === "quality" && !ON_QC_HOST
+                  ? "Quality & Control oversight"
+                  : ON_WAREHOUSE_HOST
+                    ? "Warehouse operator sign in"
+                    : picked.name}
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {serverRoles
                   ? "Sign in. Your role is the one the Q&C desk assigned to your account."
-                  : "Choose the role you hold, then sign in. You can sign out and switch at any time."}
+                  : ON_WAREHOUSE_HOST
+                    ? "Sign in with the account you registered for your warehouse."
+                    : "Choose the role you hold, then sign in. You can sign out and switch at any time."}
               </p>
 
               <div className={cn("mt-6 space-y-3", serverRoles && "hidden")}>
-                {signInRoles(picked).map((role) => {
+                {siteRoles(picked).map((role) => {
                   const Icon = ROLE_ICON[role.id] ?? ShieldCheck;
                   const active = roleId === role.id;
                   return (
@@ -648,7 +733,9 @@ function SignInPage() {
                 onClick={() => void submit()}
                 disabled={submitting}
               >
-                {submitting ? "Signing in…" : `Sign in to ${picked.name}`}
+                {submitting
+                  ? "Signing in…"
+                  : `Sign in to ${ON_WAREHOUSE_HOST ? "your warehouse" : picked.name}`}
               </Button>
 
               {picked.slug === "governance" ? (

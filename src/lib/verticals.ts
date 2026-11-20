@@ -174,6 +174,8 @@ export const VERTICALS: Vertical[] = [
         label: "Warehouse Operator",
         blurb: "Runs the facility: receiving, locations, inventory, releases and incidents.",
         home: "/operator",
+        // Warehouse operators sign in on their own site (warehouse.beldium.com).
+        hiddenOnSignIn: true,
       },
       {
         id: "regulator",
