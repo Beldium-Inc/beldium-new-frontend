@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { BeldiumProvider } from "@/verticals/quality/store";
-import { goToQcHost, isOtherBeldiumHost } from "@/lib/hosts";
+import { goToComplianceHost, goToQcHost, isComplianceHost, isQcHost } from "@/lib/hosts";
 import { useSession } from "@/lib/session";
 import { useSignOut } from "@/lib/sign-out";
 
@@ -29,19 +29,24 @@ function QualityLayout() {
   // The session only says this person signed in to the Q&C workspace.
   const valid = session?.vertical === "quality";
 
-  // On any other deployed Beldium host, Quality & Control lives on its own site.
+  // Labs and Q&C staff work on the Q&C site; the regulators above them work
+  // here on the compliance site. Anyone on the wrong one is sent across. The
+  // session belongs to this origin, so they sign in again over there.
+  const regulator = session?.role === "regulator";
+  const wrongSite = valid && (isQcHost() ? regulator : isComplianceHost() && !regulator);
   useEffect(() => {
-    if (isOtherBeldiumHost()) {
-      const { pathname, search, hash } = window.location;
-      goToQcHost(`${pathname}${search}${hash}`);
-    }
-  }, []);
+    if (!hydrated || !wrongSite) return;
+    const { pathname, search, hash } = window.location;
+    signOut();
+    if (isQcHost()) goToComplianceHost("/signin");
+    else goToQcHost(`${pathname}${search}${hash}`);
+  }, [hydrated, wrongSite, signOut]);
 
   useEffect(() => {
     if (hydrated && !valid) navigate({ to: "/signin" });
   }, [hydrated, valid, navigate]);
 
-  if (!hydrated || !valid) {
+  if (!hydrated || !valid || wrongSite) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">

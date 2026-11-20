@@ -19,7 +19,6 @@ export const qualityOrganisationTypes: { label: string; registersAs: Organisatio
   { label: "Sampling Organisation", registersAs: "inspection_body" },
   { label: "Mineral Testing Organisation", registersAs: "laboratory" },
   { label: "Independent Inspection Organisation", registersAs: "inspection_body" },
-  { label: "Regulatory / Standards Institution", registersAs: "regulator" },
   { label: "Other", registersAs: "compliance_partner" },
 ];
 

@@ -118,6 +118,10 @@ export function AppShell({
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const profile = roleById(role);
+  // Operators and the compliance desk sit on different sites, so a person can
+  // only switch between the two compliance seats (partner and regulator).
+  const switchable =
+    role === "operator" ? [] : ROLES.filter((r) => r.id !== role && r.id !== "operator");
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -156,7 +160,9 @@ export function AppShell({
             <p className="font-heading text-sm font-semibold text-sidebar-accent-foreground">
               Beldium
             </p>
-            <p className="text-xs text-sidebar-foreground/70">Warehousing Compliance</p>
+            <p className="text-xs text-sidebar-foreground/70">
+              {role === "operator" ? "Warehouse Operators" : "Warehousing Compliance"}
+            </p>
           </div>
         </div>
 
@@ -226,11 +232,13 @@ export function AppShell({
                   <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                     {profile.org}
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Switch role
-                  </DropdownMenuLabel>
-                  {ROLES.filter((r) => r.id !== role).map((r) => (
+                  {switchable.length > 0 && <DropdownMenuSeparator />}
+                  {switchable.length > 0 && (
+                    <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Switch role
+                    </DropdownMenuLabel>
+                  )}
+                  {switchable.map((r) => (
                     <DropdownMenuItem
                       key={r.id}
                       className="gap-2 rounded-lg"

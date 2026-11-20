@@ -4,7 +4,7 @@ import { ArrowLeft, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
 import type { VerificationState } from "@/lib/onboarding/types";
-import { isQcHost } from "@/lib/hosts";
+import { isQcHost, isWarehouseHost } from "@/lib/hosts";
 
 export function ProgressHeader({
   step,
@@ -68,7 +68,11 @@ export function AuthShell({
             <span className="block font-display text-sm font-semibold">Beldium</span>
             <span className="block text-xs text-muted-foreground">
               {/* Onboarding is client-only (ssr: false), so the host check is safe here. */}
-              {isQcHost() ? "Quality & Control" : "Compliance Platform"}
+              {isQcHost()
+                ? "Quality & Control"
+                : isWarehouseHost()
+                  ? "Warehouse Operators"
+                  : "Compliance Platform"}
             </span>
           </span>
         </Link>

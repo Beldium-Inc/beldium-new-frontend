@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ExternalLink } from "lucide-react";
 
 import { PageHeader, StatCard } from "@/components/miner-shell";
+import { Button } from "@/components/ui/button";
 import { DataTable, EmptyState, Panel, StageChip, Td, TxLink } from "@/components/ecosystem-ui";
 import { type LifecycleStage } from "@/lib/api/ecosystem";
 import { useTransactions } from "@/lib/api/ecosystem-queries";
@@ -15,6 +17,12 @@ const QUALITY_STAGES: LifecycleStage[] = [
   "buyer_quality_acceptance",
 ];
 
+// Quality & Control is a sector of its own with its own site, where the labs
+// that test these samples work and issue their certificates.
+const QC_SITE_URL =
+  (import.meta.env["VITE_QC_SITE_URL"] as string | undefined) ??
+  "https://qualitycontrol.beldium.com";
+
 export const Route = createFileRoute("/portal/quality")({ component: QualityPage });
 
 function QualityPage() {
@@ -24,7 +32,18 @@ function QualityPage() {
 
   return (
     <div>
-      <PageHeader title="Samples & quality" description="Sampling, laboratory testing and buyer quality acceptance for every transaction." />
+      <PageHeader
+        title="Samples & quality"
+        description="Sampling, laboratory testing and buyer quality acceptance for every transaction."
+        actions={
+          <Button asChild variant="outline">
+            <a href={QC_SITE_URL} target="_blank" rel="noopener noreferrer">
+              Quality &amp; Control site
+              <ExternalLink className="size-4" />
+            </a>
+          </Button>
+        }
+      />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Samples in progress" value={String(rows.filter((r) => r.stage !== "buyer_quality_acceptance").length)} />
         <StatCard label="Awaiting buyer acceptance" value={String(rows.filter((r) => r.stage === "results_published").length)} />

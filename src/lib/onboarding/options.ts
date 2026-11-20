@@ -12,6 +12,7 @@ import { apiFetch } from "../api/client";
 import { useHasTokens } from "../api/queries";
 import type { VerticalSlug } from "../verticals";
 import type { OnboardingRole, OrgPath } from "./types";
+import { isQcHost, isWarehouseHost } from "../hosts";
 
 export type OptionKind = "register" | "join" | "regulatory" | "specific";
 export type DashboardKey = "applicant" | "partner";
@@ -44,7 +45,11 @@ export interface OnboardingOptions {
 }
 
 const env = import.meta.env as Record<string, string | undefined>;
-export const MINER_PORTAL_URL = env["VITE_MINER_PORTAL_URL"] ?? "http://localhost:5174";
+// Production builds without the variable fall back to the live Miner Hub, never
+// to a localhost address that only works on a developer's machine.
+export const MINER_PORTAL_URL =
+  env["VITE_MINER_PORTAL_URL"] ??
+  (import.meta.env.DEV ? "http://localhost:5174" : "https://miners.beldium.com");
 export const LOGISTICS_PORTAL_URL = env["VITE_LOGISTICS_PORTAL_URL"] ?? "http://localhost:5175";
 
 const REGULATORY: OnboardingOption = {
@@ -194,6 +199,76 @@ export function useOnboardingOptions(sector: VerticalSlug | null): {
     staleTime: 5 * 60_000,
   });
   const server = query.data?.dashboards;
-  if (server && server.length) return { dashboards: server, fromServer: true };
-  return { dashboards: sector ? FALLBACK[sector] : [], fromServer: false };
+  if (server && server.length) return { dashboards: forThisSite(server, sector), fromServer: true };
+  return {
+    dashboards: forThisSite(sector ? FALLBACK[sector] : [], sector),
+    fromServer: false,
+  };
+}
+
+const REGULATOR_ROLES: OnboardingRole[] = ["regulator-org", "regulator-officer"];
+
+/**
+ * What warehouse.beldium.com offers: the warehouse operators themselves. They
+ * register their company and facilities (the participant application, BE-O3)
+ * or join a company already on Beldium. Compliance firms and regulators who
+ * review warehouses sign up on the compliance site.
+ */
+export const WAREHOUSE_OPERATOR_SIDE: OnboardingDashboard = {
+  key: "applicant",
+  label: "Warehouse operator",
+  description: "Operators of mineral warehouses, depots and bonded stores.",
+  options: [
+    {
+      key: "register",
+      kind: "register",
+      label: "Register a warehouse operator",
+      description:
+        "Your company is not on Beldium yet. Register it and its warehouses, then complete the accreditation application. You become its administrator.",
+      role: "participant",
+      org_path: "new",
+      note: "Company · you become the admin",
+    },
+    {
+      key: "join",
+      kind: "join",
+      label: "Join your company's warehouse team",
+      description:
+        "Your company is already on Beldium. Use the join code from your administrator, or the link in your invitation email.",
+      role: "participant-member",
+      org_path: "existing",
+      note: "Staff until your admin changes your role",
+    },
+  ],
+};
+
+/**
+ * Regulators sit above Quality & Control. Labs and Q&C staff sign up on
+ * qualitycontrol.beldium.com, which offers no regulator options; regulators
+ * sign up on the compliance site, where the Quality & Control oversight entry
+ * offers only the two regulator options (agency access, join your agency).
+ */
+function forThisSite(
+  dashboards: OnboardingDashboard[],
+  sector: VerticalSlug | null,
+): OnboardingDashboard[] {
+  if (isWarehouseHost()) return sector === "warehousing" ? [WAREHOUSE_OPERATOR_SIDE] : [];
+  if (isQcHost()) {
+    return dashboards.map((d) => ({
+      ...d,
+      options: d.options.filter((o) => !REGULATOR_ROLES.includes(o.role)),
+    }));
+  }
+  if (sector !== "quality") return dashboards;
+  const options = dashboards
+    .flatMap((d) => d.options)
+    .filter((o) => REGULATOR_ROLES.includes(o.role));
+  return [
+    {
+      key: "partner",
+      label: "Quality & Control oversight",
+      description: "Government regulators and oversight agencies with read-only access to Q&C.",
+      options: options.length ? options : [REGULATORY, REGULATOR_OFFICER],
+    },
+  ];
 }

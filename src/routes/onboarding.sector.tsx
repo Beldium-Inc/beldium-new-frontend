@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { AuthShell, OptionCard, ProgressHeader } from "@/components/onboarding/ui";
 import { Button } from "@/components/ui/button";
-import { goToQcHost, isQcHost, qcUrl } from "@/lib/hosts";
+import { isQcHost, isWarehouseHost, qcUrl, warehouseUrl } from "@/lib/hosts";
 import { useOnboarding } from "@/lib/onboarding/store";
 import { COMPLIANCE_SITE_VERTICALS } from "@/lib/verticals";
 
@@ -13,18 +13,20 @@ function SectorPage() {
   const navigate = useNavigate();
   const selected = sector ?? "mining";
 
-  // qualitycontrol.beldium.com only onboards Quality & Control accounts: skip the chooser.
+  // qualitycontrol.beldium.com only onboards Quality & Control accounts, and
+  // warehouse.beldium.com only warehouse operators: skip the chooser on both.
+  const siteSector = isQcHost() ? "quality" : isWarehouseHost() ? "warehousing" : null;
   React.useEffect(() => {
-    if (isQcHost()) {
-      setSector("quality");
+    if (siteSector) {
+      setSector(siteSector);
       navigate({ to: "/onboarding/role", replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // On the Q&C site the effect above moves straight on; draw nothing meanwhile
-  // so the sector chooser never flashes up. Onboarding is client-only.
-  if (isQcHost()) return null;
+  // On a one-sector site the effect above moves straight on; draw nothing
+  // meanwhile so the sector chooser never flashes up. Onboarding is client-only.
+  if (siteSector) return null;
 
   return (
     <AuthShell
@@ -48,18 +50,25 @@ function SectorPage() {
             }
           />
         ))}
+        {/* Regulators sit above Quality & Control, so they request Q&C access
+            here on the compliance site. Labs apply on the Q&C site. */}
+        <OptionCard
+          active={selected === "quality"}
+          title="Quality & Control oversight"
+          description="For government regulators and oversight agencies: request read-only access to Quality & Control, or join your agency's regulator account."
+          onClick={() => setSector("quality")}
+          meta={
+            <span className="text-[11px] text-muted-foreground">
+              Regulators only · Regulatory access, Join your agency
+            </span>
+          }
+        />
       </div>
 
       <div className="mt-7 flex flex-wrap gap-3">
         <Button
           size="lg"
           onClick={() => {
-            // Labs and Q&C operators apply on the Quality & Control site. A
-            // sector remembered from before the split can still say "quality".
-            if (selected === "quality") {
-              goToQcHost("/onboarding/sector");
-              return;
-            }
             setSector(selected);
             navigate({ to: "/onboarding/role" });
           }}
@@ -75,6 +84,12 @@ function SectorPage() {
         Registering a laboratory or joining as a Q&amp;C professional?{" "}
         <a href={qcUrl("/onboarding/sector")} className="font-semibold text-brand underline">
           Apply on the Quality &amp; Control site
+        </a>
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Running a warehouse, depot or bonded store?{" "}
+        <a href={warehouseUrl("/onboarding/sector")} className="font-semibold text-brand underline">
+          Register on the warehouse operator site
         </a>
       </p>
     </AuthShell>

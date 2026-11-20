@@ -3,6 +3,12 @@ import { useEffect } from "react";
 
 import { DemoProvider } from "@/verticals/warehousing/store";
 import type { RoleId } from "@/verticals/warehousing/data";
+import {
+  goToComplianceHost,
+  goToWarehouseHost,
+  isOtherBeldiumHost,
+  isWarehouseHost,
+} from "@/lib/hosts";
 import { useSession } from "@/lib/session";
 import { useSignOut } from "@/lib/sign-out";
 import { roleIn } from "@/lib/verticals";
@@ -28,6 +34,17 @@ function WarehousingLayout() {
 
   const role = session?.vertical === "warehousing" ? session.role : null;
   const valid = role !== null && roleIn("warehousing", role) !== undefined;
+
+  // Warehouse operators work on warehouse.beldium.com; the compliance partners
+  // and regulators who review them work on the compliance site. A session on
+  // the wrong site is sent across, keeping the path.
+  useEffect(() => {
+    if (!role) return;
+    const { pathname, search, hash } = window.location;
+    const path = `${pathname}${search}${hash}`;
+    if (role === "operator" && isOtherBeldiumHost()) goToWarehouseHost(path);
+    else if (role !== "operator" && isWarehouseHost()) goToComplianceHost(path);
+  }, [role]);
 
   useEffect(() => {
     if (hydrated && !valid) navigate({ to: "/signin" });
