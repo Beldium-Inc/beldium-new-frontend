@@ -232,6 +232,7 @@ function toDocument(row: Api.LogisticsDocument): ComplianceDocument {
     originalName: row.original_name,
     downloadUrl: apiUrl(documentDownloadUrl(row.id)),
     reviewNotes: row.review_notes,
+    reviewedAt: row.reviewed_at?.slice(0, 16).replace("T", " ") ?? "",
     reviewTags: row.review_tags ?? [],
     fileDetails: FILE_DETAILS.filter(([key]) => meta[key]).map(([key, label]) => {
       const value = String(meta[key]);

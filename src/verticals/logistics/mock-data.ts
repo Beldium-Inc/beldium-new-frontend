@@ -47,6 +47,8 @@ export interface ComplianceDocument {
   downloadUrl?: string;
   /** What the reviewer wrote when verifying or rejecting. */
   reviewNotes?: string;
+  /** When the document was verified or rejected, as "YYYY-MM-DD HH:MM". */
+  reviewedAt?: string;
   /** Advice from the file's own metadata; only reviewers are sent it. */
   reviewTags?: { code: string; tone: "info" | "warning"; label: string; detail: string }[];
   /** What the file records about how it was made, as label and value. */

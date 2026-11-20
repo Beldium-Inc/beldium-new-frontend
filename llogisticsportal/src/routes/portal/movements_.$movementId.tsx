@@ -20,6 +20,7 @@ import { StatusBadge } from "@/components/beldium/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { TripStepper } from "@/components/beldium/trip-stepper";
 import { listDrivers, listVehicles } from "@/lib/api/logistics";
 import {
   MOVEMENT_TRANSITIONS,
@@ -38,6 +39,7 @@ import {
   useReportIncident,
   useSetMovementStatus,
 } from "@/lib/api/operations-queries";
+import { stageForMovement } from "@/lib/trips/model";
 
 export const Route = createFileRoute("/portal/movements_/$movementId")({
   head: () => ({ meta: [{ title: "Movement - Beldium Logistics Hub" }] }),
@@ -80,6 +82,10 @@ function MovementPage() {
     );
 
   const closed = m.status === "delivered" || m.status === "cancelled";
+  const custodyDone = (deliveries.data?.results ?? []).some(
+    (d) => d.status === "completed" || d.status === "variance_flagged",
+  );
+  const lifecycle = stageForMovement(m.status, custodyDone);
   const hasFix = m.last_latitude && m.last_longitude;
 
   return (
@@ -112,6 +118,29 @@ function MovementPage() {
       />
 
       <div className="space-y-4">
+        <Panel
+          title="Trip lifecycle"
+          description="Requested → Accepted → Scheduled → Mobilized → Arrived at Pickup → Loaded → In Transit → Arrived at Destination → Delivered → Closed"
+        >
+          <TripStepper
+            trip={
+              m.status === "delayed"
+                ? { status: "Exception", resumeStatus: "In Transit" }
+                : { status: lifecycle.stage, resumeStatus: undefined }
+            }
+          />
+          <p className="mt-3 text-xs text-muted-foreground">
+            {m.status === "delayed"
+              ? "Delayed: the movement resumes at In Transit. "
+              : lifecycle.inferred
+                ? `“${lifecycle.stage}” is inferred: the movement API has no separate status for it. `
+                : ""}
+            {m.status === "delivered" && !custodyDone
+              ? "Confirm the received quantity under Deliveries to finish custody."
+              : null}
+          </p>
+        </Panel>
+
         <Panel title="Movement">
           <FieldGrid
             items={[

@@ -15,6 +15,7 @@ import {
   Settings,
   ShieldCheck,
   Truck,
+  UserPlus,
   Users,
   Wallet,
 } from "lucide-react";
@@ -48,6 +49,7 @@ const reviewNav: NavItem[] = [
   { title: "Review overview", url: "/portal", icon: LayoutDashboard },
   { title: "Information requests", url: "/portal/requests", icon: ClipboardCheck },
   { title: "Submitted application", url: "/portal/application-record", icon: FileText },
+  { title: "Team", url: "/portal/team", icon: UserPlus },
   { title: "Notifications", url: "/portal/notifications", icon: Bell },
   { title: "Settings", url: "/portal/settings", icon: Settings },
 ];
@@ -71,6 +73,7 @@ const verifiedNav: { group: string; items: NavItem[] }[] = [
     items: [
       { title: "Vehicles", url: "/portal/vehicles", icon: CarFront },
       { title: "Drivers", url: "/portal/drivers", icon: Users },
+      { title: "Team", url: "/portal/team", icon: UserPlus },
     ],
   },
   {
