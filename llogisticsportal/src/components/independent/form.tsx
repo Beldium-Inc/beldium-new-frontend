@@ -146,3 +146,28 @@ export const humanize = (key: string) =>
     .replace(/([A-Z])/g, " $1")
     .replace(/^\w/, (c) => c.toUpperCase())
     .replace(/ (\w)/g, (_, c: string) => ` ${c.toLowerCase()}`);
+
+/** Picks a document from the device and records its filename (the wizard keeps filenames only). */
+export function FileField({
+  label,
+  value,
+  onChange,
+  required = true,
+}: {
+  label: string;
+  value: string;
+  onChange: (filename: string) => void;
+  required?: boolean | undefined;
+}) {
+  const text = required ? label : `${label} (optional)`;
+  return (
+    <Field label={text}>
+      <Input
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={(e) => onChange(e.target.files?.[0]?.name ?? "")}
+      />
+      {value ? <p className="mt-1 text-xs text-muted-foreground">Selected: {value}</p> : null}
+    </Field>
+  );
+}
