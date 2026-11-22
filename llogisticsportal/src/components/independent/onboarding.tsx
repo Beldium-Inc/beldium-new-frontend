@@ -22,7 +22,15 @@ import {
 import { useIndependent } from "@/lib/independent/store";
 import { cn } from "@/lib/utils";
 
-import { CheckField, ErrorText, KeyValues, SelectField, TextField, humanize } from "./form";
+import {
+  CheckField,
+  ErrorText,
+  FileField,
+  KeyValues,
+  SelectField,
+  TextField,
+  humanize,
+} from "./form";
 
 const VEHICLE_TYPES = [
   "Tipper truck",
@@ -257,7 +265,19 @@ export function IndependentOnboarding() {
               {field("personal", "idType", "ID type", {
                 options: ["NIN slip", "Voter card", "Passport", "Driver's licence", "Other"],
               })}
-              {field("personal", "idFilename", "ID evidence filename")}
+              <FileField
+                label={`Upload proof of your ${a.personal["idType"] || "ID"}`}
+                value={a.personal["idFilename"] ?? ""}
+                onChange={(filename) =>
+                  update({
+                    personal: { ...a.personal, ["idFilename"]: filename },
+                    evidence: {
+                      ...a.evidence,
+                      identity: { filename, declared: Boolean(filename.trim()) },
+                    },
+                  })
+                }
+              />
             </div>
           ) : null}
 
@@ -387,25 +407,36 @@ export function IndependentOnboarding() {
           {a.step === 6 ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Enter filenames only. No file contents or real identity documents are collected
-                here, and your statements do not verify the evidence.
+                Upload a document for each requirement below. The wizard records the filename
+                only, and your statements do not verify the evidence.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
-                {applicableReqs(a).map((r) => (
-                  <TextField
-                    key={r.id}
-                    label={`${r.name}: filename`}
-                    value={a.evidence[r.id]?.filename ?? ""}
-                    onChange={(v) =>
-                      update({
-                        evidence: {
-                          ...a.evidence,
-                          [r.id]: { filename: v, declared: Boolean(v.trim()) },
-                        },
-                      })
-                    }
-                  />
-                ))}
+                {applicableReqs(a).map((r) =>
+                  r.id === "identity" ? (
+                    <div key={r.id} className="text-sm">
+                      <p className="font-medium">{r.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.personal["idFilename"]
+                          ? `Uses your ${a.personal["idType"] || "ID"} uploaded on step 1: ${a.personal["idFilename"]}`
+                          : "Upload your ID on step 1 first."}
+                      </p>
+                    </div>
+                  ) : (
+                    <FileField
+                      key={r.id}
+                      label={r.name}
+                      value={a.evidence[r.id]?.filename ?? ""}
+                      onChange={(filename) =>
+                        update({
+                          evidence: {
+                            ...a.evidence,
+                            [r.id]: { filename, declared: Boolean(filename.trim()) },
+                          },
+                        })
+                      }
+                    />
+                  ),
+                )}
               </div>
               <div className="space-y-3 border-t border-border pt-5">
                 {IND_DECLARATIONS.map(([k, label]) => (
