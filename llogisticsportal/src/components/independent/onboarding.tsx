@@ -7,6 +7,7 @@ import { Panel } from "@/components/beldium/stat-card";
 import { StatusBadge } from "@/components/beldium/status-badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { submitIndependentToBackend } from "@/lib/independent/backend";
 import {
   IND_DECLARATIONS,
   IND_STEPS,
@@ -45,6 +46,9 @@ export function IndependentVehicleForm({ onAdd }: { onAdd: (v: IndVehicle) => vo
   const blank = {
     registration: "",
     type: "",
+    make: "",
+    model: "",
+    year: "",
     payload: "",
     ownership: "Owned",
     insuranceExpiry: "",
@@ -61,6 +65,9 @@ export function IndependentVehicleForm({ onAdd }: { onAdd: (v: IndVehicle) => vo
       onSubmit={(e) => {
         e.preventDefault();
         if (!f.registration.trim() || !f.type) return setError("Enter the registration and type.");
+        if (!f.make.trim() || !f.model.trim())
+          return setError("Enter the vehicle make and model.");
+        if (!(Number(f.year) >= 1900)) return setError("Enter the vehicle year.");
         if (!(Number(f.payload) > 0)) return setError("Enter a positive payload in tonnes.");
         if (!f.insuranceExpiry || !f.roadworthinessExpiry)
           return setError("Enter the insurance and roadworthiness expiry dates.");
@@ -70,6 +77,9 @@ export function IndependentVehicleForm({ onAdd }: { onAdd: (v: IndVehicle) => vo
           id: `IND-VEH-${crypto.randomUUID().slice(0, 8)}`,
           registration: f.registration.trim().toUpperCase(),
           type: f.type,
+          make: f.make.trim(),
+          model: f.model.trim(),
+          year: Number(f.year),
           payload: Number(f.payload),
           ownership: f.ownership as VehicleOwnership,
           insuranceExpiry: f.insuranceExpiry,
@@ -93,6 +103,9 @@ export function IndependentVehicleForm({ onAdd }: { onAdd: (v: IndVehicle) => vo
           onChange={set("type")}
           options={VEHICLE_TYPES}
         />
+        <TextField label="Make" value={f.make} onChange={set("make")} />
+        <TextField label="Model" value={f.model} onChange={set("model")} />
+        <TextField label="Year of manufacture" type="number" value={f.year} onChange={set("year")} />
         <TextField
           label="Payload (tonnes)"
           type="number"
@@ -141,6 +154,16 @@ export function IndependentOnboarding() {
   const [error, setError] = React.useState("");
   const [saved, setSaved] = React.useState(false);
   const [submittedRef, setSubmittedRef] = React.useState("");
+  const [sending, setSending] = React.useState(false);
+  // Picked files stay in memory for submission; only their names are saved.
+  const [files, setFiles] = React.useState<Record<string, File>>({});
+  const pickFile = (id: string, file: File | null) =>
+    setFiles((current) => {
+      const next = { ...current };
+      if (file) next[id] = file;
+      else delete next[id];
+      return next;
+    });
 
   const update = (patch: Partial<IndependentApplication>) => {
     save({ ...a, ...patch });
@@ -268,15 +291,17 @@ export function IndependentOnboarding() {
               <FileField
                 label={`Upload proof of your ${a.personal["idType"] || "ID"}`}
                 value={a.personal["idFilename"] ?? ""}
-                onChange={(filename) =>
+                onChange={(file) => {
+                  const filename = file?.name ?? "";
+                  pickFile("identity", file);
                   update({
                     personal: { ...a.personal, ["idFilename"]: filename },
                     evidence: {
                       ...a.evidence,
-                      identity: { filename, declared: Boolean(filename.trim()) },
+                      identity: { filename, declared: Boolean(filename) },
                     },
-                  })
-                }
+                  });
+                }}
               />
             </div>
           ) : null}
@@ -426,14 +451,16 @@ export function IndependentOnboarding() {
                       key={r.id}
                       label={r.name}
                       value={a.evidence[r.id]?.filename ?? ""}
-                      onChange={(filename) =>
+                      onChange={(file) => {
+                        const filename = file?.name ?? "";
+                        pickFile(r.id, file);
                         update({
                           evidence: {
                             ...a.evidence,
-                            [r.id]: { filename, declared: Boolean(filename.trim()) },
+                            [r.id]: { filename, declared: Boolean(filename) },
                           },
-                        })
-                      }
+                        });
+                      }}
                     />
                   ),
                 )}
@@ -532,18 +559,43 @@ export function IndependentOnboarding() {
             </Button>
           ) : (
             <Button
-              onClick={() => {
+              disabled={sending}
+              onClick={async () => {
                 try {
                   const missing = indSubmissionMissing(a);
                   if (missing.length) throw Error(missing.join("; "));
-                  setSubmittedRef(submit(a));
+                  let latest = a;
+                  if (!isDemo) {
+                    const absent = applicableReqs(a)
+                      .filter((r) => !files[r.id])
+                      .map((r) => r.name);
+                    if (absent.length)
+                      throw Error(`Re-select the file for: ${absent.join(", ")}`);
+                    setSending(true);
+                    // Each backend step saves its id, so a retry resumes safely.
+                    await submitIndependentToBackend({
+                      application: a,
+                      files,
+                      persist: (backend) => {
+                        latest = { ...latest, backend };
+                        save(latest);
+                      },
+                    });
+                  }
+                  setSubmittedRef(submit(latest));
+                  setSending(false);
                   setError("");
                 } catch (err) {
+                  setSending(false);
                   setError((err as Error).message);
                 }
               }}
             >
-              {a.status === "Submitted" ? "Resubmit for review" : "Submit independent application"}
+              {sending
+                ? "Sending to Beldium…"
+                : a.status === "Submitted"
+                  ? "Resubmit for review"
+                  : "Submit independent application"}
               <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
           )}

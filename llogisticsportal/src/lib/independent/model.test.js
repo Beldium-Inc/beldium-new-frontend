@@ -20,11 +20,11 @@ const ON = "2026-11-20";
 
 test("independent journey has exactly eight steps", () => expect(IND_STEPS.length).toBe(8));
 
-test("natural person never needs CAC business evidence", () => {
+test("every logistics operator needs CAC business evidence, registered or not", () => {
   const a = draft();
   a.profile.operatorType = "Independent driver";
   a.profile.registeredBusiness = "No";
-  expect(indRequirements(a).find((r) => r.id === "business").applicable).toBe(false);
+  expect(indRequirements(a).find((r) => r.id === "business").applicable).toBe(true);
 });
 
 test("sole proprietor only needs business registration when it is claimed", () => {
