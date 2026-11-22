@@ -67,6 +67,9 @@ export interface IndVehicle {
   id: string;
   registration: string;
   type: string;
+  make?: string | undefined;
+  model?: string | undefined;
+  year?: number | undefined;
   /** Tonnes. */
   payload: number;
   ownership: VehicleOwnership;
@@ -80,8 +83,21 @@ export interface EvidencePlaceholder {
   declared: boolean;
 }
 
+/** Backend ids recorded while sending the application, so a retry resumes. */
+export interface IndependentBackendState {
+  organisation?: string | undefined;
+  company?: string | undefined;
+  application?: string | undefined;
+  driver?: string | undefined;
+  /** Wizard vehicle id -> backend vehicle id. */
+  vehicles: Record<string, string>;
+  /** Evidence requirement id -> backend document id. */
+  documents: Record<string, string>;
+}
+
 export interface IndependentApplication {
   operatorId: string;
+  backend?: IndependentBackendState | undefined;
   userId: string;
   step: number;
   completed: number[];
@@ -160,7 +176,7 @@ export interface OperatorReview {
   requests: InformationRequest[];
 }
 
-const val = (f: Fields, k: string) => (f[k] ?? "").trim();
+export const val = (f: Fields, k: string) => (f[k] ?? "").trim();
 const list = (s: string) =>
   s
     .split(",")
@@ -225,8 +241,14 @@ export function indRequirements(a: IndependentApplication): IndRequirement[] {
     {
       id: "business",
       name: "Business name registration (CAC BN)",
-      reason: "Only because you declared a registered sole-proprietor business",
-      applicable: claimsRegisteredBusiness(a),
+      reason: "Required for every logistics operator",
+      applicable: true,
+    },
+    {
+      id: "tax",
+      name: "Tax documentation",
+      reason: "Required for every logistics operator",
+      applicable: true,
     },
     {
       id: "frsc",
@@ -236,9 +258,27 @@ export function indRequirements(a: IndependentApplication): IndRequirement[] {
     },
     {
       id: "vehicleDocs",
-      name: "Vehicle registration, insurance and roadworthiness",
-      reason: "You declared at least one vehicle",
-      applicable: hasVehicles,
+      name: "Vehicle registration and roadworthiness schedule",
+      reason: "Required for every logistics operator",
+      applicable: true,
+    },
+    {
+      id: "insurance",
+      name: "Commercial vehicle insurance declaration",
+      reason: "Required for every logistics operator",
+      applicable: true,
+    },
+    {
+      id: "maintenance",
+      name: "Maintenance and safety procedures",
+      reason: "Required for every logistics operator",
+      applicable: true,
+    },
+    {
+      id: "hse",
+      name: "Journey management and HSE declaration",
+      reason: "Required for every logistics operator",
+      applicable: true,
     },
     {
       id: "ownerAuth",
@@ -309,6 +349,9 @@ export function indMissing(a: IndependentApplication, step: number, on = today()
       return a.vehicles.flatMap((x) => [
         ...(!x.registration || !x.type || !x.insuranceExpiry || !x.roadworthinessExpiry
           ? [`${x.registration || "Vehicle"}: vehicle details and expiry dates`]
+          : []),
+        ...(!x.make || !x.model || !x.year
+          ? [`${x.registration || "Vehicle"}: make, model and year`]
           : []),
         ...(x.ownership !== "Owned" && !x.ownerAuthorization
           ? [`${x.registration}: owner authorization`]
@@ -562,6 +605,9 @@ export const SEED_IND_APP: IndependentApplication = {
       id: "IND-VEH-01",
       registration: "PLT-482-JS",
       type: "Tipper truck",
+      make: "Isuzu",
+      model: "FVZ",
+      year: 2021,
       payload: 20,
       ownership: "Owned",
       insuranceExpiry: "2027-06-30",
@@ -586,14 +632,19 @@ export const SEED_IND_APP: IndependentApplication = {
   },
   authorizations: {
     identity: true,
+    business: true,
+    tax: true,
     licence: true,
     frsc: true,
     vehicleDocs: true,
+    insurance: true,
+    maintenance: true,
+    hse: true,
     mineral: true,
     corridor: true,
   },
   evidence: Object.fromEntries(
-    ["identity", "licence", "frsc", "vehicleDocs", "mineral", "corridor"].map((k) => [
+    ["identity", "business", "tax", "licence", "frsc", "vehicleDocs", "insurance", "maintenance", "hse", "mineral", "corridor"].map((k) => [
       k,
       { filename: `demo-${k}.pdf`, declared: true },
     ]),

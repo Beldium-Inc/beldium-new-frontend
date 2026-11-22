@@ -134,7 +134,7 @@ export interface Vehicle {
   id: UUID;
   company: UUID;
   registration: string;
-  vin: string;
+  vin: string | null;
   vehicle_type: string;
   make: string;
   model: string;
