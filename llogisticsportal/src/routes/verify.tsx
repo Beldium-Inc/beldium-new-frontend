@@ -10,8 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api/errors";
-import { organisationDirectory } from "@/lib/api/organisations";
-import { useCreateJoinRequest } from "@/lib/api/queries";
+import { createJoinRequest } from "@/lib/api/organisations";
 import { useAuth } from "@/lib/auth";
 
 const title = "Verify your account - Beldium Logistics Hub";
@@ -23,6 +22,7 @@ const searchSchema = z.object({
   role: z.enum(["org_admin", "org_staff", "independent"]).optional(),
   operatorType: z.string().optional(),
   organisationName: z.string().optional(),
+  joinCode: z.string().optional(),
 });
 
 export const Route = createFileRoute("/verify")({
@@ -41,9 +41,8 @@ export const Route = createFileRoute("/verify")({
 });
 
 function VerifyPage() {
-  const { email, role, operatorType, organisationName } = Route.useSearch();
+  const { email, role, operatorType, organisationName, joinCode } = Route.useSearch();
   const { user, confirmEmail, resendCode, refetchUser } = useAuth();
-  const createJoinRequest = useCreateJoinRequest();
   const navigate = useNavigate();
 
   const [emailCode, setEmailCode] = useState("");
@@ -85,18 +84,10 @@ function VerifyPage() {
     }
   }
 
-  async function joinOrganisation(name: string) {
-    const matches = await organisationDirectory({ search: name, page_size: 5 });
-    const match = matches.results.find(
-      (org) => org.name.trim().toLowerCase() === name.trim().toLowerCase(),
-    );
-    if (!match) {
-      setError(
-        `No verified organisation named "${name}" was found. Check the exact name with your admin.`,
-      );
-      return false;
-    }
-    await createJoinRequest.mutateAsync({ organisation: match.id });
+  // The join code is the way in for organisations still in review too; the
+  // public directory only lists verified ones, so searching by name misses them.
+  async function joinOrganisation(code: string) {
+    await createJoinRequest({ join_code: code });
     return true;
   }
 
@@ -104,8 +95,12 @@ function VerifyPage() {
     setBusy(true);
     setError("");
     try {
-      if (role === "org_staff" && organisationName) {
-        if (await joinOrganisation(organisationName)) navigate({ to: user ? "/portal" : "/auth" });
+      if (role === "org_staff") {
+        if (!joinCode) {
+          setError("Go back to signup and enter your organisation's join code.");
+          return;
+        }
+        if (await joinOrganisation(joinCode)) navigate({ to: user ? "/portal" : "/auth" });
         return;
       }
       // Registering or independent: the wizard creates the organisation record.

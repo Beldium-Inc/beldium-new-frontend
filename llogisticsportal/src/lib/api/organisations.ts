@@ -120,12 +120,43 @@ export function listMyJoinRequests(query: { page?: number } = {}): Promise<Pagin
   return apiFetch<Paginated<JoinRequest>>("/join-requests/", { query: { ...query } });
 }
 
-export function createJoinRequest(input: {
-  organisation: UUID;
+/** The sector the logistics portal signs people up in. */
+export const LOGISTICS_SECTOR = "logistics";
+
+export interface JoinRequestInput {
+  /** Either the organisation id, or the join code its administrator shared. */
+  organisation?: UUID;
+  join_code?: string;
+  sector?: string;
   requested_role?: MembershipRole;
   justification?: string;
-}): Promise<JoinRequest> {
-  return apiFetch<JoinRequest>("/join-requests/", { method: "POST", body: input });
+}
+
+export function createJoinRequest(input: JoinRequestInput): Promise<JoinRequest> {
+  return apiFetch<JoinRequest>("/join-requests/", {
+    method: "POST",
+    body: { sector: LOGISTICS_SECTOR, ...input },
+  });
+}
+
+export interface JoinCodeLookup {
+  organisation: UUID;
+  organisation_name: string;
+  organisation_type: OrganisationType;
+  already_member: boolean;
+  pending_request: boolean;
+}
+
+/**
+ * Names the organisation behind a join code before the person asks to join it.
+ * Works for organisations still in review, not only verified ones, and is open
+ * before sign in. A code from another sector's company answers 409.
+ */
+export function lookupJoinCode(joinCode: string): Promise<JoinCodeLookup> {
+  return apiFetch<JoinCodeLookup>("/join-requests/lookup/", {
+    method: "POST",
+    body: { join_code: joinCode, sector: LOGISTICS_SECTOR },
+  });
 }
 
 /** Administrators of the target organisation only. */
@@ -168,4 +199,21 @@ export interface OrganisationTimeline {
 /** Verification stages and a member-safe activity feed. Readable by any active member. */
 export function getOrganisationTimeline(id: UUID): Promise<OrganisationTimeline> {
   return apiFetch<OrganisationTimeline>(`/organisations/${id}/timeline/`);
+}
+
+export interface OrganisationJoinCode {
+  join_code: string;
+  join_url: string;
+}
+
+/** Administrators only: the code colleagues use to ask to join. */
+export function getJoinCode(id: UUID): Promise<OrganisationJoinCode> {
+  return apiFetch<OrganisationJoinCode>(`/organisations/${id}/join-code/`);
+}
+
+/** Administrators only. The old code stops working straight away. */
+export function rotateJoinCode(id: UUID): Promise<OrganisationJoinCode> {
+  return apiFetch<OrganisationJoinCode>(`/organisations/${id}/join-code/rotate/`, {
+    method: "POST",
+  });
 }

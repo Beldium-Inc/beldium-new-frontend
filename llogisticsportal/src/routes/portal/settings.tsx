@@ -8,9 +8,15 @@ import { Panel } from "@/components/beldium/stat-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { useUpdateCurrentUser } from "@/lib/api/queries";
+import {
+  useJoinCode,
+  useMyOrganisations,
+  useRotateJoinCode,
+  useUpdateCurrentUser,
+} from "@/lib/api/queries";
 import { useAuth } from "@/lib/auth";
 import { TwoStepSettings } from "@/components/two-step-settings";
+import { formatJoinCode } from "@/lib/join-code";
 import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -18,6 +24,53 @@ export const Route = createFileRoute("/portal/settings")({
   head: () => ({ meta: [{ title: "Settings - Beldium Logistics Hub" }] }),
   component: SettingsPage,
 });
+
+/** Administrators of an organisation see its join code so they can share it. */
+function JoinCodePanel() {
+  const orgs = useMyOrganisations();
+  const admin = orgs.data?.results.find((o) => o.my_role === "owner" || o.my_role === "admin");
+  const code = useJoinCode(admin?.id ?? null);
+  const rotate = useRotateJoinCode(admin?.id ?? "");
+  if (!admin) return null;
+  const current = rotate.data ?? code.data;
+
+  return (
+    <Panel
+      title="Invite colleagues"
+      description={`Share this code so people can ask to join ${admin.name}. Organisations under review can use it too.`}
+    >
+      <div className="flex flex-wrap items-center gap-4">
+        <span className="font-mono text-2xl tracking-[0.25em]">
+          {current ? formatJoinCode(current.join_code) : "…"}
+        </span>
+        <Button
+          variant="outline"
+          disabled={!current}
+          onClick={() => {
+            if (!current) return;
+            void navigator.clipboard.writeText(formatJoinCode(current.join_code));
+            toast.success("Join code copied");
+          }}
+        >
+          Copy code
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={rotate.isPending}
+          onClick={() => {
+            if (!window.confirm("Create a new code? The old code will stop working.")) return;
+            rotate.mutate(undefined, {
+              onSuccess: () => toast.success("New join code created"),
+              onError: (e) => toast.error(errorMessage(e)),
+            });
+          }}
+        >
+          Create new code
+        </Button>
+      </div>
+    </Panel>
+  );
+}
 
 function SettingsPage() {
   const { user } = useAuth();
@@ -92,6 +145,7 @@ function SettingsPage() {
             ]}
           />
         </Panel>
+        <JoinCodePanel />
         {user ? <TwoStepSettings email={user.email} /> : null}
       </div>
     </>
