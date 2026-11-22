@@ -159,6 +159,11 @@ export function lookupJoinCode(joinCode: string): Promise<JoinCodeLookup> {
   });
 }
 
+/** The requester withdraws a request that is still pending. */
+export function cancelJoinRequest(id: UUID): Promise<JoinRequest> {
+  return apiFetch<JoinRequest>(`/join-requests/${id}/cancel/`, { method: "POST" });
+}
+
 /** Administrators of the target organisation only. */
 export function decideJoinRequest(
   id: UUID,

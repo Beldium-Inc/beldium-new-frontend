@@ -51,6 +51,15 @@ import { REQUEST_REASONS, type Company } from "@/verticals/logistics/mock-data";
 import { Preview, useProtectedFile } from "@/components/file-preview";
 import { ApiError } from "@/lib/api/errors";
 import { useDocumentNotes } from "@/lib/api/logistics-queries";
+import {
+  VERIFICATION_DECISIONS,
+  VERIFICATION_METHODS,
+  VerificationRecordView,
+  encodeVerification,
+  missingVerificationFields,
+  parseVerification,
+  type VerificationRecord,
+} from "@/verticals/logistics/verification";
 import { cn } from "@/lib/utils";
 
 const describeError = (err: unknown) =>
@@ -653,12 +662,29 @@ function SignOffForm({
 
 /* ---------------------------- Documents ---------------------------- */
 
+const BLANK_RECORD: VerificationRecord = {
+  source: "",
+  method: "",
+  findings: "",
+  decision: "Verified",
+  scope: "Full",
+  nextReview: "",
+};
+
 function DocumentsTab({ company }: { company: Company }) {
   const { reviewDocument, addDocumentNote } = useApp();
   const [selectedId, setSelectedId] = React.useState(company.documents[0]?.id ?? "");
   const [filter, setFilter] = React.useState("All");
   const [note, setNote] = React.useState("");
   const [reviewNote, setReviewNote] = React.useState("");
+  const [record, setRecord] = React.useState<VerificationRecord>(BLANK_RECORD);
+  // A record belongs to one document; switching documents starts a new one.
+  React.useEffect(() => {
+    setRecord(BLANK_RECORD);
+    setReviewNote("");
+  }, [selectedId]);
+  const setField = (key: keyof VerificationRecord) => (value: string) =>
+    setRecord((r) => ({ ...r, [key]: value }));
   const [busy, setBusy] = React.useState<"verified" | "rejected" | "note" | null>(null);
   const [requesting, setRequesting] = React.useState(false);
   const selected = company.documents.find((d) => d.id === selectedId) ?? company.documents[0];
@@ -694,24 +720,35 @@ function DocumentsTab({ company }: { company: Company }) {
 
   // The API wants a note with every review and only accepts one while the
   // application is under review, so the outcome shown is the API's, not assumed.
+  // Verifying writes a structured verification record into that note; it
+  // needs a source, method and findings.
   const review = async (status: "verified" | "rejected") => {
     if (!selected) return;
-    const notes = reviewNote.trim();
-    if (status === "rejected" && !notes) {
+    let notes = reviewNote.trim();
+    if (status === "verified") {
+      const missing = missingVerificationFields(record);
+      if (missing.length) {
+        toast.error(`Record the verification ${missing.join(", ")} before verifying.`);
+        return;
+      }
+      notes = encodeVerification(record);
+    } else if (!notes) {
       toast.error("Add a review note saying why this document is rejected.");
       return;
     }
     setBusy(status);
     try {
-      await reviewDocument(selected.id, status, notes || "Evidence checked and verified.");
+      await reviewDocument(selected.id, status, notes);
       toast.success(`${selected.name}: ${status}`);
       setReviewNote("");
+      setRecord(BLANK_RECORD);
     } catch (err) {
       toast.error(`${selected.name} was not ${status}`, { description: describe(err) });
     } finally {
       setBusy(null);
     }
   };
+  const recorded = parseVerification(selected?.reviewNotes);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
@@ -790,24 +827,99 @@ function DocumentsTab({ company }: { company: Company }) {
               <p className="mt-2 text-[11px] text-muted-foreground">
                 {selected.originalName || selected.name} · {selected.type}
               </p>
-              <textarea
-                rows={2}
-                value={reviewNote}
-                onChange={(e) => setReviewNote(e.target.value)}
-                disabled={!reviewable}
-                placeholder={
-                  reviewable
-                    ? "Review note: required to reject, optional to verify"
-                    : "This document has already been reviewed."
-                }
-                className="mt-3 w-full rounded-lg border border-input bg-white px-3 py-2 text-xs outline-none focus:border-[var(--link)] focus:ring-2 focus:ring-[var(--link)]/20 disabled:opacity-60"
-              />
-              {selected.reviewNotes ? (
-                <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-xs text-[var(--brand)]">
+              {reviewable ? (
+                <div className="mt-3 rounded-xl border border-border bg-white p-3">
+                  <p className="font-display text-xs font-semibold text-[var(--brand)]">
+                    Verification record
+                  </p>
+                  <p className="mt-0.5 mb-2 text-[11px] text-muted-foreground">
+                    Required to verify: where you checked, how, and what you found. Uploads and
+                    applicant declarations never verify on their own.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input
+                      aria-label="Verification source"
+                      placeholder="Source, e.g. CAC public search, FRSC portal"
+                      value={record.source}
+                      onChange={(e) => setField("source")(e.target.value)}
+                      className="rounded-lg border border-input bg-white px-2.5 py-1.5 text-xs outline-none focus:border-[var(--link)]"
+                    />
+                    <select
+                      aria-label="Verification method"
+                      value={record.method}
+                      onChange={(e) => setField("method")(e.target.value)}
+                      className="rounded-lg border border-input bg-white px-2.5 py-1.5 text-xs outline-none focus:border-[var(--link)]"
+                    >
+                      <option value="">Method…</option>
+                      {VERIFICATION_METHODS.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <textarea
+                      aria-label="Findings"
+                      rows={2}
+                      placeholder="Findings"
+                      value={record.findings}
+                      onChange={(e) => setField("findings")(e.target.value)}
+                      className="rounded-lg border border-input bg-white px-2.5 py-1.5 text-xs outline-none focus:border-[var(--link)] sm:col-span-2"
+                    />
+                    <select
+                      aria-label="Decision"
+                      value={record.decision}
+                      onChange={(e) => setField("decision")(e.target.value)}
+                      className="rounded-lg border border-input bg-white px-2.5 py-1.5 text-xs outline-none focus:border-[var(--link)]"
+                    >
+                      {VERIFICATION_DECISIONS.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      aria-label="Scope"
+                      placeholder="Scope, e.g. Full, or Plateau only"
+                      value={record.scope}
+                      onChange={(e) => setField("scope")(e.target.value)}
+                      className="rounded-lg border border-input bg-white px-2.5 py-1.5 text-xs outline-none focus:border-[var(--link)]"
+                    />
+                    <label className="flex items-center gap-2 text-[11px] text-muted-foreground sm:col-span-2">
+                      Next review
+                      <input
+                        aria-label="Next review"
+                        type="date"
+                        value={record.nextReview}
+                        onChange={(e) => setField("nextReview")(e.target.value)}
+                        className="rounded-lg border border-input bg-white px-2.5 py-1 text-xs text-foreground outline-none focus:border-[var(--link)]"
+                      />
+                    </label>
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={reviewNote}
+                    onChange={(e) => setReviewNote(e.target.value)}
+                    placeholder="Rejection reason (required to reject)"
+                    className="mt-2 w-full rounded-lg border border-input bg-white px-2.5 py-1.5 text-xs outline-none focus:border-[var(--link)]"
+                  />
+                </div>
+              ) : recorded ? (
+                <div className="mt-3 rounded-xl border border-border bg-white p-3">
+                  <p className="mb-2 font-display text-xs font-semibold text-[var(--brand)]">
+                    Verification record
+                  </p>
+                  <VerificationRecordView record={recorded} at={selected.reviewedAt} />
+                </div>
+              ) : selected.reviewNotes ? (
+                <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs text-[var(--brand)]">
                   <span className="text-muted-foreground">Review note: </span>
                   {selected.reviewNotes}
                 </p>
-              ) : null}
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  This document has already been reviewed.
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"

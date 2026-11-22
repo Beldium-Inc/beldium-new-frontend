@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicationRouteImport } from './routes/application'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CareersRouteImport } from './routes/careers'
+import { Route as IndependentRouteRouteImport } from './routes/independent/route'
+import { Route as JoinOrganizationRouteImport } from './routes/join-organization'
 import { Route as PortalRouteRouteImport } from './routes/portal/route'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
@@ -22,6 +24,20 @@ import { Route as SubmittedRouteImport } from './routes/submitted'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as CareersIndexRouteImport } from './routes/careers.index'
 import { Route as CareersLogisticsPartnerRegistrationRouteImport } from './routes/careers.logistics-partner-registration'
+import { Route as IndependentIndexRouteImport } from './routes/independent/index'
+import { Route as IndependentAssignmentsRouteImport } from './routes/independent/assignments'
+import { Route as IndependentComplianceRouteImport } from './routes/independent/compliance'
+import { Route as IndependentCredentialsRouteImport } from './routes/independent/credentials'
+import { Route as IndependentDashboardRouteImport } from './routes/independent/dashboard'
+import { Route as IndependentDeliveryRouteImport } from './routes/independent/delivery'
+import { Route as IndependentJourneyRouteImport } from './routes/independent/journey'
+import { Route as IndependentNotificationsRouteImport } from './routes/independent/notifications'
+import { Route as IndependentOnboardingRouteImport } from './routes/independent/onboarding'
+import { Route as IndependentPickupRouteImport } from './routes/independent/pickup'
+import { Route as IndependentProfileRouteImport } from './routes/independent/profile'
+import { Route as IndependentSettingsRouteImport } from './routes/independent/settings'
+import { Route as IndependentTripsRouteImport } from './routes/independent/trips'
+import { Route as IndependentVehiclesRouteImport } from './routes/independent/vehicles'
 import { Route as PortalIndexRouteImport } from './routes/portal/index'
 import { Route as PortalApplicationRecordRouteImport } from './routes/portal/application-record'
 import { Route as PortalComplianceRouteImport } from './routes/portal/compliance'
@@ -35,10 +51,12 @@ import { Route as PortalPaymentsRouteImport } from './routes/portal/payments'
 import { Route as PortalReportsRouteImport } from './routes/portal/reports'
 import { Route as PortalRequestsRouteImport } from './routes/portal/requests'
 import { Route as PortalSettingsRouteImport } from './routes/portal/settings'
+import { Route as PortalTeamRouteImport } from './routes/portal/team'
 import { Route as PortalTrackingRouteImport } from './routes/portal/tracking'
 import { Route as PortalTransactionsRouteImport } from './routes/portal/transactions'
 import { Route as PortalTransportRequestsRouteImport } from './routes/portal/transport-requests'
 import { Route as PortalVehiclesRouteImport } from './routes/portal/vehicles'
+import { Route as IndependentTripsTripIdRouteImport } from './routes/independent/trips_.$tripId'
 import { Route as PortalMovementsMovementIdRouteImport } from './routes/portal/movements_.$movementId'
 import { Route as PortalTransactionsTxnIdRouteImport } from './routes/portal/transactions_.$txnId'
 import { Route as PortalTransportRequestsRequestIdRouteImport } from './routes/portal/transport-requests_.$requestId'
@@ -61,6 +79,16 @@ const AuthRoute = AuthRouteImport.update({
 const CareersRoute = CareersRouteImport.update({
   id: '/careers',
   path: '/careers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndependentRouteRoute = IndependentRouteRouteImport.update({
+  id: '/independent',
+  path: '/independent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinOrganizationRoute = JoinOrganizationRouteImport.update({
+  id: '/join-organization',
+  path: '/join-organization',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRouteRoute = PortalRouteRouteImport.update({
@@ -109,6 +137,77 @@ const CareersLogisticsPartnerRegistrationRoute =
     path: '/logistics-partner-registration',
     getParentRoute: () => CareersRoute,
   } as any)
+const IndependentIndexRoute = IndependentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentAssignmentsRoute = IndependentAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentComplianceRoute = IndependentComplianceRouteImport.update({
+  id: '/compliance',
+  path: '/compliance',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentCredentialsRoute = IndependentCredentialsRouteImport.update({
+  id: '/credentials',
+  path: '/credentials',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentDashboardRoute = IndependentDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentDeliveryRoute = IndependentDeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentJourneyRoute = IndependentJourneyRouteImport.update({
+  id: '/journey',
+  path: '/journey',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentNotificationsRoute =
+  IndependentNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => IndependentRouteRoute,
+  } as any)
+const IndependentOnboardingRoute = IndependentOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentPickupRoute = IndependentPickupRouteImport.update({
+  id: '/pickup',
+  path: '/pickup',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentProfileRoute = IndependentProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentSettingsRoute = IndependentSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentTripsRoute = IndependentTripsRouteImport.update({
+  id: '/trips',
+  path: '/trips',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
+const IndependentVehiclesRoute = IndependentVehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
+  getParentRoute: () => IndependentRouteRoute,
+} as any)
 const PortalIndexRoute = PortalIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -174,6 +273,11 @@ const PortalSettingsRoute = PortalSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => PortalRouteRoute,
 } as any)
+const PortalTeamRoute = PortalTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => PortalRouteRoute,
+} as any)
 const PortalTrackingRoute = PortalTrackingRouteImport.update({
   id: '/tracking',
   path: '/tracking',
@@ -193,6 +297,11 @@ const PortalVehiclesRoute = PortalVehiclesRouteImport.update({
   id: '/vehicles',
   path: '/vehicles',
   getParentRoute: () => PortalRouteRoute,
+} as any)
+const IndependentTripsTripIdRoute = IndependentTripsTripIdRouteImport.update({
+  id: '/trips_/$tripId',
+  path: '/trips/$tripId',
+  getParentRoute: () => IndependentRouteRoute,
 } as any)
 const PortalMovementsMovementIdRoute =
   PortalMovementsMovementIdRouteImport.update({
@@ -214,10 +323,12 @@ const PortalTransportRequestsRequestIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/independent': typeof IndependentRouteRouteWithChildren
   '/portal': typeof PortalRouteRouteWithChildren
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
   '/careers': typeof CareersRouteWithChildren
+  '/join-organization': typeof JoinOrganizationRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/signup': typeof SignupRoute
@@ -225,6 +336,19 @@ export interface FileRoutesByFullPath {
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
   '/careers/logistics-partner-registration': typeof CareersLogisticsPartnerRegistrationRoute
+  '/independent/assignments': typeof IndependentAssignmentsRoute
+  '/independent/compliance': typeof IndependentComplianceRoute
+  '/independent/credentials': typeof IndependentCredentialsRoute
+  '/independent/dashboard': typeof IndependentDashboardRoute
+  '/independent/delivery': typeof IndependentDeliveryRoute
+  '/independent/journey': typeof IndependentJourneyRoute
+  '/independent/notifications': typeof IndependentNotificationsRoute
+  '/independent/onboarding': typeof IndependentOnboardingRoute
+  '/independent/pickup': typeof IndependentPickupRoute
+  '/independent/profile': typeof IndependentProfileRoute
+  '/independent/settings': typeof IndependentSettingsRoute
+  '/independent/trips': typeof IndependentTripsRoute
+  '/independent/vehicles': typeof IndependentVehiclesRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
@@ -237,12 +361,15 @@ export interface FileRoutesByFullPath {
   '/portal/reports': typeof PortalReportsRoute
   '/portal/requests': typeof PortalRequestsRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/team': typeof PortalTeamRoute
   '/portal/tracking': typeof PortalTrackingRoute
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
   '/careers/': typeof CareersIndexRoute
+  '/independent/': typeof IndependentIndexRoute
   '/portal/': typeof PortalIndexRoute
+  '/independent/trips/$tripId': typeof IndependentTripsTripIdRoute
   '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
   '/portal/transport-requests/$requestId': typeof PortalTransportRequestsRequestIdRoute
@@ -251,6 +378,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
+  '/join-organization': typeof JoinOrganizationRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/signup': typeof SignupRoute
@@ -258,6 +386,19 @@ export interface FileRoutesByTo {
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
   '/careers/logistics-partner-registration': typeof CareersLogisticsPartnerRegistrationRoute
+  '/independent/assignments': typeof IndependentAssignmentsRoute
+  '/independent/compliance': typeof IndependentComplianceRoute
+  '/independent/credentials': typeof IndependentCredentialsRoute
+  '/independent/dashboard': typeof IndependentDashboardRoute
+  '/independent/delivery': typeof IndependentDeliveryRoute
+  '/independent/journey': typeof IndependentJourneyRoute
+  '/independent/notifications': typeof IndependentNotificationsRoute
+  '/independent/onboarding': typeof IndependentOnboardingRoute
+  '/independent/pickup': typeof IndependentPickupRoute
+  '/independent/profile': typeof IndependentProfileRoute
+  '/independent/settings': typeof IndependentSettingsRoute
+  '/independent/trips': typeof IndependentTripsRoute
+  '/independent/vehicles': typeof IndependentVehiclesRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
@@ -270,12 +411,15 @@ export interface FileRoutesByTo {
   '/portal/reports': typeof PortalReportsRoute
   '/portal/requests': typeof PortalRequestsRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/team': typeof PortalTeamRoute
   '/portal/tracking': typeof PortalTrackingRoute
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
   '/careers': typeof CareersIndexRoute
+  '/independent': typeof IndependentIndexRoute
   '/portal': typeof PortalIndexRoute
+  '/independent/trips/$tripId': typeof IndependentTripsTripIdRoute
   '/portal/movements/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions/$txnId': typeof PortalTransactionsTxnIdRoute
   '/portal/transport-requests/$requestId': typeof PortalTransportRequestsRequestIdRoute
@@ -283,10 +427,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/independent': typeof IndependentRouteRouteWithChildren
   '/portal': typeof PortalRouteRouteWithChildren
   '/application': typeof ApplicationRoute
   '/auth': typeof AuthRoute
   '/careers': typeof CareersRouteWithChildren
+  '/join-organization': typeof JoinOrganizationRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/signup': typeof SignupRoute
@@ -294,6 +440,19 @@ export interface FileRoutesById {
   '/submitted': typeof SubmittedRoute
   '/verify': typeof VerifyRoute
   '/careers/logistics-partner-registration': typeof CareersLogisticsPartnerRegistrationRoute
+  '/independent/assignments': typeof IndependentAssignmentsRoute
+  '/independent/compliance': typeof IndependentComplianceRoute
+  '/independent/credentials': typeof IndependentCredentialsRoute
+  '/independent/dashboard': typeof IndependentDashboardRoute
+  '/independent/delivery': typeof IndependentDeliveryRoute
+  '/independent/journey': typeof IndependentJourneyRoute
+  '/independent/notifications': typeof IndependentNotificationsRoute
+  '/independent/onboarding': typeof IndependentOnboardingRoute
+  '/independent/pickup': typeof IndependentPickupRoute
+  '/independent/profile': typeof IndependentProfileRoute
+  '/independent/settings': typeof IndependentSettingsRoute
+  '/independent/trips': typeof IndependentTripsRoute
+  '/independent/vehicles': typeof IndependentVehiclesRoute
   '/portal/application-record': typeof PortalApplicationRecordRoute
   '/portal/compliance': typeof PortalComplianceRoute
   '/portal/deliveries': typeof PortalDeliveriesRoute
@@ -306,12 +465,15 @@ export interface FileRoutesById {
   '/portal/reports': typeof PortalReportsRoute
   '/portal/requests': typeof PortalRequestsRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/team': typeof PortalTeamRoute
   '/portal/tracking': typeof PortalTrackingRoute
   '/portal/transactions': typeof PortalTransactionsRoute
   '/portal/transport-requests': typeof PortalTransportRequestsRoute
   '/portal/vehicles': typeof PortalVehiclesRoute
   '/careers/': typeof CareersIndexRoute
+  '/independent/': typeof IndependentIndexRoute
   '/portal/': typeof PortalIndexRoute
+  '/independent/trips_/$tripId': typeof IndependentTripsTripIdRoute
   '/portal/movements_/$movementId': typeof PortalMovementsMovementIdRoute
   '/portal/transactions_/$txnId': typeof PortalTransactionsTxnIdRoute
   '/portal/transport-requests_/$requestId': typeof PortalTransportRequestsRequestIdRoute
@@ -320,10 +482,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/independent'
     | '/portal'
     | '/application'
     | '/auth'
     | '/careers'
+    | '/join-organization'
     | '/sign-in'
     | '/sign-up'
     | '/signup'
@@ -331,6 +495,19 @@ export interface FileRouteTypes {
     | '/submitted'
     | '/verify'
     | '/careers/logistics-partner-registration'
+    | '/independent/assignments'
+    | '/independent/compliance'
+    | '/independent/credentials'
+    | '/independent/dashboard'
+    | '/independent/delivery'
+    | '/independent/journey'
+    | '/independent/notifications'
+    | '/independent/onboarding'
+    | '/independent/pickup'
+    | '/independent/profile'
+    | '/independent/settings'
+    | '/independent/trips'
+    | '/independent/vehicles'
     | '/portal/application-record'
     | '/portal/compliance'
     | '/portal/deliveries'
@@ -343,12 +520,15 @@ export interface FileRouteTypes {
     | '/portal/reports'
     | '/portal/requests'
     | '/portal/settings'
+    | '/portal/team'
     | '/portal/tracking'
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
     | '/careers/'
+    | '/independent/'
     | '/portal/'
+    | '/independent/trips/$tripId'
     | '/portal/movements/$movementId'
     | '/portal/transactions/$txnId'
     | '/portal/transport-requests/$requestId'
@@ -357,6 +537,7 @@ export interface FileRouteTypes {
     | '/'
     | '/application'
     | '/auth'
+    | '/join-organization'
     | '/sign-in'
     | '/sign-up'
     | '/signup'
@@ -364,6 +545,19 @@ export interface FileRouteTypes {
     | '/submitted'
     | '/verify'
     | '/careers/logistics-partner-registration'
+    | '/independent/assignments'
+    | '/independent/compliance'
+    | '/independent/credentials'
+    | '/independent/dashboard'
+    | '/independent/delivery'
+    | '/independent/journey'
+    | '/independent/notifications'
+    | '/independent/onboarding'
+    | '/independent/pickup'
+    | '/independent/profile'
+    | '/independent/settings'
+    | '/independent/trips'
+    | '/independent/vehicles'
     | '/portal/application-record'
     | '/portal/compliance'
     | '/portal/deliveries'
@@ -376,22 +570,27 @@ export interface FileRouteTypes {
     | '/portal/reports'
     | '/portal/requests'
     | '/portal/settings'
+    | '/portal/team'
     | '/portal/tracking'
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
     | '/careers'
+    | '/independent'
     | '/portal'
+    | '/independent/trips/$tripId'
     | '/portal/movements/$movementId'
     | '/portal/transactions/$txnId'
     | '/portal/transport-requests/$requestId'
   id:
     | '__root__'
     | '/'
+    | '/independent'
     | '/portal'
     | '/application'
     | '/auth'
     | '/careers'
+    | '/join-organization'
     | '/sign-in'
     | '/sign-up'
     | '/signup'
@@ -399,6 +598,19 @@ export interface FileRouteTypes {
     | '/submitted'
     | '/verify'
     | '/careers/logistics-partner-registration'
+    | '/independent/assignments'
+    | '/independent/compliance'
+    | '/independent/credentials'
+    | '/independent/dashboard'
+    | '/independent/delivery'
+    | '/independent/journey'
+    | '/independent/notifications'
+    | '/independent/onboarding'
+    | '/independent/pickup'
+    | '/independent/profile'
+    | '/independent/settings'
+    | '/independent/trips'
+    | '/independent/vehicles'
     | '/portal/application-record'
     | '/portal/compliance'
     | '/portal/deliveries'
@@ -411,12 +623,15 @@ export interface FileRouteTypes {
     | '/portal/reports'
     | '/portal/requests'
     | '/portal/settings'
+    | '/portal/team'
     | '/portal/tracking'
     | '/portal/transactions'
     | '/portal/transport-requests'
     | '/portal/vehicles'
     | '/careers/'
+    | '/independent/'
     | '/portal/'
+    | '/independent/trips_/$tripId'
     | '/portal/movements_/$movementId'
     | '/portal/transactions_/$txnId'
     | '/portal/transport-requests_/$requestId'
@@ -424,10 +639,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  IndependentRouteRoute: typeof IndependentRouteRouteWithChildren
   PortalRouteRoute: typeof PortalRouteRouteWithChildren
   ApplicationRoute: typeof ApplicationRoute
   AuthRoute: typeof AuthRoute
   CareersRoute: typeof CareersRouteWithChildren
+  JoinOrganizationRoute: typeof JoinOrganizationRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   SignupRoute: typeof SignupRoute
@@ -464,6 +681,20 @@ declare module '@tanstack/react-router' {
       path: '/careers'
       fullPath: '/careers'
       preLoaderRoute: typeof CareersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/independent': {
+      id: '/independent'
+      path: '/independent'
+      fullPath: '/independent'
+      preLoaderRoute: typeof IndependentRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join-organization': {
+      id: '/join-organization'
+      path: '/join-organization'
+      fullPath: '/join-organization'
+      preLoaderRoute: typeof JoinOrganizationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal': {
@@ -528,6 +759,104 @@ declare module '@tanstack/react-router' {
       fullPath: '/careers/logistics-partner-registration'
       preLoaderRoute: typeof CareersLogisticsPartnerRegistrationRouteImport
       parentRoute: typeof CareersRoute
+    }
+    '/independent/': {
+      id: '/independent/'
+      path: '/'
+      fullPath: '/independent/'
+      preLoaderRoute: typeof IndependentIndexRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/assignments': {
+      id: '/independent/assignments'
+      path: '/assignments'
+      fullPath: '/independent/assignments'
+      preLoaderRoute: typeof IndependentAssignmentsRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/compliance': {
+      id: '/independent/compliance'
+      path: '/compliance'
+      fullPath: '/independent/compliance'
+      preLoaderRoute: typeof IndependentComplianceRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/credentials': {
+      id: '/independent/credentials'
+      path: '/credentials'
+      fullPath: '/independent/credentials'
+      preLoaderRoute: typeof IndependentCredentialsRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/dashboard': {
+      id: '/independent/dashboard'
+      path: '/dashboard'
+      fullPath: '/independent/dashboard'
+      preLoaderRoute: typeof IndependentDashboardRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/delivery': {
+      id: '/independent/delivery'
+      path: '/delivery'
+      fullPath: '/independent/delivery'
+      preLoaderRoute: typeof IndependentDeliveryRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/journey': {
+      id: '/independent/journey'
+      path: '/journey'
+      fullPath: '/independent/journey'
+      preLoaderRoute: typeof IndependentJourneyRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/notifications': {
+      id: '/independent/notifications'
+      path: '/notifications'
+      fullPath: '/independent/notifications'
+      preLoaderRoute: typeof IndependentNotificationsRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/onboarding': {
+      id: '/independent/onboarding'
+      path: '/onboarding'
+      fullPath: '/independent/onboarding'
+      preLoaderRoute: typeof IndependentOnboardingRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/pickup': {
+      id: '/independent/pickup'
+      path: '/pickup'
+      fullPath: '/independent/pickup'
+      preLoaderRoute: typeof IndependentPickupRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/profile': {
+      id: '/independent/profile'
+      path: '/profile'
+      fullPath: '/independent/profile'
+      preLoaderRoute: typeof IndependentProfileRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/settings': {
+      id: '/independent/settings'
+      path: '/settings'
+      fullPath: '/independent/settings'
+      preLoaderRoute: typeof IndependentSettingsRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/trips': {
+      id: '/independent/trips'
+      path: '/trips'
+      fullPath: '/independent/trips'
+      preLoaderRoute: typeof IndependentTripsRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
+    '/independent/vehicles': {
+      id: '/independent/vehicles'
+      path: '/vehicles'
+      fullPath: '/independent/vehicles'
+      preLoaderRoute: typeof IndependentVehiclesRouteImport
+      parentRoute: typeof IndependentRouteRoute
     }
     '/portal/': {
       id: '/portal/'
@@ -620,6 +949,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsRouteImport
       parentRoute: typeof PortalRouteRoute
     }
+    '/portal/team': {
+      id: '/portal/team'
+      path: '/team'
+      fullPath: '/portal/team'
+      preLoaderRoute: typeof PortalTeamRouteImport
+      parentRoute: typeof PortalRouteRoute
+    }
     '/portal/tracking': {
       id: '/portal/tracking'
       path: '/tracking'
@@ -648,6 +984,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalVehiclesRouteImport
       parentRoute: typeof PortalRouteRoute
     }
+    '/independent/trips_/$tripId': {
+      id: '/independent/trips_/$tripId'
+      path: '/trips/$tripId'
+      fullPath: '/independent/trips/$tripId'
+      preLoaderRoute: typeof IndependentTripsTripIdRouteImport
+      parentRoute: typeof IndependentRouteRoute
+    }
     '/portal/movements_/$movementId': {
       id: '/portal/movements_/$movementId'
       path: '/movements/$movementId'
@@ -672,6 +1015,45 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface IndependentRouteRouteChildren {
+  IndependentAssignmentsRoute: typeof IndependentAssignmentsRoute
+  IndependentComplianceRoute: typeof IndependentComplianceRoute
+  IndependentCredentialsRoute: typeof IndependentCredentialsRoute
+  IndependentDashboardRoute: typeof IndependentDashboardRoute
+  IndependentDeliveryRoute: typeof IndependentDeliveryRoute
+  IndependentJourneyRoute: typeof IndependentJourneyRoute
+  IndependentNotificationsRoute: typeof IndependentNotificationsRoute
+  IndependentOnboardingRoute: typeof IndependentOnboardingRoute
+  IndependentPickupRoute: typeof IndependentPickupRoute
+  IndependentProfileRoute: typeof IndependentProfileRoute
+  IndependentSettingsRoute: typeof IndependentSettingsRoute
+  IndependentTripsRoute: typeof IndependentTripsRoute
+  IndependentVehiclesRoute: typeof IndependentVehiclesRoute
+  IndependentIndexRoute: typeof IndependentIndexRoute
+  IndependentTripsTripIdRoute: typeof IndependentTripsTripIdRoute
+}
+
+const IndependentRouteRouteChildren: IndependentRouteRouteChildren = {
+  IndependentAssignmentsRoute: IndependentAssignmentsRoute,
+  IndependentComplianceRoute: IndependentComplianceRoute,
+  IndependentCredentialsRoute: IndependentCredentialsRoute,
+  IndependentDashboardRoute: IndependentDashboardRoute,
+  IndependentDeliveryRoute: IndependentDeliveryRoute,
+  IndependentJourneyRoute: IndependentJourneyRoute,
+  IndependentNotificationsRoute: IndependentNotificationsRoute,
+  IndependentOnboardingRoute: IndependentOnboardingRoute,
+  IndependentPickupRoute: IndependentPickupRoute,
+  IndependentProfileRoute: IndependentProfileRoute,
+  IndependentSettingsRoute: IndependentSettingsRoute,
+  IndependentTripsRoute: IndependentTripsRoute,
+  IndependentVehiclesRoute: IndependentVehiclesRoute,
+  IndependentIndexRoute: IndependentIndexRoute,
+  IndependentTripsTripIdRoute: IndependentTripsTripIdRoute,
+}
+
+const IndependentRouteRouteWithChildren =
+  IndependentRouteRoute._addFileChildren(IndependentRouteRouteChildren)
+
 interface PortalRouteRouteChildren {
   PortalApplicationRecordRoute: typeof PortalApplicationRecordRoute
   PortalComplianceRoute: typeof PortalComplianceRoute
@@ -685,6 +1067,7 @@ interface PortalRouteRouteChildren {
   PortalReportsRoute: typeof PortalReportsRoute
   PortalRequestsRoute: typeof PortalRequestsRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
+  PortalTeamRoute: typeof PortalTeamRoute
   PortalTrackingRoute: typeof PortalTrackingRoute
   PortalTransactionsRoute: typeof PortalTransactionsRoute
   PortalTransportRequestsRoute: typeof PortalTransportRequestsRoute
@@ -708,6 +1091,7 @@ const PortalRouteRouteChildren: PortalRouteRouteChildren = {
   PortalReportsRoute: PortalReportsRoute,
   PortalRequestsRoute: PortalRequestsRoute,
   PortalSettingsRoute: PortalSettingsRoute,
+  PortalTeamRoute: PortalTeamRoute,
   PortalTrackingRoute: PortalTrackingRoute,
   PortalTransactionsRoute: PortalTransactionsRoute,
   PortalTransportRequestsRoute: PortalTransportRequestsRoute,
@@ -738,10 +1122,12 @@ const CareersRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  IndependentRouteRoute: IndependentRouteRouteWithChildren,
   PortalRouteRoute: PortalRouteRouteWithChildren,
   ApplicationRoute: ApplicationRoute,
   AuthRoute: AuthRoute,
   CareersRoute: CareersRouteWithChildren,
+  JoinOrganizationRoute: JoinOrganizationRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   SignupRoute: SignupRoute,

@@ -103,7 +103,11 @@ function VerifyPage() {
         if (await joinOrganisation(joinCode)) navigate({ to: user ? "/portal" : "/auth" });
         return;
       }
-      // Registering or independent: the wizard creates the organisation record.
+      if (role === "independent") {
+        navigate({ to: "/independent/onboarding" });
+        return;
+      }
+      // Registering an organisation: the wizard creates the organisation record.
       navigate({ to: "/application", search: { organisationName, operatorType } });
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : "Something went wrong. Try again.");
@@ -245,10 +249,16 @@ function VerifyPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {role === "org_staff"
                 ? "Send your join request to continue."
-                : "Your operator application is now unlocked."}
+                : role === "independent"
+                  ? "Your independent operator onboarding is now unlocked."
+                  : "Your operator application is now unlocked."}
             </p>
             <Button className="mt-4 w-full" disabled={busy} onClick={continueAfterVerification}>
-              {role === "org_staff" ? "Send join request" : "Start operator application"}
+              {role === "org_staff"
+                ? "Send join request"
+                : role === "independent"
+                  ? "Start independent onboarding"
+                  : "Start operator application"}
             </Button>
           </div>
         ) : null}
