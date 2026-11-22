@@ -17,7 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/errors";
+import { lookupJoinCode } from "@/lib/api/organisations";
 import { useAuth } from "@/lib/auth";
+import { cleanJoinCode, formatJoinCode } from "@/lib/join-code";
 import { participantTypes, type SignupRole } from "@/lib/onboarding-store";
 import { formatPhoneNumber, isValidPhoneNumber } from "@/lib/phone";
 import { cn } from "@/lib/utils";
@@ -78,6 +80,7 @@ function SignupPage() {
     email: "",
     phone: "",
     organisationName: "",
+    joinCode: "",
     password: "",
   });
   const [agreedTerms, setAgreedTerms] = useState(false);
@@ -100,8 +103,13 @@ function SignupPage() {
       setError(weak);
       return;
     }
-    if (role !== "independent" && !form.organisationName) {
+    if (role === "org_admin" && !form.organisationName) {
       setError("Enter the logistics organisation name.");
+      return;
+    }
+    const joinCode = cleanJoinCode(form.joinCode);
+    if (role === "org_staff" && joinCode.length !== 8) {
+      setError("Enter the 8 character join code your organisation's administrator shared.");
       return;
     }
     if (!agreedTerms) {
@@ -112,6 +120,12 @@ function SignupPage() {
     const [firstName, ...rest] = form.fullName.trim().split(/\s+/);
     setSubmitting(true);
     try {
+      // Check the code before creating the account, so a wrong code is caught
+      // here and not after verification. Organisations still in review count.
+      let joinedName: string | undefined;
+      if (role === "org_staff") {
+        joinedName = (await lookupJoinCode(joinCode)).organisation_name;
+      }
       await signUp({
         email: form.email.trim(),
         password: form.password,
@@ -127,7 +141,8 @@ function SignupPage() {
           email: form.email.trim(),
           role,
           operatorType: role === "org_staff" ? undefined : operatorType,
-          organisationName: form.organisationName || undefined,
+          organisationName: role === "org_staff" ? joinedName : form.organisationName || undefined,
+          joinCode: role === "org_staff" ? joinCode : undefined,
         },
       });
     } catch (cause) {
@@ -252,25 +267,34 @@ function SignupPage() {
           </div>
         ) : null}
 
-        {role !== "independent" ? (
+        {role === "org_admin" ? (
           <div className="space-y-2">
-            <Label htmlFor="organisationName">
-              {role === "org_admin"
-                ? "Logistics organisation legal name"
-                : "Organisation you are joining"}
-            </Label>
+            <Label htmlFor="organisationName">Logistics organisation legal name</Label>
             <Input
               id="organisationName"
               value={form.organisationName}
               onChange={set("organisationName")}
               placeholder="As on your CAC certificate"
             />
-            {role === "org_staff" ? (
-              <p className="text-xs text-muted-foreground">
-                A join request is sent to the organisation admin for approval. You will get
-                read-only access until it is approved.
-              </p>
-            ) : null}
+          </div>
+        ) : null}
+
+        {role === "org_staff" ? (
+          <div className="space-y-2">
+            <Label htmlFor="joinCode">Organisation join code</Label>
+            <Input
+              id="joinCode"
+              value={form.joinCode}
+              onChange={(e) => setForm((f) => ({ ...f, joinCode: formatJoinCode(e.target.value) }))}
+              placeholder="XXXX-XXXX"
+              autoCapitalize="characters"
+              className="tracking-[0.2em]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Ask your organisation's administrator for the 8 character code. It works whether the
+              organisation is verified yet or still under review. A join request is sent to the
+              administrator, and you get read-only access until it is approved.
+            </p>
           </div>
         ) : null}
 

@@ -9,6 +9,7 @@ import {
   createOrganisation,
   decideJoinRequest,
   decideOrganisation,
+  getJoinCode,
   getOrganisation,
   getOrganisationTimeline,
   listInvitations,
@@ -17,8 +18,10 @@ import {
   listOrganisationJoinRequests,
   listOrganisations,
   organisationDirectory,
+  rotateJoinCode,
   submitOrganisation,
   updateOrganisation,
+  type JoinRequestInput,
   type OrganisationInput,
   type OrganisationQuery,
 } from "./organisations";
@@ -210,11 +213,7 @@ export function useAcceptInvitation() {
 export function useCreateJoinRequest() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      organisation: UUID;
-      requested_role?: MembershipRole;
-      justification?: string;
-    }) => createJoinRequest(input),
+    mutationFn: (input: JoinRequestInput) => createJoinRequest(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests }),
   });
 }
@@ -231,5 +230,22 @@ export function useDecideJoinRequest() {
       void queryClient.invalidateQueries({ queryKey: ["organisations"] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.myJoinRequests });
     },
+  });
+}
+
+export function useJoinCode(id: UUID | null) {
+  return useQuery({
+    queryKey: ["organisations", "join-code", id ?? "none"] as const,
+    queryFn: () => getJoinCode(id as UUID),
+    enabled: Boolean(id),
+  });
+}
+
+export function useRotateJoinCode(id: UUID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => rotateJoinCode(id),
+    onSuccess: (data) =>
+      queryClient.setQueryData(["organisations", "join-code", id] as const, data),
   });
 }
