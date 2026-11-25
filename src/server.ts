@@ -46,10 +46,13 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 // Security headers on every page this server renders (task E13).
 //
-// The content security policy is sent as Report-Only first: the browser logs
-// what it would block without blocking it. Once the console shows no reports
-// on staging, rename the header to Content-Security-Policy to enforce it.
-// TODO(Emmanuel): enforce the policy after a clean week on staging.
+// The content security policy is enforced (OR-006). It ran as Report-Only
+// first; on 25 Nov 2026 every workspace (mining, processing, export, quality,
+// warehousing, logistics, marketplace, governance, onboarding and staff
+// vetting) was walked locally with a report collector and nothing was reported,
+// so the header was switched to Content-Security-Policy. If a page breaks with
+// "Refused to ..." in the console, add the missing origin to the directive
+// named in that message rather than switching back to Report-Only.
 function apiOrigin(): string {
   const configured = import.meta.env.VITE_API_URL;
   if (typeof configured !== "string" || !configured.trim()) return "http://localhost:8000";
@@ -79,7 +82,7 @@ function withSecurityHeaders(response: Response): Response {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("text/html")) return response;
   const secured = new Response(response.body, response);
-  secured.headers.set("Content-Security-Policy-Report-Only", CONTENT_SECURITY_POLICY);
+  secured.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
   secured.headers.set("X-Content-Type-Options", "nosniff");
   secured.headers.set("X-Frame-Options", "DENY");
   secured.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
