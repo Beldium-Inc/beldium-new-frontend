@@ -34,6 +34,7 @@ import { navForRole } from "./nav";
 import { Chip } from "./chips";
 import { BeldiumLogo } from "@/components/beldium-logo";
 import { SetupBanner } from "@/components/setup-banner";
+import { GetHelpLink } from "@/components/get-help-link";
 
 const icons: Record<string, typeof Gauge> = {
   gauge: Gauge,
@@ -215,6 +216,8 @@ export function Shell({ children }: { children: ReactNode }) {
               {roleLabel[role]}
             </Chip>
           </div>
+
+          <GetHelpLink compact />
 
           <Popover>
             <PopoverTrigger asChild>

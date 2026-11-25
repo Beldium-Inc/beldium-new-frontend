@@ -51,19 +51,19 @@ function Landing() {
 
       <section className="relative overflow-hidden border-b border-border bg-sidebar">
         <div className="absolute inset-0" aria-hidden>
-            {/* Phones get a still frame (55 KB); wider screens the animated WebP (420 KB,
-                was a 2.1 MB GIF). It sits under an 85% overlay, so motion adds little on a phone. */}
-            <picture>
-              <source media="(max-width: 767px)" srcSet="/leftside-still.webp" />
-              <img
-                src="/leftside-animation.webp"
-                alt=""
-                decoding="async"
-                fetchPriority="low"
-                className="h-full w-full object-cover"
-              />
-            </picture>
-          </div>
+          {/* Phones get a still frame (55 KB); wider screens the animated WebP (420 KB,
+              was a 2.1 MB GIF). It sits under an 85% overlay, so motion adds little on a phone. */}
+          <picture>
+            <source media="(max-width: 767px)" srcSet="/leftside-still.webp" />
+            <img
+              src="/leftside-animation.webp"
+              alt=""
+              decoding="async"
+              fetchPriority="low"
+              className="h-full w-full object-cover"
+            />
+          </picture>
+        </div>
 
         <div className="absolute inset-0 bg-sidebar/85" aria-hidden />
         <div className="relative mx-auto grid w-full max-w-6xl gap-12 px-6 py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">

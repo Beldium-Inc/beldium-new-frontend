@@ -37,6 +37,7 @@ import { operatorStatus, type OperatorStatus } from "@/lib/independent/model";
 import { useIndependent } from "@/lib/independent/store";
 import { useAuth } from "@/lib/auth";
 import { useIndependentNotifications } from "@/lib/independent/notifications";
+import { GetHelpLink } from "@/components/get-help-link";
 
 type NavItem = { title: string; url: string; icon: typeof LayoutDashboard };
 
@@ -145,6 +146,7 @@ export function IndependentShell({ children }: { children: React.ReactNode }) {
               <StatusChip tone={tone[status]} className="hidden sm:inline-flex">
                 {status}
               </StatusChip>
+              <GetHelpLink compact />
               <Button
                 variant="ghost"
                 size="sm"

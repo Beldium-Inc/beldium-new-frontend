@@ -38,6 +38,7 @@ import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 import { COMPLIANCE_VERTICALS as VERTICALS, type VerticalSlug } from "@/lib/verticals";
+import { GetHelpLink } from "@/components/get-help-link";
 
 // Client-only, like the /mining layout: the JWT pair lives in localStorage, so
 // a server-rendered pass hydrates with useHasTokens() === false, the auth guard
@@ -636,6 +637,7 @@ function Page() {
         </div>
         <div className="flex items-center gap-3">
           <p className="hidden text-sm text-muted-foreground sm:block">{user.email}</p>
+          <GetHelpLink compact />
           <Button
             variant="outline"
             size="sm"
