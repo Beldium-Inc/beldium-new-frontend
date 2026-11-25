@@ -27,6 +27,7 @@ import { useAppState } from "@/verticals/processing/store";
 import { Pill } from "@/verticals/processing/bpc";
 import { cn } from "@/lib/utils";
 import { BeldiumLogo } from "@/components/beldium-logo";
+import { GetHelpLink } from "@/components/get-help-link";
 
 type NavItem = { to: string; label: string; icon: React.ElementType; badge?: string | undefined };
 
@@ -372,6 +373,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <GetHelpLink compact />
             <Pill
               tone={
                 user.role === "operator"

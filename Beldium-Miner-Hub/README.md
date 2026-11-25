@@ -27,3 +27,9 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+
+## Deploying
+
+Staging and production deploy from Vercel: the `staging` branch goes to the
+staging domain and `main` to production. Setup and the sign-off for every
+production deploy are in `docs/release_checklist.md` at the repo root.

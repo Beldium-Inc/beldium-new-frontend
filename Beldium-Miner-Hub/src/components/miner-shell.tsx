@@ -46,6 +46,7 @@ import { useMyOrganisations, useSiteVerified } from "@/lib/api/queries";
 import { fullName } from "@/lib/api/types";
 import { useMinerSetup } from "@/lib/setup";
 import { AlertTriangle, Lock } from "lucide-react";
+import { GetHelpLink } from "@/components/get-help-link";
 
 const reviewNav = [
   { title: "Review overview", url: "/portal", icon: LayoutDashboard },
@@ -166,7 +167,7 @@ export function MinerShell({ children }: { children: React.ReactNode }) {
               <div className="truncate text-sm font-medium text-foreground">
                 {org?.name || (user ? fullName(user) : "Miner workspace")}
               </div>
-              <div className="text-xs text-muted-foreground">{user?.email}</div>
+              <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
             </div>
             <div className="ml-auto flex items-center gap-2">
               {org ? (
@@ -174,16 +175,18 @@ export function MinerShell({ children }: { children: React.ReactNode }) {
                   {org.verification_status.replace("_", " ")}
                 </StatusChip>
               ) : null}
-              
+              <GetHelpLink compact />
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Sign out"
                 onClick={() => {
                   void signOut();
                   navigate({ to: "/auth" });
                 }}
               >
-                <LogOut className="mr-1.5 h-4 w-4" /> Sign out
+                <LogOut className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Sign out</span>
               </Button>
             </div>
           </header>

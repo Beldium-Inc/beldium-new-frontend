@@ -382,7 +382,9 @@ function ApplicationPage() {
             <BeldiumLockup />
           </Link>
           <div className="flex items-center gap-3">
-            <StatusChip tone="info">Draft saved locally</StatusChip>
+            <StatusChip tone="info" className="hidden sm:inline-flex">
+              Draft saved locally
+            </StatusChip>
             <Button variant="ghost" size="sm" asChild>
               <Link to={authStatus === "authenticated" ? "/portal" : "/auth"}>Save &amp; exit</Link>
             </Button>

@@ -42,6 +42,7 @@ import { fullName } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth";
 import { useOperationsDashboard } from "@/lib/api/operations-queries";
 import { STAGE_LABELS, isVerified, useWorkspace, type WorkspaceStage } from "@/lib/workspace";
+import { GetHelpLink } from "@/components/get-help-link";
 
 type NavItem = { title: string; url: string; icon: typeof LayoutDashboard };
 
@@ -175,6 +176,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <StatusChip tone={stageTone[stage]} className="hidden sm:inline-flex">
                 {STAGE_LABELS[stage]}
               </StatusChip>
+              <GetHelpLink compact />
               <Button
                 variant="ghost"
                 size="sm"

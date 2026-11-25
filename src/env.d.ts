@@ -11,4 +11,6 @@ interface ImportMetaEnv {
    * capped at 25 to stay inside the API's 30-minute access-token lifetime).
    */
   readonly VITE_SESSION_IDLE_MINUTES?: string;
+  /** Where "Get help" points: an https:// or mailto: link. See src/lib/support.ts. */
+  readonly VITE_SUPPORT_URL?: string;
 }

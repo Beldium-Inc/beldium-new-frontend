@@ -1,5 +1,6 @@
 import { Menu } from "lucide-react";
 import type { ReactNode } from "react";
+import { GetHelpLink } from "@/components/get-help-link";
 import { cn } from "@/lib/utils";
 
 /**
@@ -37,16 +38,22 @@ export function DashboardHeader({
               <Menu className="size-5" />
             </button>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold sm:text-xl">{title}</h1>
             {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
+          {/* On phones "Get help" sits on the title row; from sm up it joins the actions. */}
+          <GetHelpLink compact className="-mr-2 shrink-0 sm:hidden" />
         </div>
-        {actions && (
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
-            {actions}
-          </div>
-        )}
+        <div
+          className={cn(
+            "flex-wrap items-center gap-2 sm:flex sm:shrink-0 sm:justify-end",
+            actions ? "flex" : "hidden",
+          )}
+        >
+          <GetHelpLink className="hidden sm:inline-flex" />
+          {actions}
+        </div>
       </div>
     </header>
   );
