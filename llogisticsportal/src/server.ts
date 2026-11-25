@@ -44,12 +44,54 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+// Security headers on every page this server renders (OR-006). Same policy as
+// the main app's src/server.ts; keep the two in step. Links to other sites
+// (OpenStreetMap, the Q&C site) are not limited by it. If a page breaks with
+// "Refused to ..." in the console, add the missing origin to the directive
+// named in that message rather than removing the header.
+function apiOrigin(): string {
+  const configured = import.meta.env.VITE_API_URL;
+  if (typeof configured !== "string" || !configured.trim()) return "http://localhost:8000";
+  try {
+    return new URL(configured.trim()).origin;
+  } catch {
+    return "";
+  }
+}
+
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  // Server rendering puts small inline scripts and styles in the page.
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  `connect-src 'self' ${apiOrigin()}`.trim(),
+  "frame-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+function withSecurityHeaders(response: Response): Response {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) return response;
+  const secured = new Response(response.body, response);
+  secured.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+  secured.headers.set("X-Content-Type-Options", "nosniff");
+  secured.headers.set("X-Frame-Options", "DENY");
+  secured.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  secured.headers.set("Permissions-Policy", "camera=(self), geolocation=(self), microphone=()");
+  return secured;
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
