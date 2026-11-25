@@ -5,6 +5,8 @@ export function BeldiumMark({ className }: { className?: string }) {
     <img
       src="/logo.png"
       alt="Beldium logo"
+      width={48}
+      height={48}
       className={cn("h-9 w-9 rounded-full border border-border/40 object-cover", className)}
     />
   );

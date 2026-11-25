@@ -23,7 +23,15 @@ export function AuthLayout({
           className="relative hidden w-full flex-col justify-between overflow-hidden bg-sidebar p-10 lg:flex lg:w-2/5 xl:w-1/3"
         >
           <div className="absolute inset-0" aria-hidden>
-            <img src="/leftside-animation.gif" alt="" className="h-full w-full object-cover" />
+            {/* lazy: this panel is hidden below lg, and a lazy image that is never shown is
+                never downloaded, so phones skip it. */}
+            <img
+              src="/leftside-animation.webp"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
           </div>
 
           <div className="absolute inset-0 bg-sidebar/90" aria-hidden />
